@@ -1,0 +1,4358 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "Decision Service API",
+    "version": "v1"
+  },
+  "servers": [
+    {
+      "url": "https://portal.athena/api/smartepu/docs/"
+    }
+  ],
+  "paths": {
+    "/api/v1/Session/{sessionId}/AlgorithmResult": {
+      "get": {
+        "tags": [
+          "AlgorithmResult"
+        ],
+        "summary": "Get algorithm result using session id, name and area id.",
+        "description": "Sample request:\r\n\r\n    ../Session/{sessionId}/AlgorithmResult?areaId=12&name=motioncorrection",
+        "parameters": [
+          {
+            "name": "sessionId",
+            "in": "path",
+            "description": "Uniquely identifies the application session.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Uniquely identifies the application session.",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "areaId",
+            "in": "query",
+            "description": "Uniquely identifies the area within the session.",
+            "schema": {
+              "type": "integer",
+              "description": "Uniquely identifies the area within the session.",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "name",
+            "in": "query",
+            "description": "Name type of the algorithm result.",
+            "schema": {
+              "$ref": "#/components/schemas/AlgorithmResultType"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A 200 is returned if operation is successful.",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/AlgorithmResultRecord"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AlgorithmResultRecord"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AlgorithmResultRecord"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "A 400 is returned if an invalid algorithm name is used.",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "A 404 is returned if the given area id does not exist in the database or no data found for the given area id.",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "A 500 is returned if an internal error is found."
+          }
+        }
+      }
+    },
+    "/api/v1/Session/{sessionId}/AlgorithmResults": {
+      "get": {
+        "tags": [
+          "AlgorithmResult"
+        ],
+        "summary": "Get all algorithm results using session id, name and parent area id.",
+        "description": "Sample request:\r\n\r\n    ../Session/{sessionId}/AlgorithmResult?parentAreaId=12&name=motioncorrection",
+        "parameters": [
+          {
+            "name": "sessionId",
+            "in": "path",
+            "description": "Uniquely identifies the application session.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Uniquely identifies the application session.",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "parentAreaId",
+            "in": "query",
+            "description": "Uniquely identifies the parent area within the session.",
+            "schema": {
+              "type": "integer",
+              "description": "Uniquely identifies the parent area within the session.",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "name",
+            "in": "query",
+            "description": "Name of the algorithm result.",
+            "schema": {
+              "$ref": "#/components/schemas/AlgorithmResultType"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A 200 is returned if operation is successful.",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AlgorithmResultRecord"
+                  }
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AlgorithmResultRecord"
+                  }
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AlgorithmResultRecord"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "A 400 is returned if an invalid algorithm name is used.",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "A 404 is returned if the given parent area id does not exist in the database or no data found for the given parent area id.",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "204": {
+            "description": "A 204 is returned if no record is found."
+          },
+          "500": {
+            "description": "A 500 is returned if an internal error is found."
+          }
+        }
+      }
+    },
+    "/api/v1/Session/{sessionId}/LatestAlgorithmResult": {
+      "get": {
+        "tags": [
+          "AlgorithmResult"
+        ],
+        "summary": "Get latest algorithm result using session id, name and parent area id.",
+        "description": "Sample request:\r\n\r\n    ../Session/{sessionId}/LatestAlgorithmResult?parentAreaId=12&name=motioncorrection",
+        "parameters": [
+          {
+            "name": "sessionId",
+            "in": "path",
+            "description": "Uniquely identifies the application session.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Uniquely identifies the application session.",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "parentAreaId",
+            "in": "query",
+            "description": "Uniquely identifies the parent area within the session.",
+            "schema": {
+              "type": "integer",
+              "description": "Uniquely identifies the parent area within the session.",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "name",
+            "in": "query",
+            "description": "Name of the algorithm result.",
+            "schema": {
+              "$ref": "#/components/schemas/AlgorithmResultType"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A 200 is returned if operation is successful.",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/AlgorithmResultRecord"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AlgorithmResultRecord"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AlgorithmResultRecord"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "A 400 is returned if an invalid algorithm name is used.",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "A 404 is returned if the given parent area id does not exist in the database or no data found for the given parent area id.",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "204": {
+            "description": "A 204 is returned if no latest record is found."
+          },
+          "500": {
+            "description": "A 500 is returned if an internal error is found."
+          }
+        }
+      }
+    },
+    "/api/v1/CurrentApplicationState": {
+      "get": {
+        "tags": [
+          "ApplicationState"
+        ],
+        "summary": "Get the current (or last known) state of the application.",
+        "description": "Sample request:\r\n            \r\n    ../CurrentApplicationState",
+        "responses": {
+          "200": {
+            "description": "A 200 is returned if operation is successful.",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApplicationState"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApplicationState"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApplicationState"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "ApplicationState"
+        ],
+        "summary": "Notify the current application state.",
+        "description": "Sample requests:\r\n            \r\n    POST\r\n    {      \r\n      \"state\": \"idle\",\r\n      \"sessionId\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\"\r\n    }\r\n    \r\nor\r\n\r\n    POST\r\n    { \r\n      \"state\": \"running\",\r\n      \"sessionId\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\r\n      \"areaId\" : 1213,\r\n      \"details\" : \"running autofocus\"\r\n    }",
+        "requestBody": {
+          "description": "The new state of the application.",
+          "content": {
+            "application/json-patch+json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApplicationStateChange"
+              }
+            },
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApplicationStateChange"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApplicationStateChange"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApplicationStateChange"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "A 201 is returned if operation succeeds.",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApplicationState"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApplicationState"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApplicationState"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/Session/{sessionId}/ApplicationStates": {
+      "get": {
+        "tags": [
+          "ApplicationState"
+        ],
+        "summary": "Get all the tracked application states for the given application session.",
+        "description": "Sample request:\r\n\r\n    ../Session/{sessionId}/ApplicationStates",
+        "parameters": [
+          {
+            "name": "sessionId",
+            "in": "path",
+            "description": "Uniquely identifies the application session.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Uniquely identifies the application session.",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A 200 is returned if operation is successful.",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ApplicationState"
+                  }
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ApplicationState"
+                  }
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ApplicationState"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "A 404 is returned if the requested session has not been registered.",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/Session/{sessionId}/Area/{areaId}": {
+      "get": {
+        "tags": [
+          "Area"
+        ],
+        "summary": "Get the registered area for application session.",
+        "description": "Sample request:\r\n\r\n    ../Session/{sessionId}/Area/{areaId}",
+        "parameters": [
+          {
+            "name": "sessionId",
+            "in": "path",
+            "description": "Uniquely identifies the application session.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Uniquely identifies the application session.",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "areaId",
+            "in": "path",
+            "description": "Uniquely identifies the area within the application session.",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "description": "Uniquely identifies the area within the application session.",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A 200 is returned if operation is successful.",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/Area"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Area"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Area"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "A 404 is returned if the requested application session has not been registered or the requested area did not exist in the database.",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/Session/{sessionId}/Areas": {
+      "get": {
+        "tags": [
+          "Area"
+        ],
+        "summary": "Get all the registered areas for application session, optionally filtered by area type or parent.",
+        "description": "Sample request:\r\n\r\n    ../Session/{sessionId}/Areas?areaType=gridsquare&parentAreaId=1",
+        "parameters": [
+          {
+            "name": "sessionId",
+            "in": "path",
+            "description": "Uniquely identifies the application session.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Uniquely identifies the application session.",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "areaType",
+            "in": "query",
+            "description": "(Optional)The type of areas to retrieve.",
+            "schema": {
+              "$ref": "#/components/schemas/AreaType"
+            }
+          },
+          {
+            "name": "parentAreaId",
+            "in": "query",
+            "description": "(Optional)The parent area of the areas to retrieve.",
+            "schema": {
+              "type": "integer",
+              "description": "(Optional)The parent area of the areas to retrieve.",
+              "format": "int32",
+              "nullable": true
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A 200 is returned if operation is successful.",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Area"
+                  }
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Area"
+                  }
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Area"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "A 404 is returned if the requested application session has not been registered.",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/Session/{sessionId}/Area/{parentAreaId}/Areas": {
+      "get": {
+        "tags": [
+          "Area"
+        ],
+        "summary": "Get all the registered child areas of the given area.",
+        "description": "Sample request:\r\n\r\n    ../Session/{sessionId}/Area/{parentAreaId}/Areas",
+        "parameters": [
+          {
+            "name": "sessionId",
+            "in": "path",
+            "description": "Uniquely identifies the application session.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Uniquely identifies the application session.",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "parentAreaId",
+            "in": "path",
+            "description": "Uniquely identifies the parent area in the application session.",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "description": "Uniquely identifies the parent area in the application session.",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A 200 is returned if operation is successful",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Area"
+                  }
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Area"
+                  }
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Area"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "A 404 is returned if the requested application session has not been registered.",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/Area": {
+      "post": {
+        "tags": [
+          "Area"
+        ],
+        "summary": "Register an area.",
+        "description": "Sample request:\r\n\r\n    POST\r\n    {        \r\n      \"sessionId\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\r\n      \"id\" : 12,\r\n      \"areaType\" : \"gridsquare\"\r\n    }\r\n    \r\nor\r\n\r\n    POST\r\n    {        \r\n      \"sessionId\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\r\n      \"id\" : 1213,\r\n      \"areaType\" : \"foilhole\",\r\n      \"parentId\" : 12\r\n    }",
+        "requestBody": {
+          "description": "The area to be registered.",
+          "content": {
+            "application/json-patch+json": {
+              "schema": {
+                "$ref": "#/components/schemas/Area"
+              }
+            },
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Area"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Area"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/Area"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "A 201 is returned if operation succeeds.",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/Area"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Area"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Area"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "A 400 is returned if the application session id is not filled in or an illegal area id is used.",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "A 404 is returned if the specified application session has not been registered.",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "A 409 is returned if the area has already been registered.",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Area"
+        ],
+        "summary": "Update a registered area.",
+        "description": "Sample request:\r\n\r\n    PUT\r\n    {        \r\n      \"sessionId\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\r\n      \"areaType\" : \"gridsquare\",\r\n      \"id\" : 12\r\n    }",
+        "requestBody": {
+          "description": "The area to be updated or to be registered in case not registered yet.",
+          "content": {
+            "application/json-patch+json": {
+              "schema": {
+                "$ref": "#/components/schemas/Area"
+              }
+            },
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Area"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Area"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/Area"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "A 201 is returned if operation succeeds.",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Area"
+                  }
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Area"
+                  }
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Area"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "A 400 is returned if the application session id is not filled in.",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "A 404 is returned if the specified application session has not been registered.",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/Areas": {
+      "post": {
+        "tags": [
+          "Area"
+        ],
+        "summary": "Register multiple areas.",
+        "description": "Sample request:\r\n\r\n    POST\r\n    {        \r\n      \"sessionId\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\r\n      \"areaType\" : \"gridsquare\",\r\n      \"ids\" : [2, 12, 43]\r\n    }",
+        "requestBody": {
+          "description": "The areas to be registered.",
+          "content": {
+            "application/json-patch+json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/Area"
+                },
+                "description": "The areas to be registered.",
+                "nullable": true
+              }
+            },
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/Area"
+                },
+                "description": "The areas to be registered.",
+                "nullable": true
+              }
+            },
+            "text/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/Area"
+                },
+                "description": "The areas to be registered.",
+                "nullable": true
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/Area"
+                },
+                "description": "The areas to be registered.",
+                "nullable": true
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "A 201 is returned if operation succeeds.",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Area"
+                  }
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Area"
+                  }
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Area"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "A 400 is returned if the application session id is not filled in.",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "A 404 is returned if the specified application session has not been registered.",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "A 409 is returned if (some of) the area have already been registered.",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Area"
+        ],
+        "summary": "Update multiple registered areas and register new ones.",
+        "description": "Sample request:\r\n\r\n    PUT\r\n    {        \r\n      \"sessionId\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\r\n      \"areaType\" : \"gridsquare\",\r\n      \"ids\" : [2, 12, 43]\r\n    }",
+        "requestBody": {
+          "description": "The areas to be updated or to be registered in case not registered yet.",
+          "content": {
+            "application/json-patch+json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/Area"
+                },
+                "description": "The areas to be updated or to be registered in case not registered yet.",
+                "nullable": true
+              }
+            },
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/Area"
+                },
+                "description": "The areas to be updated or to be registered in case not registered yet.",
+                "nullable": true
+              }
+            },
+            "text/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/Area"
+                },
+                "description": "The areas to be updated or to be registered in case not registered yet.",
+                "nullable": true
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/Area"
+                },
+                "description": "The areas to be updated or to be registered in case not registered yet.",
+                "nullable": true
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "A 204 is returned if operation succeeds."
+          },
+          "400": {
+            "description": "A 400 is returned if the application session id is not filled in.",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "A 404 is returned if the specified application session has not been registered.",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/Session/{sessionId}/AreaState/{areaStateId}": {
+      "get": {
+        "tags": [
+          "AreaState"
+        ],
+        "summary": "Get a specific area state.",
+        "description": "Sample request:\r\n\r\n    ../Session/{sessionId}/AreaState/{areaStateId}",
+        "parameters": [
+          {
+            "name": "sessionId",
+            "in": "path",
+            "description": "Uniquely identifies the application session.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Uniquely identifies the application session.",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "areaStateId",
+            "in": "path",
+            "description": "Uniquely identifies the area state within the application session.",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "description": "Uniquely identifies the area state within the application session.",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A 200 is returned if operation is successful.",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/AreaState"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AreaState"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AreaState"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "A 400 is returned if an invalid state id is used.",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "A 404 is returned if the given application session has not been registered or the given area state does not exist in database.",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/Session/{sessionId}/Area/{areaId}/LatestAreaState": {
+      "get": {
+        "tags": [
+          "AreaState"
+        ],
+        "summary": "Get the latest state of the registered area.",
+        "description": "Sample request:\r\n\r\n    ../Session/{sessionId}/Area/{areaId}/LatestAreaState",
+        "parameters": [
+          {
+            "name": "sessionId",
+            "in": "path",
+            "description": "Uniquely identifies the application session.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Uniquely identifies the application session.",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "areaId",
+            "in": "path",
+            "description": "Uniquely identifies the area within the application session.",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "description": "Uniquely identifies the area within the application session.",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A 200 is returned if operation is successful.",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/AreaState"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AreaState"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AreaState"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "A 400 is returned if the application session id is not filled in or an illegal area id is used.",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "A 404 is returned if the given application session has not been registered or the given area does not exist in database.",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/Session/{sessionId}/AreaStates": {
+      "get": {
+        "tags": [
+          "AreaState"
+        ],
+        "summary": "Get multiple area states for the given application session, optionally filtered by area type or parent area id.",
+        "description": "Sample request:\r\n\r\n    ../Session/{sessionId}/AreaStates\r\n    ../Session/{sessionId}/AreaStates?areaType=gridsquare\r\n    ../Session/{sessionId}/AreaStates?parentId=123",
+        "parameters": [
+          {
+            "name": "sessionId",
+            "in": "path",
+            "description": "Uniquely identifies the application session.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Uniquely identifies the application session.",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "areaType",
+            "in": "query",
+            "description": "(Optional)The type of areas to retrieve.",
+            "schema": {
+              "$ref": "#/components/schemas/AreaType"
+            }
+          },
+          {
+            "name": "parentAreaId",
+            "in": "query",
+            "description": "(Optional)The parent area of the area states to retrieve.",
+            "schema": {
+              "type": "integer",
+              "description": "(Optional)The parent area of the area states to retrieve.",
+              "format": "int32",
+              "nullable": true
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A 200 is returned if operation is successful.",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AreaState"
+                  }
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AreaState"
+                  }
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AreaState"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "A 404 is returned if the given application session has not been registered.",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/AreaState": {
+      "post": {
+        "tags": [
+          "AreaState"
+        ],
+        "summary": "Notify that an area state has changed.",
+        "description": "Sample request:\r\n\r\n    POST\r\n    {        \r\n      \"sessionId\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\"      \r\n      \"areaId\" : 12\r\n      \"state\" : \"started\"\r\n    }",
+        "requestBody": {
+          "description": "The updated area state.",
+          "content": {
+            "application/json-patch+json": {
+              "schema": {
+                "$ref": "#/components/schemas/AreaStateChange"
+              }
+            },
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AreaStateChange"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AreaStateChange"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/AreaStateChange"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "A 201 is returned if operation succeeds.",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/AreaState"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AreaState"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AreaState"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "A 404 is returned if the specified application session and/or area has not been registered.",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/AreaStates": {
+      "post": {
+        "tags": [
+          "AreaState"
+        ],
+        "summary": "Notify state changes of multiple areas.",
+        "description": "Sample request:\r\n\r\n    POST\r\n    {        \r\n      \"sessionId\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\"      \r\n      \"areaIds\" : [12, 14]\r\n      \"areaStates\" : [\"started\", \"queued\"]\r\n    }",
+        "requestBody": {
+          "description": "The updated area states.",
+          "content": {
+            "application/json-patch+json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/AreaState"
+                },
+                "description": "The updated area states.",
+                "nullable": true
+              }
+            },
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/AreaState"
+                },
+                "description": "The updated area states.",
+                "nullable": true
+              }
+            },
+            "text/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/AreaState"
+                },
+                "description": "The updated area states.",
+                "nullable": true
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/AreaState"
+                },
+                "description": "The updated area states.",
+                "nullable": true
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "A 201 is returned if operation succeeds.",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AreaState"
+                  }
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AreaState"
+                  }
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AreaState"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "A 400 is returned if the application session id is not filled in or an illegal area id is used.",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "A 404 is returned if the specified application session and/or area has not been registered.",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/Session/{sessionId}/Decision/{decisionId}": {
+      "get": {
+        "tags": [
+          "Decision"
+        ],
+        "summary": "Get a specific decision.",
+        "description": "Sample request:\r\n\r\n    ../Session/{sessionId}/Decision/{decisionId}",
+        "parameters": [
+          {
+            "name": "sessionId",
+            "in": "path",
+            "description": "Uniquely identifies the application session.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Uniquely identifies the application session.",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "decisionId",
+            "in": "path",
+            "description": "The id of a specific decision record.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "The id of a specific decision record.",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A 200 is returned if operation is successful.",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/DecisionRecord"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DecisionRecord"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DecisionRecord"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "A 400 is returned if an invalid decision id is used.",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "A 404 is returned if the given application session and/or decision has not been registered.",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/Session/{sessionId}/LatestDecision": {
+      "get": {
+        "tags": [
+          "Decision"
+        ],
+        "summary": "Get the most recent decision that is available for the given area.",
+        "description": "Sample request:\r\n\r\n    ../Session/{sessionId}/LatestDecision?areaId=12&decisionType=include",
+        "parameters": [
+          {
+            "name": "sessionId",
+            "in": "path",
+            "description": "Uniquely identifies the application session.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Uniquely identifies the application session.",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "areaId",
+            "in": "query",
+            "description": "Uniquely identifies the area within the application session.",
+            "schema": {
+              "type": "integer",
+              "description": "Uniquely identifies the area within the application session.",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "decisionType",
+            "in": "query",
+            "description": "The type of decision.",
+            "schema": {
+              "$ref": "#/components/schemas/DecisionType"
+            }
+          },
+          {
+            "name": "pluginType",
+            "in": "query",
+            "description": "The plugin was used in taking the decision.",
+            "schema": {
+              "$ref": "#/components/schemas/PluginType"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A 200 is returned if operation is successful.",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/DecisionRecord"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DecisionRecord"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DecisionRecord"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "A 400 is returned if an illegal area id is used.",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "A 404 is returned if the requested application session, area and/or decision has not been registered.",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "204": {
+            "description": "A 204 is returned if no latest record is found."
+          }
+        }
+      }
+    },
+    "/api/v1/Session/{sessionId}/TimedDecision": {
+      "get": {
+        "tags": [
+          "Decision"
+        ],
+        "summary": "Get the most recent decision that is available for the given area.",
+        "description": "Sample request:\r\n\r\n    ../Session/{sessionId}/TimedDecision?areaId=12&timeout=120&decisionType=include\r\n            \r\nSample response:\r\n            \r\n     {\r\n    \t\"sessionId\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\r\n    \t\"areaId\": 12,\r\n    \t\"decisionType\": \"FoilHoleSelection\",\r\n    \t\"decisionValue\": \"[\r\n    \t\t{\r\n    \t\t\t\"areaId\": 100,\r\n    \t\t\t\"result\": \"true\"\r\n    \t\t},\r\n    \t\t{\r\n    \t\t\t\"areaId\": 101,\r\n    \t\t\t\"result\": \"false\"\r\n    \t\t},\r\n    \t\t{\r\n    \t\t\t\"areaId\": 102,\r\n    \t\t\t\"result\": \"true\"\r\n    \t\t}\r\n    \t]\",\r\n    \t\"decidedBy\": \"FoilHoleSelection algorithm\",\r\n    \t\"details\": \"bad foilhole\"\r\n    }",
+        "parameters": [
+          {
+            "name": "sessionId",
+            "in": "path",
+            "description": "Uniquely identifies the application session.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Uniquely identifies the application session.",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "areaId",
+            "in": "query",
+            "description": "Uniquely identifies the area within the application session.",
+            "schema": {
+              "type": "integer",
+              "description": "Uniquely identifies the area within the application session.",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "decisionType",
+            "in": "query",
+            "description": "The type of decision.",
+            "schema": {
+              "$ref": "#/components/schemas/DecisionType"
+            }
+          },
+          {
+            "name": "timeout",
+            "in": "query",
+            "description": "Timeout window in seconds within which a relevant decision shall be found. If timeout is reached 204 NoContent will be sent.",
+            "schema": {
+              "type": "integer",
+              "description": "Timeout window in seconds within which a relevant decision shall be found. If timeout is reached 204 NoContent will be sent.",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pluginType",
+            "in": "query",
+            "description": "The plugin was used in taking the decision.",
+            "schema": {
+              "$ref": "#/components/schemas/PluginType"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A 200 is returned if operation is successful.",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/DecisionRecord"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DecisionRecord"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DecisionRecord"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "A 400 is returned if an illegal area id is used.",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "A 404 is returned if the requested application session, area and/or decision has not been registered.",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "204": {
+            "description": "A 204 is returned if no record is found."
+          },
+          "500": {
+            "description": "A 500 is returned if an internal error is found."
+          }
+        }
+      }
+    },
+    "/api/v1/Session/{sessionId}/Decisions": {
+      "get": {
+        "tags": [
+          "Decision"
+        ],
+        "summary": "Get all the decisions that are available for the provided area ids, and optionally filtered by type.",
+        "description": "Sample request:\r\n\r\n    ../Session/{sessionId}/Decisions?areaId=1&areaId=2\r\n    ../Session/{sessionId}/Decisions?areaId=1&areaId=2&areaId=3&decisionType=include",
+        "parameters": [
+          {
+            "name": "sessionId",
+            "in": "path",
+            "description": "Uniquely identifies the application session.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Uniquely identifies the application session.",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "areaIds",
+            "in": "query",
+            "description": "Uniquely identify the area(s) within the application session.",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "integer",
+                "format": "int32"
+              },
+              "description": "Uniquely identify the area(s) within the application session.",
+              "nullable": true
+            }
+          },
+          {
+            "name": "decisionType",
+            "in": "query",
+            "description": "The type of decision.",
+            "schema": {
+              "$ref": "#/components/schemas/DecisionType"
+            }
+          },
+          {
+            "name": "pluginType",
+            "in": "query",
+            "description": "The plugin was used in taking the decision.",
+            "schema": {
+              "$ref": "#/components/schemas/PluginType"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A 200 is returned if operation was successful.",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/DecisionRecord"
+                  }
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/DecisionRecord"
+                  }
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/DecisionRecord"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "A 400 is returned if an illegal area id is used.",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "A 404 is returned if the requested application session has not been registered.",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Decision"
+        ],
+        "summary": "Delete all matching decisions. The match is performed on SessionId, AreaId and DecisionType (the later if specified)",
+        "description": "Sample request:\r\n\r\n  ../Session/{sessionId}/Decisions?areaId=12&decisionType=include",
+        "parameters": [
+          {
+            "name": "sessionId",
+            "in": "path",
+            "description": "Uniquely identifies the application session.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Uniquely identifies the application session.",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "areaId",
+            "in": "query",
+            "description": "Uniquely identifies the area within the application session.",
+            "schema": {
+              "type": "integer",
+              "description": "Uniquely identifies the area within the application session.",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "decisionType",
+            "in": "query",
+            "description": "The type of decision.",
+            "schema": {
+              "$ref": "#/components/schemas/DecisionType"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "A 204 is returned if operation is successful."
+          },
+          "400": {
+            "description": "A 400 is returned if an illegal area id is used.",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "A 404 is returned if the given application session and/or areaId has not been registered.",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/Decision": {
+      "post": {
+        "tags": [
+          "Decision"
+        ],
+        "summary": "Register a decision.",
+        "description": "Sample request:\r\n\r\n    POST\r\n    {        \r\n      \"sessionId\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\r\n      \"areaId\" : 12,\r\n      \"decisionType\" : \"include\",\r\n      \"decisionValue\" : \"false\",\r\n      \"decidedBy\" : \"web client\",\r\n      \"details\" : \"bad gridsquare\"\r\n    }",
+        "requestBody": {
+          "description": "The decision to be registered.",
+          "content": {
+            "application/json-patch+json": {
+              "schema": {
+                "$ref": "#/components/schemas/DecisionRecord"
+              }
+            },
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DecisionRecord"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DecisionRecord"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/DecisionRecord"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "A 201 is returned if operation succeeds.",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/DecisionRecord"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DecisionRecord"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DecisionRecord"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "A 404 is returned if the specified application session and/or area has not been registered.",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/Decisions": {
+      "post": {
+        "tags": [
+          "Decision"
+        ],
+        "summary": "Register multiple decisions.",
+        "description": "Sample request:\r\n\r\n    POST\r\n    {\r\n        [\r\n            {\r\n              \"sessionId\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\r\n              \"areaId\" : 10,\r\n              \"decisionType\" : \"include\",\r\n              \"decisionValue\" : \"false\",\r\n              \"decidedBy\" : \"web client\"},\r\n              \"details\" : \"bad gridsquare\"\r\n            },\r\n            {\r\n              \"sessionId\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\r\n              \"areaId\" : 11,\r\n              \"decisionType\" : \"include\",\r\n              \"decisionValue\" : \"false\",\r\n              \"decidedBy\" : \"web client\",\r\n              \"details\" : \"bad gridsquare\"\r\n            }\r\n        ]\r\n    }",
+        "requestBody": {
+          "description": "The decisions to be registered.",
+          "content": {
+            "application/json-patch+json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/DecisionRecord"
+                },
+                "description": "The decisions to be registered.",
+                "nullable": true
+              }
+            },
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/DecisionRecord"
+                },
+                "description": "The decisions to be registered.",
+                "nullable": true
+              }
+            },
+            "text/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/DecisionRecord"
+                },
+                "description": "The decisions to be registered.",
+                "nullable": true
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/DecisionRecord"
+                },
+                "description": "The decisions to be registered.",
+                "nullable": true
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "A 201 is returned if operation succeeds.",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/DecisionRecord"
+                  }
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/DecisionRecord"
+                  }
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/DecisionRecord"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "A 400 is returned if the provided decision collection is empty.",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "A 409 is returned if the given application session and/or area has not been registered.",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/Session/{sessionId}/AllDecisions": {
+      "delete": {
+        "tags": [
+          "Decision"
+        ],
+        "summary": "Delete all decisions.",
+        "description": "Sample request:\r\n\r\n    ../Session/{sessionId}/AllDecisions",
+        "parameters": [
+          {
+            "name": "sessionId",
+            "in": "path",
+            "description": "Uniquely identifies the application session.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Uniquely identifies the application session.",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "A 204 is returned if operation is successful."
+          },
+          "404": {
+            "description": "A 404 is returned if the given application session has not been registered.",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/Configuration": {
+      "get": {
+        "tags": [
+          "DecisionServiceConfiguration"
+        ],
+        "summary": "Get decision service configuration.",
+        "description": "Sample request:\r\n\r\n    ../Configuration",
+        "responses": {
+          "200": {
+            "description": "A 200 is returned if operation is successful.",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/DecisionServiceConfiguration"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DecisionServiceConfiguration"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DecisionServiceConfiguration"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "A 404 is returned if there is no configuration available.",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "A 500 is returned if an internal error is found."
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "DecisionServiceConfiguration"
+        ],
+        "summary": "Post new decision service configuration.",
+        "description": "Sample requests:\r\n            \r\n    POST\r\n    {\r\n        \"SmartPluginConfigurations\" : [\r\n            {\r\n                \"PluginName\": \"StageSettlingTimePrediction\",\r\n                \"CustomPluginSelection\": true\r\n            },\r\n            {\r\n                \"PluginName\": \"SkipGridSquarePrediction\",\r\n                \"CustomPluginSelection\": false\r\n            },\r\n            {\r\n                \"PluginName\": \"SmartFocusPrediction\",\r\n                \"CustomPluginSelection\": true\r\n            },\r\n            {\r\n                \"PluginName\": \"AutomaticFoilHoleSelection\",\r\n                \"CustomPluginSelection\": false\r\n            },\r\n            {\r\n                \"PluginName\": \"AutomaticGridSquareSelection\",\r\n                \"CustomPluginSelection\": false\r\n            },\r\n            {\r\n                \"PluginName\": \"IceThicknessFoilHolePrediction\",\r\n                \"CustomPluginSelection\": false\r\n            },\r\n            {\r\n                \"PluginName\": \"AutomaticFoilHoleFinding\",\r\n                \"CustomPluginSelection\": true\r\n            }\r\n        ]\r\n    }",
+        "requestBody": {
+          "description": "Decision service configuration.",
+          "content": {
+            "application/json-patch+json": {
+              "schema": {
+                "$ref": "#/components/schemas/DecisionServiceConfiguration"
+              }
+            },
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DecisionServiceConfiguration"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DecisionServiceConfiguration"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/DecisionServiceConfiguration"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "A 201 is returned if operation succeeds.",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/DecisionServiceConfiguration"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DecisionServiceConfiguration"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DecisionServiceConfiguration"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "A 400 is returned if the corresponding configuration is not supported.",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "A 500 is returned if an internal error is found."
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "DecisionServiceConfiguration"
+        ],
+        "summary": "Delete a registered decision service configuration.",
+        "responses": {
+          "204": {
+            "description": "A 204 is returned if operation is successful."
+          },
+          "404": {
+            "description": "A 404 is returned if the configuration has not been registered.",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/Configuration/Plugin": {
+      "patch": {
+        "tags": [
+          "DecisionServiceConfiguration"
+        ],
+        "summary": "Patch the existing smart plugin configuration",
+        "description": "Sample request:\r\n\r\n    PATCH\r\n    {        \r\n      \"PluginName\": \"StageSettlingTimePrediction\",\r\n      \"CustomPluginSelection\": true\r\n    }\r\n\r\nSample response:\r\n\r\n    RESPONSE\r\n    {        \r\n      \"PluginName\": \"StageSettlingTimePrediction\",\r\n      \"CustomPluginSelection\": true,\r\n      \"Timestamp\" : \"10/20/2022 14:38\"\r\n    }",
+        "requestBody": {
+          "description": "Smart plugin configuration.",
+          "content": {
+            "application/json-patch+json": {
+              "schema": {
+                "$ref": "#/components/schemas/SmartPluginConfiguration"
+              }
+            },
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SmartPluginConfiguration"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SmartPluginConfiguration"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/SmartPluginConfiguration"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "A 200 is returned if operation is successful.",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/SmartPluginConfiguration"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SmartPluginConfiguration"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SmartPluginConfiguration"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "A 404 is returned if the corresponding plugin has not been registered.",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "A 500 is returned if an internal error is found."
+          }
+        }
+      }
+    },
+    "/api/v1/NameValueStore/{sessionId}/Value/{id}": {
+      "get": {
+        "tags": [
+          "NameValueStore"
+        ],
+        "summary": "Get name-value record with provided id.",
+        "description": "Sample request:\r\n\r\n    ../NameValueStore/{sessionId}/Value/{id}",
+        "parameters": [
+          {
+            "name": "sessionId",
+            "in": "path",
+            "description": "Uniquely identifies the application session.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Uniquely identifies the application session.",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Name-value record id.",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "description": "Name-value record id.",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A 200 is returned if operation is successful",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/NameValueRecord"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NameValueRecord"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NameValueRecord"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "A 400 is returned if an illegal name-value record id is used.",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "A 404 is returned if the requested application session has not been registered or the requested area does not exist in database.",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/NameValueStore/{sessionId}/Values": {
+      "get": {
+        "tags": [
+          "NameValueStore"
+        ],
+        "summary": "Get all name-value records for the given application session, optionally filtered by area type or/and name.",
+        "description": "Sample request:\r\n\r\n    ../NameValueStore/{sessionId}/Values?areaId=3\r\n    ../NameValueStore/{sessionId}/Values?name=CoordinatesInParent",
+        "parameters": [
+          {
+            "name": "sessionId",
+            "in": "path",
+            "description": "Uniquely identifies the application session.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Uniquely identifies the application session.",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "areaId",
+            "in": "query",
+            "description": "Uniquely identifies the area within the session.",
+            "schema": {
+              "type": "integer",
+              "description": "Uniquely identifies the area within the session.",
+              "format": "int32",
+              "nullable": true
+            }
+          },
+          {
+            "name": "name",
+            "in": "query",
+            "description": "The name given to the record.",
+            "schema": {
+              "type": "string",
+              "description": "The name given to the record.",
+              "nullable": true
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A 200 is returned if operation is successful.",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/NameValueRecord"
+                  }
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/NameValueRecord"
+                  }
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/NameValueRecord"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "A 400 is returned if an illegal area id and/or name is used.",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "A 404 is returned if the requested application session has not been registered or the requested area does not exist in database.",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/NameValueStore": {
+      "post": {
+        "tags": [
+          "NameValueStore"
+        ],
+        "summary": "Creates a new name-value record.",
+        "description": "Sample request:\r\n\r\n    POST\r\n    {        \r\n        \"sessionId\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\r\n        \"areaId\": 1,\r\n        \"name\": \"metadata\",\r\n        \"value\": \"value\",\r\n        \"timestamp\": \"2021-02-26T12:45:18.076Z\",\r\n        \"setBy\": \"Swagger\"\r\n    }",
+        "requestBody": {
+          "description": "The record to be inserted.",
+          "content": {
+            "application/json-patch+json": {
+              "schema": {
+                "$ref": "#/components/schemas/NameValueRecord"
+              }
+            },
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NameValueRecord"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NameValueRecord"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/NameValueRecord"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "A 201 is returned if operation succeeds.",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/NameValueRecord"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NameValueRecord"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NameValueRecord"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "A 400 is returned if the application session id is not filled in or an illegal area id and/or name is used.",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "A 404 is returned if the specified application session has not been registered.",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/NameValueStores": {
+      "post": {
+        "tags": [
+          "NameValueStore"
+        ],
+        "summary": "Register multiple name-value records.",
+        "description": "Sample request:\r\n\r\n    POST\r\n    [\r\n        {\r\n            \"sessionId\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\r\n            \"areaId\": 1,\r\n            \"name\": \"name1\",\r\n            \"value\": \"value1\",\r\n            \"setBy\": \"Swagger\"\r\n        },\r\n        {\r\n            \"sessionId\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\r\n             \"areaId\": 1,\r\n            \"name\": \"name2\",\r\n            \"value\": \"value2\",\r\n            \"setBy\": \"Swagger\"\r\n        }\r\n    ]",
+        "requestBody": {
+          "description": "The name-value records to be registered.",
+          "content": {
+            "application/json-patch+json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/NameValueRecord"
+                },
+                "description": "The name-value records to be registered.",
+                "nullable": true
+              }
+            },
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/NameValueRecord"
+                },
+                "description": "The name-value records to be registered.",
+                "nullable": true
+              }
+            },
+            "text/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/NameValueRecord"
+                },
+                "description": "The name-value records to be registered.",
+                "nullable": true
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/NameValueRecord"
+                },
+                "description": "The name-value records to be registered.",
+                "nullable": true
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "A 201 is returned if operation succeeds.",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/NameValueRecord"
+                  }
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/NameValueRecord"
+                  }
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/NameValueRecord"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "A 400 is returned if the application session id is not filled in.",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "A 404 is returned if the specified application session has not been registered.",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/Session/{sessionId}/Run/{runNumber}": {
+      "get": {
+        "tags": [
+          "Run"
+        ],
+        "summary": "Get an application run.",
+        "description": "Note that application Runs cannot be created directly on the API, but are created via the notification services.\r\n\r\nSample request:\r\n\r\n    ../Session/{sessionId}/Run/{runNumber}",
+        "parameters": [
+          {
+            "name": "sessionId",
+            "in": "path",
+            "description": "Uniquely identifies the application session.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Uniquely identifies the application session.",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "runNumber",
+            "in": "path",
+            "description": "The application acquisition run number.",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "description": "The application acquisition run number.",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A 200 is returned if operation is successful.",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/Run"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Run"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Run"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "A 404 is returned if the requested application session has not been registered or the requested run does not exist in database.",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/Session/{sessionId}/Runs": {
+      "get": {
+        "tags": [
+          "Run"
+        ],
+        "summary": "Get all application runs.",
+        "description": "Sample request:\r\n\r\n    ../Session/{sessionId}/Runs",
+        "parameters": [
+          {
+            "name": "sessionId",
+            "in": "path",
+            "description": "The id that uniquely identifies the application session.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "The id that uniquely identifies the application session.",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A 200 is returned if operation is successful.",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Run"
+                  }
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Run"
+                  }
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Run"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "A 404 is returned if the requested application session has not been registered or the requested run does not exist in database.",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/RunStart": {
+      "post": {
+        "tags": [
+          "Run"
+        ],
+        "summary": "Notify that an application run has started.",
+        "description": "Sample request:\r\n\r\n    POST\r\n    {        \r\n      \"sessionId\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\"\r\n    }",
+        "requestBody": {
+          "description": "The information about the application session for which the run starts.",
+          "content": {
+            "application/json-patch+json": {
+              "schema": {
+                "$ref": "#/components/schemas/RunStart"
+              }
+            },
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RunStart"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RunStart"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/RunStart"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "A 200 is returned if operation is successful.",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/Run"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Run"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Run"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "A 404 is returned if the corresponding application session has not been registered.",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/RunStop": {
+      "patch": {
+        "tags": [
+          "Run"
+        ],
+        "summary": "Notify that an application run has stopped.",
+        "description": "Sample request:\r\n\r\n    POST\r\n    {        \r\n      \"sessionId\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\r\n      \"runNumber\": 1,\r\n      \"reason\": \"acquisition completed\"\r\n    }",
+        "requestBody": {
+          "description": "The information about the application session for which the run stopped.",
+          "content": {
+            "application/json-patch+json": {
+              "schema": {
+                "$ref": "#/components/schemas/RunStop"
+              }
+            },
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RunStop"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RunStop"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/RunStop"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "A 200 is returned if operation is successful.",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/Run"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Run"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Run"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "A 404 is returned if the corresponding application session has not been registered.",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/Session/{id}": {
+      "get": {
+        "tags": [
+          "Session"
+        ],
+        "summary": "Get an application session.",
+        "description": "Sample request:\r\n\r\n    ../Session/{id}",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "The application session id.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "The application session id.",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A 200 is returned if operation is successful.",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/Session"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Session"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Session"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "A 404 is returned if the requested application session has not been registered.",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Session"
+        ],
+        "summary": "Delete a registered application Session from the decision store.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "The application session id.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "The application session id.",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A 200 is returned if operation is successful.",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/Session"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Session"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Session"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "A 404 is returned if the specified application session has not been registered.",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/Session": {
+      "get": {
+        "tags": [
+          "Session"
+        ],
+        "summary": "Get a session filtered by session name.",
+        "description": "Sample request:\r\n\r\n    ../Sessions?sessionName=mySession",
+        "parameters": [
+          {
+            "name": "sessionName",
+            "in": "query",
+            "description": "The application session name.",
+            "schema": {
+              "type": "string",
+              "description": "The application session name.",
+              "nullable": true
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A 200 is returned if operation is successful.",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/Session"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Session"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Session"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "A 400 is returned if the session name is invalid or empty.",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "A 404 is returned if the requested application session has not been registered.",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Session"
+        ],
+        "summary": "Register an application session.",
+        "description": "Sample request:\r\n\r\n    POST\r\n    {        \r\n      \"sessionName\": \"My Session\"        \r\n      \"sessionId\" : \"b5cdbfb9-bd0f-414e-93f8-0abca3331f8e\"\r\n    }\r\n    \r\nor, to auto-generate a session id\r\n    \r\n    POST\r\n    {        \r\n      \"sessionName\": \"My Session\"        \r\n    }",
+        "requestBody": {
+          "description": "The application Session to register; sessionName is mandatory. If sessionId is not specified, it's auto-generated.",
+          "content": {
+            "application/json-patch+json": {
+              "schema": {
+                "$ref": "#/components/schemas/Session"
+              }
+            },
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Session"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Session"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/Session"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "A 201 is returned if session is successfully created.",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/Session"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Session"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Session"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "A 400 is returned if the session name is invalid or empty).",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "A 409 is returned an application session with the same name or id has already been registered.",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/Session/{id}/IsRegistered": {
+      "get": {
+        "tags": [
+          "Session"
+        ],
+        "summary": "Check if a session with given id has been registered.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "The application session id.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "The application session id.",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A 200 is returned if operation is successful.",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "boolean"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "boolean"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "boolean"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/Sessions": {
+      "get": {
+        "tags": [
+          "Session"
+        ],
+        "summary": "Get all registered sessions.",
+        "description": "Sample request:\r\n\r\n    ../Sessions",
+        "responses": {
+          "200": {
+            "description": "A 200 is returned if operation is successful.",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Session"
+                  }
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Session"
+                  }
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Session"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/Athena/Status": {
+      "get": {
+        "tags": [
+          "Utils"
+        ],
+        "summary": "Get status from Athena APIs.",
+        "description": "Sample request:\r\n\r\n    ../Athena/Status",
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/v1/Version": {
+      "get": {
+        "tags": [
+          "Version"
+        ],
+        "summary": "Get Decision Service version.",
+        "description": "Sample request:\r\n\r\n    ../Version",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "AlgorithmResultType": {
+        "enum": [
+          "motioncorrection",
+          "ctf",
+          "gridsquare",
+          "micrograph",
+          "atlas"
+        ],
+        "type": "string"
+      },
+      "AlgorithmResultRecord": {
+        "type": "object",
+        "properties": {
+          "sessionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "areaId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "result": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object",
+              "additionalProperties": false
+            },
+            "nullable": true
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "additionalProperties": false
+      },
+      "ProblemDetails": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "nullable": true
+          },
+          "title": {
+            "type": "string",
+            "nullable": true
+          },
+          "status": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "detail": {
+            "type": "string",
+            "nullable": true
+          },
+          "instance": {
+            "type": "string",
+            "nullable": true
+          },
+          "extensions": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object",
+              "additionalProperties": false
+            },
+            "nullable": true,
+            "readOnly": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "EngineState": {
+        "enum": [
+          "unknown",
+          "idle",
+          "running"
+        ],
+        "type": "string"
+      },
+      "ApplicationState": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "state": {
+            "$ref": "#/components/schemas/EngineState"
+          },
+          "sessionId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "areaId": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "details": {
+            "type": "string",
+            "nullable": true
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "ApplicationStateChange": {
+        "type": "object",
+        "properties": {
+          "state": {
+            "$ref": "#/components/schemas/EngineState"
+          },
+          "sessionId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "areaId": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "details": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "AreaType": {
+        "enum": [
+          "gridsquare",
+          "foilhole",
+          "atlas",
+          "particle"
+        ],
+        "type": "string"
+      },
+      "Area": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "sessionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "areaType": {
+            "$ref": "#/components/schemas/AreaType"
+          },
+          "parentId": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "AcquisitionState": {
+        "enum": [
+          "unknown",
+          "ignore",
+          "queued",
+          "started",
+          "completed",
+          "skipped"
+        ],
+        "type": "string"
+      },
+      "AreaState": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "sessionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "areaId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "state": {
+            "$ref": "#/components/schemas/AcquisitionState"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "AreaStateChange": {
+        "type": "object",
+        "properties": {
+          "sessionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "areaId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "state": {
+            "$ref": "#/components/schemas/AcquisitionState"
+          }
+        },
+        "additionalProperties": false
+      },
+      "DecisionType": {
+        "enum": [
+          "include",
+          "focus",
+          "stageWaitingTime",
+          "acquisitionOrder",
+          "foilHoleSelection",
+          "gridSquareSelection",
+          "iceThicknessFoilHolePrediction",
+          "automaticFoilHoleFinding"
+        ],
+        "type": "string"
+      },
+      "PluginType": {
+        "enum": [
+          "default",
+          "custom",
+          "dummy"
+        ],
+        "type": "string"
+      },
+      "DecisionRecord": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "sessionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "areaId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "decisionType": {
+            "$ref": "#/components/schemas/DecisionType"
+          },
+          "pluginType": {
+            "$ref": "#/components/schemas/PluginType"
+          },
+          "decisionValue": {
+            "type": "string",
+            "nullable": true
+          },
+          "decidedBy": {
+            "type": "string",
+            "nullable": true
+          },
+          "details": {
+            "type": "string",
+            "nullable": true
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "additionalProperties": false
+      },
+      "SmartPluginConfiguration": {
+        "type": "object",
+        "properties": {
+          "pluginName": {
+            "type": "string",
+            "nullable": true
+          },
+          "customPluginSelection": {
+            "type": "boolean"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "DecisionServiceConfiguration": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "smartPluginConfigurations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SmartPluginConfiguration"
+            },
+            "nullable": true
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "additionalProperties": false
+      },
+      "NameValueRecord": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "sessionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "areaId": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "value": {
+            "type": "string",
+            "nullable": true
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "setBy": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "Run": {
+        "type": "object",
+        "properties": {
+          "sessionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "runNumber": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "startTime": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "stopTime": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "stopReason": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "RunStart": {
+        "type": "object",
+        "properties": {
+          "sessionId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "additionalProperties": false
+      },
+      "RunStop": {
+        "type": "object",
+        "properties": {
+          "sessionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "runNumber": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "reason": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "GridType": {
+        "enum": [
+          "HoleyCarbon",
+          "HoleyGold",
+          "LaceyCarbon"
+        ],
+        "type": "string"
+      },
+      "Session": {
+        "type": "object",
+        "properties": {
+          "sessionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "sessionName": {
+            "type": "string",
+            "nullable": true
+          },
+          "athenaId": {
+            "type": "string",
+            "nullable": true
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "gridType": {
+            "$ref": "#/components/schemas/GridType"
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  }
+}
