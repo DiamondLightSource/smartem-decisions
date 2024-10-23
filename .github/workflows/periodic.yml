@@ -2,9 +2,9 @@ name: Periodic
 
 on:
   workflow_dispatch:
-  schedule:
-    # Run weekly to check URL links still resolve
-    - cron: "0 8 * * WED"
+#  schedule:
+#    # Run weekly to check URL links still resolve
+#    - cron: "0 8 * * WED"
 
 jobs:
   linkcheck:
