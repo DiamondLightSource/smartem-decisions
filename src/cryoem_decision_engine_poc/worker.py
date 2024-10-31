@@ -33,6 +33,8 @@ class AsyncWorker(object):
   PUBLISH_INTERVAL = 3
   QUEUE = 'default_queue'
   ROUTING_KEY = 'example.text'
+  APP_ID = 'example-workflow' # Assuming we would never use it because we have headers,
+    # ref: https://stackoverflow.com/a/53518634
 
   def __init__(self, amqp_url):
     self.should_reconnect = False
@@ -250,15 +252,14 @@ class AsyncWorker(object):
     """
     LOGGER.info('Queue bound: %s', userdata)
     self.set_qos()
-    # TODO self.start_publishing() in publisher
     self.start_publishing()
 
   def set_qos(self):
     """This method sets up the consumer prefetch to only be delivered
     one message at a time. The consumer must acknowledge this message
-    before RabbitMQ will deliver another one. You should experiment
-    with different prefetch values to achieve desired performance.
-
+    before RabbitMQ will deliver another one.
+    TODO You should experiment with different prefetch values
+      to achieve desired performance.
     """
     self._channel.basic_qos(
       prefetch_count=self._prefetch_count, callback=self.on_basic_qos_ok)
