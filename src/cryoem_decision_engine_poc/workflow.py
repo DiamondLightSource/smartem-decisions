@@ -264,7 +264,6 @@ class Workflow(RabbitMQAsyncWorker):
             case 'particle_picking_complete':
                 self.on_particle_picking_complete() # only this step will feed back decisions
 
-
         # TODO: we should only acknowledge messages which are recognised and valid?
         self.acknowledge_message(basic_deliver.delivery_tag)
 
@@ -311,7 +310,7 @@ class ReconnectingWorker(object):
 
 def main():
     logging.basicConfig(level=logging.INFO, format=LOG_FORMAT) # TODO config
-    amqp_url = 'amqp://user:password@localhost:5672/%2F' # TODO env
+    amqp_url = 'amqp://username:password@localhost:5672/%2F' # TODO env
     worker = ReconnectingWorker(amqp_url)
     worker.run()
 

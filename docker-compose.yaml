@@ -1,15 +1,31 @@
-version: "3.8"
+version: "3.9"
 
 services:
   rabbitmq:
-    container_name: rabbitmq
     image: rabbitmq:management
     environment:
-      - RABBITMQ_DEFAULT_USER=user
-      - RABBITMQ_DEFAULT_PASS=password
+      - RABBITMQ_DEFAULT_USER=${RABBITMQ_USER}
+      - RABBITMQ_DEFAULT_PASS=${RABBITMQ_PASSWORD}
     ports:
-      - 5672:5672
-      - 15672:15672
+      - ${RABBITMQ_PORT}:5672
+      - ${RABBITMQ_UI_PORT}:15672
     volumes:
-      - ./data/:/var/lib/rabbitmq/
-      - ./log/:/var/log/rabbitmq
+      - ./volumes/rabbitmq/data/:/var/lib/rabbitmq/
+      - ./volumes/rabbitmq/log/:/var/log/rabbitmq
+
+  postgres:
+    image: postgres:latest
+    shm_size: 128mb
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
+    ports:
+      - ${POSTGRES_PORT}:5432
+    volumes:
+      - ./volumes/postgres/data/:/var/lib/postgresql/data
+
+  adminer:
+    image: adminer:latest
+    ports:
+      - ${ADMINER_PORT}:8080
