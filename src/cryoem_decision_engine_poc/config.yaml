@@ -1,0 +1,9 @@
+rabbitmq:
+  app_id: "smartem_decisions"
+  exchange: "smartem_decisions"
+  routing_key: "smartem_decisions"
+  queue: "smartem_decisions"
+
+log:
+  format: '%(levelname) -10s %(asctime)s %(name) -30s %(funcName) -35s %(lineno) -5d: %(message)s'
+  level: "INFO"

@@ -18,6 +18,8 @@ https://instruct-eric.org/help/about-aria
 
 ## Atlas
 
+Is the image of the grid, it's made from Tiles (5 by 5).
+
 ## Grid Square
 
 ## Foil Hole

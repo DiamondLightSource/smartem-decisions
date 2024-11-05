@@ -1,4 +1,9 @@
 import functools
+
+from strictyaml import load # TODO load config; Ref: https://pypi.org/project/strictyaml/
+from dotenv import load_dotenv
+load_dotenv()
+
 import logging
 import json
 import pika
@@ -168,7 +173,7 @@ class AsyncWorker(object):
     Channels are usually closed if you attempt to do something that
     violates the protocol, such as re-declare an exchange or queue with
     different parameters. In this case, we'll close the connection
-    to shutdown the object.
+    to shut down the object.
 
     :param pika.channel.Channel channel: The closed channel
     :param Exception reason: why the channel was closed
@@ -181,7 +186,7 @@ class AsyncWorker(object):
       self._connection.close()
 
   def setup_exchange(self, exchange_name):
-    """Setup the exchange on RabbitMQ by invoking the Exchange.Declare RPC
+    """Set up the exchange on RabbitMQ by invoking the Exchange.Declare RPC
     command. When it is complete, the on_exchange_declareok method will
     be invoked by pika.
 
@@ -210,7 +215,7 @@ class AsyncWorker(object):
     self.setup_queue(self.QUEUE)
 
   def setup_queue(self, queue_name):
-    """Setup the queue on RabbitMQ by invoking the Queue.Declare RPC
+    """Set up the queue on RabbitMQ by invoking the Queue.Declare RPC
     command. When it is complete, the on_queue_declareok method will
     be invoked by pika.
 

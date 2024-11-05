@@ -1,3 +1,5 @@
+import os
+
 import json
 import logging
 import pika
@@ -6,6 +8,7 @@ LOG_FORMAT = ('%(levelname) -10s %(asctime)s %(name) -30s %(funcName) '
               '-35s %(lineno) -5d: %(message)s')
 LOGGER = logging.getLogger(__name__)
 
+from domain_entities import MessageQueueEventType
 from worker import AsyncWorker as RabbitMQAsyncWorker
 
 """
@@ -38,51 +41,19 @@ class Workflow(RabbitMQAsyncWorker):
         """
         LOGGER.info('Issuing consumer related RPC commands')
         self.enable_delivery_confirmations()
-        self.simulate_external_session_start()
-        self.simulate_external_grid_scan_complete()
-
-    def simulate_external_session_start(self):
-        """
-        Because the session is started manually by the user, and external to the system (on the EPU side)
-            we simulate that event here for dev/testing purposes.
-
-        TODO inspect env - if we are in production mode - raise exception and return early
-        TODO define message_headers and message_body in scope of:
-            https://github.com/vredchenko/cryoem-decision-engine-poc/issues/3
-        """
-        if self._channel is None or not self._channel.is_open:
-            return
-        headers = {
-            'event_type': 'session started', # TODO define ~~an enum or dict~~ Pydantic classes for all possible message types
-        }
-        body = {
-            'session_id': 'xx-xx-xx'
-        }
-        properties = pika.BasicProperties(app_id=self.APP_ID,
-                                          content_type='application/json',
-                                          headers=headers)
-
-        self._channel.basic_publish(self.EXCHANGE, self.ROUTING_KEY,
-                                    json.dumps(body, ensure_ascii=False),
-                                    properties)
-
-    def simulate_external_grid_scan_complete(self):
-        """
-
-        """
 
     def on_session_start(self):
         """
         Initialise a record of newly started session with the central storage database,
             recording session metadata (and possibly indexes to relevant fs resources and artifacts).
         """
-        ...
+        pass
 
     def on_session_pause(self):
         """
         Out of scope initially, TBC if we want to explicitly support suspending and resuming sessions
         """
-        ...
+        pass
 
     def on_session_resume(self):
         """
@@ -166,7 +137,7 @@ class Workflow(RabbitMQAsyncWorker):
         Motion and CTF (Contrast Transfer Function). Already happens on our side (via Murfey API -> Data Processing),
         takes about 15-20 sec. Accepts a multi-frame (movie)
         """
-        ...
+        pass
 
     def on_motion_correct_and_ctf_complete(self):
         """
@@ -174,7 +145,7 @@ class Workflow(RabbitMQAsyncWorker):
         for the micrograph. These can influence acquisition order on the foil hole level immediately,
         and accumulate towards changing acquisition order at the grid square level.
         """
-        ...
+        pass
 
     def on_particle_acquisition_start(self):
         """
@@ -182,7 +153,7 @@ class Workflow(RabbitMQAsyncWorker):
         There are a number of these floating around for automating particle picking.
         * This step can take up to 10-15 minutes.
         """
-        ...
+        pass
 
     def on_particle_acquisition_complete(self):
         """
@@ -190,7 +161,7 @@ class Workflow(RabbitMQAsyncWorker):
         (e.g. avoiding similar foil holes). Quality metrics can fuel decisions that can be fed back to
         both grid square decisions and foil hole decisions.
         """
-        ...
+        pass
 
     # TODO confirm that particle picking and particle acquisition are separate steps
     #   There's also particle filtering:
@@ -216,12 +187,21 @@ class Workflow(RabbitMQAsyncWorker):
         """
         ...
 
+    def on_particle_selection_start(self):
+        """Particle selection started.
+        """
+
+    def on_particle_selection_complete(self):
+        """Particle selection completed.
+            Subset selection on what was picked, based on some measure of quality.
+        """
+
     def on_message(self, _unused_channel, basic_deliver, properties, body):
         """
         :param pika.channel.Channel _unused_channel: The channel object
-        :param pika.Spec.Basic.Deliver: basic_deliver method
-        :param pika.Spec.BasicProperties: properties
-        :param bytes body: The message body
+        :param pika.Spec.Basic.Deliver basic_deliver: method
+        :param pika.Spec.BasicProperties properties:
+        :param bytes body: The message body:
         """
         LOGGER.info('Received message # %s from %s: %s',
                     basic_deliver.delivery_tag, properties, body)
@@ -231,38 +211,42 @@ class Workflow(RabbitMQAsyncWorker):
 
         match properties.headers['event_type']:
             # This stuff is triggered bya  fs watcher on the EPU side:
-            case 'session_start':
+            case MessageQueueEventType.session_start:
                 self.on_session_start()
-            case 'session_pause':
+            case MessageQueueEventType.session_pause:
                 self.on_session_pause()
-            case 'session_resume':
+            case MessageQueueEventType.session_resume:
                 self.on_session_resume()
-            case 'session_end':
+            case MessageQueueEventType.session_end:
                 self.on_session_end()
-            case 'grid_scan_start':
+            case MessageQueueEventType.grid_scan_start:
                 self.on_grid_scan_start()
-            case 'grid_scan_complete':
+            case MessageQueueEventType.grid_scan_complete:
                 self.on_grid_scan_complete()
-            case 'grid_squares_decision_start':
+            case MessageQueueEventType.grid_squares_decision_start:
                 self.on_grid_squares_decision_start()
-            case 'grid_squares_decision_complete':
+            case MessageQueueEventType.grid_squares_decision_complete:
                 self.on_grid_squares_decision_complete()
-            case 'foil_holes_detected':
+            case MessageQueueEventType.foil_holes_detected:
                 self.on_foil_holes_detected()
-            case 'foil_holes_decision_start':
+            case MessageQueueEventType.foil_holes_decision_start:
                 self.on_foil_holes_decision_start()
-            case 'foil_holes_decision_complete':
+            case MessageQueueEventType.foil_holes_decision_complete:
                 self.on_foil_holes_decision_complete()
 
             # this stuff gets triggered by RabbitMQ:
-            case 'motion_correct_and_ctf_start':
+            case MessageQueueEventType.motion_correct_and_ctf_start:
                 self.on_motion_correct_and_ctf_start()
-            case 'motion_correct_and_ctf_complete':
+            case MessageQueueEventType.motion_correct_and_ctf_complete:
                 self.on_motion_correct_and_ctf_complete()
-            case 'particle_picking_start':
+            case MessageQueueEventType.particle_picking_start:
                 self.on_particle_picking_start()
-            case 'particle_picking_complete':
+            case MessageQueueEventType.particle_picking_complete:
                 self.on_particle_picking_complete() # only this step will feed back decisions
+            case MessageQueueEventType.particle_selection_start:
+                self.on_particle_selection_start()
+            case MessageQueueEventType.particle_selection_complete:
+                self.on_particle_selection_complete()
 
         # TODO: we should only acknowledge messages which are recognised and valid?
         self.acknowledge_message(basic_deliver.delivery_tag)
@@ -310,7 +294,8 @@ class ReconnectingWorker(object):
 
 def main():
     logging.basicConfig(level=logging.INFO, format=LOG_FORMAT) # TODO config
-    amqp_url = 'amqp://username:password@localhost:5672/%2F' # TODO env
+    amqp_url = (f"amqp://{os.environ['RABBITMQ_USER']}:{os.environ['RABBITMQ_PASSWORD']}@"
+                f"{os.environ['RABBITMQ_HOST']}:{os.environ['RABBITMQ_PORT']}/") # %2F
     worker = ReconnectingWorker(amqp_url)
     worker.run()
 
