@@ -26,11 +26,8 @@ class MessageQueueEventHeaders(BaseModel):
     event_type: MessageQueueEventType
 
 # TODO these will likely vary wildly, possibly best to just have a distinct model for each one
-class MessageQueueEventBody(BaseModel):
-    pass
-
-
-
+# class MessageQueueEventBody(BaseModel):
+#     pass
 
 
 # Where ProcessingResults will be specific to the processing step.
@@ -57,14 +54,14 @@ class MicroGraph(BaseModel):
 class FoilHole(BaseModel):
     foil_hole_id: PositiveInt
     score: float
-    similarity_matrix: []  ## associative array of floats
-    micrographs: List[int, MicroGraph]
+    # similarity_matrix: []  # associative array of floats
+    micrographs: List[MicroGraph]
 
 class GridSquare(BaseModel):
     grid_square_id: PositiveInt
-    foil_holes: List[int, FoilHole]
+    foil_holes: List[FoilHole]
     score: float
-    similarity_matrix: [] ## associative array of floats
+    # similarity_matrix: [] ## associative array of floats
     path_to_image: str # todo filepath
 
 class Grid(BaseModel):
@@ -72,11 +69,11 @@ class Grid(BaseModel):
     alignment_timestamp: PastDatetime
     path_to_image: str # todo filepath (we just want the most recent image)
     atlas_id: str # TODO is actually a filepath e.g. `Z:\nt32457-6\atlas\Supervisor_20240404_093820_Pete_Miriam_HexAuFoil\Sample4\Atlas\Atlas.dm`
-    squares: List[int, GridSquare]
+    squares: List[GridSquare]
 
 class SessionState(BaseModel):
     session_id: PositiveInt
-    grids: List[int, Grid] # TODO Samples or Grids - what is better naming?
+    grids: List[Grid] # TODO Samples or Grids - what is better naming?
     # grids: [] # max 12 -> squares -> holes -> micrographs
     # squares and holes will have a ranking
 
