@@ -1,9 +1,8 @@
 rabbitmq:
-  app_id: "smartem_decisions"
-  exchange: "smartem_decisions"
-  routing_key: "smartem_decisions"
-  queue: "smartem_decisions"
-
+  app_id: smartem_decisions # TODO Assuming we would never use it. ref: https://stackoverflow.com/a/53518634
+  exchange: smartem_decisions
+  queue_name: default_queue
+  routing_key: example.text # TODO we probably don't need this
+  reconnect_delay_seconds: 30
 log:
   format: '%(levelname) -10s %(asctime)s %(name) -30s %(funcName) -35s %(lineno) -5d: %(message)s'
-  level: "INFO"

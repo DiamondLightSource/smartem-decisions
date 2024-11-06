@@ -1,8 +1,9 @@
-from typing import List
 from enum import Enum
-from pydantic import BaseModel, PositiveInt, PastDatetime, ValidationError
+from pydantic import BaseModel, PositiveInt, PastDatetime, ValidationError, UUID4
 
-
+"""
+Enum listing various system events that are mapped to messages in RabbitMQ
+"""
 class MessageQueueEventType(str, Enum):
     session_start = 'session start'
     session_pause = 'session pause'
@@ -25,7 +26,7 @@ class MessageQueueEventType(str, Enum):
 class MessageQueueEventHeaders(BaseModel):
     event_type: MessageQueueEventType
 
-# TODO these will likely vary wildly, possibly best to just have a distinct model for each one
+# TODO these will likely vary wildly, possibly best to just have a distinct model for each one?
 # class MessageQueueEventBody(BaseModel):
 #     pass
 
@@ -42,7 +43,7 @@ class ProcessingResults(BaseModel):
 class ProcessingPipelineMessage(BaseModel):
     """The messages received from the processing pipeline"""
     micrograph_name: str
-    foil_hole_id: PositiveInt
+    foil_hole_id: UUID4 | PositiveInt | str
     grid_square_id: PositiveInt
     processing_results: ProcessingResults
 
@@ -53,29 +54,30 @@ class MicroGraph(BaseModel):
 # TODO may or may not have an image
 class FoilHole(BaseModel):
     foil_hole_id: PositiveInt
-    score: float
-    # similarity_matrix: []  # associative array of floats
-    micrographs: List[MicroGraph]
+    score: float # TODO we may also want to record info about which model scored it?
+    similarity_matrix: list[list[float]]
+    micrographs: list[MicroGraph]
 
 class GridSquare(BaseModel):
     grid_square_id: PositiveInt
-    foil_holes: List[FoilHole]
-    score: float
-    # similarity_matrix: [] ## associative array of floats
-    path_to_image: str # todo filepath
+    foil_holes: list[FoilHole]
+    score: float # TODO we may also want to record info about which model scored it?
+    similarity_matrix: list[list[float]]
+    path_to_image: str # TODO filepath - get some examples of what these look like
 
 class Grid(BaseModel):
     sample_id: PositiveInt
     alignment_timestamp: PastDatetime
     path_to_image: str # todo filepath (we just want the most recent image)
     atlas_id: str # TODO is actually a filepath e.g. `Z:\nt32457-6\atlas\Supervisor_20240404_093820_Pete_Miriam_HexAuFoil\Sample4\Atlas\Atlas.dm`
-    squares: List[GridSquare]
+    squares: list[GridSquare]
 
+
+# TODO
+#  people are sometimes switching out grids between cassettes so we need some way to
+#  declare that "these grids are actually parts of a single cassette/sample".
 class SessionState(BaseModel):
     session_id: PositiveInt
-    grids: List[Grid] # TODO Samples or Grids - what is better naming?
+    grids: list[Grid] # TODO Samples or Grids - what is better naming?
     # grids: [] # max 12 -> squares -> holes -> micrographs
     # squares and holes will have a ranking
-
-# people are sometimes switching out grids between cassettes so we need some way to
-# declare that "these grids are actually parts of a single cassette/sample".

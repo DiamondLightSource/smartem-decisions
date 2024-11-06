@@ -1,16 +1,15 @@
+import os
 import functools
-
-from strictyaml import load # TODO load config; Ref: https://pypi.org/project/strictyaml/
+import yaml
 from dotenv import load_dotenv
-load_dotenv()
-
 import logging
 import json
 import pika
 from pika.exchange_type import ExchangeType
 
-LOG_FORMAT = ('%(levelname) -10s %(asctime)s %(name) -30s %(funcName) '
-              '-35s %(lineno) -5d: %(message)s')
+load_dotenv()
+conf = yaml.safe_load(open(os.path.join(os.path.dirname(__file__), 'config.yaml')))
+
 LOGGER = logging.getLogger(__name__)
 
 
@@ -31,15 +30,14 @@ class AsyncWorker(object):
 
   It uses delivery confirmations and illustrates one way to keep track of
   messages that have been sent and if they've been confirmed by RabbitMQ.
-
   """
-  EXCHANGE = 'cryoem_decision_engine'
+
+  APP_ID = conf['rabbitmq']['app_id'] or 'example-workflow-1'
+  EXCHANGE = conf['rabbitmq']['exchange'] or 'smartem_decisions'
   EXCHANGE_TYPE = ExchangeType.topic
+  QUEUE_NAME = conf['rabbitmq']['queue_name'] or 'default_queue'
+  ROUTING_KEY = conf['rabbitmq']['routing_key'] or 'example.text'
   PUBLISH_INTERVAL = 3
-  QUEUE = 'default_queue'
-  ROUTING_KEY = 'example.text'
-  APP_ID = 'example-workflow' # Assuming we would never use it because we have headers,
-    # ref: https://stackoverflow.com/a/53518634
 
   def __init__(self, amqp_url):
     self.should_reconnect = False
@@ -212,7 +210,7 @@ class AsyncWorker(object):
 
     """
     LOGGER.info('Exchange declared: %s', userdata)
-    self.setup_queue(self.QUEUE)
+    self.setup_queue(self.QUEUE_NAME)
 
   def setup_queue(self, queue_name):
     """Set up the queue on RabbitMQ by invoking the Queue.Declare RPC
@@ -293,7 +291,7 @@ class AsyncWorker(object):
     LOGGER.info('Issuing consumer related RPC commands')
     self.add_on_cancel_callback()
     self._consumer_tag = self._channel.basic_consume(
-      self.QUEUE, self.on_message)
+      self.QUEUE_NAME, self.on_message)
     self.was_consuming = True
     self._consuming = True
 
@@ -389,7 +387,7 @@ class AsyncWorker(object):
       return
 
     hdrs = {'bread': 'loaf', 'cheese': 'cheddar'}
-    properties = pika.BasicProperties(app_id='example-publisher',
+    properties = pika.BasicProperties(app_id=self.APP_ID,
                                       content_type='application/json',
                                       headers=hdrs)
 
@@ -516,7 +514,6 @@ class AsyncWorker(object):
     exception stops the IOLoop which needs to be running for pika to
     communicate with RabbitMQ. All of the commands issued prior to starting
     the IOLoop will be buffered but not processed.
-
     """
     if not self._closing:
       self._closing = True

@@ -1,22 +1,22 @@
 import json
+import yaml
 import os
 import pika
 import typer
-from typing import Optional
 from dotenv import load_dotenv
 from pika.exchange_type import ExchangeType
 
 from domain_entities import MessageQueueEventType, MessageQueueEventHeaders
 
 load_dotenv()
-# TODO load app config
+conf = yaml.safe_load(open(os.path.join(os.path.dirname(__file__), 'config.yaml')))
 
 class RabbitMQBlockingTestPublisher:
-    EXCHANGE = 'smartem_decisions'
+    APP_ID = conf['rabbitmq']['app_id'] or 'example-workflow-1'
+    EXCHANGE = conf['rabbitmq']['exchange'] or 'smartem_decisions'
     EXCHANGE_TYPE = ExchangeType.topic
-    QUEUE_NAME = 'default_queue'
-    ROUTING_KEY = 'example.text'
-    APP_ID = 'example-workflow'  # Assuming we would never use it. ref: https://stackoverflow.com/a/53518634
+    QUEUE_NAME = conf['rabbitmq']['queue_name'] or 'default_queue'
+    ROUTING_KEY = conf['rabbitmq']['routing_key'] or 'example.text'
 
     def __init__(self):
         self.connection = None
@@ -25,11 +25,11 @@ class RabbitMQBlockingTestPublisher:
 
     def _connect(self):
         parameters = pika.ConnectionParameters(
-            host=os.getenv('RABBITMQ_HOST', 'localhost'),
-            port=int(os.getenv('RABBITMQ_PORT', 5672)),
+            host=os.getenv('RABBITMQ_HOST'),
+            port=int(os.getenv('RABBITMQ_PORT')),
             credentials=pika.PlainCredentials(
-                os.getenv('RABBITMQ_USER', 'user'),
-                os.getenv('RABBITMQ_PASSWORD', 'password')
+                os.getenv('RABBITMQ_USER'),
+                os.getenv('RABBITMQ_PASSWORD')
             )
         )
         self.connection = pika.BlockingConnection(parameters)
@@ -72,8 +72,8 @@ Because the session is started manually by the user, and external to the system 
 we simulate that event here for dev/testing purposes.
 """
 @cli_app.command()
-def simulate_external_session_start(self):
-    self.publish_test_message(
+def simulate_external_session_start():
+    test_publisher.publish_test_message(
         headers = MessageQueueEventHeaders(
             event_type = MessageQueueEventType.session_start
         ),
@@ -86,8 +86,8 @@ def simulate_external_session_start(self):
 Simulate a grid scan complete event (external to the system)
 """
 @cli_app.command()
-def simulate_external_grid_scan_complete(self):
-    self.publish_test_message(
+def simulate_external_grid_scan_complete():
+    test_publisher.publish_test_message(
         headers=MessageQueueEventHeaders(
             event_type=MessageQueueEventType.grid_scan_complete
         ),
@@ -97,7 +97,9 @@ def simulate_external_grid_scan_complete(self):
     )
 
 """
-Simulate an ill-formed message with no valid recipient
+Simulate an ill-formed message with no valid recipient, i.e. headers
+fail to specify a valid `event_type` making it impossible to route the
+message to the correct consumer.
 """
 @cli_app.command()
 def invalidly_routed_message():
@@ -111,10 +113,10 @@ def invalidly_routed_message():
     )
 
 """
-Simulate a motion capture and CTF message to test workflow response.
+Simulate a "motion capture and CTF" message to test workflow response.
 """
 @cli_app.command()
-def motion_correct_and_ctf(valid: Optional[bool] = True):
+def motion_correct_and_ctf(valid: bool = True):
     valid_body = {
         'session_id': 'xx-xx-xx'
     }

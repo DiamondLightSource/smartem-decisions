@@ -1,15 +1,13 @@
 import os
-
-import json
+import yaml
 import logging
-import pika
-
-LOG_FORMAT = ('%(levelname) -10s %(asctime)s %(name) -30s %(funcName) '
-              '-35s %(lineno) -5d: %(message)s')
-LOGGER = logging.getLogger(__name__)
-
+from dotenv import load_dotenv
 from domain_entities import MessageQueueEventType
 from worker import AsyncWorker as RabbitMQAsyncWorker
+
+load_dotenv()
+conf = yaml.safe_load(open(os.path.join(os.path.dirname(__file__), 'config.yaml')))
+LOGGER = logging.getLogger(__name__)
 
 """
 Current way:
@@ -267,7 +265,6 @@ class ReconnectingWorker(object):
     def run(self):
         while True:
             try:
-                # self._consumer.simulate_external_session_start()
                 self._consumer.run()
             except KeyboardInterrupt:
                 self._consumer.stop()
@@ -287,15 +284,15 @@ class ReconnectingWorker(object):
             self._reconnect_delay = 0
         else:
             self._reconnect_delay += 1
-        if self._reconnect_delay > 30:
-            self._reconnect_delay = 30
+        if self._reconnect_delay > int(conf['rabbitmq']['reconnect_delay_seconds']):
+            self._reconnect_delay = int(conf['rabbitmq']['reconnect_delay_seconds'])
         return self._reconnect_delay
 
 
 def main():
-    logging.basicConfig(level=logging.INFO, format=LOG_FORMAT) # TODO config
+    logging.basicConfig(level=logging.INFO, format=conf['log']['format'])
     amqp_url = (f"amqp://{os.environ['RABBITMQ_USER']}:{os.environ['RABBITMQ_PASSWORD']}@"
-                f"{os.environ['RABBITMQ_HOST']}:{os.environ['RABBITMQ_PORT']}/") # %2F
+                f"{os.environ['RABBITMQ_HOST']}:{os.environ['RABBITMQ_PORT']}/")
     worker = ReconnectingWorker(amqp_url)
     worker.run()
 
