@@ -8,5 +8,5 @@ Technical reference material including APIs and release notes.
 
 API <_api/cryoem_decision_engine_poc>
 genindex
-Release Notes <https://github.com/vredchenko/cryoem-decision-engine-poc/releases>
+Release Notes <https://github.com/DiamondLightSource/smartem-decisions/releases>
 ```

@@ -1,20 +1,20 @@
-[![CI](https://github.com/vredchenko/cryoem-decision-engine-poc/actions/workflows/ci.yml/badge.svg)](https://github.com/vredchenko/cryoem-decision-engine-poc/actions/workflows/ci.yml)
-[![Coverage](https://codecov.io/gh/vredchenko/cryoem-decision-engine-poc/branch/main/graph/badge.svg)](https://codecov.io/gh/vredchenko/cryoem-decision-engine-poc)
+[![CI](https://github.com/DiamondLightSource/smartem-decisions/actions/workflows/ci.yml/badge.svg)](https://github.com/DiamondLightSource/smartem-decisions/actions/workflows/ci.yml)
+[![Coverage](https://codecov.io/gh/DiamondLightSource/smartem-decisions/branch/main/graph/badge.svg)](https://codecov.io/gh/DiamondLightSource/smartem-decisions)
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
-# cryoem_decision_engine_poc
+# smartem_decisions
 
-A proof of concept for a decision engine to automate CryoEM workflows for structural biology
+Project board: <https://github.com/orgs/DiamondLightSource/projects/33/views/1>
 
 This is where you should write a short paragraph that describes what your module does,
 how it does it, and why people should use it.
 
-Source          | <https://github.com/vredchenko/cryoem-decision-engine-poc>
+Source          | <https://github.com/DiamondLightSource/smartem-decisions>
 :---:           | :---:
-Docker          | `docker run ghcr.io/vredchenko/cryoem-decision-engine-poc:latest`
-Documentation   | <https://vredchenko.github.io/cryoem-decision-engine-poc>
-Releases        | <https://github.com/vredchenko/cryoem-decision-engine-poc/releases>
+Docker          | `docker run ghcr.io/DiamondLightSource/smartem-decisions:latest`
+Documentation   | <https://DiamondLightSource.github.io/smartem-decisions>
+Releases        | <https://github.com/DiamondLightSource/smartem-decisions/releases>
 
 This is where you should put some images or code snippets that illustrate
 some relevant examples. If it is a library then you might put some
@@ -34,7 +34,7 @@ python -m cryoem_decision_engine_poc --version
 
 <!-- README only content. Anything below this line won't be included in index.md -->
 
-See https://vredchenko.github.io/cryoem-decision-engine-poc for more detailed documentation.
+See https://DiamondLightSource.github.io/smartem-decisions for more detailed documentation.
 
 ## Notes
 
@@ -75,3 +75,7 @@ docker run -p 8080:8080 athena_api_mock_server
 At which point the Swagger UI should be available at http://localhost:8080/api/smartepu/docs/ui/
 
 Auto-generated client resides in `src/athena_api_client`
+
+### Simulating various events on the MQ
+
+See: `./src/core/simulate_msg.py --help`

@@ -1,16 +1,16 @@
 # Changes here will be overwritten by Copier
 _commit: 2.3.0
 _src_path: gh:DiamondLightSource/python-copier-template
-author_email: vredchenko@protonmail.com
+author_email: val.redchenko@diamond.ac.uk
 author_name: Val Redchenko
 description: PoC of a decision engine to automate CryoEM workflows for structural
     biology at DLS
-distribution_name: cryoem-decision-engine-poc
+distribution_name: smartem-decisions
 docker: true
 docs_type: sphinx
 git_platform: github.com
-github_org: vredchenko
-package_name: cryoem_decision_engine_poc
+github_org: DiamondLightSource
+package_name: smartem-decisions
 pypi: false
-repo_name: cryoem-decision-engine-poc
+repo_name: smartem-decisions
 type_checker: pyright

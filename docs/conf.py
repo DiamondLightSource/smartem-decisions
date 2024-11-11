@@ -16,7 +16,7 @@ import cryoem_decision_engine_poc
 # -- General configuration ------------------------------------------------
 
 # General information about the project.
-project = "cryoem-decision-engine-poc"
+project = "smartem-decisions"
 
 # The full version, including alpha/beta/rc tags.
 release = cryoem_decision_engine_poc.__version__
@@ -128,7 +128,7 @@ copybutton_prompt_is_regexp = True
 # a list of builtin themes.
 #
 html_theme = "pydata_sphinx_theme"
-github_repo = "cryoem-decision-engine-poc"
+github_repo = "smartem-decisions"
 github_user = "vredchenko"
 switcher_json = f"https://{github_user}.github.io/{github_repo}/switcher.json"
 switcher_exists = requests.get(switcher_json).ok

@@ -24,19 +24,19 @@ $ source /path/to/venv/bin/activate
 You can now use `pip` to install the library and its dependencies:
 
 ```
-$ python3 -m pip install cryoem-decision-engine-poc
+$ python3 -m pip install smartem-decisions
 ```
 
 If you require a feature that is not currently released you can also install
 from github:
 
 ```
-$ python3 -m pip install git+https://github.com/vredchenko/cryoem-decision-engine-poc.git
+$ python3 -m pip install git+https://github.com/DiamondLightSource/smartem-decisions.git
 ```
 
 The library should now be installed and the commandline interface on your path.
 You can check the version that has been installed by typing:
 
 ```
-$ cryoem-decision-engine-poc --version
+$ smartem-decisions --version
 ```
