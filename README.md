@@ -21,9 +21,9 @@ some relevant examples. If it is a library then you might put some
 introductory code here:
 
 ```python
-from cryoem_decision_engine_poc import __version__
+from smartem_decisions import __version__
 
-print(f"Hello cryoem_decision_engine_poc {__version__}")
+print(f"Hello smartem_decisions {__version__}")
 ```
 
 Or if it is a commandline tool then you might put some example commands here:

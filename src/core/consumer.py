@@ -2,12 +2,19 @@
 
 import os
 import pika
-import time
-
+import json
 import yaml
 from dotenv import load_dotenv
+
 load_dotenv()
 
+from pydantic import ValidationError
+from schemas.mq_event import (
+    MessageQueueEventType,
+    MotionCorrectionCompleteBody,
+    ParticlePickingCompleteBody,
+    ParticleSelectionCompleteBody,
+)
 conf = yaml.safe_load(open(os.path.join(os.path.dirname(__file__), 'config.yaml')))
 
 connection = pika.BlockingConnection(
@@ -26,14 +33,94 @@ channel.queue_declare(queue=conf['rabbitmq']['queue_name'], durable=True)
 print(' [*] Waiting for messages. To exit press CTRL+C')
 
 
-def callback(ch, method, properties, body):
-    print(f" [x] Received message with props={properties} and body: {body.decode()}")
-    time.sleep(body.count(b'.'))
-    print(" [x] Done")
-    ch.basic_ack(delivery_tag=method.delivery_tag)
+def on_message(ch, method, properties, body):
+    print(f" [I] Received message with props={properties} and body: {body.decode()}")
+    message = json.loads(body.decode()) # TODO assumption of valid JSON here, handle mal-formed
+
+    if 'event_type' not in message:
+        print(f" [!] Message missing 'event_type' field: {message}")
+        # TODO log this incident
+        ch.basic_nack(delivery_tag=method.delivery_tag, requeue=False)
+        print("\n")
+        return
+
+    try:
+        event_type = MessageQueueEventType(message['event_type'])
+    except ValueError:
+        print(f" [!] Message 'event_type' value not recognised: {message}")
+        # TODO log this incident
+        ch.basic_nack(delivery_tag=method.delivery_tag, requeue=False)
+        print("\n")
+        return
+
+    match event_type:
+        # This stuff is triggered by a fs watcher on the EPU side:
+        case MessageQueueEventType.session_start:
+            pass
+        case MessageQueueEventType.session_pause:
+            pass
+        case MessageQueueEventType.session_resume:
+            pass
+        case MessageQueueEventType.session_end:
+            pass
+        case MessageQueueEventType.grid_scan_start:
+            pass
+        case MessageQueueEventType.grid_scan_complete:
+            pass
+        case MessageQueueEventType.grid_squares_decision_start:
+            pass
+        case MessageQueueEventType.grid_squares_decision_complete:
+            pass
+        case MessageQueueEventType.foil_holes_detected:
+            pass
+        case MessageQueueEventType.foil_holes_decision_start:
+            pass
+        case MessageQueueEventType.foil_holes_decision_complete:
+            pass
+        # this stuff gets triggered by RabbitMQ:
+        case MessageQueueEventType.motion_correction_start:
+            pass
+        case MessageQueueEventType.motion_correction_complete:
+            try:
+                motion_correction_complete_body = MotionCorrectionCompleteBody(**message)
+                print(f" [+] Motion Correction Complete {motion_correction_complete_body}")
+                ch.basic_ack(delivery_tag=method.delivery_tag)
+            except ValidationError as pve:
+                print(f" [!] Failed to parse Motion Correction Complete body: {pve}")
+                # TODO log this incident
+                ch.basic_nack(delivery_tag=method.delivery_tag, requeue=False)
+        case MessageQueueEventType.ctf_start:
+            pass
+        case MessageQueueEventType.ctf_complete:
+            pass
+        case MessageQueueEventType.particle_picking_start:
+            pass
+        case MessageQueueEventType.particle_picking_complete:
+            # Note: only this step will feed back decisions
+            try:
+                particle_picking_complete_body = ParticlePickingCompleteBody(**message)
+                print(f" [+] Particle Picking Complete {particle_picking_complete_body}")
+                ch.basic_ack(delivery_tag=method.delivery_tag)
+            except ValidationError as pve:
+                print(f" [!] Failed to parse Particle Picking Complete body: {pve}")
+                # TODO log this incident
+                ch.basic_nack(delivery_tag=method.delivery_tag, requeue=False)
+        case MessageQueueEventType.particle_selection_start:
+            pass
+        case MessageQueueEventType.particle_selection_complete:
+            try:
+                particle_selection_complete_body = ParticleSelectionCompleteBody(**message)
+                print(f" [+] Particle Selection Complete {particle_selection_complete_body}")
+                ch.basic_ack(delivery_tag=method.delivery_tag)
+            except ValidationError as pve:
+                print(f" [!] Failed to parse Particle Selection Complete body: {pve}")
+                # TODO log this incident
+                ch.basic_nack(delivery_tag=method.delivery_tag, requeue=False)
+
+    print("\n")
 
 
 channel.basic_qos(prefetch_count=1)
-channel.basic_consume(queue=conf['rabbitmq']['queue_name'], on_message_callback=callback)
+channel.basic_consume(queue=conf['rabbitmq']['queue_name'], on_message_callback=on_message)
 
 channel.start_consuming()
