@@ -5,7 +5,6 @@ import pika
 import json
 import yaml
 from dotenv import load_dotenv
-
 load_dotenv()
 
 from pydantic import ValidationError
@@ -15,7 +14,41 @@ from schemas.mq_event import (
     ParticlePickingCompleteBody,
     ParticleSelectionCompleteBody,
 )
+from logging import LogRecord
+from inspect import currentframe, getframeinfo
+from plugin_logging import GraylogUDPHandler
 conf = yaml.safe_load(open(os.path.join(os.path.dirname(__file__), 'config.yaml')))
+
+graylog_handler = GraylogUDPHandler(
+    host=os.environ['GRAYLOG_HOST'],
+    port=int(os.environ['GRAYLOG_PORT'])
+)
+
+def _log_info(message):
+    # Ref: https://docs.python.org/3/library/logging.html#logging.LogRecord
+    frame_info = getframeinfo(currentframe())
+    graylog_handler.handle(LogRecord(
+        name='smartem-decisions',
+        level=20,  # INFO
+        pathname=frame_info.filename, # TODO get pathname not filename
+        lineno=frame_info.lineno,
+        args={},
+        exc_info=None,
+        msg=json.dumps(message),
+    ))
+
+def _log_issue(message):
+    # Ref: https://docs.python.org/3/library/logging.html#logging.LogRecord
+    frame_info = getframeinfo(currentframe())
+    graylog_handler.handle(LogRecord(
+        name='smartem-decisions',
+        level=40, # ERROR
+        pathname=frame_info.filename, # TODO get pathname not filename
+        lineno=frame_info.lineno,
+        args={},
+        exc_info=None,
+        msg=json.dumps(message),
+    ))
 
 connection = pika.BlockingConnection(
     pika.ConnectionParameters(
@@ -39,7 +72,7 @@ def on_message(ch, method, properties, body):
 
     if 'event_type' not in message:
         print(f" [!] Message missing 'event_type' field: {message}")
-        # TODO log this incident
+        _log_issue(dict(message, **{'issue': 'Message missing event_type field'}))
         ch.basic_nack(delivery_tag=method.delivery_tag, requeue=False)
         print("\n")
         return
@@ -48,7 +81,7 @@ def on_message(ch, method, properties, body):
         event_type = MessageQueueEventType(message['event_type'])
     except ValueError:
         print(f" [!] Message 'event_type' value not recognised: {message}")
-        # TODO log this incident
+        _log_issue(dict(message, **{'issue': 'Message event_type value not recognised'}))
         ch.basic_nack(delivery_tag=method.delivery_tag, requeue=False)
         print("\n")
         return
@@ -84,10 +117,15 @@ def on_message(ch, method, properties, body):
             try:
                 motion_correction_complete_body = MotionCorrectionCompleteBody(**message)
                 print(f" [+] Motion Correction Complete {motion_correction_complete_body}")
+                _log_info(dict(message, **{
+                    'info': f"Motion Correction Complete {motion_correction_complete_body}"
+                }))
                 ch.basic_ack(delivery_tag=method.delivery_tag)
             except ValidationError as pve:
                 print(f" [!] Failed to parse Motion Correction Complete body: {pve}")
-                # TODO log this incident
+                _log_issue(dict(message, **{
+                    'issue': f"Failed to parse Motion Correction Complete body: {pve}"
+                }))
                 ch.basic_nack(delivery_tag=method.delivery_tag, requeue=False)
         case MessageQueueEventType.ctf_start:
             pass
@@ -100,10 +138,15 @@ def on_message(ch, method, properties, body):
             try:
                 particle_picking_complete_body = ParticlePickingCompleteBody(**message)
                 print(f" [+] Particle Picking Complete {particle_picking_complete_body}")
+                _log_info(dict(message, **{
+                    'info': f"Particle Picking Complete {particle_picking_complete_body}"
+                }))
                 ch.basic_ack(delivery_tag=method.delivery_tag)
             except ValidationError as pve:
                 print(f" [!] Failed to parse Particle Picking Complete body: {pve}")
-                # TODO log this incident
+                _log_issue(dict(message, **{
+                    'issue': f"Failed to parse Particle Picking Complete body: {pve}"
+                }))
                 ch.basic_nack(delivery_tag=method.delivery_tag, requeue=False)
         case MessageQueueEventType.particle_selection_start:
             pass
@@ -111,10 +154,15 @@ def on_message(ch, method, properties, body):
             try:
                 particle_selection_complete_body = ParticleSelectionCompleteBody(**message)
                 print(f" [+] Particle Selection Complete {particle_selection_complete_body}")
+                _log_info(dict(message, **{
+                    'info': f"Particle Selection Complete {particle_selection_complete_body}"
+                }))
                 ch.basic_ack(delivery_tag=method.delivery_tag)
             except ValidationError as pve:
                 print(f" [!] Failed to parse Particle Selection Complete body: {pve}")
-                # TODO log this incident
+                _log_issue(dict(message, **{
+                    'issue': f"Failed to parse Particle Selection Complete body: {pve}"
+                }))
                 ch.basic_nack(delivery_tag=method.delivery_tag, requeue=False)
 
     print("\n")
