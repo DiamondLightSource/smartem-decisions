@@ -21,14 +21,16 @@ conf = yaml.safe_load(open(os.path.join(os.path.dirname(__file__), 'config.yaml'
 
 graylog_handler = GraylogUDPHandler(
     host=os.environ['GRAYLOG_HOST'],
-    port=int(os.environ['GRAYLOG_PORT'])
+    # For testing without graylog, run `nc -klu 12209` to see what's been sent:
+    # port=12209
+    port=int(os.environ['GRAYLOG_UDP_PORT'])
 )
 
 def _log_info(message):
     # Ref: https://docs.python.org/3/library/logging.html#logging.LogRecord
     frame_info = getframeinfo(currentframe())
     graylog_handler.handle(LogRecord(
-        name='smartem-decisions',
+        name=conf['app']['name'],
         level=20,  # INFO
         pathname=frame_info.filename, # TODO get pathname not filename
         lineno=frame_info.lineno,
@@ -41,7 +43,7 @@ def _log_issue(message):
     # Ref: https://docs.python.org/3/library/logging.html#logging.LogRecord
     frame_info = getframeinfo(currentframe())
     graylog_handler.handle(LogRecord(
-        name='smartem-decisions',
+        name=conf['app']['name'],
         level=40, # ERROR
         pathname=frame_info.filename, # TODO get pathname not filename
         lineno=frame_info.lineno,
@@ -87,7 +89,7 @@ def on_message(ch, method, properties, body):
         return
 
     match event_type:
-        # This stuff is triggered by a fs watcher on the EPU side:
+        # Events below are triggered by a fs watcher on the EPU side:
         case MessageQueueEventType.session_start:
             pass
         case MessageQueueEventType.session_pause:
@@ -110,7 +112,7 @@ def on_message(ch, method, properties, body):
             pass
         case MessageQueueEventType.foil_holes_decision_complete:
             pass
-        # this stuff gets triggered by RabbitMQ:
+        # Events below get triggered by RabbitMQ:
         case MessageQueueEventType.motion_correction_start:
             pass
         case MessageQueueEventType.motion_correction_complete:

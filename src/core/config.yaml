@@ -1,3 +1,5 @@
+app:
+  name: smartem-decisions
 rabbitmq:
   queue_name: default_queue
   routing_key: default_queue

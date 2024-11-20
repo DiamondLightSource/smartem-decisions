@@ -65,7 +65,7 @@ services:
   graylog:
     image: graylog/graylog:5.1
     environment:
-      GRAYLOG_HTTP_EXTERNAL_URI: "${GRAYLOG_HOST}:${GRAYLOG_UI_PORT}/"
+      GRAYLOG_HTTP_EXTERNAL_URI: "http://${GRAYLOG_HOST}:${GRAYLOG_UI_PORT}/"
       GRAYLOG_ELASTICSEARCH_HOSTS: "http://elasticsearch:9200"
       GRAYLOG_MONGODB_URI: "mongodb://mongodb:27017/graylog"
 #      GRAYLOG_NODE_ID_FILE: "/usr/share/graylog/data/config/node-id"
@@ -73,6 +73,7 @@ services:
       GRAYLOG_ROOT_PASSWORD_SHA2: "${GRAYLOG_ROOT_PASSWORD_SHA2:?Please configure GRAYLOG_ROOT_PASSWORD_SHA2 in the .env file}"
 #      GRAYLOG_HTTP_BIND_ADDRESS: "0.0.0.0:9000"
 #      GRAYLOG_ELASTICSEARCH_VERSION: "7"
+      GRAYLOG_ROOT_TIMEZONE: 'UTC'
     depends_on:
       elasticsearch:
         condition: service_started
@@ -87,12 +88,13 @@ services:
 #      - "5555:5555/tcp"   # RAW TCP
 #      - "5555:5555/udp"   # RAW TCP
 #      - "12201:12201/tcp" # GELF TCP
-#      #- "10000:10000/tcp" # Custom TCP port
-#      - "${GRAYLOG_PORT}:10000/udp" # Custom UDP port
+#      - "10000:10000/tcp" # Custom TCP port
+#      - "10000:10000/udp" # Custom UDP port
 #      - "13301:13301/tcp" # Forwarder data
 #      - "13302:13302/tcp" # Forwarder config
     volumes:
-      - "graylog_data:/usr/share/graylog/data"
+      - "graylog_data:/usr/share/graylog/data/data"
+      - "graylog_journal:/usr/share/graylog/data/journal"
     networks:
       - graylog_network
     restart: no
@@ -114,3 +116,4 @@ volumes:
   mongodb_data:
   elasticsearch_data:
   graylog_data:
+  graylog_journal:
