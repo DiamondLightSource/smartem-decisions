@@ -1,7 +1,7 @@
 from argparse import ArgumentParser
 from collections.abc import Sequence
 
-from . import __version__
+from _version import __version__
 
 __all__ = ["main"]
 
