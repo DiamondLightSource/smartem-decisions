@@ -117,11 +117,13 @@ def particle_selection_complete(legit: bool = True):
         'event_type': str(MessageQueueEventType.particle_selection_complete.value),
         'micrograph_id': str(uuid4()),
         'number_of_particles_selected': 0,
+        'number_of_particles_rejected': 10,
         'selection_distribution': {}  # TODO
     } if legit else {
         'event_type': str(MessageQueueEventType.particle_selection_complete.value),
         'micrograf_id': 'xx',
         'number_of_particles_selected': -10,
+        'number_of_particles_rejected': 10,
         'selection_distribution': None,
     }
     _send_msg(message)
