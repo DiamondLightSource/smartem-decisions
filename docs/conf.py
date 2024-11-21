@@ -11,7 +11,7 @@ from subprocess import check_output
 
 import requests
 
-import cryoem_decision_engine_poc
+import smartem_decisions
 
 # -- General configuration ------------------------------------------------
 
@@ -19,7 +19,7 @@ import cryoem_decision_engine_poc
 project = "smartem-decisions"
 
 # The full version, including alpha/beta/rc tags.
-release = cryoem_decision_engine_poc.__version__
+release = smartem_decisions.__version__
 
 # The short X.Y version.
 if "+" in release:
