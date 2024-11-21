@@ -153,12 +153,15 @@ class ParticleSelectionStart(BaseModel):
 class ParticleSelectionCompleteBody(BaseModel):
     micrograph_id: UUID = Field(..., default_factory=uuid4)
     number_of_particles_selected: int
+    number_of_particles_rejected: int
     selection_distribution: dict
 
     @model_validator(mode='after')
     def check_model(self):
         if self.number_of_particles_selected < 0:
             raise ValueError('Number of Particles Selected should be a non-negative int')
+        if self.number_of_particles_rejected < 0:
+            raise ValueError('Number of Particles Rejected should be a non-negative int')
         # TODO validate that number of particles selected equals to the size of selection distribution
         return self
 
