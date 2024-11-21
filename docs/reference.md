@@ -6,7 +6,7 @@ Technical reference material including APIs and release notes.
 :maxdepth: 1
 :glob:
 
-API <_api/cryoem_decision_engine_poc>
+API <_api/smartem_decisions>
 genindex
 Release Notes <https://github.com/DiamondLightSource/smartem-decisions/releases>
 ```

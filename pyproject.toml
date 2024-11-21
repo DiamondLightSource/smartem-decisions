@@ -13,7 +13,9 @@ classifiers = [
 ]
 description = "A proof of concept for a decision engine to automate CryoEM workflows for structural biology"
 # TODO sync this with requirements.txt
-dependencies = [] # Add project dependencies here, e.g. ["click", "numpy"]
+dependencies = [
+
+] # Add project dependencies here, e.g. ["click", "numpy"]
 dynamic = ["version"]
 license.file = "LICENSE"
 readme = "README.md"
@@ -38,7 +40,7 @@ dev = [
 ]
 
 [project.scripts]
-smartem-decisions = "engine_poc.__main__:main"
+smartem-decisions = "core.__main__:main"
 
 [project.urls]
 GitHub = "https://github.com/DiamondLightSource/smartem-decisions"
@@ -49,7 +51,7 @@ name = "Val Redchenko"
 
 
 [tool.setuptools_scm]
-version_file = "src/engine_poc/_version.py"
+version_file = "src/core/_version.py"
 
 [tool.pyright]
 typeCheckingMode = "standard"
@@ -66,7 +68,7 @@ filterwarnings = "error"
 testpaths = "docs src tests"
 
 [tool.coverage.run]
-data_file = "/tmp/engine_poc.coverage"
+data_file = "/tmp/core.coverage"
 
 [tool.coverage.paths]
 # Tests are run from installed location, map back to the src directory
@@ -92,7 +94,7 @@ allowlist_externals =
 commands =
     pre-commit: pre-commit run --all-files --show-diff-on-failure {posargs}
     type-checking: pyright src tests {posargs}
-    tests: pytest --cov=engine_poc --cov-report term --cov-report xml:cov.xml {posargs}
+    tests: pytest --cov=core --cov-report term --cov-report xml:cov.xml {posargs}
     docs: sphinx-{posargs:build -EW --keep-going} -T docs build/html
 """
 

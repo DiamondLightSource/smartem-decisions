@@ -29,7 +29,7 @@ print(f"Hello smartem_decisions {__version__}")
 Or if it is a commandline tool then you might put some example commands here:
 
 ```
-python -m cryoem_decision_engine_poc --version
+python -m smartem_decisions --version
 ```
 
 <!-- README only content. Anything below this line won't be included in index.md -->
