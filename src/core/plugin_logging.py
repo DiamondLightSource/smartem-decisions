@@ -7,6 +7,7 @@ from typing import Any
 
 import graypy.handler
 
+
 def _config_is_incremental(config: dict[str, Any]) -> bool:
     forbidden_keys = {"filters", "formatters", "handlers"}
 
