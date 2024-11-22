@@ -13,4 +13,4 @@ API
     :template: custom-module-template.rst
     :recursive:
 
-    smartem_decisions
+    core
