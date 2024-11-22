@@ -11,7 +11,7 @@ from subprocess import check_output
 
 import requests
 
-import .smartem_decisions
+import core
 
 # -- General configuration ------------------------------------------------
 
@@ -19,7 +19,7 @@ import .smartem_decisions
 project = "smartem-decisions"
 
 # The full version, including alpha/beta/rc tags.
-release = smartem_decisions.__version__
+release = core.__version__
 
 # The short X.Y version.
 if "+" in release:

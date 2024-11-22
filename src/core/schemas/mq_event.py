@@ -1,13 +1,15 @@
 from enum import Enum
+from uuid import UUID, uuid4
+
 from pydantic import (
     BaseModel,
     computed_field,
     # ValidationError,
     Field,
-    model_validator,
     field_serializer,
+    model_validator,
 )
-from uuid import UUID, uuid4
+
 # import json
 # from typing import no_type_check, Type, Any
 

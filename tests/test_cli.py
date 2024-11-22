@@ -1,7 +1,7 @@
 import subprocess
 import sys
 
-from smartem_decisions import __version__
+from core import __version__
 
 
 def test_cli_version():
