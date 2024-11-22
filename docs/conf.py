@@ -11,7 +11,7 @@ from subprocess import check_output
 
 import requests
 
-import smartem_decisions
+import .smartem_decisions
 
 # -- General configuration ------------------------------------------------
 
