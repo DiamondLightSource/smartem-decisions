@@ -1,13 +1,14 @@
 #!/usr/bin/env python
 
-import os
-import pika
 import json
+import os
+from inspect import currentframe, getframeinfo
+from logging import LogRecord
+
+import pika
 import yaml
 from dotenv import load_dotenv
-
-load_dotenv()
-
+from plugin_logging import GraylogUDPHandler
 from pydantic import ValidationError
 from schemas.mq_event import (
     MessageQueueEventType,
@@ -15,9 +16,8 @@ from schemas.mq_event import (
     ParticlePickingCompleteBody,
     ParticleSelectionCompleteBody,
 )
-from logging import LogRecord
-from inspect import currentframe, getframeinfo
-from plugin_logging import GraylogUDPHandler
+
+load_dotenv()
 
 conf = yaml.safe_load(open(os.path.join(os.path.dirname(__file__), "config.yaml")))
 
@@ -68,9 +68,7 @@ def _log_issue(message):
 assert os.getenv("RABBITMQ_HOST") is not None, "Could not get env var RABBITMQ_HOST"
 assert os.getenv("RABBITMQ_PORT") is not None, "Could not get env var RABBITMQ_PORT"
 assert os.getenv("RABBITMQ_USER") is not None, "Could not get env var RABBITMQ_USER"
-assert (
-    os.getenv("RABBITMQ_PASSWORD") is not None
-), "Could not get env var RABBITMQ_PASSWORD"
+assert os.getenv("RABBITMQ_PASSWORD") is not None, "Could not get env var RABBITMQ_PASSWORD"
 connection = pika.BlockingConnection(
     pika.ConnectionParameters(
         host=os.getenv("RABBITMQ_HOST"),  # type: ignore
@@ -90,9 +88,7 @@ print(" [*] Waiting for messages. To exit press CTRL+C")
 
 def on_message(ch, method, properties, body):
     print(f" [I] Received message with props={properties} and body: {body.decode()}")
-    message = json.loads(
-        body.decode()
-    )  # TODO assumption of valid JSON here, handle mal-formed
+    message = json.loads(body.decode())  # TODO assumption of valid JSON here, handle mal-formed
 
     if "event_type" not in message:
         print(f" [!] Message missing 'event_type' field: {message}")
@@ -105,9 +101,7 @@ def on_message(ch, method, properties, body):
         event_type = MessageQueueEventType(message["event_type"])
     except ValueError:
         print(f" [!] Message 'event_type' value not recognised: {message}")
-        _log_issue(
-            dict(message, **{"issue": "Message event_type value not recognised"})
-        )
+        _log_issue(dict(message, **{"issue": "Message event_type value not recognised"}))
         ch.basic_nack(delivery_tag=method.delivery_tag, requeue=False)
         print("\n")
         return
@@ -141,18 +135,12 @@ def on_message(ch, method, properties, body):
             pass
         case MessageQueueEventType.motion_correction_complete:
             try:
-                motion_correction_complete_body = MotionCorrectionCompleteBody(
-                    **message
-                )
-                print(
-                    f" [+] Motion Correction Complete {motion_correction_complete_body}"
-                )
+                body = MotionCorrectionCompleteBody(**message)
+                print(f" [+] Motion Correction Complete {body}")
                 _log_info(
                     dict(
                         message,
-                        **{
-                            "info": f"Motion Correction Complete {motion_correction_complete_body}"
-                        },
+                        **{"info": f"Motion Correction Complete {body}"},
                     )
                 )
                 ch.basic_ack(delivery_tag=method.delivery_tag)
@@ -161,9 +149,7 @@ def on_message(ch, method, properties, body):
                 _log_issue(
                     dict(
                         message,
-                        **{
-                            "issue": f"Failed to parse Motion Correction Complete body: {pve}"
-                        },
+                        **{"issue": f"Failed to parse Motion Correction Complete body: {pve}"},
                     )
                 )
                 ch.basic_nack(delivery_tag=method.delivery_tag, requeue=False)
@@ -177,15 +163,11 @@ def on_message(ch, method, properties, body):
             # Note: only this step will feed back decisions
             try:
                 particle_picking_complete_body = ParticlePickingCompleteBody(**message)
-                print(
-                    f" [+] Particle Picking Complete {particle_picking_complete_body}"
-                )
+                print(f" [+] Particle Picking Complete {particle_picking_complete_body}")
                 _log_info(
                     dict(
                         message,
-                        **{
-                            "info": f"Particle Picking Complete {particle_picking_complete_body}"
-                        },
+                        **{"info": f"Particle Picking Complete {particle_picking_complete_body}"},
                     )
                 )
                 ch.basic_ack(delivery_tag=method.delivery_tag)
@@ -194,9 +176,7 @@ def on_message(ch, method, properties, body):
                 _log_issue(
                     dict(
                         message,
-                        **{
-                            "issue": f"Failed to parse Particle Picking Complete body: {pve}"
-                        },
+                        **{"issue": f"Failed to parse Particle Picking Complete body: {pve}"},
                     )
                 )
                 ch.basic_nack(delivery_tag=method.delivery_tag, requeue=False)
@@ -204,18 +184,12 @@ def on_message(ch, method, properties, body):
             pass
         case MessageQueueEventType.particle_selection_complete:
             try:
-                particle_selection_complete_body = ParticleSelectionCompleteBody(
-                    **message
-                )
-                print(
-                    f" [+] Particle Selection Complete {particle_selection_complete_body}"
-                )
+                particle_selection_complete_body = ParticleSelectionCompleteBody(**message)
+                print(f" [+] Particle Selection Complete {particle_selection_complete_body}")
                 _log_info(
                     dict(
                         message,
-                        **{
-                            "info": f"Particle Selection Complete {particle_selection_complete_body}"
-                        },
+                        **{"info": f"Particle Selection Complete {particle_selection_complete_body}"},
                     )
                 )
                 ch.basic_ack(delivery_tag=method.delivery_tag)
@@ -224,9 +198,7 @@ def on_message(ch, method, properties, body):
                 _log_issue(
                     dict(
                         message,
-                        **{
-                            "issue": f"Failed to parse Particle Selection Complete body: {pve}"
-                        },
+                        **{"issue": f"Failed to parse Particle Selection Complete body: {pve}"},
                     )
                 )
                 ch.basic_nack(delivery_tag=method.delivery_tag, requeue=False)
@@ -235,8 +207,6 @@ def on_message(ch, method, properties, body):
 
 
 channel.basic_qos(prefetch_count=1)
-channel.basic_consume(
-    queue=conf["rabbitmq"]["queue_name"], on_message_callback=on_message
-)
+channel.basic_consume(queue=conf["rabbitmq"]["queue_name"], on_message_callback=on_message)
 
 channel.start_consuming()

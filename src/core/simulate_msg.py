@@ -1,16 +1,16 @@
 #!/usr/bin/env python
 
+import json
 import os
+from uuid import uuid4
+
 import pika
 import typer
 import yaml
-import json
 from dotenv import load_dotenv
-
 from schemas.mq_event import MessageQueueEventType
 
 load_dotenv()
-from uuid import uuid4
 
 simulate_msg_cli = typer.Typer()
 conf = yaml.safe_load(open(os.path.join(os.path.dirname(__file__), "config.yaml")))
@@ -18,9 +18,7 @@ conf = yaml.safe_load(open(os.path.join(os.path.dirname(__file__), "config.yaml"
 assert os.getenv("RABBITMQ_HOST") is not None, "Could not get env var RABBITMQ_HOST"
 assert os.getenv("RABBITMQ_PORT") is not None, "Could not get env var RABBITMQ_PORT"
 assert os.getenv("RABBITMQ_USER") is not None, "Could not get env var RABBITMQ_USER"
-assert (
-    os.getenv("RABBITMQ_PASSWORD") is not None
-), "Could not get env var RABBITMQ_PASSWORD"
+assert os.getenv("RABBITMQ_PASSWORD") is not None, "Could not get env var RABBITMQ_PASSWORD"
 connection = pika.BlockingConnection(
     pika.ConnectionParameters(
         host=os.getenv("RABBITMQ_HOST"),  # type: ignore

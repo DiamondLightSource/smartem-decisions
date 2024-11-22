@@ -69,8 +69,7 @@ class Logging:
 
         if logconfig["incremental"] and not _config_is_incremental(logconfig):
             raise Exception(
-                "Logging configuration error: definition defines items not allowed "
-                "in an incremental definition"
+                "Logging configuration error: definition defines items not allowed " "in an incremental definition"
             )
 
         logging.config.dictConfig(logconfig)
@@ -78,14 +77,11 @@ class Logging:
         for level, verbosity_def in enumerate(logconfig.get("verbose", [])):
             if not isinstance(verbosity_def, dict):
                 raise Exception(
-                    f"Logging configuration error: verbosity level {level+1} definition "
-                    "is not a dictionary"
+                    f"Logging configuration error: verbosity level {level+1} definition " "is not a dictionary"
                 )
             verbosity_def.setdefault("version", logconfig["version"])
             verbosity_def.setdefault("incremental", True)
-            if verbosity_def["incremental"] and not _config_is_incremental(
-                verbosity_def
-            ):
+            if verbosity_def["incremental"] and not _config_is_incremental(verbosity_def):
                 raise Exception(
                     f"Logging configuration error: verbosity level {level+1} definition "
                     "defines items not allowed in an incremental definition"
@@ -176,10 +172,7 @@ class DowngradeFilter(logging.Filter):
             )
 
     def __repr__(self) -> str:
-        return (
-            f"<DowngradeFilter reduce_to={self._reduce_to_name}"
-            f" only_below={self._only_below_name}>"
-        )
+        return f"<DowngradeFilter reduce_to={self._reduce_to_name}" f" only_below={self._only_below_name}>"
 
     def filter(self, record: logging.LogRecord) -> bool:
         if record.levelno <= self._reduce_to_value:

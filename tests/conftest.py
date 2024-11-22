@@ -12,9 +12,7 @@ if os.getenv("PYTEST_RAISE", "0") == "1":
         if call.excinfo is not None:
             raise call.excinfo.value
         else:
-            raise RuntimeError(
-                f"{call} has no exception data, an unknown error has occurred"
-            )
+            raise RuntimeError(f"{call} has no exception data, an unknown error has occurred")
 
     @pytest.hookimpl(tryfirst=True)
     def pytest_internalerror(excinfo: pytest.ExceptionInfo[Any]):
