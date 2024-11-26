@@ -1,6 +1,7 @@
 from enum import Enum
 from pydantic import (
     BaseModel,
+    computed_field,
     # ValidationError,
     Field,
     model_validator,
@@ -155,6 +156,11 @@ class ParticleSelectionCompleteBody(BaseModel):
     number_of_particles_selected: int
     number_of_particles_rejected: int
     selection_distribution: dict
+
+    @computed_field
+    @property
+    def total_number_of_particles(self) -> int:
+        return self.number_of_particles_selected + self.number_of_particles_rejected
 
     @model_validator(mode='after')
     def check_model(self):
