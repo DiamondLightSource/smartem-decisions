@@ -49,44 +49,6 @@ class GenericEventMessageBody(BaseModel):
     def serialize_event_type(self, event_type: MessageQueueEventType, _info):
         return str(event_type.value)
 
-    # In case we ever wanted to handle these internally, otherwise nuke this:
-    # Ref: https://stackoverflow.com/questions/70167626/how-to-prevent-pydantic-from-throwing-an-exception-on-validationerror#71216676
-    # def __init__(__pydantic_self__, **data: Any) -> None:
-    #     try:
-    #         super(GenericEventMessageBody, __pydantic_self__).__init__(**data)
-    #     except ValidationError as pve:
-    #         print(f'This is a warning. __init__ failed to validate:\n {json.dumps(data, indent=4)}\n')
-    #         print(f'This is the original exception:\n{pve.json()}')
-    #
-    # @no_type_check
-    # def __setattr__(self, name, value):
-    #     try:
-    #         return super(GenericEventMessageBody, self).__setattr__(name, value)
-    #     except ValidationError as pve:
-    #         print(f'This is a warning. __setattr__ failed to validate:\n {json.dumps({name: value}, indent=4)}')
-    #         print(f'This is the original exception:\n{pve.json()}')
-    #         return None
-    #
-    # @classmethod
-    # def parse_obj(cls: Type['Model'], obj: Any) -> 'Model':
-    #     try:
-    #         return super(GenericEventMessageBody, cls).parse_obj(obj)
-    #     except ValidationError as pve:
-    #         print(f'This is a warning. parse_obj failed to validate:\n {json.dumps(obj, indent=4)}')
-    #         print(f'This is the original exception:\n{pve.json()}')
-    #         return None
-    #
-    # @classmethod
-    # def parse_raw(cls: Type['Model'], b: None | str | bytes, *, content_type: str = None, encoding: str = 'utf8',
-    #               proto: Any | None = None, allow_pickle: bool = False, ) -> 'Model':
-    #     try:
-    #         return super(GenericEventMessageBody, cls).parse_raw(b=b, content_type=content_type, encoding=encoding,
-    #                                                           proto=proto, allow_pickle=allow_pickle)
-    #     except ValidationError as pve:
-    #         print(f'This is a warning. parse_raw failed to validate:\n {b}')
-    #         print(f'This is the original exception:\n{pve.json()}')
-    #         return None
-
 
 class MotionCorrectionCompleteBody(GenericEventMessageBody):
     micrograph_id: UUID = Field(..., default_factory=uuid4)
@@ -169,16 +131,12 @@ class ParticleSelectionCompleteBody(BaseModel):
     def total_number_of_particles(self) -> int:
         return self.number_of_particles_selected + self.number_of_particles_rejected
 
-    @model_validator(mode='after')
+    @model_validator(mode="after")
     def check_model(self):
         if self.number_of_particles_selected < 0:
-            raise ValueError(
-                'Number of Particles Selected should be a non-negative int'
-            )
+            raise ValueError("Number of Particles Selected should be a non-negative int")
         if self.number_of_particles_rejected < 0:
-            raise ValueError(
-                'Number of Particles Rejected should be a non-negative int'
-            )
+            raise ValueError("Number of Particles Rejected should be a non-negative int")
         return self
 
     @field_serializer("micrograph_id")
