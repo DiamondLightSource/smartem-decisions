@@ -8,9 +8,12 @@ import pika
 import typer
 import yaml
 from dotenv import load_dotenv
-from schemas.mq_event import MessageQueueEventType
+
+from smartem_decisions.utils import load_conf
+from smartem_decisions.model.mq_event import MessageQueueEventType
 
 load_dotenv()
+conf = load_conf()
 
 simulate_msg_cli = typer.Typer()
 conf = yaml.safe_load(open(os.path.join(os.path.dirname(__file__), "config.yaml")))
