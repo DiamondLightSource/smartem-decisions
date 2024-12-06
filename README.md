@@ -78,4 +78,4 @@ Auto-generated client resides in `src/athena_api_client`
 
 ### Simulating various events on the MQ
 
-See: `./src/core/simulate_msg.py --help`
+See: `./src/smartem_decisions/simulate_msg.py --help`

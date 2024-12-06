@@ -6,11 +6,11 @@ from inspect import currentframe, getframeinfo
 from logging import LogRecord
 
 import pika
-import yaml
 from dotenv import load_dotenv
-from plugin_logging import GraylogUDPHandler
+from smartem_decisions.plugin_logging import GraylogUDPHandler
 from pydantic import ValidationError
-from schemas.mq_event import (
+from smartem_decisions.utils import load_conf
+from smartem_decisions.model.mq_event import (
     MessageQueueEventType,
     MotionCorrectionCompleteBody,
     ParticlePickingCompleteBody,
@@ -18,8 +18,7 @@ from schemas.mq_event import (
 )
 
 load_dotenv()
-
-conf = yaml.safe_load(open(os.path.join(os.path.dirname(__file__), "config.yaml")))
+conf = load_conf()
 
 graylog_handler = GraylogUDPHandler(
     host=os.environ["GRAYLOG_HOST"],
