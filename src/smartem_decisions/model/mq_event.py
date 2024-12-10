@@ -1,5 +1,6 @@
 from enum import Enum
 from uuid import UUID, uuid4
+from typing import Optional
 
 from pydantic import (
     BaseModel,
@@ -16,7 +17,6 @@ from pydantic import (
 
 class MessageQueueEventType(str, Enum):
     """Enum listing various system events that are mapped to messages in RabbitMQ"""
-
     session_start = "session start"
     session_pause = "session pause"
     session_resume = "session resume"
@@ -50,8 +50,45 @@ class GenericEventMessageBody(BaseModel):
         return str(event_type.value)
 
 
+class SessionStartBody(GenericEventMessageBody):
+    name: str
+    epu_id: Optional[str]
+
+
+class GridScanStartBody(GenericEventMessageBody):
+    grid_id: int
+
+
+class GridScanCompleteBody(GenericEventMessageBody):
+    grid_id: int
+
+
+class GridSquaresDecisionStartBody(GenericEventMessageBody):
+    grid_id: int
+
+
+class GridSquaresDecisionCompleteBody(GenericEventMessageBody):
+    grid_id: int
+
+
+class FoilHolesDetectedBody(GenericEventMessageBody):
+    grid_id: int
+
+
+class FoilHolesDecisionStartBody(GenericEventMessageBody):
+    gridsquare_id: int
+
+
+class FoilHolesDecisionCompleteBody(GenericEventMessageBody):
+    gridsquare_id: int
+
+
+class MotionCorrectionStartBody(GenericEventMessageBody):
+    micrograph_id: int
+
+
 class MotionCorrectionCompleteBody(GenericEventMessageBody):
-    micrograph_id: UUID = Field(..., default_factory=uuid4)
+    micrograph_id: UUID = Field(..., default_factory=uuid4) # TODO change type to match PK
     total_motion: float
     average_motion: float
     ctf_max_resolution_estimate: float
@@ -69,6 +106,10 @@ class MotionCorrectionCompleteBody(GenericEventMessageBody):
     @field_serializer("micrograph_id")
     def serialize_micrograph_id(self, micrograph_id: UUID, _info):
         return str(micrograph_id)
+
+
+class CtfStartBody(GenericEventMessageBody):
+    micrograph_id: int
 
 
 class CtfCompleteBody(BaseModel):
@@ -92,6 +133,10 @@ class CtfCompleteBody(BaseModel):
         return str(micrograph_id)
 
 
+class ParticlePickingStartBody(GenericEventMessageBody):
+    micrograph_id: int
+
+
 class ParticlePickingCompleteBody(BaseModel):
     micrograph_id: UUID = Field(..., default_factory=uuid4)
     number_of_particles_picked: int
@@ -109,15 +154,21 @@ class ParticlePickingCompleteBody(BaseModel):
         return str(micrograph_id)
 
 
-"""For particle selection start see:
-https://github.com/DiamondLightSource/cryoem-services/blob/main/src/cryoemservices/services/select_particles.py#L16C1-L21C41
-class ParticleSelectionStart(BaseModel):
-    input_file: str = Field(..., min_length=1)
-    batch_size: int
-    image_size: int
-    incomplete_batch_size: int = 10000
-    relion_options: RelionServiceOptions
-"""
+class ParticleSelectionStartBody(GenericEventMessageBody):
+    """For particle selection start see:
+    https://github.com/DiamondLightSource/cryoem-services/blob/main/src/cryoemservices/services/select_particles.py#L16C1-L21C41
+    class ParticleSelectionStart(BaseModel):
+        input_file: str = Field(..., min_length=1)
+        batch_size: int
+        image_size: int
+        incomplete_batch_size: int = 10000
+        relion_options: RelionServiceOptions
+    """
+    micrograph_id: int
+
+
+class SessionEndBody(GenericEventMessageBody):
+    session_id: int
 
 
 class ParticleSelectionCompleteBody(BaseModel):
