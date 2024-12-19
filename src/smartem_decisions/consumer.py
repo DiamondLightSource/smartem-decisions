@@ -21,8 +21,8 @@ from smartem_decisions.model.mq_event import (
     FoilHolesDetectedBody,
     FoilHolesDecisionStartBody,
     FoilHolesDecisionCompleteBody,
+    MicrographsDetectedBody,
     MotionCorrectionStartBody,
-    MotionCorrectionCompleteBody,
     MotionCorrectionCompleteBody,
     CtfStartBody,
     CtfCompleteBody,
@@ -41,6 +41,7 @@ from smartem_decisions.workflow import (
     foil_holes_detected,
     foil_holes_decision_start,
     foil_holes_decision_complete,
+    micrographs_detected,
     motion_correction_start,
     motion_correction_complete,
     ctf_start,
@@ -152,7 +153,7 @@ def on_message(ch, method, properties, body):
         match event_type:
             # Note: events below are triggered by a fs watcher on the EPU side:
 
-            case MessageQueueEventType.session_start:
+            case MessageQueueEventType.SESSION_START:
                 try:
                     body = SessionStartBody(**message)
                     print(f" [+] Session Start {body}")
@@ -174,11 +175,11 @@ def on_message(ch, method, properties, body):
                     )
                     ch.basic_nack(delivery_tag=method.delivery_tag, requeue=False)
 
-            case MessageQueueEventType.session_pause: pass # out of scope
+            case MessageQueueEventType.SESSION_PAUSE: pass # out of scope
 
-            case MessageQueueEventType.session_resume: pass # out of scope
+            case MessageQueueEventType.SESSION_RESUME: pass # out of scope
 
-            case MessageQueueEventType.grid_scan_start:
+            case MessageQueueEventType.GRID_SCAN_START:
                 try:
                     body = GridScanStartBody(**message)
                     print(f" [+] Grid Scan Start {body}")
@@ -200,7 +201,7 @@ def on_message(ch, method, properties, body):
                     )
                     ch.basic_nack(delivery_tag=method.delivery_tag, requeue=False)
 
-            case MessageQueueEventType.grid_scan_complete:
+            case MessageQueueEventType.GRID_SCAN_COMPLETE:
                 try:
                     body = GridScanCompleteBody(**message)
                     print(f" [+] Grid Scan Complete {body}")
@@ -222,7 +223,7 @@ def on_message(ch, method, properties, body):
                     )
                     ch.basic_nack(delivery_tag=method.delivery_tag, requeue=False)
 
-            case MessageQueueEventType.grid_squares_decision_start:
+            case MessageQueueEventType.GRID_SQUARES_DECISION_START:
                 try:
                     body = GridSquaresDecisionStartBody(**message)
                     print(f" [+] Grid Squares Decision Start {body}")
@@ -244,7 +245,7 @@ def on_message(ch, method, properties, body):
                     )
                     ch.basic_nack(delivery_tag=method.delivery_tag, requeue=False)
 
-            case MessageQueueEventType.grid_squares_decision_complete:
+            case MessageQueueEventType.GRID_SQUARES_DECISION_COMPLETE:
                 try:
                     body = GridSquaresDecisionCompleteBody(**message)
                     print(f" [+] Grid Squares Decision Complete {body}")
@@ -266,7 +267,7 @@ def on_message(ch, method, properties, body):
                     )
                     ch.basic_nack(delivery_tag=method.delivery_tag, requeue=False)
 
-            case MessageQueueEventType.foil_holes_detected:
+            case MessageQueueEventType.FOIL_HOLES_DETECTED:
                 try:
                     body = FoilHolesDetectedBody(**message)
                     print(f" [+] Motion Correction Complete {body}")
@@ -288,7 +289,7 @@ def on_message(ch, method, properties, body):
                     )
                     ch.basic_nack(delivery_tag=method.delivery_tag, requeue=False)
 
-            case MessageQueueEventType.foil_holes_decision_start:
+            case MessageQueueEventType.FOIL_HOLES_DECISION_START:
                 try:
                     body = FoilHolesDecisionStartBody(**message)
                     print(f" [+] Foil Holes Decision Start {body}")
@@ -310,7 +311,7 @@ def on_message(ch, method, properties, body):
                     )
                     ch.basic_nack(delivery_tag=method.delivery_tag, requeue=False)
 
-            case MessageQueueEventType.foil_holes_decision_complete:
+            case MessageQueueEventType.FOIL_HOLES_DECISION_COMPLETE:
                 try:
                     body = FoilHolesDecisionCompleteBody(**message)
                     print(f" [+] Foil Holes Decision Complete {body}")
@@ -332,8 +333,30 @@ def on_message(ch, method, properties, body):
                     )
                     ch.basic_nack(delivery_tag=method.delivery_tag, requeue=False)
 
-            # Events below get triggered by RabbitMQ:
-            case MessageQueueEventType.motion_correction_start:
+            case MessageQueueEventType.MICROGRAPHS_DETECTED:
+                try:
+                    body = MicrographsDetectedBody(**message)
+                    print(f" [+] Micrographs detected {body}")
+                    _log_info(
+                        dict(
+                            message,
+                            **{"info": f"Micrographs detected {body}"},
+                        )
+                    )
+                    ch.basic_ack(delivery_tag=method.delivery_tag)
+                    micrographs_detected(body, sess)
+                except ValidationError as pve:
+                    print(f" [!] Failed to parse Micrographs Detected body: {pve}")
+                    _log_issue(
+                        dict(
+                            message,
+                            **{"issue": f"Failed to parse Micrographs Detected body: {pve}"},
+                        )
+                    )
+                    ch.basic_nack(delivery_tag=method.delivery_tag, requeue=False)
+
+            # Events below get triggered by an external processing pipeline communicating via RabbitMQ:
+            case MessageQueueEventType.MOTION_CORRECTION_START:
                 try:
                     body = MotionCorrectionStartBody(**message)
                     print(f" [+] Motion Correction Start {body}")
@@ -355,7 +378,7 @@ def on_message(ch, method, properties, body):
                     )
                     ch.basic_nack(delivery_tag=method.delivery_tag, requeue=False)
 
-            case MessageQueueEventType.motion_correction_complete:
+            case MessageQueueEventType.MOTION_CORRECTION_COMPLETE:
                 try:
                     body = MotionCorrectionCompleteBody(**message)
                     print(f" [+] Motion Correction Complete {body}")
@@ -377,7 +400,7 @@ def on_message(ch, method, properties, body):
                     )
                     ch.basic_nack(delivery_tag=method.delivery_tag, requeue=False)
 
-            case MessageQueueEventType.ctf_start:
+            case MessageQueueEventType.CTF_START:
                 try:
                     body = CtfStartBody(**message)
                     print(f" [+] CTF Start {body}")
@@ -399,7 +422,7 @@ def on_message(ch, method, properties, body):
                     )
                     ch.basic_nack(delivery_tag=method.delivery_tag, requeue=False)
 
-            case MessageQueueEventType.ctf_complete:
+            case MessageQueueEventType.CTF_COMPLETE:
                 try:
                     body = CtfCompleteBody(**message)
                     print(f" [+] CTF Complete {body}")
@@ -421,7 +444,7 @@ def on_message(ch, method, properties, body):
                     )
                     ch.basic_nack(delivery_tag=method.delivery_tag, requeue=False)
 
-            case MessageQueueEventType.particle_picking_start:
+            case MessageQueueEventType.PARTICLE_PICKING_START:
                 try:
                     body = ParticlePickingStartBody(**message)
                     print(f" [+] Particle Picking Start {body}")
@@ -443,7 +466,7 @@ def on_message(ch, method, properties, body):
                     )
                     ch.basic_nack(delivery_tag=method.delivery_tag, requeue=False)
 
-            case MessageQueueEventType.particle_picking_complete:
+            case MessageQueueEventType.PARTICLE_PICKING_COMPLETE:
                 # Note: only this step will feed back decisions
                 try:
                     particle_picking_complete_body = ParticlePickingCompleteBody(**message)
@@ -466,7 +489,7 @@ def on_message(ch, method, properties, body):
                     )
                     ch.basic_nack(delivery_tag=method.delivery_tag, requeue=False)
 
-            case MessageQueueEventType.particle_selection_start:
+            case MessageQueueEventType.PARTICLE_SELECTION_START:
                 try:
                     body = ParticleSelectionStartBody(**message)
                     print(f" [+] Particle Selection Start {body}")
@@ -488,7 +511,7 @@ def on_message(ch, method, properties, body):
                     )
                     ch.basic_nack(delivery_tag=method.delivery_tag, requeue=False)
 
-            case MessageQueueEventType.particle_selection_complete:
+            case MessageQueueEventType.PARTICLE_SELECTION_COMPLETE:
                 try:
                     body = ParticleSelectionCompleteBody(**message)
                     print(f" [+] Particle Selection Complete {body}")
@@ -510,7 +533,7 @@ def on_message(ch, method, properties, body):
                     )
                     ch.basic_nack(delivery_tag=method.delivery_tag, requeue=False)
 
-            case MessageQueueEventType.session_end:
+            case MessageQueueEventType.SESSION_END:
                 try:
                     body = SessionEndBody(**message)
                     print(f" [+] Session End {body}")
@@ -532,7 +555,6 @@ def on_message(ch, method, properties, body):
                     )
                     ch.basic_nack(delivery_tag=method.delivery_tag, requeue=False)
 
-    sess.close()
     print("\n")
 
 
