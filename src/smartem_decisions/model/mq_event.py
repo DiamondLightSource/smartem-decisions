@@ -17,25 +17,26 @@ from pydantic import (
 
 class MessageQueueEventType(str, Enum):
     """Enum listing various system events that are mapped to messages in RabbitMQ"""
-    session_start = "session start"
-    session_pause = "session pause"
-    session_resume = "session resume"
-    session_end = "session end"
-    grid_scan_start = "grid scan start"
-    grid_scan_complete = "grid scan complete"
-    grid_squares_decision_start = "grid squares decision start"
-    grid_squares_decision_complete = "grid squares decision complete"
-    foil_holes_detected = "foil holes detected"
-    foil_holes_decision_start = "foil holes decision start"
-    foil_holes_decision_complete = "foil holes decision complete"
-    motion_correction_start = "motion correction start"
-    motion_correction_complete = "motion correction complete"
-    ctf_start = "ctf start"
-    ctf_complete = "ctf complete"
-    particle_picking_start = "particle picking start"
-    particle_picking_complete = "particle picking complete"
-    particle_selection_start = "particle selection start"
-    particle_selection_complete = "particle selection complete"
+    SESSION_START = "session started"
+    SESSION_PAUSE = "session paused"
+    SESSION_RESUME = "session resumed"
+    SESSION_END = "session ended"
+    GRID_SCAN_START = "grid scan started"
+    GRID_SCAN_COMPLETE = "grid scan completed"
+    GRID_SQUARES_DECISION_START = "grid squares decision started"
+    GRID_SQUARES_DECISION_COMPLETE = "grid squares decision completed"
+    FOIL_HOLES_DETECTED = "foil holes detected"
+    FOIL_HOLES_DECISION_START = "foil holes decision started"
+    FOIL_HOLES_DECISION_COMPLETE = "foil holes decision completed"
+    MICROGRAPHS_DETECTED = "micrographs detected"
+    MOTION_CORRECTION_START = "motion correction started"
+    MOTION_CORRECTION_COMPLETE = "motion correction completed"
+    CTF_START = "ctf started"
+    CTF_COMPLETE = "ctf completed"
+    PARTICLE_PICKING_START = "particle picking started"
+    PARTICLE_PICKING_COMPLETE = "particle picking completed"
+    PARTICLE_SELECTION_START = "particle selection started"
+    PARTICLE_SELECTION_COMPLETE = "particle selection completed"
 
 
 def non_negative_float(v: float):
@@ -52,7 +53,7 @@ class GenericEventMessageBody(BaseModel):
 
 class SessionStartBody(GenericEventMessageBody):
     name: str
-    epu_id: Optional[str]
+    epu_id: Optional[str] = None
 
 
 class GridScanStartBody(GenericEventMessageBody):
@@ -83,12 +84,16 @@ class FoilHolesDecisionCompleteBody(GenericEventMessageBody):
     gridsquare_id: int
 
 
+class MicrographsDetectedBody(GenericEventMessageBody):
+    foilhole_id: int
+    # micrographs: dict TODO
+
 class MotionCorrectionStartBody(GenericEventMessageBody):
     micrograph_id: int
 
 
 class MotionCorrectionCompleteBody(GenericEventMessageBody):
-    micrograph_id: UUID = Field(..., default_factory=uuid4) # TODO change type to match PK
+    micrograph_id: int
     total_motion: float
     average_motion: float
     ctf_max_resolution_estimate: float
@@ -102,10 +107,6 @@ class MotionCorrectionCompleteBody(GenericEventMessageBody):
         if self.ctf_max_resolution_estimate < 0:
             raise ValueError("CTF Max Resolution should be a non-negative float")
         return self
-
-    @field_serializer("micrograph_id")
-    def serialize_micrograph_id(self, micrograph_id: UUID, _info):
-        return str(micrograph_id)
 
 
 class CtfStartBody(GenericEventMessageBody):
@@ -113,7 +114,7 @@ class CtfStartBody(GenericEventMessageBody):
 
 
 class CtfCompleteBody(BaseModel):
-    micrograph_id: UUID = Field(..., default_factory=uuid4)
+    micrograph_id: int
     total_motion: float
     average_motion: float
     ctf_max_resolution_estimate: float
@@ -128,17 +129,13 @@ class CtfCompleteBody(BaseModel):
             raise ValueError("CTF Max Resolution should be a non-negative float")
         return self
 
-    @field_serializer("micrograph_id")
-    def serialize_micrograph_id(self, micrograph_id: UUID, _info):
-        return str(micrograph_id)
-
 
 class ParticlePickingStartBody(GenericEventMessageBody):
     micrograph_id: int
 
 
 class ParticlePickingCompleteBody(BaseModel):
-    micrograph_id: UUID = Field(..., default_factory=uuid4)
+    micrograph_id: int
     number_of_particles_picked: int
     pick_distribution: dict
 
@@ -149,13 +146,9 @@ class ParticlePickingCompleteBody(BaseModel):
         # TODO validate that number of particles picked equals to the size of pick distribution
         return self
 
-    @field_serializer("micrograph_id")
-    def serialize_micrograph_id(self, micrograph_id: UUID, _info):
-        return str(micrograph_id)
-
 
 class ParticleSelectionStartBody(GenericEventMessageBody):
-    """For particle selection start see:
+    """TODO For particle selection start see:
     https://github.com/DiamondLightSource/cryoem-services/blob/main/src/cryoemservices/services/select_particles.py#L16C1-L21C41
     class ParticleSelectionStart(BaseModel):
         input_file: str = Field(..., min_length=1)
@@ -167,12 +160,8 @@ class ParticleSelectionStartBody(GenericEventMessageBody):
     micrograph_id: int
 
 
-class SessionEndBody(GenericEventMessageBody):
-    session_id: int
-
-
 class ParticleSelectionCompleteBody(BaseModel):
-    micrograph_id: UUID = Field(..., default_factory=uuid4)
+    micrograph_id: int
     number_of_particles_selected: int
     number_of_particles_rejected: int
     selection_distribution: dict
@@ -190,6 +179,7 @@ class ParticleSelectionCompleteBody(BaseModel):
             raise ValueError("Number of Particles Rejected should be a non-negative int")
         return self
 
-    @field_serializer("micrograph_id")
-    def serialize_micrograph_id(self, micrograph_id: UUID, _info):
-        return str(micrograph_id)
+
+class SessionEndBody(GenericEventMessageBody):
+    session_id: int
+

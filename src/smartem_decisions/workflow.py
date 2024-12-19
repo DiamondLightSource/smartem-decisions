@@ -1,7 +1,12 @@
 import random
+from datetime import datetime, timezone
 from sqlmodel import select
+from sqlalchemy.exc import SQLAlchemyError
+from typing import Optional, List
+import logging
 
-from .model.mq_event import (
+
+from smartem_decisions.model.mq_event import (
     SessionStartBody,
     GridScanStartBody,
     GridScanCompleteBody,
@@ -10,6 +15,7 @@ from .model.mq_event import (
     FoilHolesDetectedBody,
     FoilHolesDecisionStartBody,
     FoilHolesDecisionCompleteBody,
+    MicrographsDetectedBody,
     MotionCorrectionStartBody,
     MotionCorrectionCompleteBody,
     CtfStartBody,
@@ -21,12 +27,17 @@ from .model.mq_event import (
     SessionEndBody,
 )
 
-from .model.database import (
+from smartem_decisions.model.database import (
     Session,
     Grid,
     GridSquare,
     FoilHole,
     Micrograph,
+    SessionStatus,
+    GridStatus,
+    GridSquareStatus,
+    FoilHoleStatus,
+    MicrographStatus,
 )
 
 """
@@ -42,160 +53,745 @@ num_of_foilholes_in_gridsquare = 100
 num_of_micrographs_in_foilhole = random.randint(4, 10)  # TODO yield from generator fn
 
 
-def session_start(msg: SessionStartBody, sess):
-    new_session = Session(
-        name=msg.name,
-        epu_id=msg.epu_id,
-        status="started",
-    )
-    sess.add(new_session)
-    sess.commit()
-    grids = [
-        Grid(name=f"Grid {i:02}", status="none", session_id=new_session.id)
-        for i in range(1, num_of_grids_in_sample_container + 1)
-    ]
-    sess.add_all(grids)
-    sess.commit()
+def session_start(msg: SessionStartBody, sess) -> Optional[Session]:
+    """
+    Start a new session and create associated grids.
+
+    Args:
+        msg: Session start request body
+        sess: Database session
+
+    Returns:
+        The newly created session
+    """
+    try:
+        new_session = Session(
+            name=msg.name,
+            status=SessionStatus.STARTED,
+            session_start_time=datetime.now(timezone.utc),
+            **({'epu_id': msg.epu_id} if msg.epu_id is not None else {})
+        )
+        sess.add(new_session)
+        sess.flush()
+        grids = [
+            Grid(name=f"Grid {i:02}", status=GridStatus.NONE, session_id=new_session.id)
+            for i in range(1, num_of_grids_in_sample_container + 1)
+        ]
+        sess.add_all(grids)
+        sess.commit()
+        return new_session
+
+    except SQLAlchemyError as e:
+        sess.rollback()
+        logging.error(f"Database error occurred: {str(e)}")
+        raise
+
+    except Exception as e:
+        sess.rollback()
+        logging.error(f"Unexpected error occurred: {str(e)}")
+        raise
 
 
-def grid_scan_start(msg: GridScanStartBody, sess):
-    grid = sess.exec(select(Grid).where(Grid.id == msg.grid_id)).first()
-    grid.status = "scan started"
-    sess.add(grid)
-    sess.commit()
+def grid_scan_start(msg: GridScanStartBody, sess) -> Optional[Grid]:
+    """
+    Start a grid scan and update its status.
+
+    Args:
+        msg (GridScanStartBody): The message body containing the grid_id.
+        sess (Session): The database session.
+
+    Returns:
+        Optional[Grid]: The updated Grid object if found, None otherwise.
+
+    Raises:
+        SQLAlchemyError: If there's a database-related error.
+    """
+    try:
+        grid = sess.exec(select(Grid).where(Grid.id == msg.grid_id)).first()
+        if not grid:
+            logging.warning(f"Grid with id {msg.grid_id} not found.")
+            return None
+
+        grid.status = GridStatus.SCAN_STARTED
+        sess.add(grid)
+        sess.commit()
+        sess.refresh(grid)
+        return grid
+
+    except SQLAlchemyError as e:
+        sess.rollback()
+        logging.error(f"Database error occurred: {str(e)}")
+        raise
+
+    except Exception as e:
+        sess.rollback()
+        logging.error(f"Unexpected error occurred: {str(e)}")
+        raise
 
 
-def grid_scan_complete(msg: GridScanCompleteBody, sess):
-    grid = sess.exec(select(Grid).where(Grid.id == msg.grid_id)).first()
-    grid.status = "scan complete"
-    sess.add(grid)
-    sess.commit()
-    gridsquares = [
-        GridSquare(name=f"Grid Square {i:02}", status="none", grid_id=grid.id)
-        for i in range(1, num_of_grid_squares_in_grid + 1)
-    ]
-    sess.add_all(gridsquares)
-    sess.commit()
+# TODO check if Optional[List[GridSquare]] could be replaced with Optional[Grid] as that would presumably
+#   contain gridsquares via a backref anyway?
+def grid_scan_complete(msg: GridScanCompleteBody, sess) -> Optional[List[GridSquare]]:
+    """
+    Complete a grid scan, update its status, and create associated grid squares.
+
+    Args:
+        msg (GridScanCompleteBody): The message body containing the grid_id.
+        sess (Session): The database session.
+
+    Returns:
+        Optional[List[GridSquare]]: A list of newly created GridSquare objects if successful, None otherwise.
+
+    Raises:
+        SQLAlchemyError: If there's a database-related error.
+    """
+    try:
+        grid = sess.exec(select(Grid).where(Grid.id == msg.grid_id)).first()
+        if not grid:
+            logging.warning(f"Grid with id {msg.grid_id} not found.")
+            return None
+
+        grid.status = GridStatus.SCAN_COMPLETED
+        sess.add(grid)
+        sess.flush()
+
+        gridsquares = [
+            GridSquare(name=f"Grid Square {i:02}", status="none", grid_id=grid.id)
+            for i in range(1, num_of_grid_squares_in_grid + 1)
+        ]
+        sess.add_all(gridsquares)
+        sess.commit()
+
+        # Refresh the gridsquares to ensure they have their database-generated IDs
+        # for gridsquare in gridsquares:
+        #     sess.refresh(gridsquare)
+        sess.refresh(grid, attribute_names=['gridsquares'])
+        gridsquares = grid.gridsquares
+
+        return gridsquares
+
+    except SQLAlchemyError as e:
+        sess.rollback()
+        logging.error(f"Database error occurred: {str(e)}")
+        raise
+
+    except Exception as e:
+        sess.rollback()
+        logging.error(f"Unexpected error occurred: {str(e)}")
+        raise
 
 
-def grid_squares_decision_start(msg: GridSquaresDecisionStartBody, sess):
-    grid = sess.exec(select(Grid).where(Grid.id == msg.grid_id)).first()
-    grid.status = "grid squares decision start"
-    sess.add(grid)
-    sess.commit()
+# TODO check if Optional[List[GridSquare]] could be replaced with Optional[Grid] as that would presumably
+#   contain gridsquares via a backref anyway?
+def grid_squares_decision_start(msg: GridSquaresDecisionStartBody, sess: Session) -> Optional[Grid]:
+    """
+    Start the grid squares decision process for a grid.
+
+    Args:
+        msg (GridSquaresDecisionStartBody): The message body containing the grid_id.
+        sess (Session): The database session.
+
+    Returns:
+        Optional[Grid]: The updated Grid object if found, None otherwise.
+
+    Raises:
+        SQLAlchemyError: If there's a database-related error.
+    """
+    try:
+        grid = sess.exec(select(Grid).where(Grid.id == msg.grid_id)).first()
+        if not grid:
+            logging.warning(f"Grid with id {msg.grid_id} not found.")
+            return None
+
+        grid.status = GridStatus.GRID_SQUARES_DECISION_STARTED
+        sess.add(grid)
+        sess.commit()
+        sess.refresh(grid)
+        return grid
+
+    except SQLAlchemyError as e:
+        sess.rollback()
+        logging.error(f"Database error occurred: {str(e)}")
+        raise
+
+    except Exception as e:
+        sess.rollback()
+        logging.error(f"Unexpected error occurred: {str(e)}")
+        raise
 
 
-def grid_squares_decision_complete(msg: GridSquaresDecisionCompleteBody, sess):
-    # TODO record the actual grid squares decision
-    grid = sess.exec(select(Grid).where(Grid.id == msg.grid_id)).first()
-    grid.status = "grid squares decision complete"
-    sess.add(grid)
-    sess.commit()
+# TODO record the actual grid squares decision
+# TODO check if Optional[List[GridSquare]] could be replaced with Optional[Grid] as that would presumably
+#   contain gridsquares via a backref anyway?
+def grid_squares_decision_complete(msg: GridSquaresDecisionCompleteBody, sess: Session) -> Optional[Grid]:
+    """
+    Complete the grid squares decision process for a grid.
+
+    Args:
+        msg (GridSquaresDecisionCompleteBody): The message body containing the grid_id.
+        sess (Session): The database session.
+
+    Returns:
+        Optional[Grid]: The updated Grid object if found, None otherwise.
+
+    Raises:
+        SQLAlchemyError: If there's a database-related error.
+    """
+    try:
+        grid = sess.exec(select(Grid).where(Grid.id == msg.grid_id)).first()
+        if not grid:
+            logging.warning(f"Grid with id {msg.grid_id} not found.")
+            return None
+
+        grid.status = GridStatus.GRID_SQUARES_DECISION_COMPLETED
+        sess.add(grid)
+        sess.commit()
+        sess.refresh(grid)
+        return grid
+
+    except SQLAlchemyError as e:
+        sess.rollback()
+        logging.error(f"Database error occurred: {str(e)}")
+        raise
+
+    except Exception as e:
+        sess.rollback()
+        logging.error(f"Unexpected error occurred: {str(e)}")
+        raise
 
 
-def foil_holes_detected(msg: FoilHolesDetectedBody, sess):
-    gridsquares = sess.exec(select(GridSquare).where(GridSquare.grid_id == msg.grid_id)).all()
-    foilholes = [
-        FoilHole(name=f"Foil Hole {i:02} of GridSquare {square.id:02}", gridsquare_id=square.id)
-        for square in gridsquares
-        for i in range(1, random.randint(2, num_of_foilholes_in_gridsquare + 1))
-    ]
-    sess.add_all(foilholes)
-    # TODO update status of each GridSquare
-    sess.commit()
+# TODO update status of each GridSquare for which foil holes were detected
+def foil_holes_detected(msg: FoilHolesDetectedBody, sess: Session) -> Optional[List[FoilHole]]:
+    """
+    Detect and create foil holes for grid squares associated with a given grid.
+
+    Args:
+        msg (FoilHolesDetectedBody): The message body containing the grid_id.
+        sess (Session): The database session.
+
+    Returns:
+        Optional[List[FoilHole]]: A list of newly created FoilHole objects if successful, None otherwise.
+
+    Raises:
+        SQLAlchemyError: If there's a database-related error.
+    """
+    try:
+        gridsquares = sess.exec(select(GridSquare).where(GridSquare.grid_id == msg.grid_id)).all()
+        if not gridsquares:
+            logging.warning(f"No grid squares found for grid id {msg.grid_id}.")
+            return None
+
+        foilholes = [
+            FoilHole(name=f"Foil Hole {i:02} of GridSquare {square.id:02}", gridsquare_id=square.id)
+            for square in gridsquares
+            for i in range(1, random.randint(2, num_of_foilholes_in_gridsquare + 1))
+        ]
+        sess.add_all(foilholes)
+        sess.commit()
+
+        # Refresh all foilholes in a single operation
+        sess.refresh(gridsquares[0], attribute_names=['foilholes'])
+        foilholes = [foilhole for gridsquare in gridsquares for foilhole in gridsquare.foilholes]
+
+        return foilholes
+
+    except SQLAlchemyError as e:
+        sess.rollback()
+        logging.error(f"Database error occurred: {str(e)}")
+        raise
+
+    except Exception as e:
+        sess.rollback()
+        logging.error(f"Unexpected error occurred: {str(e)}")
+        raise
 
 
-def foil_holes_decision_start(msg: FoilHolesDecisionStartBody, sess):
-    gridsquare = sess.exec(select(GridSquare).where(GridSquare.id == msg.gridsquare_id)).first()
-    gridsquare.status = "foil holes decision start"
-    sess.add(gridsquare)
-    # TODO: figure out when in the flow micrographs get added
-    foilholes = sess.exec(select(FoilHole).where(FoilHole.gridsquare_id == msg.gridsquare_id)).all()
-    micrographs = [
-        Micrograph(name=f"Micrograph {i:02} of FoilHole {foilhole.id:02}", foilhole_id=foilhole.id)
-        for foilhole in foilholes
-        for i in range(1, random.randint(2, num_of_micrographs_in_foilhole))
-    ]
-    sess.add_all(micrographs)
-    sess.commit()
+def foil_holes_decision_start(msg: FoilHolesDecisionStartBody, sess: Session) -> Optional[List[Micrograph]]:
+    """
+    Start the foil holes decision process for a grid square and create associated micrographs.
+
+    Args:
+        msg (FoilHolesDecisionStartBody): The message body containing the gridsquare_id.
+        sess (Session): The database session.
+
+    Returns:
+        Optional[List[Micrograph]]: A list of newly created Micrograph objects if successful, None otherwise.
+
+    Raises:
+        SQLAlchemyError: If there's a database-related error.
+    """
+    try:
+        gridsquare = sess.exec(select(GridSquare).where(GridSquare.id == msg.gridsquare_id)).first()
+        if not gridsquare:
+            logging.warning(f"GridSquare with id {msg.gridsquare_id} not found.")
+            return None
+
+        gridsquare.status = GridSquareStatus.FOIL_HOLES_DECISION_STARTED
+        sess.add(gridsquare)
+
+        foilholes = sess.exec(select(FoilHole).where(FoilHole.gridsquare_id == msg.gridsquare_id)).all()
+        if not foilholes:
+            logging.warning(f"No foil holes found for GridSquare id {msg.gridsquare_id}.")
+            return None
 
 
-def foil_holes_decision_complete(msg: FoilHolesDecisionCompleteBody, sess):
-    gridsquare = sess.exec(select(GridSquare).where(GridSquare.id == msg.gridsquare_id)).first()
-    gridsquare.status = "foil holes decision complete"
-    sess.add(gridsquare)
-    # TODO record the actual foil holes decision
-    sess.commit()
+        sess.commit()
+
+        # Refresh all micrographs to ensure they have their database-generated IDs
+        sess.refresh(gridsquare, attribute_names=['foilholes'])
+        micrographs = [micrograph for foilhole in gridsquare.foilholes for micrograph in foilhole.micrographs]
+
+        return micrographs
+
+    except SQLAlchemyError as e:
+        sess.rollback()
+        logging.error(f"Database error occurred: {str(e)}")
+        raise
+
+    except Exception as e:
+        sess.rollback()
+        logging.error(f"Unexpected error occurred: {str(e)}")
+        raise
 
 
-def motion_correction_start(msg: MotionCorrectionStartBody, sess):
-    micrograph = sess.exec(select(Micrograph).where(Micrograph.id == msg.micrograph_id)).first()
-    micrograph.status = "motion correction start"
-    sess.add(micrograph)
-    sess.commit()
+# TODO record the actual foilholes decision and identify what format that might have
+def foil_holes_decision_complete(msg: FoilHolesDecisionCompleteBody, sess: Session) -> Optional[GridSquare]:
+    """
+    Complete the foil holes decision process for a grid square.
+
+    Args:
+        msg (FoilHolesDecisionCompleteBody): The message body containing the gridsquare_id.
+        sess (Session): The database session.
+
+    Returns:
+        Optional[GridSquare]: The updated GridSquare object if found, None otherwise.
+
+    Raises:
+        SQLAlchemyError: If there's a database-related error.
+    """
+    try:
+        gridsquare = sess.exec(select(GridSquare).where(GridSquare.id == msg.gridsquare_id)).first()
+        if not gridsquare:
+            logging.warning(f"GridSquare with id {msg.gridsquare_id} not found.")
+            return None
+
+        gridsquare.status = GridSquareStatus.FOIL_HOLES_DECISION_COMPLETED
+        sess.add(gridsquare)
+        sess.commit()
+        sess.refresh(gridsquare)
+
+        return gridsquare
+
+    except SQLAlchemyError as e:
+        sess.rollback()
+        logging.error(f"Database error occurred: {str(e)}")
+        raise
+
+    except Exception as e:
+        sess.rollback()
+        logging.error(f"Unexpected error occurred: {str(e)}")
+        raise
 
 
-def motion_correction_complete(msg: MotionCorrectionCompleteBody, sess):
-    micrograph = sess.exec(select(Micrograph).where(Micrograph.id == msg.micrograph_id)).first()
-    micrograph.status = "motion correction complete"
-    sess.add(micrograph)
-    sess.commit()
+def micrographs_detected(msg: MicrographsDetectedBody, sess: Session) -> Optional[List[Micrograph]]:
+    """
+    Detect and create micrographs for foil holes associated with a given grid square.
+    On the microscope the user will create a template for the micrograph shots they want to take in the foil holes,
+    and that template is then applied to every hole during collection.
+    Then once the micrographs are collected we know which hole they are in as the first part of
+    the name is always `FoilHole_XXXX`
+
+    Args:
+        msg (MicrographsDetectedBody): The message body containing foilhole_id.
+        sess (Session): The database session.
+
+    Returns:
+        Optional[List[Micrograph]]: A list of newly created Micrograph objects with database IDs if successful, None otherwise.
+
+    Raises:
+        SQLAlchemyError: If there's a database-related error.
+    """
+    try:
+        # Check if the foil hole exists
+        foil_hole = sess.exec(select(FoilHole).where(FoilHole.id == msg.foilhole_id)).first()
+        if not foil_hole:
+            logging.warning(f"FoilHole with id {msg.foilhole_id} not found.")
+            return None
+
+        micrographs = [
+            Micrograph(name=f"Micrograph {i:02} of FoilHole {msg.foilhole_id:02}", foilhole_id=msg.foilhole_id)
+            for i in range(1, random.randint(2, num_of_micrographs_in_foilhole))
+        ]
+        sess.add_all(micrographs)
+
+        foil_hole.status = FoilHoleStatus.MICROGRAPHS_DETECTED
+        sess.add(foil_hole)
+
+        sess.commit()
+
+        # Refresh the micrographs to ensure they have their database-generated IDs
+        for micrograph in micrographs:
+            sess.refresh(micrograph)
+
+        return micrographs
+
+    except SQLAlchemyError as e:
+        sess.rollback()
+        logging.error(f"Database error occurred: {str(e)}")
+        raise
+
+    except Exception as e:
+        sess.rollback()
+        logging.error(f"Unexpected error occurred: {str(e)}")
+        raise
 
 
-def ctf_start(msg: CtfStartBody, sess):
-    micrograph = sess.exec(select(Micrograph).where(Micrograph.id == msg.micrograph_id)).first()
-    micrograph.status = "ctf start"
-    sess.add(micrograph)
-    sess.commit()
+def motion_correction_start(msg: MotionCorrectionStartBody, sess: Session) -> Optional[Micrograph]:
+    """
+    Start the motion correction process for a micrograph.
+
+    Args:
+        msg (MotionCorrectionStartBody): The message body containing the micrograph_id.
+        sess (Session): The database session.
+
+    Returns:
+        Optional[Micrograph]: The updated Micrograph object if found, None otherwise.
+
+    Raises:
+        SQLAlchemyError: If there's a database-related error.
+    """
+    try:
+        micrograph = sess.exec(select(Micrograph).where(Micrograph.id == msg.micrograph_id)).first()
+        if not micrograph:
+            logging.warning(f"Micrograph with id {msg.micrograph_id} not found.")
+            return None
+
+        micrograph.status = MicrographStatus.MOTION_CORRECTION_STARTED
+        sess.add(micrograph)
+        sess.commit()
+        sess.refresh(micrograph)
+
+        return micrograph
+
+    except SQLAlchemyError as e:
+        sess.rollback()
+        logging.error(f"Database error occurred: {str(e)}")
+        raise
+
+    except Exception as e:
+        sess.rollback()
+        logging.error(f"Unexpected error occurred: {str(e)}")
+        raise
 
 
-def ctf_complete(msg: CtfCompleteBody, sess):
-    micrograph = sess.exec(select(Micrograph).where(Micrograph.id == msg.micrograph_id)).first()
-    micrograph.status = "ctf complete"
-    micrograph.total_motion = 0.234
-    micrograph.average_motion = 0.235
-    micrograph.ctf_max_resolution_estimate = 0.236
-    sess.add(micrograph)
-    sess.commit()
+def motion_correction_complete(msg: MotionCorrectionCompleteBody, sess: Session) -> Optional[Micrograph]:
+    """
+    Complete the motion correction process for a micrograph.
+
+    Args:
+        msg (MotionCorrectionCompleteBody): The message body containing the micrograph_id.
+        sess (Session): The database session.
+
+    Returns:
+        Optional[Micrograph]: The updated Micrograph object if found, None otherwise.
+
+    Raises:
+        SQLAlchemyError: If there's a database-related error.
+    """
+    try:
+        micrograph = sess.exec(select(Micrograph).where(Micrograph.id == msg.micrograph_id)).first()
+        if not micrograph:
+            logging.warning(f"Micrograph with id {msg.micrograph_id} not found.")
+            return None
+
+        micrograph.status = MicrographStatus.MOTION_CORRECTION_COMPLETED
+        sess.add(micrograph)
+        sess.commit()
+        sess.refresh(micrograph)
+
+        return micrograph
+
+    except SQLAlchemyError as e:
+        sess.rollback()
+        logging.error(f"Database error occurred: {str(e)}")
+        raise
+
+    except Exception as e:
+        sess.rollback()
+        logging.error(f"Unexpected error occurred: {str(e)}")
+        raise
 
 
-def particle_picking_start(msg: ParticlePickingStartBody, sess):
-    micrograph = sess.exec(select(Micrograph).where(Micrograph.id == msg.micrograph_id)).first()
-    micrograph.status = "particle picking start"
-    sess.add(micrograph)
-    sess.commit()
+def ctf_start(msg: CtfStartBody, sess: Session) -> Optional[Micrograph]:
+    """
+    Start the Contrast Transfer Function (CTF) process for a micrograph.
+
+    Args:
+        msg (CtfStartBody): The message body containing the micrograph_id.
+        sess (Session): The database session.
+
+    Returns:
+        Optional[Micrograph]: The updated Micrograph object if found, None otherwise.
+
+    Raises:
+        SQLAlchemyError: If there's a database-related error.
+    """
+    try:
+        micrograph = sess.exec(select(Micrograph).where(Micrograph.id == msg.micrograph_id)).first()
+        if not micrograph:
+            logging.warning(f"Micrograph with id {msg.micrograph_id} not found.")
+            return None
+
+        micrograph.status = MicrographStatus.CTF_STARTED
+        sess.add(micrograph)
+        sess.commit()
+        sess.refresh(micrograph)
+
+        return micrograph
+
+    except SQLAlchemyError as e:
+        sess.rollback()
+        logging.error(f"Database error occurred: {str(e)}")
+        raise
+
+    except Exception as e:
+        sess.rollback()
+        logging.error(f"Unexpected error occurred: {str(e)}")
+        raise
 
 
-def particle_picking_complete(msg: ParticlePickingCompleteBody, sess):
-    micrograph = sess.exec(select(Micrograph).where(Micrograph.id == msg.micrograph_id)).first()
-    micrograph.status = "particle picking complete"
-    micrograph.number_of_particles_picked = 10
-    sess.add(micrograph)
-    sess.commit()
+def ctf_complete(msg: CtfCompleteBody, sess: Session) -> Optional[Micrograph]:
+    """
+    Complete the Contrast Transfer Function (CTF) process for a micrograph.
+
+    Args:
+        msg (CtfCompleteBody): The message body containing the micrograph_id.
+        sess (Session): The database session.
+
+    Returns:
+        Optional[Micrograph]: The updated Micrograph object if found, None otherwise.
+
+    Raises:
+        SQLAlchemyError: If there's a database-related error.
+    """
+    try:
+        micrograph = sess.exec(select(Micrograph).where(Micrograph.id == msg.micrograph_id)).first()
+        if not micrograph:
+            logging.warning(f"Micrograph with id {msg.micrograph_id} not found.")
+            return None
+
+        micrograph.status = MicrographStatus.CTF_COMPLETED
+        # TODO all these values should be coming from `msg`
+        micrograph.total_motion = 0.234  # Replace with actual value as needed
+        micrograph.average_motion = 0.235  # Replace with actual value as needed
+        micrograph.ctf_max_resolution_estimate = 0.236  # Replace with actual value as needed
+
+        sess.add(micrograph)
+        sess.commit()
+        sess.refresh(micrograph)
+
+        return micrograph
+
+    except SQLAlchemyError as e:
+        sess.rollback()
+        logging.error(f"Database error occurred: {str(e)}")
+        raise
+
+    except Exception as e:
+        sess.rollback()
+        logging.error(f"Unexpected error occurred: {str(e)}")
+        raise
 
 
-def particle_selection_start(msg: ParticleSelectionStartBody, sess):
-    micrograph = sess.exec(select(Micrograph).where(Micrograph.id == msg.micrograph_id)).first()
-    micrograph.status = "particle selection start"
-    sess.add(micrograph)
-    sess.commit()
+def particle_picking_start(msg: ParticlePickingStartBody, sess: Session) -> Optional[Micrograph]:
+    """
+    Start the particle picking process for a micrograph.
+
+    Args:
+        msg (ParticlePickingStartBody): The message body containing the micrograph_id.
+        sess (Session): The database session.
+
+    Returns:
+        Optional[Micrograph]: The updated Micrograph object if found, None otherwise.
+
+    Raises:
+        SQLAlchemyError: If there's a database-related error.
+    """
+    try:
+        micrograph = sess.exec(select(Micrograph).where(Micrograph.id == msg.micrograph_id)).first()
+        if not micrograph:
+            logging.warning(f"Micrograph with id {msg.micrograph_id} not found.")
+            return None
+
+        micrograph.status = MicrographStatus.PARTICLE_PICKING_STARTED
+        sess.add(micrograph)
+        sess.commit()
+        sess.refresh(micrograph)
+
+        return micrograph
+
+    except SQLAlchemyError as e:
+        sess.rollback()
+        logging.error(f"Database error occurred: {str(e)}")
+        raise
+
+    except Exception as e:
+        sess.rollback()
+        logging.error(f"Unexpected error occurred: {str(e)}")
+        raise
 
 
-def particle_selection_complete(msg: ParticleSelectionCompleteBody, sess):
-    micrograph = sess.exec(select(Micrograph).where(Micrograph.id == msg.micrograph_id)).first()
-    micrograph.status = "particle selection complete"
-    micrograph.number_of_particles_selected = 10
-    micrograph.number_of_particles_rejected = 10
-    sess.add(micrograph)
-    sess.commit()
+def particle_picking_complete(msg: ParticlePickingCompleteBody, sess: Session) -> Optional[Micrograph]:
+    """
+    Complete the particle picking process for a micrograph.
+
+    Args:
+        msg (ParticlePickingCompleteBody): The message body containing the micrograph_id.
+        sess (Session): The database session.
+
+    Returns:
+        Optional[Micrograph]: The updated Micrograph object if found, None otherwise.
+
+    Raises:
+        SQLAlchemyError: If there's a database-related error.
+    """
+    try:
+        micrograph = sess.exec(select(Micrograph).where(Micrograph.id == msg.micrograph_id)).first()
+        if not micrograph:
+            logging.warning(f"Micrograph with id {msg.micrograph_id} not found.")
+            return None
+
+        micrograph.status = MicrographStatus.PARTICLE_PICKING_COMPLETED
+        micrograph.number_of_particles_picked = 10  # Replace this with actual value as needed
+        sess.add(micrograph)
+        sess.commit()
+        sess.refresh(micrograph)
+
+        return micrograph
+
+    except SQLAlchemyError as e:
+        sess.rollback()
+        logging.error(f"Database error occurred: {str(e)}")
+        raise
+
+    except Exception as e:
+        sess.rollback()
+        logging.error(f"Unexpected error occurred: {str(e)}")
+        raise
 
 
-def session_end(msg: SessionEndBody, sess):
-    existing_session = sess.exec(select(Session).where(Session.id == msg.session_id)).first()
-    # TODO work out some stats, perform deposition
-    existing_session.status = 'complete'
-    sess.add(existing_session)
-    sess.commit()
+def particle_selection_start(msg: ParticleSelectionStartBody, sess: Session) -> Optional[Micrograph]:
+    """
+    Start the particle selection process for a micrograph.
+
+    Args:
+        msg (ParticleSelectionStartBody): The message body containing the micrograph_id.
+        sess (Session): The database session.
+
+    Returns:
+        Optional[Micrograph]: The updated Micrograph object if found, None otherwise.
+
+    Raises:
+        SQLAlchemyError: If there's a database-related error.
+    """
+    try:
+        micrograph = sess.exec(select(Micrograph).where(Micrograph.id == msg.micrograph_id)).first()
+        if not micrograph:
+            logging.warning(f"Micrograph with id {msg.micrograph_id} not found.")
+            return None
+
+        micrograph.status = MicrographStatus.PARTICLE_SELECTION_STARTED
+        sess.add(micrograph)
+        sess.commit()
+        sess.refresh(micrograph)
+
+        return micrograph
+
+    except SQLAlchemyError as e:
+        sess.rollback()
+        logging.error(f"Database error occurred: {str(e)}")
+        raise
+
+    except Exception as e:
+        sess.rollback()
+        logging.error(f"Unexpected error occurred: {str(e)}")
+        raise
 
 
-# sess.close()
+def particle_selection_complete(msg: ParticleSelectionCompleteBody, sess: Session) -> Optional[Micrograph]:
+    """
+    Complete the particle selection process for a micrograph.
+
+    Args:
+        msg (ParticleSelectionCompleteBody): The message body containing the micrograph_id.
+        sess (Session): The database session.
+
+    Returns:
+        Optional[Micrograph]: The updated Micrograph object if found, None otherwise.
+
+    Raises:
+        SQLAlchemyError: If there's a database-related error.
+    """
+    try:
+        micrograph = sess.exec(select(Micrograph).where(Micrograph.id == msg.micrograph_id)).first()
+        if not micrograph:
+            logging.warning(f"Micrograph with id {msg.micrograph_id} not found.")
+            return None
+
+        micrograph.status = MicrographStatus.PARTICLE_SELECTION_COMPLETED
+        micrograph.number_of_particles_selected = 10  # Replace with actual value as needed
+        micrograph.number_of_particles_rejected = 10  # Replace with actual value as needed
+
+        sess.add(micrograph)
+        sess.commit()
+        sess.refresh(micrograph)
+
+        return micrograph
+
+    except SQLAlchemyError as e:
+        sess.rollback()
+        logging.error(f"Database error occurred: {str(e)}")
+        raise
+
+    except Exception as e:
+        sess.rollback()
+        logging.error(f"Unexpected error occurred: {str(e)}")
+        raise
+
+
+def session_end(msg: SessionEndBody, sess: Session) -> Optional[Session]:
+    """
+    Complete the session process for a given session ID. TODO work out some stats, trigger deposition
+
+    Args:
+        msg (SessionEndBody): The message body containing the session_id.
+        sess (Session): The database session.
+
+    Returns:
+        Optional[Session]: The updated Session object if found, None otherwise.
+
+    Raises:
+        SQLAlchemyError: If there's a database-related error.
+    """
+    try:
+        existing_session = sess.exec(select(Session).where(Session.id == msg.session_id)).first()
+        if not existing_session:
+            logging.warning(f"Session with id {msg.session_id} not found.")
+            return None
+
+        existing_session.status = SessionStatus.COMPLETED
+        sess.add(existing_session)
+        sess.commit()
+        sess.refresh(existing_session)
+
+        return existing_session
+
+    except SQLAlchemyError as e:
+        sess.rollback()
+        logging.error(f"Database error occurred: {str(e)}")
+        raise
+
+    except Exception as e:
+        sess.rollback()
+        logging.error(f"Unexpected error occurred: {str(e)}")
+        raise
