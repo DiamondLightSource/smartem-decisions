@@ -4,7 +4,6 @@
 python src/smartem_decisions/model/database.py
 
 #python src/smartem_decisions/simulate_msg.py --help
-
 #python src/smartem_decisions/simulate_msg.py rogue-message
 #python src/smartem_decisions/simulate_msg.py rogue-message --no-event-type-missing
 
@@ -60,9 +59,23 @@ python src/smartem_decisions/simulate_msg.py ctf-complete
 #python src/smartem_decisions/simulate_msg.py ctf-complete --no-legit
 sleep 1
 
+python src/smartem_decisions/simulate_msg.py particle-picking-start
+#python src/smartem_decisions/simulate_msg.py particle-picking-start --no-legit
+sleep 3
 
-#python src/smartem_decisions/simulate_msg.py particle-picking-complete
+python src/smartem_decisions/simulate_msg.py particle-picking-complete
 #python src/smartem_decisions/simulate_msg.py particle-picking-complete --no-legit
+sleep 1
 
-#python src/smartem_decisions/simulate_msg.py particle-selection-complete
+python src/smartem_decisions/simulate_msg.py particle-selection-start
+#python src/smartem_decisions/simulate_msg.py particle-selection-start --no-legit
+sleep 3
+
+python src/smartem_decisions/simulate_msg.py particle-selection-complete
 #python src/smartem_decisions/simulate_msg.py particle-selection-complete --no-legit
+sleep 1
+
+python src/smartem_decisions/simulate_msg.py session-end
+#python src/smartem_decisions/simulate_msg.py session-end --no-legit
+
+exit 0

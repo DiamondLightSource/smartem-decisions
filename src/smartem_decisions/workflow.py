@@ -74,7 +74,7 @@ def session_start(msg: SessionStartBody, sess) -> Optional[Session]:
         sess.add(new_session)
         sess.flush()
         grids = [
-            Grid(name=f"Grid {i:02}", status=GridStatus.NONE, session_id=new_session.id)
+            Grid(name=f"Grid {i:02}", session_id=new_session.id)
             for i in range(1, num_of_grids_in_sample_container + 1)
         ]
         sess.add_all(grids)
@@ -156,7 +156,7 @@ def grid_scan_complete(msg: GridScanCompleteBody, sess) -> Optional[List[GridSqu
         sess.flush()
 
         gridsquares = [
-            GridSquare(name=f"Grid Square {i:02}", status="none", grid_id=grid.id)
+            GridSquare(name=f"Grid Square {i:02}", grid_id=grid.id)
             for i in range(1, num_of_grid_squares_in_grid + 1)
         ]
         sess.add_all(gridsquares)
@@ -780,6 +780,7 @@ def session_end(msg: SessionEndBody, sess: Session) -> Optional[Session]:
             return None
 
         existing_session.status = SessionStatus.COMPLETED
+        existing_session.session_end_time = datetime.now(timezone.utc)
         sess.add(existing_session)
         sess.commit()
         sess.refresh(existing_session)
