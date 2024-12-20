@@ -336,6 +336,8 @@ def particle_picking_start(legit: bool = True):
 
 @simulate_msg_cli.command()
 def particle_picking_complete(legit: bool = True):
+    """Simulates completion of particle picking process
+    """
     message = (
         {
             "event_type": str(MessageQueueEventType.PARTICLE_PICKING_COMPLETE.value),
@@ -374,6 +376,8 @@ def particle_selection_start(legit: bool = True):
 
 @simulate_msg_cli.command()
 def particle_selection_complete(legit: bool = True):
+    """Simulates completion of particle selection process
+    """
     message = (
         {
             "event_type": str(MessageQueueEventType.PARTICLE_SELECTION_COMPLETE.value),
@@ -396,6 +400,8 @@ def particle_selection_complete(legit: bool = True):
 
 @simulate_msg_cli.command()
 def session_end(legit: bool = True):
+    """Simulates session finalisation
+    """
     message = (
         {
             "event_type": str(MessageQueueEventType.SESSION_END.value),

@@ -129,9 +129,64 @@ engine = create_engine(
     echo=True,
 )
 
+
+def handle_event(event_type: MessageQueueEventType, message: dict, ch, method, sess):
+    # Map event types to their corresponding handlers and body types
+    event_handlers = {
+        MessageQueueEventType.SESSION_START: (session_start, SessionStartBody),
+        MessageQueueEventType.GRID_SCAN_START: (grid_scan_start, GridScanStartBody),
+        MessageQueueEventType.GRID_SCAN_COMPLETE: (grid_scan_complete, GridScanCompleteBody),
+        MessageQueueEventType.GRID_SQUARES_DECISION_START: (grid_squares_decision_start, GridSquaresDecisionStartBody),
+        MessageQueueEventType.GRID_SQUARES_DECISION_COMPLETE: (
+        grid_squares_decision_complete, GridSquaresDecisionCompleteBody),
+        MessageQueueEventType.FOIL_HOLES_DETECTED: (foil_holes_detected, FoilHolesDetectedBody),
+        MessageQueueEventType.FOIL_HOLES_DECISION_START: (foil_holes_decision_start, FoilHolesDecisionStartBody),
+        MessageQueueEventType.FOIL_HOLES_DECISION_COMPLETE: (
+        foil_holes_decision_complete, FoilHolesDecisionCompleteBody),
+        MessageQueueEventType.MICROGRAPHS_DETECTED: (micrographs_detected, MicrographsDetectedBody),
+        MessageQueueEventType.MOTION_CORRECTION_START: (motion_correction_start, MotionCorrectionStartBody),
+        MessageQueueEventType.MOTION_CORRECTION_COMPLETE: (motion_correction_complete, MotionCorrectionCompleteBody),
+        MessageQueueEventType.CTF_START: (ctf_start, CtfStartBody),
+        MessageQueueEventType.CTF_COMPLETE: (ctf_complete, CtfCompleteBody),
+        MessageQueueEventType.PARTICLE_PICKING_START: (particle_picking_start, ParticlePickingStartBody),
+        MessageQueueEventType.PARTICLE_PICKING_COMPLETE: (particle_picking_complete, ParticlePickingCompleteBody),
+        MessageQueueEventType.PARTICLE_SELECTION_START: (particle_selection_start, ParticleSelectionStartBody),
+        MessageQueueEventType.PARTICLE_SELECTION_COMPLETE: (particle_selection_complete, ParticleSelectionCompleteBody),
+        MessageQueueEventType.SESSION_END: (session_end, SessionEndBody),
+    }
+
+    if event_type not in event_handlers:
+        print(f" [!] Unhandled event type: {event_type}")
+        ch.basic_nack(delivery_tag=method.delivery_tag, requeue=False)
+        return
+
+    handler, body_class = event_handlers[event_type]
+
+    try:
+        body = body_class(**message)
+        print(f" [+] {event_type.value} {body}")
+        _log_info(
+            dict(
+                message,
+                **{"info": f"{event_type.value} {body}"},
+            )
+        )
+        ch.basic_ack(delivery_tag=method.delivery_tag)
+        handler(body, sess)
+    except ValidationError as pve:
+        print(f" [!] Failed to parse {event_type.value} body: {pve}")
+        _log_issue(
+            dict(
+                message,
+                **{"issue": f"Failed to parse {event_type.value} body: {pve}"},
+            )
+        )
+        ch.basic_nack(delivery_tag=method.delivery_tag, requeue=False)
+
+
 def on_message(ch, method, properties, body):
     print(f" [I] Received message with props={properties} and body: {body.decode()}")
-    message = json.loads(body.decode())  # TODO assumption of valid JSON here, handle mal-formed
+    message = json.loads(body.decode()) # TODO assumption of valid JSON here, handle mal-formed
 
     if "event_type" not in message:
         print(f" [!] Message missing 'event_type' field: {message}")
@@ -150,410 +205,7 @@ def on_message(ch, method, properties, body):
         return
 
     with SQLModelSession(engine) as sess:
-        match event_type:
-            # Note: events below are triggered by a fs watcher on the EPU side:
-
-            case MessageQueueEventType.SESSION_START:
-                try:
-                    body = SessionStartBody(**message)
-                    print(f" [+] Session Start {body}")
-                    _log_info(
-                        dict(
-                            message,
-                            **{"info": f"Session Start {body}"},
-                        )
-                    )
-                    ch.basic_ack(delivery_tag=method.delivery_tag)
-                    session_start(body, sess)
-                except ValidationError as pve:
-                    print(f" [!] Failed to parse Session Start body: {pve}")
-                    _log_issue(
-                        dict(
-                            message,
-                            **{"issue": f"Failed to parse Session Start body: {pve}"},
-                        )
-                    )
-                    ch.basic_nack(delivery_tag=method.delivery_tag, requeue=False)
-
-            case MessageQueueEventType.SESSION_PAUSE: pass # out of scope
-
-            case MessageQueueEventType.SESSION_RESUME: pass # out of scope
-
-            case MessageQueueEventType.GRID_SCAN_START:
-                try:
-                    body = GridScanStartBody(**message)
-                    print(f" [+] Grid Scan Start {body}")
-                    _log_info(
-                        dict(
-                            message,
-                            **{"info": f"Grid Scan Start {body}"},
-                        )
-                    )
-                    ch.basic_ack(delivery_tag=method.delivery_tag)
-                    grid_scan_start(body, sess)
-                except ValidationError as pve:
-                    print(f" [!] Failed to parse Grid Scan Start body: {pve}")
-                    _log_issue(
-                        dict(
-                            message,
-                            **{"issue": f"Failed to parse Grid Scan Start body: {pve}"},
-                        )
-                    )
-                    ch.basic_nack(delivery_tag=method.delivery_tag, requeue=False)
-
-            case MessageQueueEventType.GRID_SCAN_COMPLETE:
-                try:
-                    body = GridScanCompleteBody(**message)
-                    print(f" [+] Grid Scan Complete {body}")
-                    _log_info(
-                        dict(
-                            message,
-                            **{"info": f"Grid Scan Complete {body}"},
-                        )
-                    )
-                    ch.basic_ack(delivery_tag=method.delivery_tag)
-                    grid_scan_complete(body, sess)
-                except ValidationError as pve:
-                    print(f" [!] Failed to parse Grid Scan Complete body: {pve}")
-                    _log_issue(
-                        dict(
-                            message,
-                            **{"issue": f"Failed to parse Grid Scan Complete body: {pve}"},
-                        )
-                    )
-                    ch.basic_nack(delivery_tag=method.delivery_tag, requeue=False)
-
-            case MessageQueueEventType.GRID_SQUARES_DECISION_START:
-                try:
-                    body = GridSquaresDecisionStartBody(**message)
-                    print(f" [+] Grid Squares Decision Start {body}")
-                    _log_info(
-                        dict(
-                            message,
-                            **{"info": f"Grid Squares Decision Start Complete {body}"},
-                        )
-                    )
-                    ch.basic_ack(delivery_tag=method.delivery_tag)
-                    grid_squares_decision_start(body, sess)
-                except ValidationError as pve:
-                    print(f" [!] Failed to parse Grid Squares Decision Start body: {pve}")
-                    _log_issue(
-                        dict(
-                            message,
-                            **{"issue": f"Failed to parse Grid Squares Decision Start body: {pve}"},
-                        )
-                    )
-                    ch.basic_nack(delivery_tag=method.delivery_tag, requeue=False)
-
-            case MessageQueueEventType.GRID_SQUARES_DECISION_COMPLETE:
-                try:
-                    body = GridSquaresDecisionCompleteBody(**message)
-                    print(f" [+] Grid Squares Decision Complete {body}")
-                    _log_info(
-                        dict(
-                            message,
-                            **{"info": f"Grid Squares Decision Complete {body}"},
-                        )
-                    )
-                    ch.basic_ack(delivery_tag=method.delivery_tag)
-                    grid_squares_decision_complete(body, sess)
-                except ValidationError as pve:
-                    print(f" [!] Failed to parse Grid Squares Decision Complete body: {pve}")
-                    _log_issue(
-                        dict(
-                            message,
-                            **{"issue": f"Failed to parse Grid Squares Decision Complete body: {pve}"},
-                        )
-                    )
-                    ch.basic_nack(delivery_tag=method.delivery_tag, requeue=False)
-
-            case MessageQueueEventType.FOIL_HOLES_DETECTED:
-                try:
-                    body = FoilHolesDetectedBody(**message)
-                    print(f" [+] Motion Correction Complete {body}")
-                    _log_info(
-                        dict(
-                            message,
-                            **{"info": f"Motion Correction Complete {body}"},
-                        )
-                    )
-                    ch.basic_ack(delivery_tag=method.delivery_tag)
-                    foil_holes_detected(body, sess)
-                except ValidationError as pve:
-                    print(f" [!] Failed to parse Motion Correction Complete body: {pve}")
-                    _log_issue(
-                        dict(
-                            message,
-                            **{"issue": f"Failed to parse Motion Correction Complete body: {pve}"},
-                        )
-                    )
-                    ch.basic_nack(delivery_tag=method.delivery_tag, requeue=False)
-
-            case MessageQueueEventType.FOIL_HOLES_DECISION_START:
-                try:
-                    body = FoilHolesDecisionStartBody(**message)
-                    print(f" [+] Foil Holes Decision Start {body}")
-                    _log_info(
-                        dict(
-                            message,
-                            **{"info": f"Foil Holes Decision Start {body}"},
-                        )
-                    )
-                    ch.basic_ack(delivery_tag=method.delivery_tag)
-                    foil_holes_decision_start(body, sess)
-                except ValidationError as pve:
-                    print(f" [!] Foil Holes Decision Start body: {pve}")
-                    _log_issue(
-                        dict(
-                            message,
-                            **{"issue": f"Failed to parse Foil Holes Decision Start body: {pve}"},
-                        )
-                    )
-                    ch.basic_nack(delivery_tag=method.delivery_tag, requeue=False)
-
-            case MessageQueueEventType.FOIL_HOLES_DECISION_COMPLETE:
-                try:
-                    body = FoilHolesDecisionCompleteBody(**message)
-                    print(f" [+] Foil Holes Decision Complete {body}")
-                    _log_info(
-                        dict(
-                            message,
-                            **{"info": f"Foil Holes Decision Complete {body}"},
-                        )
-                    )
-                    ch.basic_ack(delivery_tag=method.delivery_tag)
-                    foil_holes_decision_complete(body, sess)
-                except ValidationError as pve:
-                    print(f" [!] Failed to parse Foil Holes Decision Complete body: {pve}")
-                    _log_issue(
-                        dict(
-                            message,
-                            **{"issue": f"Failed to parse Foil Holes Decision Complete body: {pve}"},
-                        )
-                    )
-                    ch.basic_nack(delivery_tag=method.delivery_tag, requeue=False)
-
-            case MessageQueueEventType.MICROGRAPHS_DETECTED:
-                try:
-                    body = MicrographsDetectedBody(**message)
-                    print(f" [+] Micrographs detected {body}")
-                    _log_info(
-                        dict(
-                            message,
-                            **{"info": f"Micrographs detected {body}"},
-                        )
-                    )
-                    ch.basic_ack(delivery_tag=method.delivery_tag)
-                    micrographs_detected(body, sess)
-                except ValidationError as pve:
-                    print(f" [!] Failed to parse Micrographs Detected body: {pve}")
-                    _log_issue(
-                        dict(
-                            message,
-                            **{"issue": f"Failed to parse Micrographs Detected body: {pve}"},
-                        )
-                    )
-                    ch.basic_nack(delivery_tag=method.delivery_tag, requeue=False)
-
-            # Events below get triggered by an external processing pipeline communicating via RabbitMQ:
-            case MessageQueueEventType.MOTION_CORRECTION_START:
-                try:
-                    body = MotionCorrectionStartBody(**message)
-                    print(f" [+] Motion Correction Start {body}")
-                    _log_info(
-                        dict(
-                            message,
-                            **{"info": f"Motion Correction Start {body}"},
-                        )
-                    )
-                    ch.basic_ack(delivery_tag=method.delivery_tag)
-                    motion_correction_start(body, sess)
-                except ValidationError as pve:
-                    print(f" [!] Failed to parse Motion Correction Start body: {pve}")
-                    _log_issue(
-                        dict(
-                            message,
-                            **{"issue": f"Failed to parse Motion Correction Start body: {pve}"},
-                        )
-                    )
-                    ch.basic_nack(delivery_tag=method.delivery_tag, requeue=False)
-
-            case MessageQueueEventType.MOTION_CORRECTION_COMPLETE:
-                try:
-                    body = MotionCorrectionCompleteBody(**message)
-                    print(f" [+] Motion Correction Complete {body}")
-                    _log_info(
-                        dict(
-                            message,
-                            **{"info": f"Motion Correction Complete {body}"},
-                        )
-                    )
-                    ch.basic_ack(delivery_tag=method.delivery_tag)
-                    motion_correction_complete(body, sess)
-                except ValidationError as pve:
-                    print(f" [!] Failed to parse Motion Correction Complete body: {pve}")
-                    _log_issue(
-                        dict(
-                            message,
-                            **{"issue": f"Failed to parse Motion Correction Complete body: {pve}"},
-                        )
-                    )
-                    ch.basic_nack(delivery_tag=method.delivery_tag, requeue=False)
-
-            case MessageQueueEventType.CTF_START:
-                try:
-                    body = CtfStartBody(**message)
-                    print(f" [+] CTF Start {body}")
-                    _log_info(
-                        dict(
-                            message,
-                            **{"info": f"CTF Start {body}"},
-                        )
-                    )
-                    ch.basic_ack(delivery_tag=method.delivery_tag)
-                    ctf_start(body, sess)
-                except ValidationError as pve:
-                    print(f" [!] Failed to parse CTF Start body: {pve}")
-                    _log_issue(
-                        dict(
-                            message,
-                            **{"issue": f"Failed to parse CTF Start body: {pve}"},
-                        )
-                    )
-                    ch.basic_nack(delivery_tag=method.delivery_tag, requeue=False)
-
-            case MessageQueueEventType.CTF_COMPLETE:
-                try:
-                    body = CtfCompleteBody(**message)
-                    print(f" [+] CTF Complete {body}")
-                    _log_info(
-                        dict(
-                            message,
-                            **{"info": f"CTF Complete {body}"},
-                        )
-                    )
-                    ch.basic_ack(delivery_tag=method.delivery_tag)
-                    ctf_complete(body, sess)
-                except ValidationError as pve:
-                    print(f" [!] Failed to parse CTF Complete body: {pve}")
-                    _log_issue(
-                        dict(
-                            message,
-                            **{"issue": f"Failed to parse CTF Complete body: {pve}"},
-                        )
-                    )
-                    ch.basic_nack(delivery_tag=method.delivery_tag, requeue=False)
-
-            case MessageQueueEventType.PARTICLE_PICKING_START:
-                try:
-                    body = ParticlePickingStartBody(**message)
-                    print(f" [+] Particle Picking Start {body}")
-                    _log_info(
-                        dict(
-                            message,
-                            **{"info": f"Particle Picking Start {body}"},
-                        )
-                    )
-                    ch.basic_ack(delivery_tag=method.delivery_tag)
-                    particle_picking_start(body, sess)
-                except ValidationError as pve:
-                    print(f" [!] Failed to parse Particle Picking Start body: {pve}")
-                    _log_issue(
-                        dict(
-                            message,
-                            **{"issue": f"Failed to parse Particle Picking Start body: {pve}"},
-                        )
-                    )
-                    ch.basic_nack(delivery_tag=method.delivery_tag, requeue=False)
-
-            case MessageQueueEventType.PARTICLE_PICKING_COMPLETE:
-                # Note: only this step will feed back decisions
-                try:
-                    particle_picking_complete_body = ParticlePickingCompleteBody(**message)
-                    print(f" [+] Particle Picking Complete {particle_picking_complete_body}")
-                    _log_info(
-                        dict(
-                            message,
-                            **{"info": f"Particle Picking Complete {particle_picking_complete_body}"},
-                        )
-                    )
-                    ch.basic_ack(delivery_tag=method.delivery_tag)
-                    particle_picking_complete(body, sess)
-                except ValidationError as pve:
-                    print(f" [!] Failed to parse Particle Picking Complete body: {pve}")
-                    _log_issue(
-                        dict(
-                            message,
-                            **{"issue": f"Failed to parse Particle Picking Complete body: {pve}"},
-                        )
-                    )
-                    ch.basic_nack(delivery_tag=method.delivery_tag, requeue=False)
-
-            case MessageQueueEventType.PARTICLE_SELECTION_START:
-                try:
-                    body = ParticleSelectionStartBody(**message)
-                    print(f" [+] Particle Selection Start {body}")
-                    _log_info(
-                        dict(
-                            message,
-                            **{"info": f"Particle Selection Start {body}"},
-                        )
-                    )
-                    ch.basic_ack(delivery_tag=method.delivery_tag)
-                    particle_selection_start(body, sess)
-                except ValidationError as pve:
-                    print(f" [!] Failed to parse Particle Selection Start body: {pve}")
-                    _log_issue(
-                        dict(
-                            message,
-                            **{"issue": f"Failed to parse Particle Selection Start body: {pve}"},
-                        )
-                    )
-                    ch.basic_nack(delivery_tag=method.delivery_tag, requeue=False)
-
-            case MessageQueueEventType.PARTICLE_SELECTION_COMPLETE:
-                try:
-                    body = ParticleSelectionCompleteBody(**message)
-                    print(f" [+] Particle Selection Complete {body}")
-                    _log_info(
-                        dict(
-                            message,
-                            **{"info": f"Particle Selection Complete {body}"},
-                        )
-                    )
-                    ch.basic_ack(delivery_tag=method.delivery_tag)
-                    particle_selection_complete(body, sess)
-                except ValidationError as pve:
-                    print(f" [!] Failed to parse Particle Selection Complete body: {pve}")
-                    _log_issue(
-                        dict(
-                            message,
-                            **{"issue": f"Failed to parse Particle Selection Complete body: {pve}"},
-                        )
-                    )
-                    ch.basic_nack(delivery_tag=method.delivery_tag, requeue=False)
-
-            case MessageQueueEventType.SESSION_END:
-                try:
-                    body = SessionEndBody(**message)
-                    print(f" [+] Session End {body}")
-                    _log_info(
-                        dict(
-                            message,
-                            **{"info": f"Session End {body}"},
-                        )
-                    )
-                    ch.basic_ack(delivery_tag=method.delivery_tag)
-                    session_end(body, sess)
-                except ValidationError as pve:
-                    print(f" [!] Failed to parse Session End body: {pve}")
-                    _log_issue(
-                        dict(
-                            message,
-                            **{"issue": f"Failed to parse Session End body: {pve}"},
-                        )
-                    )
-                    ch.basic_nack(delivery_tag=method.delivery_tag, requeue=False)
+        handle_event(event_type, message, ch, method, sess)
 
     print("\n")
 
