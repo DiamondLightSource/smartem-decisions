@@ -15,6 +15,7 @@ description = "A proof of concept for a decision engine to automate CryoEM workf
 dependencies = [
     "annotated-types==0.7.0",
     "click==8.1.7",
+    "fastapi==0.115.6",
     "graypy==2.1.0",
     "markdown-it-py==3.0.0",
     "mdurl==0.1.2",
@@ -55,7 +56,7 @@ dev = [
 ]
 
 [project.scripts]
-smartem-decisions = "core.__main__:main"
+smartem-decisions = "smartem_decisions.__main__:main"
 
 [project.urls]
 GitHub = "https://github.com/DiamondLightSource/smartem-decisions"
@@ -66,7 +67,7 @@ name = "Val Redchenko"
 
 
 [tool.setuptools_scm]
-version_file = "src/core/_version.py"
+version_file = "src/smartem_decisions/_version.py"
 
 [tool.pyright]
 typeCheckingMode = "standard"

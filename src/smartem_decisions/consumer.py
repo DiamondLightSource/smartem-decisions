@@ -138,11 +138,15 @@ def handle_event(event_type: MessageQueueEventType, message: dict, ch, method, s
         MessageQueueEventType.GRID_SCAN_COMPLETE: (grid_scan_complete, GridScanCompleteBody),
         MessageQueueEventType.GRID_SQUARES_DECISION_START: (grid_squares_decision_start, GridSquaresDecisionStartBody),
         MessageQueueEventType.GRID_SQUARES_DECISION_COMPLETE: (
-        grid_squares_decision_complete, GridSquaresDecisionCompleteBody),
+            grid_squares_decision_complete,
+            GridSquaresDecisionCompleteBody,
+        ),
         MessageQueueEventType.FOIL_HOLES_DETECTED: (foil_holes_detected, FoilHolesDetectedBody),
         MessageQueueEventType.FOIL_HOLES_DECISION_START: (foil_holes_decision_start, FoilHolesDecisionStartBody),
         MessageQueueEventType.FOIL_HOLES_DECISION_COMPLETE: (
-        foil_holes_decision_complete, FoilHolesDecisionCompleteBody),
+            foil_holes_decision_complete,
+            FoilHolesDecisionCompleteBody,
+        ),
         MessageQueueEventType.MICROGRAPHS_DETECTED: (micrographs_detected, MicrographsDetectedBody),
         MessageQueueEventType.MOTION_CORRECTION_START: (motion_correction_start, MotionCorrectionStartBody),
         MessageQueueEventType.MOTION_CORRECTION_COMPLETE: (motion_correction_complete, MotionCorrectionCompleteBody),
@@ -186,7 +190,7 @@ def handle_event(event_type: MessageQueueEventType, message: dict, ch, method, s
 
 def on_message(ch, method, properties, body):
     print(f" [I] Received message with props={properties} and body: {body.decode()}")
-    message = json.loads(body.decode()) # TODO assumption of valid JSON here, handle mal-formed
+    message = json.loads(body.decode())  # TODO assumption of valid JSON here, handle mal-formed
 
     if "event_type" not in message:
         print(f" [!] Message missing 'event_type' field: {message}")

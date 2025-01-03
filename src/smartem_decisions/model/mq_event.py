@@ -17,6 +17,7 @@ from pydantic import (
 
 class MessageQueueEventType(str, Enum):
     """Enum listing various system events that are mapped to messages in RabbitMQ"""
+
     SESSION_START = "session started"
     SESSION_PAUSE = "session paused"
     SESSION_RESUME = "session resumed"
@@ -88,6 +89,7 @@ class MicrographsDetectedBody(GenericEventMessageBody):
     foilhole_id: int
     # micrographs: dict TODO
 
+
 class MotionCorrectionStartBody(GenericEventMessageBody):
     micrograph_id: int
 
@@ -157,6 +159,7 @@ class ParticleSelectionStartBody(GenericEventMessageBody):
         incomplete_batch_size: int = 10000
         relion_options: RelionServiceOptions
     """
+
     micrograph_id: int
 
 
@@ -182,4 +185,3 @@ class ParticleSelectionCompleteBody(BaseModel):
 
 class SessionEndBody(GenericEventMessageBody):
     session_id: int
-
