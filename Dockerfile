@@ -16,14 +16,26 @@ ENV PATH=/venv/bin:$PATH
 FROM developer AS build
 COPY . /context
 WORKDIR /context
-RUN touch dev-requirements.txt && pip install -c dev-requirements.txt .
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir uvicorn
+#RUN touch dev-requirements.txt && pip install -c dev-requirements.txt .
 
 # The runtime stage copies the built venv into a slim runtime container
 FROM python:${PYTHON_VERSION}-slim AS runtime
 # Add apt-get system dependecies for runtime here if needed
 COPY --from=build /venv/ /venv/
+COPY --from=build /context/ /app/
 ENV PATH=/venv/bin:$PATH
 
+# Copy .env.example as .env
+COPY .env.example /.env
+
 # change this entrypoint if it is not the same as the repo
-ENTRYPOINT ["smartem-decisions"]
-CMD ["--version"]
+#ENTRYPOINT ["smartem-decisions"]
+#CMD ["--version"]
+
+# Use a shell form of ENTRYPOINT to allow for environment variable expansion
+ENTRYPOINT ["/bin/bash", "-c"]
+# Combine the source command with uvicorn in the CMD instruction
+CMD ["source /.env && cd /app && uvicorn src.smartem_decisions.http_api:app --host 0.0.0.0 --port $HTTP_API_PORT"]

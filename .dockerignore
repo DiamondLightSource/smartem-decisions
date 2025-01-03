@@ -1,0 +1,11 @@
+.env
+cov.xml
+.copier-answers.yml
+.tox
+.venv
+.github
+.devcontainer
+.vscode
+build
+docker-compose.yaml
+Dockerfile
