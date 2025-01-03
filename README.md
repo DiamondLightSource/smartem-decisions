@@ -28,13 +28,40 @@ print(f"Hello smartem_decisions {__version__}")
 
 Or if it is a commandline tool then you might put some example commands here:
 
-```
-python -m smartem_decisions --version
-```
-
 <!-- README only content. Anything below this line won't be included in index.md -->
 
 See https://DiamondLightSource.github.io/smartem-decisions for more detailed documentation.
+
+## Running in development
+
+```bash
+# venv and requirements
+python -m venv .venv
+source .venv/bin/activate
+pip install -r dev-requirements.txt # or should it be done using poetry and .pyproject.toml?
+
+# create env and launch service stack locally:
+cp .env.example .env
+docker compose up -d
+
+# launch RabbitMQ worker (consumer)
+python src/smartem_decisions/consumer.py
+
+# simulating an system event: 
+./src/smartem_decisions/simulate_msg.py --help # to see list of options
+./tools/simulate-messages.sh # run a simulation, triggering system events in sequence
+
+# to install fastapi CLI: `pip install "fastapi[standard]"`
+fastapi dev src/smartem_decisions/http_api.py # run HTTP API in development
+source .env && uvicorn src.smartem_decisions.http_api:app --host 0.0.0.0 --port $HTTP_API_PORT # run HTTP API in  production
+
+python -m smartem_decisions --version
+
+# podman image/container operations:
+podman build --format docker . -t smartem_decisions # build image
+podman run -p 8000:8000 localhost/smartem_decisions # run container
+podman image rm localhost/smartem_decisions -f # clean up before rebuild
+```
 
 ## Notes
 
@@ -55,27 +82,3 @@ See https://DiamondLightSource.github.io/smartem-decisions for more detailed doc
     a list of coordinates of particles on that image:
     https://github.com/DiamondLightSource/cryoem-services/blob/main/src/cryoemservices/services/cryolo.py
   - particle filtering service: https://github.com/DiamondLightSource/cryoem-services/blob/main/src/cryoemservices/services/select_particles.py
-
-## Developing ~~Smart EPU Decision Service API~~ Athena API
-
-"Athena API" is the API exposed by the microscope, corresponding Open API definition is found under
-`docs/assets/swagger-decision-service-after-update.json`. From this definition we have generated some scaffolding
-for a mock API backend and a python client library.
-
-### Athena mock API
-
-Mock API backend can be found under `src/athena_api_mock_server` and launched as so:
-
-```bash
-cd src/athena_api_mock_server
-docker build -t athena_api_mock_server .
-docker run -p 8080:8080 athena_api_mock_server
-```
-
-At which point the Swagger UI should be available at http://localhost:8080/api/smartepu/docs/ui/
-
-Auto-generated client resides in `src/athena_api_client`
-
-### Simulating various events on the MQ
-
-See: `./src/smartem_decisions/simulate_msg.py --help`

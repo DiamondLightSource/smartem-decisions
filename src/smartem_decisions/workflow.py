@@ -47,7 +47,7 @@ The number of particles picked is about 300 per micrograph.
 About half of those are selected and half rejected
 """
 # TODO move this stuff to config
-num_of_grids_in_sample_container = random.randint(1, 12) # TODO yield from generator fn
+num_of_grids_in_sample_container = random.randint(1, 12)  # TODO yield from generator fn
 num_of_grid_squares_in_grid = 200
 num_of_foilholes_in_gridsquare = 100
 num_of_micrographs_in_foilhole = random.randint(4, 10)  # TODO yield from generator fn
@@ -69,13 +69,12 @@ def session_start(msg: SessionStartBody, sess) -> Optional[Session]:
             name=msg.name,
             status=SessionStatus.STARTED,
             session_start_time=datetime.now(timezone.utc),
-            **({'epu_id': msg.epu_id} if msg.epu_id is not None else {})
+            **({"epu_id": msg.epu_id} if msg.epu_id is not None else {}),
         )
         sess.add(new_session)
         sess.flush()
         grids = [
-            Grid(name=f"Grid {i:02}", session_id=new_session.id)
-            for i in range(1, num_of_grids_in_sample_container + 1)
+            Grid(name=f"Grid {i:02}", session_id=new_session.id) for i in range(1, num_of_grids_in_sample_container + 1)
         ]
         sess.add_all(grids)
         sess.commit()
@@ -156,8 +155,7 @@ def grid_scan_complete(msg: GridScanCompleteBody, sess) -> Optional[List[GridSqu
         sess.flush()
 
         gridsquares = [
-            GridSquare(name=f"Grid Square {i:02}", grid_id=grid.id)
-            for i in range(1, num_of_grid_squares_in_grid + 1)
+            GridSquare(name=f"Grid Square {i:02}", grid_id=grid.id) for i in range(1, num_of_grid_squares_in_grid + 1)
         ]
         sess.add_all(gridsquares)
         sess.commit()
@@ -165,7 +163,7 @@ def grid_scan_complete(msg: GridScanCompleteBody, sess) -> Optional[List[GridSqu
         # Refresh the gridsquares to ensure they have their database-generated IDs
         # for gridsquare in gridsquares:
         #     sess.refresh(gridsquare)
-        sess.refresh(grid, attribute_names=['gridsquares'])
+        sess.refresh(grid, attribute_names=["gridsquares"])
         gridsquares = grid.gridsquares
 
         return gridsquares
@@ -290,7 +288,7 @@ def foil_holes_detected(msg: FoilHolesDetectedBody, sess: Session) -> Optional[L
         sess.commit()
 
         # Refresh all foilholes in a single operation
-        sess.refresh(gridsquares[0], attribute_names=['foilholes'])
+        sess.refresh(gridsquares[0], attribute_names=["foilholes"])
         foilholes = [foilhole for gridsquare in gridsquares for foilhole in gridsquare.foilholes]
 
         return foilholes
@@ -334,11 +332,10 @@ def foil_holes_decision_start(msg: FoilHolesDecisionStartBody, sess: Session) ->
             logging.warning(f"No foil holes found for GridSquare id {msg.gridsquare_id}.")
             return None
 
-
         sess.commit()
 
         # Refresh all micrographs to ensure they have their database-generated IDs
-        sess.refresh(gridsquare, attribute_names=['foilholes'])
+        sess.refresh(gridsquare, attribute_names=["foilholes"])
         micrographs = [micrograph for foilhole in gridsquare.foilholes for micrograph in foilhole.micrographs]
 
         return micrographs

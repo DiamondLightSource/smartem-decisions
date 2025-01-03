@@ -69,13 +69,12 @@ def rogue_message(event_type_missing: bool = False):
 
 @simulate_msg_cli.command()
 def session_start(legit: bool = True):
-    """Simulates initiation of a new microscopy session
-    """
+    """Simulates initiation of a new microscopy session"""
     message = (
         {
             "event_type": str(MessageQueueEventType.SESSION_START.value),
             "name": "Untitled Session 02",
-            "epu_id": str(uuid4())
+            "epu_id": str(uuid4()),
         }
         if legit
         else {
@@ -88,8 +87,7 @@ def session_start(legit: bool = True):
 
 @simulate_msg_cli.command()
 def grid_scan_start(legit: bool = True):
-    """Simulates start of a grid scan
-    """
+    """Simulates start of a grid scan"""
     message = (
         {
             "event_type": str(MessageQueueEventType.GRID_SCAN_START.value),
@@ -125,8 +123,7 @@ def grid_scan_complete(legit: bool = True):
 
 @simulate_msg_cli.command()
 def grid_squares_decision_start(legit: bool = True):
-    """Simulates start of grid squares decision
-    """
+    """Simulates start of grid squares decision"""
     message = (
         {
             "event_type": str(MessageQueueEventType.GRID_SQUARES_DECISION_START.value),
@@ -181,8 +178,7 @@ def foil_holes_detected(legit: bool = True):
 
 @simulate_msg_cli.command()
 def foil_holes_decision_start(legit: bool = True):
-    """Simulates foil hole decision start
-    """
+    """Simulates foil hole decision start"""
     message = (
         {
             "event_type": str(MessageQueueEventType.FOIL_HOLES_DECISION_START.value),
@@ -200,8 +196,7 @@ def foil_holes_decision_start(legit: bool = True):
 @simulate_msg_cli.command()
 def foil_holes_decision_complete(legit: bool = True):
     # TODO supply actual foilhole decision mock data
-    """Simulates foil hole decision start
-    """
+    """Simulates foil hole decision start"""
     message = (
         {
             "event_type": str(MessageQueueEventType.FOIL_HOLES_DECISION_COMPLETE.value),
@@ -237,8 +232,7 @@ def micrographs_detected(legit: bool = True):
 
 @simulate_msg_cli.command()
 def motion_correction_start(legit: bool = True):
-    """Simulates micrograph motion correction start
-    """
+    """Simulates micrograph motion correction start"""
     message = (
         {
             "event_type": str(MessageQueueEventType.MOTION_CORRECTION_START.value),
@@ -255,15 +249,14 @@ def motion_correction_start(legit: bool = True):
 
 @simulate_msg_cli.command()
 def motion_correction_complete(legit: bool = True):
-    """Simulates micrograph motion correction completion
-    """
+    """Simulates micrograph motion correction completion"""
     message = (
         {
             "event_type": str(MessageQueueEventType.MOTION_CORRECTION_COMPLETE.value),
             "micrograph_id": 1,
             "total_motion": 0.123,
             "average_motion": 0.006,
-            "ctf_max_resolution_estimate": 0.123123, # TODO should this be ctf?
+            "ctf_max_resolution_estimate": 0.123123,  # TODO should this be ctf?
         }
         if legit
         else {
@@ -279,8 +272,7 @@ def motion_correction_complete(legit: bool = True):
 
 @simulate_msg_cli.command()
 def ctf_start(legit: bool = True):
-    """Simulates micrograph ctf start
-    """
+    """Simulates micrograph ctf start"""
     message = (
         {
             "event_type": str(MessageQueueEventType.CTF_START.value),
@@ -297,8 +289,7 @@ def ctf_start(legit: bool = True):
 
 @simulate_msg_cli.command()
 def ctf_complete(legit: bool = True):
-    """Simulates micrograph ctf completion
-    """
+    """Simulates micrograph ctf completion"""
     message = (
         {
             "event_type": str(MessageQueueEventType.CTF_COMPLETE.value),
@@ -318,8 +309,7 @@ def ctf_complete(legit: bool = True):
 
 @simulate_msg_cli.command()
 def particle_picking_start(legit: bool = True):
-    """Simulates the start of particle picking process
-    """
+    """Simulates the start of particle picking process"""
     message = (
         {
             "event_type": str(MessageQueueEventType.PARTICLE_PICKING_START.value),
@@ -336,8 +326,7 @@ def particle_picking_start(legit: bool = True):
 
 @simulate_msg_cli.command()
 def particle_picking_complete(legit: bool = True):
-    """Simulates completion of particle picking process
-    """
+    """Simulates completion of particle picking process"""
     message = (
         {
             "event_type": str(MessageQueueEventType.PARTICLE_PICKING_COMPLETE.value),
@@ -358,8 +347,7 @@ def particle_picking_complete(legit: bool = True):
 
 @simulate_msg_cli.command()
 def particle_selection_start(legit: bool = True):
-    """Simulates the start of particle selection process
-    """
+    """Simulates the start of particle selection process"""
     message = (
         {
             "event_type": str(MessageQueueEventType.PARTICLE_SELECTION_START.value),
@@ -376,8 +364,7 @@ def particle_selection_start(legit: bool = True):
 
 @simulate_msg_cli.command()
 def particle_selection_complete(legit: bool = True):
-    """Simulates completion of particle selection process
-    """
+    """Simulates completion of particle selection process"""
     message = (
         {
             "event_type": str(MessageQueueEventType.PARTICLE_SELECTION_COMPLETE.value),
@@ -400,8 +387,7 @@ def particle_selection_complete(legit: bool = True):
 
 @simulate_msg_cli.command()
 def session_end(legit: bool = True):
-    """Simulates session finalisation
-    """
+    """Simulates session finalisation"""
     message = (
         {
             "event_type": str(MessageQueueEventType.SESSION_END.value),
