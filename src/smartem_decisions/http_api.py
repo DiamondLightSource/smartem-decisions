@@ -154,4 +154,3 @@ def get_micrograph(micrograph_id: int, db: SqlAlchemySession = Depends(get_db)):
 @app.get("/foilholes/{foilhole_id}/micrographs", response_model=List[MicrographResponse])
 def get_foilhole_micrographs(foilhole_id: int, db: SqlAlchemySession = Depends(get_db)):
     return db.query(Micrograph).filter(Micrograph.foilhole_id == foilhole_id).all()
-

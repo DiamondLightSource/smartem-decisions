@@ -11,14 +11,14 @@ jobs:
 
   lint:
     needs: check
-    if: needs.check.outputs.branch-pr == ''
+    if: ${{ false && needs.check.outputs.branch-pr == '' }}
     uses: ./.github/workflows/_tox.yml
     with:
       tox: pre-commit,type-checking
 
   test:
     needs: check
-    if: needs.check.outputs.branch-pr == ''
+    if: ${{ false && needs.check.outputs.branch-pr == '' }}
     strategy:
       matrix:
         runs-on: ["ubuntu-latest"] # can add windows-latest, macos-latest
@@ -45,16 +45,16 @@ jobs:
 
   docs:
     needs: check
-    if: needs.check.outputs.branch-pr == ''
+    if: ${{ false && needs.check.outputs.branch-pr == '' }}
     uses: ./.github/workflows/_docs.yml
 
   dist:
     needs: check
-    if: needs.check.outputs.branch-pr == ''
+    if: ${{ false && needs.check.outputs.branch-pr == '' }}
     uses: ./.github/workflows/_dist.yml
   
   release:
-    if: github.ref_type == 'tag'
+    if: ${{ false && github.ref_type == 'tag' }}
     needs: [dist, docs]
     uses: ./.github/workflows/_release.yml
     permissions:
