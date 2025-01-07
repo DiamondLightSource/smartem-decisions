@@ -1,4 +1,19 @@
 services:
+  # OUR SERVICE, TODO: fix networking
+#  smartem_decisions:
+#    image: gcr.io/diamond-pubreg/smartem_decisions/smartem_decisions:latest
+#    ports:
+#      - "${HTTP_API_PORT}:${HTTP_API_PORT}"
+#    networks:
+#      - default
+#      - graylog_network
+#    depends_on:
+#      postgres:
+#        condition: service_started
+#      rabbitmq:
+#        condition: service_started
+#    restart: no
+
   # RABBITMQ STUFF
   rabbitmq:
     image: rabbitmq:management
@@ -102,11 +117,10 @@ services:
     restart: no
 
 networks:
+  default:
+    driver: bridge
   graylog_network:
     driver: bridge
-#    driver_opts:
-#      # Ref: https://docs.docker.com/engine/network/drivers/bridge/#options
-#      com.docker.network.bridge.enable_icc: "true"
 
 # Note: use of docker volumes here is not out of choice - mapping directories
 #   within the project's `./volumes` dir would have been preferable for portability
