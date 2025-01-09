@@ -38,7 +38,7 @@ jobs:
   container:
     needs: check
     if: needs.check.outputs.branch-pr == ''
-    uses: ./.github/workflows/_container.yml
+    uses: ./.github/workflows/_container-gcrio.yml
     permissions:
       contents: read
       packages: write
