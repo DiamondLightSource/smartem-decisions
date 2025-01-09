@@ -17,8 +17,8 @@ from sqlmodel import (
 )
 
 from .entity_status import (
-    SessionStatus,
-    SessionStatusType,
+    AcquisitionStatus,
+    AcquisitionStatusType,
     GridStatus,
     GridStatusType,
     GridSquareStatus,
@@ -30,25 +30,25 @@ from .entity_status import (
 )
 
 
-class Session(SQLModel, table=True):  # type: ignore
+class Acquisition(SQLModel, table=True):  # type: ignore
     id: Optional[int] = Field(default=None, primary_key=True)
     epu_id: Optional[str] = Field(default=None)
     name: str
-    status: SessionStatus = Field(default=SessionStatus.PLANNED, sa_column=Column(SessionStatusType()))
-    session_start_time: Optional[datetime] = Field(default=None)
-    session_end_time: Optional[datetime] = Field(default=None)
-    session_paused_time: Optional[datetime] = Field(default=None)
-    grids: List["Grid"] = Relationship(back_populates="session", cascade_delete=True)
+    status: AcquisitionStatus = Field(default=AcquisitionStatus.PLANNED, sa_column=Column(AcquisitionStatusType()))
+    start_time: Optional[datetime] = Field(default=None)
+    end_time: Optional[datetime] = Field(default=None)
+    paused_time: Optional[datetime] = Field(default=None)
+    grids: List["Grid"] = Relationship(back_populates="acquisition", cascade_delete=True)
 
 
 class Grid(SQLModel, table=True):  # type: ignore
     id: Optional[int] = Field(default=None, primary_key=True)
-    session_id: Optional[int] = Field(default=None, foreign_key="session.id")
+    acquisition_id: Optional[int] = Field(default=None, foreign_key="acquisition.id")
     status: GridStatus = Field(default=GridStatus.NONE, sa_column=Column(GridStatusType()))
     name: str
     scan_start_time: Optional[datetime] = Field(default=None)
     scan_end_time: Optional[datetime] = Field(default=None)
-    session: Optional[Session] = Relationship(back_populates="grids")
+    session: Optional[Acquisition] = Relationship(back_populates="grids")
     gridsquares: List["GridSquare"] = Relationship(back_populates="grid", cascade_delete=True)
 
 
@@ -102,7 +102,7 @@ def _create_db_and_tables(engine):
                     EXECUTE drop_statement;
                 END LOOP;
                 -- Drop the enum type if it exists
-                DROP TYPE IF EXISTS sessionstatus CASCADE;
+                DROP TYPE IF EXISTS acquisitionstatus CASCADE;
                 DROP TYPE IF EXISTS gridstatus CASCADE;
                 DROP TYPE IF EXISTS gridsquarestatus CASCADE;
                 DROP TYPE IF EXISTS foilholestatus CASCADE;
@@ -114,7 +114,7 @@ def _create_db_and_tables(engine):
 
     SQLModel.metadata.create_all(engine)
     """
-    SELECT enum_range(NULL::sessionstatus);
+    SELECT enum_range(NULL::acquisitionstatus);
     SELECT enum_range(NULL::gridstatus);
     SELECT enum_range(NULL::gridsquarestatus);
     SELECT enum_range(NULL::foilholestatus);

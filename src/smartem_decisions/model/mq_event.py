@@ -18,10 +18,10 @@ from pydantic import (
 class MessageQueueEventType(str, Enum):
     """Enum listing various system events that are mapped to messages in RabbitMQ"""
 
-    SESSION_START = "session started"
-    SESSION_PAUSE = "session paused"
-    SESSION_RESUME = "session resumed"
-    SESSION_END = "session ended"
+    ACQUISITION_START = "acquisition started"
+    ACQUISITION_PAUSE = "acquisition paused"
+    ACQUISITION_RESUME = "acquisition resumed"
+    ACQUISITION_END = "acquisition ended"
     GRID_SCAN_START = "grid scan started"
     GRID_SCAN_COMPLETE = "grid scan completed"
     GRID_SQUARES_DECISION_START = "grid squares decision started"
@@ -52,7 +52,7 @@ class GenericEventMessageBody(BaseModel):
         return str(event_type.value)
 
 
-class SessionStartBody(GenericEventMessageBody):
+class AcquisitionStartBody(GenericEventMessageBody):
     name: str
     epu_id: Optional[str] = None
 
@@ -183,5 +183,5 @@ class ParticleSelectionCompleteBody(BaseModel):
         return self
 
 
-class SessionEndBody(GenericEventMessageBody):
-    session_id: int
+class AcquisitionEndBody(GenericEventMessageBody):
+    acquisition_id: int

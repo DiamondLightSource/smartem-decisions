@@ -7,7 +7,7 @@ import logging
 
 
 from smartem_decisions.model.mq_event import (
-    SessionStartBody,
+    AcquisitionStartBody,
     GridScanStartBody,
     GridScanCompleteBody,
     GridSquaresDecisionStartBody,
@@ -24,16 +24,16 @@ from smartem_decisions.model.mq_event import (
     ParticlePickingCompleteBody,
     ParticleSelectionStartBody,
     ParticleSelectionCompleteBody,
-    SessionEndBody,
+    AcquisitionEndBody,
 )
 
 from smartem_decisions.model.database import (
-    Session,
+    Acquisition,
     Grid,
     GridSquare,
     FoilHole,
     Micrograph,
-    SessionStatus,
+    AcquisitionStatus,
     GridStatus,
     GridSquareStatus,
     FoilHoleStatus,
@@ -53,7 +53,7 @@ num_of_foilholes_in_gridsquare = 100
 num_of_micrographs_in_foilhole = random.randint(4, 10)  # TODO yield from generator fn
 
 
-def session_start(msg: SessionStartBody, sess) -> Optional[Session]:
+def acquisition_start(msg: AcquisitionStartBody, sess) -> Optional[Acquisition]:
     """
     Start a new session and create associated grids.
 
@@ -65,20 +65,20 @@ def session_start(msg: SessionStartBody, sess) -> Optional[Session]:
         The newly created session
     """
     try:
-        new_session = Session(
+        new_acquisition = Acquisition(
             name=msg.name,
-            status=SessionStatus.STARTED,
-            session_start_time=datetime.now(timezone.utc),
+            status=AcquisitionStatus.STARTED,
+            start_time=datetime.now(timezone.utc),
             **({"epu_id": msg.epu_id} if msg.epu_id is not None else {}),
         )
-        sess.add(new_session)
+        sess.add(new_acquisition)
         sess.flush()
         grids = [
-            Grid(name=f"Grid {i:02}", session_id=new_session.id) for i in range(1, num_of_grids_in_sample_container + 1)
+            Grid(name=f"Grid {i:02}", acquisition_id=new_acquisition.id) for i in range(1, num_of_grids_in_sample_container + 1)
         ]
         sess.add_all(grids)
         sess.commit()
-        return new_session
+        return new_acquisition
 
     except SQLAlchemyError as e:
         sess.rollback()
@@ -97,7 +97,7 @@ def grid_scan_start(msg: GridScanStartBody, sess) -> Optional[Grid]:
 
     Args:
         msg (GridScanStartBody): The message body containing the grid_id.
-        sess (Session): The database session.
+        sess: The database session.
 
     Returns:
         Optional[Grid]: The updated Grid object if found, None otherwise.
@@ -136,7 +136,7 @@ def grid_scan_complete(msg: GridScanCompleteBody, sess) -> Optional[List[GridSqu
 
     Args:
         msg (GridScanCompleteBody): The message body containing the grid_id.
-        sess (Session): The database session.
+        sess: The database session.
 
     Returns:
         Optional[List[GridSquare]]: A list of newly created GridSquare objects if successful, None otherwise.
@@ -181,13 +181,13 @@ def grid_scan_complete(msg: GridScanCompleteBody, sess) -> Optional[List[GridSqu
 
 # TODO check if Optional[List[GridSquare]] could be replaced with Optional[Grid] as that would presumably
 #   contain gridsquares via a backref anyway?
-def grid_squares_decision_start(msg: GridSquaresDecisionStartBody, sess: Session) -> Optional[Grid]:
+def grid_squares_decision_start(msg: GridSquaresDecisionStartBody, sess) -> Optional[Grid]:
     """
     Start the grid squares decision process for a grid.
 
     Args:
         msg (GridSquaresDecisionStartBody): The message body containing the grid_id.
-        sess (Session): The database session.
+        sess: The database session.
 
     Returns:
         Optional[Grid]: The updated Grid object if found, None otherwise.
@@ -221,13 +221,13 @@ def grid_squares_decision_start(msg: GridSquaresDecisionStartBody, sess: Session
 # TODO record the actual grid squares decision
 # TODO check if Optional[List[GridSquare]] could be replaced with Optional[Grid] as that would presumably
 #   contain gridsquares via a backref anyway?
-def grid_squares_decision_complete(msg: GridSquaresDecisionCompleteBody, sess: Session) -> Optional[Grid]:
+def grid_squares_decision_complete(msg: GridSquaresDecisionCompleteBody, sess) -> Optional[Grid]:
     """
     Complete the grid squares decision process for a grid.
 
     Args:
         msg (GridSquaresDecisionCompleteBody): The message body containing the grid_id.
-        sess (Session): The database session.
+        sess: The database session.
 
     Returns:
         Optional[Grid]: The updated Grid object if found, None otherwise.
@@ -259,13 +259,13 @@ def grid_squares_decision_complete(msg: GridSquaresDecisionCompleteBody, sess: S
 
 
 # TODO update status of each GridSquare for which foil holes were detected
-def foil_holes_detected(msg: FoilHolesDetectedBody, sess: Session) -> Optional[List[FoilHole]]:
+def foil_holes_detected(msg: FoilHolesDetectedBody, sess) -> Optional[List[FoilHole]]:
     """
     Detect and create foil holes for grid squares associated with a given grid.
 
     Args:
         msg (FoilHolesDetectedBody): The message body containing the grid_id.
-        sess (Session): The database session.
+        sess (Acquisition): The database session.
 
     Returns:
         Optional[List[FoilHole]]: A list of newly created FoilHole objects if successful, None otherwise.
@@ -304,13 +304,13 @@ def foil_holes_detected(msg: FoilHolesDetectedBody, sess: Session) -> Optional[L
         raise
 
 
-def foil_holes_decision_start(msg: FoilHolesDecisionStartBody, sess: Session) -> Optional[List[Micrograph]]:
+def foil_holes_decision_start(msg: FoilHolesDecisionStartBody, sess) -> Optional[List[Micrograph]]:
     """
     Start the foil holes decision process for a grid square and create associated micrographs.
 
     Args:
         msg (FoilHolesDecisionStartBody): The message body containing the gridsquare_id.
-        sess (Session): The database session.
+        sess: The database session.
 
     Returns:
         Optional[List[Micrograph]]: A list of newly created Micrograph objects if successful, None otherwise.
@@ -352,13 +352,13 @@ def foil_holes_decision_start(msg: FoilHolesDecisionStartBody, sess: Session) ->
 
 
 # TODO record the actual foilholes decision and identify what format that might have
-def foil_holes_decision_complete(msg: FoilHolesDecisionCompleteBody, sess: Session) -> Optional[GridSquare]:
+def foil_holes_decision_complete(msg: FoilHolesDecisionCompleteBody, sess) -> Optional[GridSquare]:
     """
     Complete the foil holes decision process for a grid square.
 
     Args:
         msg (FoilHolesDecisionCompleteBody): The message body containing the gridsquare_id.
-        sess (Session): The database session.
+        sess: The database session.
 
     Returns:
         Optional[GridSquare]: The updated GridSquare object if found, None otherwise.
@@ -390,7 +390,7 @@ def foil_holes_decision_complete(msg: FoilHolesDecisionCompleteBody, sess: Sessi
         raise
 
 
-def micrographs_detected(msg: MicrographsDetectedBody, sess: Session) -> Optional[List[Micrograph]]:
+def micrographs_detected(msg: MicrographsDetectedBody, sess) -> Optional[List[Micrograph]]:
     """
     Detect and create micrographs for foil holes associated with a given grid square.
     On the microscope the user will create a template for the micrograph shots they want to take in the foil holes,
@@ -400,7 +400,7 @@ def micrographs_detected(msg: MicrographsDetectedBody, sess: Session) -> Optiona
 
     Args:
         msg (MicrographsDetectedBody): The message body containing foilhole_id.
-        sess (Session): The database session.
+        sess: The database session.
 
     Returns:
         Optional[List[Micrograph]]: A list of newly created Micrograph objects with database IDs if successful, None otherwise.
@@ -443,13 +443,13 @@ def micrographs_detected(msg: MicrographsDetectedBody, sess: Session) -> Optiona
         raise
 
 
-def motion_correction_start(msg: MotionCorrectionStartBody, sess: Session) -> Optional[Micrograph]:
+def motion_correction_start(msg: MotionCorrectionStartBody, sess) -> Optional[Micrograph]:
     """
     Start the motion correction process for a micrograph.
 
     Args:
         msg (MotionCorrectionStartBody): The message body containing the micrograph_id.
-        sess (Session): The database session.
+        sess: The database session.
 
     Returns:
         Optional[Micrograph]: The updated Micrograph object if found, None otherwise.
@@ -481,13 +481,13 @@ def motion_correction_start(msg: MotionCorrectionStartBody, sess: Session) -> Op
         raise
 
 
-def motion_correction_complete(msg: MotionCorrectionCompleteBody, sess: Session) -> Optional[Micrograph]:
+def motion_correction_complete(msg: MotionCorrectionCompleteBody, sess) -> Optional[Micrograph]:
     """
     Complete the motion correction process for a micrograph.
 
     Args:
         msg (MotionCorrectionCompleteBody): The message body containing the micrograph_id.
-        sess (Session): The database session.
+        sess: The database session.
 
     Returns:
         Optional[Micrograph]: The updated Micrograph object if found, None otherwise.
@@ -519,13 +519,13 @@ def motion_correction_complete(msg: MotionCorrectionCompleteBody, sess: Session)
         raise
 
 
-def ctf_start(msg: CtfStartBody, sess: Session) -> Optional[Micrograph]:
+def ctf_start(msg: CtfStartBody, sess) -> Optional[Micrograph]:
     """
     Start the Contrast Transfer Function (CTF) process for a micrograph.
 
     Args:
         msg (CtfStartBody): The message body containing the micrograph_id.
-        sess (Session): The database session.
+        sess: The database session.
 
     Returns:
         Optional[Micrograph]: The updated Micrograph object if found, None otherwise.
@@ -557,13 +557,13 @@ def ctf_start(msg: CtfStartBody, sess: Session) -> Optional[Micrograph]:
         raise
 
 
-def ctf_complete(msg: CtfCompleteBody, sess: Session) -> Optional[Micrograph]:
+def ctf_complete(msg: CtfCompleteBody, sess) -> Optional[Micrograph]:
     """
     Complete the Contrast Transfer Function (CTF) process for a micrograph.
 
     Args:
         msg (CtfCompleteBody): The message body containing the micrograph_id.
-        sess (Session): The database session.
+        sess: The database session.
 
     Returns:
         Optional[Micrograph]: The updated Micrograph object if found, None otherwise.
@@ -600,13 +600,13 @@ def ctf_complete(msg: CtfCompleteBody, sess: Session) -> Optional[Micrograph]:
         raise
 
 
-def particle_picking_start(msg: ParticlePickingStartBody, sess: Session) -> Optional[Micrograph]:
+def particle_picking_start(msg: ParticlePickingStartBody, sess) -> Optional[Micrograph]:
     """
     Start the particle picking process for a micrograph.
 
     Args:
         msg (ParticlePickingStartBody): The message body containing the micrograph_id.
-        sess (Session): The database session.
+        sess: The database session.
 
     Returns:
         Optional[Micrograph]: The updated Micrograph object if found, None otherwise.
@@ -638,13 +638,13 @@ def particle_picking_start(msg: ParticlePickingStartBody, sess: Session) -> Opti
         raise
 
 
-def particle_picking_complete(msg: ParticlePickingCompleteBody, sess: Session) -> Optional[Micrograph]:
+def particle_picking_complete(msg: ParticlePickingCompleteBody, sess) -> Optional[Micrograph]:
     """
     Complete the particle picking process for a micrograph.
 
     Args:
         msg (ParticlePickingCompleteBody): The message body containing the micrograph_id.
-        sess (Session): The database session.
+        sess: The database session.
 
     Returns:
         Optional[Micrograph]: The updated Micrograph object if found, None otherwise.
@@ -677,13 +677,13 @@ def particle_picking_complete(msg: ParticlePickingCompleteBody, sess: Session) -
         raise
 
 
-def particle_selection_start(msg: ParticleSelectionStartBody, sess: Session) -> Optional[Micrograph]:
+def particle_selection_start(msg: ParticleSelectionStartBody, sess) -> Optional[Micrograph]:
     """
     Start the particle selection process for a micrograph.
 
     Args:
         msg (ParticleSelectionStartBody): The message body containing the micrograph_id.
-        sess (Session): The database session.
+        sess: The database session.
 
     Returns:
         Optional[Micrograph]: The updated Micrograph object if found, None otherwise.
@@ -715,13 +715,13 @@ def particle_selection_start(msg: ParticleSelectionStartBody, sess: Session) -> 
         raise
 
 
-def particle_selection_complete(msg: ParticleSelectionCompleteBody, sess: Session) -> Optional[Micrograph]:
+def particle_selection_complete(msg: ParticleSelectionCompleteBody, sess) -> Optional[Micrograph]:
     """
     Complete the particle selection process for a micrograph.
 
     Args:
         msg (ParticleSelectionCompleteBody): The message body containing the micrograph_id.
-        sess (Session): The database session.
+        sess: The database session.
 
     Returns:
         Optional[Micrograph]: The updated Micrograph object if found, None otherwise.
@@ -756,13 +756,13 @@ def particle_selection_complete(msg: ParticleSelectionCompleteBody, sess: Sessio
         raise
 
 
-def session_end(msg: SessionEndBody, sess: Session) -> Optional[Session]:
+def acquisition_end(msg: AcquisitionEndBody, sess) -> Optional[Acquisition]:
     """
     Complete the session process for a given session ID. TODO work out some stats, trigger deposition
 
     Args:
-        msg (SessionEndBody): The message body containing the session_id.
-        sess (Session): The database session.
+        msg (AcquisitionEndBody): The message body containing the session_id.
+        sess: The database session.
 
     Returns:
         Optional[Session]: The updated Session object if found, None otherwise.
@@ -771,18 +771,18 @@ def session_end(msg: SessionEndBody, sess: Session) -> Optional[Session]:
         SQLAlchemyError: If there's a database-related error.
     """
     try:
-        existing_session = sess.exec(select(Session).where(Session.id == msg.session_id)).first()
-        if not existing_session:
-            logging.warning(f"Session with id {msg.session_id} not found.")
+        existing_acquisition = sess.exec(select(Acquisition).where(Acquisition.id == msg.acquisition_id)).first()
+        if not existing_acquisition:
+            logging.warning(f"Session with id {msg.acquisition_id} not found.")
             return None
 
-        existing_session.status = SessionStatus.COMPLETED
-        existing_session.session_end_time = datetime.now(timezone.utc)
-        sess.add(existing_session)
+        existing_acquisition.status = AcquisitionStatus.COMPLETED
+        existing_acquisition.end_time = datetime.now(timezone.utc)
+        sess.add(existing_acquisition)
         sess.commit()
-        sess.refresh(existing_session)
+        sess.refresh(existing_acquisition)
 
-        return existing_session
+        return existing_acquisition
 
     except SQLAlchemyError as e:
         sess.rollback()

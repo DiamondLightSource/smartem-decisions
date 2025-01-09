@@ -3,7 +3,7 @@ from datetime import datetime
 from typing import Optional
 
 from .entity_status import (
-    SessionStatus,
+    AcquisitionStatus,
     GridStatus,
     GridSquareStatus,
     FoilHoleStatus,
@@ -11,11 +11,11 @@ from .entity_status import (
 )
 
 
-class SessionResponse(BaseModel):
+class AcquisitionResponse(BaseModel):
     id: int
     epu_id: Optional[str]
     name: str
-    status: SessionStatus
+    status: AcquisitionStatus
     session_start_time: Optional[datetime]
     session_end_time: Optional[datetime]
     session_paused_time: Optional[datetime]

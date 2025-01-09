@@ -7,8 +7,8 @@ python src/smartem_decisions/model/database.py
 #python src/smartem_decisions/simulate_msg.py rogue-message
 #python src/smartem_decisions/simulate_msg.py rogue-message --no-event-type-missing
 
-python src/smartem_decisions/simulate_msg.py session-start
-#python src/smartem_decisions/simulate_msg.py session-start --no-legit
+python src/smartem_decisions/simulate_msg.py acquisition-start
+#python src/smartem_decisions/simulate_msg.py acquisition-start --no-legit
 sleep 1
 
 python src/smartem_decisions/simulate_msg.py grid-scan-start
@@ -75,7 +75,7 @@ python src/smartem_decisions/simulate_msg.py particle-selection-complete
 #python src/smartem_decisions/simulate_msg.py particle-selection-complete --no-legit
 sleep 1
 
-python src/smartem_decisions/simulate_msg.py session-end
-#python src/smartem_decisions/simulate_msg.py session-end --no-legit
+python src/smartem_decisions/simulate_msg.py acquisition-end
+#python src/smartem_decisions/simulate_msg.py acquisition-end --no-legit
 
 exit 0

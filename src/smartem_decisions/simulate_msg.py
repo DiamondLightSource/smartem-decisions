@@ -68,17 +68,17 @@ def rogue_message(event_type_missing: bool = False):
 
 
 @simulate_msg_cli.command()
-def session_start(legit: bool = True):
+def acquisition_start(legit: bool = True):
     """Simulates initiation of a new microscopy session"""
     message = (
         {
-            "event_type": str(MessageQueueEventType.SESSION_START.value),
+            "event_type": str(MessageQueueEventType.ACQUISITION_START.value),
             "name": "Untitled Session 02",
             "epu_id": str(uuid4()),
         }
         if legit
         else {
-            "event_type": str(MessageQueueEventType.SESSION_START.value),
+            "event_type": str(MessageQueueEventType.ACQUISITION_START.value),
             "title": "Untitled 01",
         }
     )
@@ -272,7 +272,7 @@ def motion_correction_complete(legit: bool = True):
 
 @simulate_msg_cli.command()
 def ctf_start(legit: bool = True):
-    """Simulates micrograph ctf start"""
+    """Simulates micrograph CTF start"""
     message = (
         {
             "event_type": str(MessageQueueEventType.CTF_START.value),
@@ -386,16 +386,16 @@ def particle_selection_complete(legit: bool = True):
 
 
 @simulate_msg_cli.command()
-def session_end(legit: bool = True):
-    """Simulates session finalisation"""
+def acquisition_end(legit: bool = True):
+    """Simulates acquisition finalisation"""
     message = (
         {
-            "event_type": str(MessageQueueEventType.SESSION_END.value),
+            "event_type": str(MessageQueueEventType.ACQUISITION_END.value),
             "session_id": 1,
         }
         if legit
         else {
-            "event_type": str(MessageQueueEventType.SESSION_END.value),
+            "event_type": str(MessageQueueEventType.ACQUISITION_END.value),
             "sess_id": str(uuid4()),
         }
     )

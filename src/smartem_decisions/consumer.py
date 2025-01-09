@@ -13,7 +13,7 @@ from pydantic import ValidationError
 from smartem_decisions.utils import load_conf
 from smartem_decisions.model.mq_event import (
     MessageQueueEventType,
-    SessionStartBody,
+    AcquisitionStartBody,
     GridScanStartBody,
     GridScanCompleteBody,
     GridSquaresDecisionStartBody,
@@ -30,10 +30,10 @@ from smartem_decisions.model.mq_event import (
     ParticlePickingCompleteBody,
     ParticleSelectionStartBody,
     ParticleSelectionCompleteBody,
-    SessionEndBody,
+    AcquisitionEndBody,
 )
 from smartem_decisions.workflow import (
-    session_start,
+    acquisition_start,
     grid_scan_start,
     grid_scan_complete,
     grid_squares_decision_start,
@@ -50,7 +50,7 @@ from smartem_decisions.workflow import (
     particle_picking_complete,
     particle_selection_start,
     particle_selection_complete,
-    session_end,
+    acquisition_end,
 )
 
 load_dotenv()
@@ -133,7 +133,7 @@ engine = create_engine(
 def handle_event(event_type: MessageQueueEventType, message: dict, ch, method, sess):
     # Map event types to their corresponding handlers and body types
     event_handlers = {
-        MessageQueueEventType.SESSION_START: (session_start, SessionStartBody),
+        MessageQueueEventType.ACQUISITION_START: (acquisition_start, AcquisitionStartBody),
         MessageQueueEventType.GRID_SCAN_START: (grid_scan_start, GridScanStartBody),
         MessageQueueEventType.GRID_SCAN_COMPLETE: (grid_scan_complete, GridScanCompleteBody),
         MessageQueueEventType.GRID_SQUARES_DECISION_START: (grid_squares_decision_start, GridSquaresDecisionStartBody),
@@ -156,7 +156,7 @@ def handle_event(event_type: MessageQueueEventType, message: dict, ch, method, s
         MessageQueueEventType.PARTICLE_PICKING_COMPLETE: (particle_picking_complete, ParticlePickingCompleteBody),
         MessageQueueEventType.PARTICLE_SELECTION_START: (particle_selection_start, ParticleSelectionStartBody),
         MessageQueueEventType.PARTICLE_SELECTION_COMPLETE: (particle_selection_complete, ParticleSelectionCompleteBody),
-        MessageQueueEventType.SESSION_END: (session_end, SessionEndBody),
+        MessageQueueEventType.ACQUISITION_END: (acquisition_end, AcquisitionEndBody),
     }
 
     if event_type not in event_handlers:

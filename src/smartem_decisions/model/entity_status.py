@@ -3,7 +3,7 @@ from sqlalchemy import Enum as SQLAlchemyEnum
 from sqlalchemy.types import TypeDecorator, VARCHAR
 
 
-class SessionStatus(str, Enum):
+class AcquisitionStatus(str, Enum):
     PLANNED = "planned"
     STARTED = "started"
     COMPLETED = "completed"
@@ -11,13 +11,13 @@ class SessionStatus(str, Enum):
     ABANDONED = "abandoned"
 
 
-class SessionStatusType(TypeDecorator):
+class AcquisitionStatusType(TypeDecorator):
     impl = VARCHAR
     cache_ok = True
 
     def __init__(self):
         super().__init__()
-        self.impl = SQLAlchemyEnum(SessionStatus, name="sessionstatus")
+        self.impl = SQLAlchemyEnum(AcquisitionStatus, name="acquisitionstatus")
 
 
 class GridStatus(str, Enum):
