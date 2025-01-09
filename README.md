@@ -41,47 +41,47 @@ graph LR
             api["SmartEM Core Service & API"]
             dp["Data Processing Pipeline & ML Services"]
         end
-        
+
         subgraph infrastructure["Infrastructure Components"]
-            log["Logging Backend\n(Graylog)"]
-            db[("Persistent App State\n(PostgreSQL)")]
+            log["Logging Backend (Graylog)"]
+            db[("Persistent App State (PostgreSQL)")]
             mq[("Event Broker\n(RabbitMQ)")]
         end
     end
-    
-    subgraph ext["Acquisition System (external)"]
+
+    subgraph ext["Acquisition Systems (external)"]
         direction TB
-        em["Electron\nMicroscope"]
-        ws["Desktop\nWorkstation"]
-        athena["Athena API"]
+        em["Electron Microscope (ThermoFisher)"]
+        gpfs[("GPFS")]
+        epu["EPU Workstation (Windows with cygwin)"]
+        athena["Athena HTTP API Server"]
     end
-    
+
     %% Internal connections
-    api <===> db
-    api <--> mq
-    dp <--> mq
-    api -.-> log
-    
+    api --> db
+    api --> mq
+    dp --> mq
+    api --> log
+
     %% External connections
-    em -.-> ws
-    ws -.-> athena
-    api -.-> athena
-    ws -.-> api
-    
+    em --> epu
+    epu --> gpfs
+    epu --> athena
+    api --> athena
+    epu --> api
+
     %% Styling
     classDef k8s fill:#e6f3ff,stroke:#666
     classDef core fill:#f9f9f9,stroke:#666
     classDef infra fill:#f5f5f5,stroke:#666
     classDef ext fill:#fff5e6,stroke:#666
-    
+
     class k8s k8s
     class core core
     class infrastructure infra
     class ext ext
     %% Link styling
-    linkStyle 0 stroke:#0066cc,stroke-width:2
-    linkStyle 1,2 stroke:#00cc66
-    linkStyle 3,4,5,6,7 stroke:#ff9999,stroke-dasharray: 5, 5
+    linkStyle 0,1,2,3,4,5,6,7,8 stroke:#666
 ```
 
 ## Running in development
