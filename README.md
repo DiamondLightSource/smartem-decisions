@@ -32,6 +32,58 @@ Or if it is a commandline tool then you might put some example commands here:
 
 See https://DiamondLightSource.github.io/smartem-decisions for more detailed documentation.
 
+## Architectural Overview
+
+```mermaid
+graph LR
+    subgraph k8s["Kubernetes Cluster (Scientific Compute)"]
+        subgraph core["Core Services"]
+            api["SmartEM Core Service & API"]
+            dp["Data Processing Pipeline & ML Services"]
+        end
+        
+        subgraph infrastructure["Infrastructure Components"]
+            log["Logging Backend\n(Graylog)"]
+            db[("Persistent App State\n(PostgreSQL)")]
+            mq[("Event Broker\n(RabbitMQ)")]
+        end
+    end
+    
+    subgraph ext["Acquisition System (external)"]
+        direction TB
+        em["Electron\nMicroscope"]
+        ws["Desktop\nWorkstation"]
+        athena["Athena API"]
+    end
+    
+    %% Internal connections
+    api <===> db
+    api <--> mq
+    dp <--> mq
+    api -.-> log
+    
+    %% External connections
+    em -.-> ws
+    ws -.-> athena
+    api -.-> athena
+    ws -.-> api
+    
+    %% Styling
+    classDef k8s fill:#e6f3ff,stroke:#666
+    classDef core fill:#f9f9f9,stroke:#666
+    classDef infra fill:#f5f5f5,stroke:#666
+    classDef ext fill:#fff5e6,stroke:#666
+    
+    class k8s k8s
+    class core core
+    class infrastructure infra
+    class ext ext
+    %% Link styling
+    linkStyle 0 stroke:#0066cc,stroke-width:2
+    linkStyle 1,2 stroke:#00cc66
+    linkStyle 3,4,5,6,7 stroke:#ff9999,stroke-dasharray: 5, 5
+```
+
 ## Running in development
 
 ```bash
