@@ -16,7 +16,7 @@ from sqlmodel import (
     Relationship,
 )
 
-from .entity_status import (
+from smartem_decisions.model.entity_status import (
     AcquisitionStatus,
     AcquisitionStatusType,
     GridStatus,
@@ -48,7 +48,7 @@ class Grid(SQLModel, table=True):  # type: ignore
     name: str
     scan_start_time: Optional[datetime] = Field(default=None)
     scan_end_time: Optional[datetime] = Field(default=None)
-    session: Optional[Acquisition] = Relationship(back_populates="grids")
+    acquisition: Optional[Acquisition] = Relationship(back_populates="grids")
     gridsquares: List["GridSquare"] = Relationship(back_populates="grid", cascade_delete=True)
 
 

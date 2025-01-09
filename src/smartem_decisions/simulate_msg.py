@@ -391,7 +391,7 @@ def acquisition_end(legit: bool = True):
     message = (
         {
             "event_type": str(MessageQueueEventType.ACQUISITION_END.value),
-            "session_id": 1,
+            "acquisition_id": 1,
         }
         if legit
         else {
