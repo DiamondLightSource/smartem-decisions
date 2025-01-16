@@ -6,6 +6,7 @@ __pycache__/
 *.so
 
 .idea
+output.txt
 
 .env
 log/
@@ -74,3 +75,6 @@ lockfiles/
 
 # ruff cache
 .ruff_cache/
+
+# test data - too large for version control
+tests/testdata/metadata_Supervisor_20250108_101446_62_cm40593-1_EPU/
