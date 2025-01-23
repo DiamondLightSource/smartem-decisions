@@ -5,12 +5,12 @@ using a cryo-electron microscope
 
 ## Directory structure
 
-As the original directory containing a complete dataset is too large, I've created a representative example for
-your reference:
+Since an original directory containing complete dataset can be impractically large, here's a representative
+example for our reference:
 
 ```
-$ tree tests/testdata/example
-tests/testdata/example
+$ tree example
+example
 ├── EpuSession.dm
 ├── Images-Disc1
 │  ├── GridSquare_8999138
@@ -46,68 +46,19 @@ tests/testdata/example
 ```
 
 - An EPU directory consists of multiple subdirectories as well as `.xml`, `.dm` and `.jpg` files
-  - `.dm` files are actually XML files
-  - You may ignore any `.jpg` files at any level of nesting at this time
-- An EPU directory will contain a file named `EpuSession.dm` at root level, this will be the entrypoint for our parser
+- Any `.dm` files are actually XML files
+- An EPU directory will contain a file named `EpuSession.dm` at root level.
+  This is the acquisition session manifest
 - An EPU directory will contain a subdirectory named `Metadata` at root level
   - `Metadata` directory is flat and contains a large list of files all using a naming convention
     `GridSquare_<gridsquare_id>.dm`, for example: `GridSquare_8999138.dm`, `GridSquare_8999186.dm`
   - Some metadata GridSquare files will have a significantly larger file size than others. Those are the ones
-    that were of interest and so further scanned took place during the acquisition session.
-  - The rest of GridSquare files under `Metadata/` will be around 2.8Kb in size
-- An EPU directory will contain a subdirectory named `Images-Disc1` at root level, let's call it a "Disk Images Dir"
-  - It's possible to multiple such subdirectories with a naming convention `Images-Disc<int>`, let's assume
-    there might be up to a dozen.
+    that were of interest and so further scans took place during the acquisition session.
+  - The rest of GridSquare files under `Metadata/` are typically around 2.8Kb in size
+- An EPU directory contains at least one subdirectory named `Images-Disc1` at root level,
+  and it's possible to have multiple subdirectories with a naming convention `Images-Disc<int>`, let's assume
+  there might be up to a dozen.
   - An Images-Disc<int> directory will contain a number of subdirectories following a naming convention,
     `GridSquare_<gridsquare_id>`, corresponding to GridSquare files in `Metadata/`, but only for GridSquares of interest
     where further scanning took place. Let's call a directory under `Images-Disc<int>/GridSquare_<gridsquare_id>` a
     "GridSquare Data Dir"
-
-## Parser script pseudocode
-
-Define dataclasses for: `AcquisitionSession`, `GridSquare`, `FoilHole`
-Accept path to `epu_data_dir`
-Find `epu_data_dir/EpuSession.dm`, check exists, check is valid XML
-Load session metadata from `EpuSession.dm`:
-  - parse acquisition session metadata
-    - `EpuSessionXml/Id`
-    - `EpuSessionXml/Name`
-    - `EpuSessionXml/StartDateTime`
-  - session settings
-    - `EpuSessionXml/AutoFocusEnabled`
-    - `EpuSessionXml/AutoStageTimeEnabled`
-    - `EpuSessionXml/AutoZeroLossEnabled`
-    - `EpuSessionXml/AutoZeroLossPeriodicity`
-    - `EpuSessionXml/AutoloaderSlot`
-    - `EpuSessionXml/ClusteringMode`
-    - `EpuSessionXml/ClusteringRadius`
-    - `EpuSessionXml/DoseFractionsOutputFormat`
-    - `EpuSessionXml/EnableSmartHoleSelection`
-    - `EpuSessionXml/IceThicknessEnabled`
-    - `EpuSessionXml/ImageFileFormat`
-    - `EpuSessionXml/IsManuallySelected`
-    - `EpuSessionXml/IsSmartFilterGridSquareDecisionKnown`
-    - `TiltAngle`
-    - `TiltedAcquisitionEnabled`
-    - `EpuSessionXml/PhasePlateAccelerateEnabled`
-    - `EpuSessionXml/PhasePlateActivationTime`
-    - `EpuSessionXml/PhasePlateEnabled`
-    - `EpuSessionXml/PhasePlatePeriodicity`
-    - `EpuSessionXml/RemoveHolesCloseToGridBarOnAutomaticRun`
-    - `EpuSessionXml/SkipGridSquareEnabled`
-    - `EpuSessionXml/SmartFoilHoleFindingEnabled`
-    - `EpuSessionXml/SmartGridSquareEnabled`
-  - parse software version
-    - `Version/a:_Major`
-    - `Version/a:_Minor`
-    - `Version/a:_Revision`
-    - `Version/a:_Build`
-  - **TODO** See what useful stuff can be extracted from `EpuSessionXml/Samples/_items`
-- find all `Images-Disc<int>` directories 
-- load total list of grid squares from `/Metadata` directory
-- identify active grid squares by matching against contents of `Images-Disc<int>` dir
-- parse useful data out of `Images-Disc<int>/GridSquare_<id>/GridSquare_<ts>.xml`
-  - **TODO**
-- **TODO** parse contents of `Images-Disc<int>/GridSquare_<id>/Data`
-- **TODO** parse contents of `Images-Disc<int>/GridSquare_<id>/FoilHoles`
-- **TODO** get list of foil holes and foil hole data
