@@ -85,3 +85,15 @@ example
     `GridSquare_<gridsquare_id>`, corresponding to GridSquare files in `Metadata/`, but only for GridSquares of interest
     where further scanning took place. Let's call a directory under `Images-Disc<int>/GridSquare_<gridsquare_id>` a
     "GridSquare Data Dir"
+
+## Filesystem watcher
+
+We need to watch the EPU output directory for changes, to that end:
+
+```bash
+# Launch the watcher:
+python src/smartem_decisions/epu_data_intake//watcher.py ../fs-watcher-test-dir
+
+# In another terminal launch a simulator that randomly writes to target dir:
+python src/smartem_decisions/epu_data_intake/test_watcher.py ../fs-watcher-test-dir
+```
