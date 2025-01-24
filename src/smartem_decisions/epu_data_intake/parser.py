@@ -14,28 +14,14 @@ import typer
 @dataclass
 class MicrographManifest:
     acquisition_datetime: datetime
-    magnification: float
     defocus: float
-    pixel_size: float
-    dose_rate: float
-    dose: float
-    exposure_time: float
     detector_name: str
-    acceleration_voltage: int
-    spherical_aberration: Optional[float]
     energy_filter: bool
     phase_plate: bool
-    beam_shift_x: float
-    beam_shift_y: float
-    beam_tilt_x: float
-    beam_tilt_y: float
     image_size_x: int
     image_size_y: int
     binning_x: int
     binning_y: int
-    number_of_fractions: Optional[int]
-    super_resolution_factor: int
-    electron_counting: bool
 
 
 @dataclass
@@ -45,6 +31,11 @@ class MicrographData:
     foilhole_id: str
     manifest_file: Path
     manifest: MicrographManifest
+    # TODO:
+    #  1. add positioning on foilhole. So in a path akin `'FoilHole_(\d+)_Data_(\d+)_(\d+)_(\d+)_(\d+)\.xml$'`
+    #  match 2 is a location ID (these repeat for every foihole and Dan will provide the info of where these
+    #  locations are defined)
+    #  2. Path to high-res micrograph image
 
 
 @dataclass
@@ -59,12 +50,7 @@ class GridSquareManifest:
     acquisition_datetime: datetime
     defocus: float  # in meters
     magnification: float
-    dose_rate: float  # e⁻/Å²/s
-    dose: float  # total dose
-    exposure_time: float  # seconds
     pixel_size: float  # in meters
-    beam_shift_x: float
-    beam_shift_y: float
     detector_name: str
     applied_defocus: float
     data_dir: Optional[Path] = None
@@ -83,9 +69,10 @@ class EPUSessionData:
     name: str
     id: str
     start_time: datetime
-    # acquisition_settings: Dict[str, dict] = field(
-    #     default_factory=dict)  # Settings for different modes like Acquisition, AutoFocus etc.
-    # storage_folders: List[str] = field(default_factory=list)
+    atlas_id: Optional[str] = None # TODO could this be the path to Atlas.dm?
+    storage_path: Optional[str] = None # Path of parent directory containing the epu session dir
+    clustering_mode: Optional[str] = None
+    clustering_radius: Optional[float] = None
 
 
 class XMLNamespaceManager:
@@ -137,26 +124,29 @@ class EpuParser:
     def print_summary(self):
         print(f"\nEPU Session Summary")
         print(f"==================")
-        print(f"Session Name: {self.epu_session.name}")
-        print(f"Session ID: {self.epu_session.id}")
-        print(f"Start Time: {self.epu_session.start_time}")
+        # print(f"Session Name: {self.epu_session.name}")
+        # print(f"Session ID: {self.epu_session.id}")
+        # print(f"Start Time: {self.epu_session.start_time}")
         print(f"Root directory: {self.root_dir}")
+        pprint(self.epu_session)
 
-        # TODO
-        # print("\nAcquisition Settings:")
-        # for mode, settings in self.epu_session.acquisition_settings.items():
-        #     print(f"  {mode}:")
-        #     for key, value in settings.items():
-        #         print(f"    {key}: {value}")
         print(f"\nSession Statistics:")
         print(f"  Total Grid Squares: {len(self.gridsquares)}")
         print(f"  Active Grid Squares: {sum(1 for gs in self.gridsquares.values() if gs.is_active)}")
         print(f"  Total Foil Holes: {len(self.foilholes)}")
         print(f"  Total Micrographs: {len(self.micrographs)}")
 
-        print(f"\nMicrographs info")
-        print(f"==================")
-        pprint(self.micrographs)
+        # print(f"\nGridSquares info")
+        # print(f"==================")
+        # pprint(self.gridsquares)
+
+        # print(f"\nFoilHoles info")
+        # print(f"==================")
+        # pprint(self.foilholes)
+
+        # print(f"\nMicrographs info")
+        # print(f"==================")
+        # pprint(self.micrographs)
 
 
     def validate_dir(self) -> tuple[bool, list[str]]:
@@ -205,27 +195,46 @@ class EpuParser:
 
         return len(errors) == 0, errors
 
-
     def parse_epu_manifest(self):
-        """
-        Parse `/EpuSession.dm` manifest
-        TODO parse out more types of information out of the root XML files
-        """
+        """Parse EPU session manifest file"""
         epu_session_file = self.root_dir / 'EpuSession.dm'
         tree = ET.parse(epu_session_file)
         root = tree.getroot()
 
-        # Initialize namespace manager
         ns_mgr = XMLNamespaceManager(root)
 
-        # Extract basic session info
-        session_name = ns_mgr.find(root, 'Name').text
-        session_id = ns_mgr.find(root, 'Id').text
-        start_time_str = ns_mgr.find(root, 'StartDateTime').text
+        def safe_get_text(element, path, default=None):
+            """Safely extract text from XML element"""
+            found = ns_mgr.find(root, path) if element is None else ns_mgr.find(element, path)
+            return found.text if found is not None else default
+
+        def safe_convert(value, convert_func, default=None):
+            """Safely convert value using provided function"""
+            try:
+                return convert_func(value) if value is not None else default
+            except (ValueError, TypeError):
+                return default
+
+        # Basic session info with defaults
+        session_name = safe_get_text(root, 'Name', 'Unknown')
+        session_id = safe_get_text(root, 'Id', '0')
+        start_time_str = safe_get_text(root, 'StartDateTime')
+        start_time = datetime.fromisoformat(start_time_str.rstrip('Z')) if start_time_str else datetime.now()
+
+        # Additional metadata
+        atlas_id = safe_get_text(root, 'AtlasId')
+        storage_path = safe_get_text(root, 'Path')
+        clustering_mode = safe_get_text(root, 'ClusteringMode')
+        clustering_radius = safe_convert(safe_get_text(root, 'ClusteringRadius'), float)
+
         self.epu_session = EPUSessionData(
-            name = session_name,
-            id = session_id,
-            start_time = datetime.fromisoformat(start_time_str.rstrip('Z'))
+            name=session_name,
+            id=session_id,
+            start_time=start_time,
+            atlas_id=atlas_id,
+            storage_path=storage_path,
+            clustering_mode=clustering_mode,
+            clustering_radius=clustering_radius,
         )
 
 
@@ -299,19 +308,11 @@ class EpuParser:
 
         pixel_size = safe_float('.//ms:pixelSize/ms:x/ms:numericValue', spatial_scale)
 
-        beam_shift_x = safe_float('.//ms:BeamShift/ms:_x', optics)
-        beam_shift_y = safe_float('.//ms:BeamShift/ms:_y', optics)
-
-        return GridSquareManifest(
+        return GridSquareManifest( # TODO is this included in output?
             acquisition_datetime=acq_datetime,
             defocus=safe_float('.//ms:Defocus', optics),
             magnification=safe_float('.//ms:TemMagnification/ms:NominalMagnification', optics),
-            dose_rate=float(get_custom_value('DoseRate', '0.0')),
-            dose=float(get_custom_value('Dose', '0.0')),
-            exposure_time=safe_float('.//ms:camera/ms:ExposureTime', acquisition),
             pixel_size=pixel_size,
-            beam_shift_x=beam_shift_x,
-            beam_shift_y=beam_shift_y,
             detector_name=get_custom_value('DetectorCommercialName', 'Unknown'),
             applied_defocus=float(get_custom_value('AppliedDefocus', '0.0')),
             data_dir=manifest_path.parent
@@ -374,6 +375,9 @@ class EpuParser:
         # Note: here `match.group(2)` is the ID that tells us where in the foil hole the image was captured.
         # We should see it repeating across different foil holes. For that reason we keep all of these files.
         # pprint(self.foil_holes[foilhole_id])
+
+
+    def parse_foilhole_manifest(self): pass # TODO
 
 
     def scan_micrographs(self, gridsquare_id: str, foilhole_id: str):
@@ -479,29 +483,16 @@ class EpuParser:
             acquisition_datetime=datetime.fromisoformat(
                 safe_find_text('.//ms:acquisitionDateTime', default='1970-01-01T00:00:00+00:00').replace('Z', '+00:00')
             ),
-            magnification=safe_float('.//ms:TemMagnification/ms:NominalMagnification'),
             defocus=safe_float('.//ms:optics/ms:Defocus'),
-            pixel_size=safe_float('.//ms:SpatialScale/ms:pixelSize/ms:x/ms:numericValue'),
-            dose_rate=float(get_custom_value('DoseRate', '0.0')),
-            dose=float(get_custom_value('Dose', '0.0')),
-            exposure_time=safe_float('.//ms:ExposureTime', camera),
             detector_name=get_custom_value('DetectorCommercialName', 'Unknown'),
-            acceleration_voltage=safe_int('.//ms:gun/ms:AccelerationVoltage'),
-            spherical_aberration=None,
             energy_filter=safe_bool(safe_find_text('.//ms:optics/ms:EFTEMOn')),
             phase_plate=safe_bool(get_custom_value('PhasePlateUsed', 'false')),
-            beam_shift_x=safe_float('.//ms:optics/ms:BeamShift/ms:_x'),
-            beam_shift_y=safe_float('.//ms:optics/ms:BeamShift/ms:_y'),
-            beam_tilt_x=safe_float('.//ms:optics/ms:BeamTilt/ms:_x'),
-            beam_tilt_y=safe_float('.//ms:optics/ms:BeamTilt/ms:_y'),
             image_size_x=safe_int('ms:width', readout_area) if readout_area is not None else 0,
             image_size_y=safe_int('ms:height', readout_area) if readout_area is not None else 0,
             binning_x=safe_int('ms:x', binning) if binning is not None else 1,
             binning_y=safe_int('ms:y', binning) if binning is not None else 1,
-            number_of_fractions=n_fractions,
-            super_resolution_factor=int(camera_specific.get('SuperResolutionFactor', '1')),
-            electron_counting=safe_bool(camera_specific.get('ElectronCountingEnabled', 'false')),
         )
+
 
 epu_parser_cli = typer.Typer()
 
@@ -522,12 +513,18 @@ def validate(epu_dir: str = "../metadata_Supervisor_20250108_101446_62_cm40593-1
 
 
 @epu_parser_cli.command()
-def parse(epu_dir: str = "../metadata_Supervisor_20250108_101446_62_cm40593-1_EPU"):
+def parse(epu_dir: str):
     """Parse entire session dataset and print summary
     """
+    dir1 = "../metadata_Supervisor_20250108_101446_62_cm40593-1_EPU"
+    dir2 = "../metadata_Supervisor_20250114_220855_23_epuBSAd20_GrOxDDM"
+    dir3 = "../metadata_Supervisor_20241220_140307_72_et2_gangshun"
+
     acq = EpuParser(epu_dir)
     acq.parse_epu_manifest()
-    acq.scan_gridsquares() # triggers scan_foilholes() and scan_micrographs() internally
+
+    # triggers scan_foilholes() and scan_micrographs() internally:
+    acq.scan_gridsquares()
 
     # acq.scan_micrographs("8999138", "9015883")
 
