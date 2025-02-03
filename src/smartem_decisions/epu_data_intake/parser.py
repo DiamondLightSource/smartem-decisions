@@ -42,7 +42,6 @@ class MicrographData:
 class FoilHoleData:
    id: str
    gridsquare_id: str
-   files: dict = field(default_factory=lambda: {"foilholes_dir": [], "data_dir": []})
    center_x: Optional[float] = None
    center_y: Optional[float] = None
    quality: Optional[float] = None
@@ -480,7 +479,8 @@ class EpuParsers:
                 'ms': 'http://schemas.datacontract.org/2004/07/Fei.SharedObjects',
                 'arr': 'http://schemas.microsoft.com/2003/10/Serialization/Arrays',
                 'draw': 'http://schemas.datacontract.org/2004/07/System.Drawing',
-                'b': 'http://schemas.datacontract.org/2004/07/Fei.Types'
+                'b': 'http://schemas.datacontract.org/2004/07/Fei.Types',
+                'c': 'http://schemas.datacontract.org/2004/07/System.Drawing'
             }
 
             for event, element in etree.iterparse(manifest_path,
@@ -501,20 +501,21 @@ class EpuParsers:
                         return None
                     gridsquare_id = match.group(1)
 
-                    center_elem = element.xpath(
-                        ".//ms:CustomData//arr:KeyValueOfstringanyType[arr:Key='FindFoilHoleCenterResults']/arr:Value/b:Shape2D",
-                        namespaces=namespaces)[0]
-
                     return FoilHoleData(
                         id=foilhole_id,
                         gridsquare_id=gridsquare_id,
-                        files={"foilholes_dir": [], "data_dir": []},
-                        center_x=float(get_element_text(".//draw:x", center_elem) or 0),
-                        center_y=float(get_element_text(".//draw:y", center_elem) or 0),
-                        quality=float(get_element_text(".//b:Quality", center_elem) or 0),
-                        rotation=float(get_element_text(".//b:Rotation", center_elem) or 0),
-                        size_width=float(get_element_text(".//draw:width", center_elem) or 0),
-                        size_height=float(get_element_text(".//draw:height", center_elem) or 0)
+                        center_x=float(get_element_text(
+                            ".//arr:KeyValueOfstringanyType[arr:Key='FindFoilHoleCenterResults']/arr:Value/b:Center/c:x") or 0),
+                        center_y=float(get_element_text(
+                            ".//arr:KeyValueOfstringanyType[arr:Key='FindFoilHoleCenterResults']/arr:Value/b:Center/c:y") or 0),
+                        quality=float(get_element_text(
+                            ".//arr:KeyValueOfstringanyType[arr:Key='FindFoilHoleCenterResults']/arr:Value/b:Quality") or 0),
+                        rotation=float(get_element_text(
+                            ".//arr:KeyValueOfstringanyType[arr:Key='FindFoilHoleCenterResults']/arr:Value/b:Rotation") or 0),
+                        size_width=float(get_element_text(
+                            ".//arr:KeyValueOfstringanyType[arr:Key='FindFoilHoleCenterResults']/arr:Value/b:Size/c:width") or 0),
+                        size_height=float(get_element_text(
+                            ".//arr:KeyValueOfstringanyType[arr:Key='FindFoilHoleCenterResults']/arr:Value/b:Size/c:height") or 0)
                     )
 
         except Exception as e:
@@ -604,8 +605,8 @@ def parse_micrograph(path: str):
 
 if __name__ == "__main__":
     # example datasets
-    dir1 = "../metadata_Supervisor_20250108_101446_62_cm40593-1_EPU"
-    dir2 = "../metadata_Supervisor_20250114_220855_23_epuBSAd20_GrOxDDM"
-    dir3 = "../metadata_Supervisor_20241220_140307_72_et2_gangshun"
+    # dir1 = "../metadata_Supervisor_20250108_101446_62_cm40593-1_EPU"
+    # dir2 = "../metadata_Supervisor_20250114_220855_23_epuBSAd20_GrOxDDM"
+    # dir3 = "../metadata_Supervisor_20241220_140307_72_et2_gangshun"
 
     epu_parser_cli()
