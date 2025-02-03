@@ -78,3 +78,4 @@ lockfiles/
 
 # test data - too large for version control
 tests/testdata/metadata_Supervisor_20250108_101446_62_cm40593-1_EPU/
+tests/testdata/bi37708-28
