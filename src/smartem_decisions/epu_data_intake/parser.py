@@ -297,18 +297,24 @@ class EpuSession:
 
 class EpuParsers:
 
-    project_dir_globs = [
-        "EpuSession.dm",
-        "Metadata/GridSquare_*.dm",
-        "Images-Disc*/GridSquare_*/GridSquare_*_*.xml"
-        "Images-Disc*/GridSquare_*/Data/FoilHole_*_Data_*_*_*_*.xml",
-        "Images-Disc*/GridSquare_*/FoilHoles/FoilHole_*_*_*.xml",
-    ]
-
-    atlas_dir_globs = [
-        "Sample*/Atlas/Atlas.dm",
-        "Sample*/Sample.dm", # TODO is needed?
-    ]
+    # > Note: any updates to globs here need to be copied across to `watcher.py`
+    # > manually, merging both lists into a single list.
+    # > Reason why we are breaking away from DRY and not just importing them from here
+    # > is because we want to run the watcher script standalone on the EPU machines
+    # > and not have to rely on anything external if we can help it.
+    globs = dict(
+        project_dir=[
+            "EpuSession.dm",
+            "Metadata/GridSquare_*.dm",
+            "Images-Disc*/GridSquare_*/GridSquare_*_*.xml"
+            "Images-Disc*/GridSquare_*/Data/FoilHole_*_Data_*_*_*_*.xml",
+            "Images-Disc*/GridSquare_*/FoilHoles/FoilHole_*_*_*.xml",
+        ],
+        atlas_dir=[
+            "Sample*/Atlas/Atlas.dm",
+            "Sample*/Sample.dm",  # TODO is needed?
+        ],
+    )
 
     @staticmethod
     def parse_epu_session_manifest(manifest_path: str) -> Optional[EPUSessionData]:
