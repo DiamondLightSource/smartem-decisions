@@ -24,7 +24,11 @@ python src/smartem_decisions/epu_data_intake/parser.py parse-micrograph \
 
 ## Directory structure
 
-Since an original directory containing complete dataset is impractically large, here's a representative
+> In a user visit there can be more than one `EpuSession.dm` and more than one "project dir"
+> as there will be one for each grid. We usually treat each `EpuSession.dm` independently,
+> but they all connect to the same atlas.
+
+Since an original project directory is impractically large, here's a representative
 example for reference (can be found under `tests/testdata/epu-dir-example` in this repo):
 
 ```
@@ -104,4 +108,21 @@ python src/smartem_decisions/epu_data_intake/watcher.py ../fs-watcher-test-dir
 
 # In another terminal launch a simulator that randomly writes to target dir:
 python src/smartem_decisions/epu_data_intake/test_watcher.py ../fs-watcher-test-dir
+```
+
+## Reformat XML to make it readable
+
+```bash
+# To reformat all `.xml` and `.dm` files in a given directory recursively, rewriting in-place
+# from single-line to human-readable:
+python src/smartem_decisions/epu_data_intake/format_xml.py <tests/testdata/some_dir> -r
+
+# Multiple dirs:
+python src/smartem_decisions/epu_data_intake/format_xml.py -r \
+  ../metadata_Supervisor_20250114_220855_23_epuBSAd20_GrOxDDM \
+  ../metadata_Supervisor_20241220_140307_72_et2_gangshun \
+  ../metadata_Supervisor_20250108_101446_62_cm40593-1_EPU
+
+# For more options see:
+python src/smartem_decisions/epu_data_intake/format_xml.py --help
 ```
