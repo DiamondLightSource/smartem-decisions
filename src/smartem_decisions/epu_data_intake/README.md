@@ -104,7 +104,8 @@ We need to watch the EPU output directory for changes, to that end:
 
 ```bash
 # Launch the watcher:
-python src/smartem_decisions/epu_data_intake/watcher.py ../fs-watcher-test-dir
+python src/smartem_decisions/epu_data_intake/watcher.py ../fs-watcher-test-dir \
+  --log-file output.log
 
 # In another terminal launch a simulator that randomly writes to target dir:
 python src/smartem_decisions/epu_data_intake/test_watcher.py ../fs-watcher-test-dir
