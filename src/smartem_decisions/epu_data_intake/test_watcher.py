@@ -80,7 +80,7 @@ def create_random_structure(directory: Path, verbose: bool = False):
 
 def test_filesystem_changes(
         directory: Path = typer.Argument(..., help="Test directory to create and modify files in"),
-        duration: int = typer.Option(120, "--duration", "-d", help="Test duration in seconds"),
+        duration: int = typer.Option(60, "--duration", "-d", help="Test duration in seconds"),
         interval: float = typer.Option(0.1, "--interval", "-i", help="Interval between changes in seconds"),
         seed: Optional[int] = typer.Option(None, "--seed", "-s", help="Random seed for reproducible tests"),
         verbose: bool = typer.Option(False, "--verbose", "-v", help="Show detailed progress"),
@@ -116,18 +116,20 @@ def test_filesystem_changes(
             if verbose:
                 console.print(f"[dim]Action: {action}[/dim]")
 
-            if action == 'modify_epu':
+            elif action == 'modify_epu':
                 epu_files = list(directory.glob('**/*.dm')) + list(directory.glob('**/*.xml'))
                 if epu_files:
                     file_to_modify = random.choice(epu_files)
-                    content = create_dm_content() if file_to_modify.suffix == '.dm' else create_xml_content()
-                    file_to_modify.write_bytes(content)
+                    with open(file_to_modify, 'ab') as f:  # Append mode
+                        f.write(b'\n' + create_dm_content() if file_to_modify.suffix == '.dm' else create_xml_content())
+
 
             elif action == 'modify_random':
                 random_files = list(directory.glob('**/*.txt'))
                 if random_files:
                     file_to_modify = random.choice(random_files)
-                    file_to_modify.write_bytes(random_content())
+                    with open(file_to_modify, 'ab') as f:
+                        f.write(random_content())
 
             elif action == 'create_epu':
                 create_epu_structure(directory, verbose)
