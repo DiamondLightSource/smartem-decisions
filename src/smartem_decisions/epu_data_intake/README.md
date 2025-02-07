@@ -9,44 +9,44 @@ using a cryo-electron microscope
 
 ```bash
 # parse things
-python src/smartem_decisions/epu_data_intake/parser.py parse-epu-session \
+python src/smartem_decisions/epu_data_intake/fs_parser.py parse-epu-session \
   tests/testdata/epu-dir-example/EpuSession.dm
 
-python src/smartem_decisions/epu_data_intake/parser.py parse-atlas \
+python src/smartem_decisions/epu_data_intake/fs_parser.py parse-atlas \
   tests/testdata/Atlas.dm
 
-python src/smartem_decisions/epu_data_intake/parser.py parse-gridsquare \
+python src/smartem_decisions/epu_data_intake/fs_parser.py parse-gridsquare \
   tests/testdata/epu-dir-example/Images-Disc1/GridSquare_8999138/GridSquare_20250108_151151.xml
 
-python src/smartem_decisions/epu_data_intake/parser.py parse-foilhole \
+python src/smartem_decisions/epu_data_intake/fs_parser.py parse-foilhole \
   tests/testdata/epu-dir-example/Images-Disc1/GridSquare_8999138/FoilHoles/FoilHole_9015889_20250108_154725.xml
 
-python src/smartem_decisions/epu_data_intake/parser.py parse-micrograph \
+python src/smartem_decisions/epu_data_intake/fs_parser.py parse-micrograph \
   tests/testdata/epu-dir-example/Images-Disc1/GridSquare_8999138/Data/FoilHole_9015883_Data_9017354_6_20250108_154918.xml
   
 # validate epu project dirs
-python src/smartem_decisions/epu_data_intake/parser.py validate-epu-dir \
+python src/smartem_decisions/epu_data_intake/fs_parser.py validate-epu-dir \
   tests/testdata/bi37708-28/Supervisor_20250129_114842_73_bi37708-28_grid7_EPU
 
-python src/smartem_decisions/epu_data_intake/parser.py validate-epu-dir \
+python src/smartem_decisions/epu_data_intake/fs_parser.py validate-epu-dir \
   tests/testdata/bi37708-28/Supervisor_20250129_134723_36_bi37708-28_grid7_EPU
 
-python src/smartem_decisions/epu_data_intake/parser.py validate-epu-dir \
+python src/smartem_decisions/epu_data_intake/fs_parser.py validate-epu-dir \
   tests/testdata/bi37708-28/Supervisor_20250130_105058_11
 
-python src/smartem_decisions/epu_data_intake/parser.py validate-epu-dir \
+python src/smartem_decisions/epu_data_intake/fs_parser.py validate-epu-dir \
   tests/testdata/bi37708-28/Supervisor_20250130_133418_68apoferritin
 
-python src/smartem_decisions/epu_data_intake/parser.py validate-epu-dir \
+python src/smartem_decisions/epu_data_intake/fs_parser.py validate-epu-dir \
   tests/testdata/bi37708-28/Supervisor_20250130_143856_44Practice
 
-python src/smartem_decisions/epu_data_intake/parser.py validate-epu-dir \
+python src/smartem_decisions/epu_data_intake/fs_parser.py validate-epu-dir \
   tests/testdata/bi37708-28/Supervisor_20250130_145409_68
 
-python src/smartem_decisions/epu_data_intake/parser.py validate-epu-dir \
+python src/smartem_decisions/epu_data_intake/fs_parser.py validate-epu-dir \
   tests/testdata/bi37708-28/Supervisor_20250130_145409_68practice2
 
-python src/smartem_decisions/epu_data_intake/parser.py validate-epu-dir \
+python src/smartem_decisions/epu_data_intake/fs_parser.py validate-epu-dir \
   tests/testdata/bi37708-28/Supervisor_20250130_150924_1grid3
 
 ```
@@ -138,7 +138,8 @@ We need to watch the EPU output directory for changes, to that end:
 
 ```bash
 # Launch the watcher:
-python src/smartem_decisions/epu_data_intake/watcher.py ../fs-watcher-test-dir \
+rm -f -- output.log && rm -rf ../fs-watcher-test-dir/* && \
+  python src/smartem_decisions/epu_data_intake/watcher.py ../fs-watcher-test-dir/ \
   --log-file output.log
 
 # In another terminal launch a simulator that randomly writes to target dir:

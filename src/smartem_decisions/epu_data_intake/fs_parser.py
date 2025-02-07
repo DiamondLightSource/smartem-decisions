@@ -1,167 +1,53 @@
 #!/usr/bin/env python
 
 import re
-from dataclasses import dataclass, field
+import typer
 from pprint import pprint
-from typing import List, Dict, Optional
 from pathlib import Path
 from datetime import datetime
-import logging
-import typer
 from lxml import etree
 from rich.console import Console
 from rich.panel import Panel
 from rich.text import Text
 
+from data_model import (
+    EPUSessionData,
+    AtlasData,
+    AtlasTileData,
+    GridSquareManifest,
+    FoilHoleData,
+    MicrographManifest,
+)
+
 console = Console()
 
 
-@dataclass
-class MicrographManifest:
-    unique_id: str
-    acquisition_datetime: datetime
-    defocus: float
-    detector_name: str
-    energy_filter: bool
-    phase_plate: bool
-    image_size_x: int
-    image_size_y: int
-    binning_x: int
-    binning_y: int
-
-
-@dataclass
-class MicrographData:
-    id: str
-    gridsquare_id: str
-    foilhole_id: str
-    manifest_file: Path
-    manifest: MicrographManifest
-    # TODO:
-    #  1. add positioning on foilhole. So in a path akin `'FoilHole_(\d+)_Data_(\d+)_(\d+)_(\d+)_(\d+)\.xml$'`
-    #  match 2 is a location ID (these repeat for every foihole and Dan will provide the info of where these
-    #  locations are defined)
-    #  2. Path to high-res micrograph image
-
-
-@dataclass
-class FoilHoleData:
-   id: str
-   gridsquare_id: str
-   center_x: Optional[float] = None
-   center_y: Optional[float] = None
-   quality: Optional[float] = None
-   rotation: Optional[float] = None
-   size_width: Optional[float] = None
-   size_height: Optional[float] = None
-
-
-@dataclass
-class GridSquareManifest:
-    acquisition_datetime: datetime
-    defocus: float  # in meters
-    magnification: float
-    pixel_size: float  # in meters
-    detector_name: str
-    applied_defocus: float
-    data_dir: Optional[Path] = None
-
-
-@dataclass
-class GridSquareData:
-    id: str
-    is_active: bool  # Does additional data exist for this GridSquare under `/Images-Disc<n>`
-    data_dir: Optional[Path] = None
-    manifest: Optional[GridSquareManifest] = None
-
-
-@dataclass
-class AtlasTileData:
-    id: str
-    position: tuple  # (x, y)
-    size: tuple     # (width, height)
-    file_format: str
-    base_filename: str
-
-
-@dataclass
-class AtlasData:
-    id: str
-    acquisition_date: datetime
-    storage_folder: str
-    description: str
-    name: str
-    tiles: List[AtlasTileData]
-
-
-@dataclass
-class EPUSessionData:
-    name: str
-    id: str
-    start_time: datetime
-    atlas_id: Optional[str] = None # TODO could this be the path to Atlas.dm?
-    storage_path: Optional[str] = None # Path of parent directory containing the epu session dir
-    clustering_mode: Optional[str] = None
-    clustering_radius: Optional[float] = None
-
-
-class EpuSession:
-    """Purpose of this class is to hold state of EPU session detection as we
-    perform incremental data parsing. On object of this class will be shared among
-    all fs event handlers and parsers. TBD: merge with EpuParser class?
-    """
-
-    project_dir: Path
-    atlas_dir: Path
-
-    gridsquare_ids = []
-    foilhole_ids = []
-    micrograph_ids = []
-
-    gridsquares = dict()  # indexed by gridsquare_id: str, contains GridSquareData objects
-    foilholes = dict()  # indexed by foilhole_id: str, contains FoilHoleData objects
-    micrographs = dict() # indexed by micrograph_id: str, if such a thing exists?
-
-
-    def __init__(self, project_dir, atlas_dir):
-        self.logger = logging.getLogger(__name__)
-        self.project_dir = Path(project_dir)
-        self.atlas_dir = Path(atlas_dir)
-
-
-    def __str__(self):
-        print(f"\nEPU Session Summary")
-        print(f"==================")
-        print(f"Project directory: {self.project_dir}")
-        print(f"Atlas directory: {self.atlas_dir}")
-
-
-    # TODO: use or loose
-    # def get_tile_coordinates(self, atlas_info: AtlasInfo) -> List[tuple]:
-    #     """Returns list of (x,y) coordinates for all tiles"""
-    #     return [tile.position for tile in atlas_info.tiles if tile is not None]
-    #
-    # def get_tile_dimensions(self, atlas_info: AtlasInfo) -> List[tuple]:
-    #     """Returns list of (width,height) dimensions for all tiles"""
-    #     return [tile.size for tile in atlas_info.tiles if tile is not None]
-    #
-    # def analyze_tile_layout(self, atlas_info: AtlasData) -> dict:
-    #     """Analyzes the tile layout and returns statistics"""
-    #     coordinates = self.get_tile_coordinates(atlas_info)
-    #     dimensions = self.get_tile_dimensions(atlas_info)
-    #
-    #     x_coords = [coord[0] for coord in coordinates]
-    #     y_coords = [coord[1] for coord in coordinates]
-    #     widths = [dim[0] for dim in dimensions]
-    #     heights = [dim[1] for dim in dimensions]
-    #
-    #     return {
-    #         "total_tiles": len(coordinates),
-    #         "grid_width": max(x_coords) - min(x_coords) + max(widths),
-    #         "grid_height": max(y_coords) - min(y_coords) + max(heights),
-    #         "avg_tile_width": sum(widths) / len(widths),
-    #         "avg_tile_height": sum(heights) / len(heights)
-    #     }
+# TODO: use or loose
+# def get_tile_coordinates(self, atlas_info: AtlasInfo) -> List[tuple]:
+#     """Returns list of (x,y) coordinates for all tiles"""
+#     return [tile.position for tile in atlas_info.tiles if tile is not None]
+#
+# def get_tile_dimensions(self, atlas_info: AtlasInfo) -> List[tuple]:
+#     """Returns list of (width,height) dimensions for all tiles"""
+#     return [tile.size for tile in atlas_info.tiles if tile is not None]
+#
+# def analyze_tile_layout(self, atlas_info: AtlasData) -> dict:
+#     """Analyzes the tile layout and returns statistics"""
+#     coordinates = self.get_tile_coordinates(atlas_info)
+#     dimensions = self.get_tile_dimensions(atlas_info)
+#
+#     x_coords = [coord[0] for coord in coordinates]
+#     y_coords = [coord[1] for coord in coordinates]
+#     widths = [dim[0] for dim in dimensions]
+#     heights = [dim[1] for dim in dimensions]
+#
+#     return {
+#         "total_tiles": len(coordinates),
+#         "grid_width": max(x_coords) - min(x_coords) + max(widths),
+#         "grid_height": max(y_coords) - min(y_coords) + max(heights),
+#         "avg_tile_width": sum(widths) / len(widths),
+#         "avg_tile_height": sum(heights) / len(heights)
+#     }
 
 
 class EpuParser:
@@ -205,7 +91,7 @@ class EpuParser:
         if not metadata_path.is_dir():
             errors.append("Missing required directory: Metadata")
 
-        # 3. Check for `/Images-Disk*` directories (at least `/Images-Disc1`)
+        # 3. Check for `/Images-Disc*` directories (at least `/Images-Disc1`)
         imagedisc_dirs = sorted([
             path / Path(d.name) for d in path.iterdir()
             if d.is_dir() and d.name.startswith('Images-Disc')
@@ -271,7 +157,7 @@ class EpuParser:
 
 
     @staticmethod
-    def parse_epu_session_manifest(manifest_path: str) -> Optional[EPUSessionData]:
+    def parse_epu_session_manifest(manifest_path: str) -> EPUSessionData | None:
         try:
             namespaces = {
                 'ns': 'http://schemas.datacontract.org/2004/07/Applications.Epu.Persistence',
@@ -345,7 +231,7 @@ class EpuParser:
 
 
     @staticmethod
-    def _parse_atlas_tile(tile_xml) -> Optional[AtlasTileData]:
+    def _parse_atlas_tile(tile_xml) -> AtlasTileData | None:
         try:
             namespaces = {
                 'ns': 'http://schemas.datacontract.org/2004/07/Applications.SciencesAppsShared.GridAtlas.Persistence',
@@ -383,7 +269,7 @@ class EpuParser:
 
 
     @staticmethod
-    def parse_gridsquare_manifest(manifest_path: str) -> Optional[GridSquareManifest]:
+    def parse_gridsquare_manifest(manifest_path: str) -> GridSquareManifest | None:
         try:
             namespaces = {
                 'ms': 'http://schemas.datacontract.org/2004/07/Fei.SharedObjects',
@@ -424,7 +310,7 @@ class EpuParser:
 
 
     @staticmethod
-    def parse_foilhole_manifest(manifest_path: str) -> Optional[FoilHoleData]:
+    def parse_foilhole_manifest(manifest_path: str) -> FoilHoleData | None:
         try:
             namespaces = {
                 'ms': 'http://schemas.datacontract.org/2004/07/Fei.SharedObjects',
@@ -475,9 +361,7 @@ class EpuParser:
 
 
     @staticmethod
-    def parse_micrograph_manifest(manifest_path: str) -> Optional[MicrographManifest]:
-        # TODO we also want to match and extract "9017354" from "FoilHole_9015883_Data_9017354_6_20250108_154918.xml"
-        #   see comment on MicrographData definition
+    def parse_micrograph_manifest(manifest_path: str) -> MicrographManifest | None:
         try:
             namespaces = {
                 'ms': 'http://schemas.datacontract.org/2004/07/Fei.SharedObjects',
@@ -522,6 +406,18 @@ class EpuParser:
 
 
 epu_parser_cli = typer.Typer()
+
+
+@epu_parser_cli.command()
+def parse_acquisition_dir(path: str):
+    # 1. locate and parse EpuSession.dm
+    # 2. scan all gridsquare IDs from /Metadata directory files
+    # 3. scan all image-disc dir sub-dirs to get a list of active gridsquares
+    # 4. for each gridsquare subdir:
+    #   4.1 scan manifest
+    #   4.2 scan Foilholes/
+    #   4.3 scan Data/ to get micrographs
+    pass
 
 
 @epu_parser_cli.command()

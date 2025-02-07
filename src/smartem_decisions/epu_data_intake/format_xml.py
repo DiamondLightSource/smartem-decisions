@@ -2,7 +2,6 @@
 
 import xml.dom.minidom
 import pathlib
-from typing import List
 import typer
 from rich import print
 from rich.progress import track
@@ -14,7 +13,7 @@ XML_EXTENSIONS = {'.dm', '.xml'}
 console = Console()
 
 def format_xml_files(
-        paths: List[pathlib.Path],
+        paths: list[pathlib.Path],
         recursive: bool,
         dry_run: bool,
         verbose: bool,
@@ -60,7 +59,7 @@ def format_xml_files(
 
 
 def main(
-        paths: List[pathlib.Path] = typer.Argument(
+        paths: list[pathlib.Path] = typer.Argument(
             ...,
             help="Files or directories to process",
             exists=True,
