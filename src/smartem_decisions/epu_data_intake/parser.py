@@ -9,6 +9,12 @@ from datetime import datetime
 import logging
 import typer
 from lxml import etree
+from rich.console import Console
+from rich.panel import Panel
+from rich.text import Text
+
+console = Console()
+
 
 @dataclass
 class MicrographManifest:
@@ -99,21 +105,15 @@ class EPUSessionData:
     clustering_radius: Optional[float] = None
 
 
-"""
-Methods prefixed with `scan_` glob the filesystem for expected directories and files based on
-known naming conventions.
-Methods prefixed with `parse_` extract entity information from individual files, or from XML partials.
-"""
 class EpuSession:
+    """Purpose of this class is to hold state of EPU session detection as we
+    perform incremental data parsing. On object of this class will be shared among
+    all fs event handlers and parsers. TBD: merge with EpuParser class?
+    """
+
     project_dir: Path
     atlas_dir: Path
 
-    imagedisc_dirs: List[Path] # TODO remove
-
-    epu_session: EPUSessionData
-    atlas: AtlasData
-
-    # IDs only for lookup
     gridsquare_ids = []
     foilhole_ids = []
     micrograph_ids = []
@@ -123,28 +123,17 @@ class EpuSession:
     micrographs = dict() # indexed by micrograph_id: str, if such a thing exists?
 
 
-    def __init__(self, project_dir, atlas_dir): # TODO - derive atlas dir from project dir deterministically
+    def __init__(self, project_dir, atlas_dir):
         self.logger = logging.getLogger(__name__)
-
         self.project_dir = Path(project_dir)
         self.atlas_dir = Path(atlas_dir)
 
 
-    def print_summary(self): # TODO __str__
+    def __str__(self):
         print(f"\nEPU Session Summary")
         print(f"==================")
-        print(f"Session Name: {self.epu_session.name}")
-        print(f"Session ID: {self.epu_session.id}")
-        print(f"Start Time: {self.epu_session.start_time}")
         print(f"Project directory: {self.project_dir}")
         print(f"Atlas directory: {self.atlas_dir}")
-        pprint(self.epu_session)
-
-        print(f"\nSession Statistics:")
-        print(f"  Total Grid Squares: {len(self.gridsquares)}")
-        print(f"  Active Grid Squares: {sum(1 for gs in self.gridsquares.values() if gs.is_active)}")
-        print(f"  Total Foil Holes: {len(self.foilholes)}")
-        print(f"  Total Micrographs: {len(self.micrographs)}")
 
 
     # TODO: use or loose
@@ -175,158 +164,114 @@ class EpuSession:
     #     }
 
 
-    def scan_gridsquares(self):
-        pass  # TODO drop method since we are not parsing incrementally rather than a complete directory
-        try:
-            metadata_path = self.project_dir / "Metadata"
-            metadata_gridsquare_files = metadata_path.glob("GridSquare_*.dm")
-            dm_file_pattern = re.compile(r"GridSquare_(\d+)\.dm$")
-            dir_pattern = re.compile(r"GridSquare_(\d+)$")
+class EpuParser:
 
-            # Parse GridSquare IDs from `/Metadata` directory files.
-            for file_path in metadata_gridsquare_files:
-                match = dm_file_pattern.search(file_path.name)
-                if match:
-                    self.gridsquares[match.group(1)] = GridSquareData(
-                        id = match.group(1),
-                        is_active = False,
-                    )
+    @staticmethod
+    def to_cygwin_path(windows_path):
+        """This method would convert a Windows path such as:
+        'Z:\\DoseFractions\\cm40598-8\\atlas\\Supervisor_20250114_095529_BSAtest_cm40598-8\\Sample9\\Atlas\\Atlas.dm'
+        to:
+        '/cygdrive/z/DoseFractions/cm40598-8/atlas/Supervisor_20250114_095529_BSAtest_cm40598-8/Sample9/Atlas/Atlas.dm'
+        > Note: In MSys2 python will read it as the windows path
+        TODO add tests
+        """
+        if len(windows_path) >= 2 and windows_path[1] == ':':
+            drive_letter = windows_path[0].lower()
+            cygwin_path = f"/cygdrive/{drive_letter}{windows_path[2:].replace('\\', '/')}"
+        else:
+            cygwin_path = windows_path.replace('\\', '/')
+        return cygwin_path.replace('//', '/')
 
-            # TODO simplify finding gridsquare dir to a one-liner glob
-            # Find all GridSquare_<id> dirs under `/Images-Disc*` dirs
-            for disc_dir in self.imagedisc_dirs:
-                if not disc_dir.is_dir():
+
+    @staticmethod
+    def validate_project_dir(path: Path) -> tuple[bool, list[str]]:
+        """
+        Validates the EPU acquisition directory structure.
+
+        Returns:
+            tuple: (is_valid: bool, errors: list[str])
+            - is_valid: True if all checks pass, False otherwise
+            - errors: List of error messages if any checks fail
+        """
+        errors = []
+
+        # 1. Check for `/EpuSession.dm` file
+        epu_session_path = path / "EpuSession.dm"
+        if not epu_session_path.is_file():
+            errors.append("Missing required file: EpuSession.dm")
+
+        # 2. Check for `/Metadata` directory
+        metadata_path = path / "Metadata"
+        if not metadata_path.is_dir():
+            errors.append("Missing required directory: Metadata")
+
+        # 3. Check for `/Images-Disk*` directories (at least `/Images-Disc1`)
+        imagedisc_dirs = sorted([
+            path / Path(d.name) for d in path.iterdir()
+            if d.is_dir() and d.name.startswith('Images-Disc')
+        ])
+
+        if not imagedisc_dirs:
+            errors.append("No Images-Disc directories found. At least Images-Disc1 should exist.")
+        else:
+            # Validate the format of Images-Disk directories
+            for dir_path in imagedisc_dirs:
+                if not dir_path.is_dir():
                     continue
 
-                # Look for `GridSquare_*` directories in each disc dir
-                for gridsquare_dir in disc_dir.glob("GridSquare_*"):
-                    if not gridsquare_dir.is_dir():
-                        continue
+                # Check if the directory name matches the expected pattern
+                match = re.match(r"Images-Disc(\d+)$", dir_path.name)
+                if not match:
+                    errors.append(f"Invalid directory name format: {dir_path.name}")
+                    continue
 
-                    match = dir_pattern.search(gridsquare_dir.name)
-                    if match:
-                        gridsquare_id = match.group(1)
-                        self.gridsquares[gridsquare_id].is_active = True
-                        self.gridsquares[gridsquare_id].data_dir = gridsquare_dir
-                        self.gridsquares[gridsquare_id].manifest = self.parse_gridsquare_manifest(gridsquare_id)
-                        self.scan_foilholes(gridsquare_id, gridsquare_dir)
+                # Verify the disk numbers are valid integers
+                try:
+                    disk_num = int(match.group(1))
+                    if disk_num < 1:
+                        errors.append(f"Invalid disk number in {dir_path.name}: must be >= 1")
+                except ValueError:
+                    errors.append(f"Invalid disk number format in {dir_path.name}")
 
-        except Exception as e:
-            self.logger.error(f"Failed to scan grid squares: {str(e)}")
-
-
-    def scan_foilholes(self, gridsquare_id: str, gridsquare_dir: Path):
-        pass # TODO drop method since we are not parsing incrementally rather than a complete directory
-        try:
-            # Check for required subdirectories
-            gridsquare_data_dir = gridsquare_dir / "Data"
-            gridsquare_foilholes_dir = gridsquare_dir / "FoilHoles"
-            if not gridsquare_data_dir.is_dir():
-                return
-            if not gridsquare_foilholes_dir.is_dir():
-                return
-
-            # Scan `/FoilHoles` directory for initial foilhole metadata
-            # TODO grab timestamp from the filename?
-            foilhole_pattern = re.compile(r'FoilHole_(\d+)_(\d+)_(\d+)\.xml$')
-            for xml_file in gridsquare_foilholes_dir.glob("*.xml"):
-                match = foilhole_pattern.search(xml_file.name)
-                if match:
-                    foilhole_id = match.group(1)
-                    if foilhole_id not in self.foilholes:
-                        self.foilholes[foilhole_id] = FoilHoleData(
-                            id = foilhole_id,
-                            gridsquare_id = gridsquare_id,
-                            files = {"foilholes_dir": [], "data_dir": [],}
-                        )
-                    self.foilholes[foilhole_id].files["foilholes_dir"].append(xml_file.name)
-                    # TODO between multiple files relating to the same foilhole keep latest one as
-                    #   encoded by timestamp in filename,
-                    #   e.g. between `FoilHole_9016620_20250108_181906.xml` and `FoilHole_9016620_20250108_181916.xml`
-                    #   pick the latter.
-
-            # Scan `/Data` directory for detailed acquisition data
-            # TODO consider removing this logic as it is actually micrograph scanning logic not foilhole scanning
-            # TODO grab timestamp from the filename?
-            # TODO grab foilhole_zone_id from filename? (This is `match.group(2)`)
-            data_pattern = re.compile(r'FoilHole_(\d+)_Data_(\d+)_(\d+)_(\d+)_(\d+)\.xml$')
-            for xml_file in gridsquare_data_dir.glob("*.xml"):
-                match = data_pattern.search(xml_file.name)
-                if match:
-                    foilhole_id = match.group(1)
-                    if foilhole_id not in self.foilholes:
-                        self.foilholes[foilhole_id] = FoilHoleData(
-                            id=foilhole_id,
-                            gridsquare_id=gridsquare_id,
-                            files={"foilholes_dir": [], "data_dir": [], }
-                        )
-                    self.foilholes[foilhole_id].files["data_dir"].append(xml_file.name)
-                    self.scan_micrographs(gridsquare_id, foilhole_id)
-
-            # TODO rewrite this note, these files are actually micrographs
-            # Note: here `match.group(2)` is the ID that tells us where in the foil hole the image was captured.
-            # We should see it repeating across different foil holes. For that reason we keep all of these files.
-            # pprint(self.foil_holes[foilhole_id])
-
-        except Exception as e:
-            self.logger.error(f"Failed to scan foil holes: {str(e)}")
+        return len(errors) == 0, errors
 
 
-    def scan_micrographs(self, gridsquare_id: str, foilhole_id: str):
-        pass # TODO drop method since we are not parsing incrementally rather than a complete directory
-        try:
-            # there is one file in data_dir per micrograph, so the unique combinations of foil hole and position in foil hole
-            micrograph_manifest_paths = list(
-                self.project_dir.glob(
-                    f"Images-Disc*/GridSquare_{gridsquare_id}/Data/FoilHole_{foilhole_id}_Data_*_*_*_*.xml"
-                )
-            )
-            for micrograph_path in micrograph_manifest_paths:
-                micrograph_id, micrograph_manifest = self.parse_micrograph_manifest(micrograph_path)
-                self.micrographs[micrograph_id] = MicrographData(
-                    id = micrograph_id,
-                    gridsquare_id = gridsquare_id,
-                    foilhole_id = foilhole_id,
-                    manifest_file = micrograph_path,
-                    manifest = micrograph_manifest,
-                )
-
-        except Exception as e:
-            self.logger.error(f"Failed to parse EpuSession manifest: {str(e)}")
+    @staticmethod
+    def resolve_project_dir(watched_dir: Path):
+        """
+        Watched dir may contain a number of subdirectories, one per each EPU
+        acquisition. Disregarding any project_dir candidate that does not conform to
+        a valid EPU Acquisition directory structure (using `EpuParser.validate_project_dir`)
+        wouldn't work for an incremental parser, but receipt of fs events from any given subdirectory
+        can be an indicator that the dir is actively written to by EPU software. TODO
+        """
+        return watched_dir
 
 
-class EpuParsers:
+    @staticmethod
+    def resolve_atlas_dir(watched_dir: Path):
+        """In atlas dir `tree -d` may look like so (files omitted):
+        └── Supervisor_20250129_111544_bi37708-28_atlas
+            ├── Atlas
+            ├── Sample0
+            │   └── Atlas
+            ├── Sample1
+            │   └── Atlas
+            ├── Sample3
+            │   └── Atlas
+            ├── Sample4
+            │   └── Atlas
+            ├── Sample6
+            │   └── Atlas
+            └── Sample7
+                └── Atlas
+        TODO: confirm if `atlas/` can ever have more than a single child dir
+        """
+        return watched_dir / "atlas"
 
-    # > Note: any updates to globs here need to be copied across to `watcher.py`
-    # > manually, merging both lists into a single list.
-    # > Reason why we are breaking away from DRY and not just importing them from here
-    # > is because we want to run the watcher script standalone on the EPU machines
-    # > and not have to rely on anything external if we can help it.
-    globs = dict(
-        project_dir=[
-            "EpuSession.dm",
-            "Metadata/GridSquare_*.dm",
-            "Images-Disc*/GridSquare_*/GridSquare_*_*.xml"
-            "Images-Disc*/GridSquare_*/Data/FoilHole_*_Data_*_*_*_*.xml",
-            "Images-Disc*/GridSquare_*/FoilHoles/FoilHole_*_*_*.xml",
-        ],
-        atlas_dir=[
-            "Sample*/Atlas/Atlas.dm",
-            "Sample*/Sample.dm",  # TODO is needed?
-        ],
-    )
 
     @staticmethod
     def parse_epu_session_manifest(manifest_path: str) -> Optional[EPUSessionData]:
-        # TODO consider using lxml's built-in namespace stripping during parsing:
-        # parser = etree.XMLParser(remove_blank_text=True, remove_comments=True, strip_namespaces=True)
-        # tree = etree.parse(manifest_path, parser)
-
-        # atlas_id = 'Z:\\DoseFractions\\cm40598-8\\atlas\\Supervisor_20250114_095529_BSAtest_cm40598-8\\Sample9\\Atlas\\Atlas.dm',
-        # storage_path = 'Z:\\DoseFractions\\cm40598-8',
-        # TODO ^^ This is where we get the `Atlas.dm` location and need to call `self.parse_atlas_manifest()`
-        # > In cygwin it would be /cygdrive/z/DoseFractions/cm40598-8/atlas/Supervisor_20250114_095529_BSAtest_cm40598-8/Sample9/Atlas/Atlas.dm .
-        # >   In MSys2 python will read it as the windows path
         try:
             namespaces = {
                 'ns': 'http://schemas.datacontract.org/2004/07/Applications.Epu.Persistence',
@@ -387,7 +332,7 @@ class EpuParsers:
                         description=get_element_text(".//ns:Atlas/ns:Description"),
                         name=get_element_text(".//ns:Atlas/ns:Name"),
                         tiles=[
-                            EpuParsers._parse_atlas_tile(tile)
+                            EpuParser._parse_atlas_tile(tile)
                             for tile in
                             element.xpath(".//ns:Atlas/ns:TilesEfficient/ns:_items/ns:TileXml", namespaces=namespaces)
                             if tile.xpath(".//common:Id", namespaces=namespaces)
@@ -581,33 +526,57 @@ epu_parser_cli = typer.Typer()
 
 @epu_parser_cli.command()
 def parse_epu_session(path: str):
-    epu_session_data = EpuParsers.parse_epu_session_manifest(path)
+    epu_session_data = EpuParser.parse_epu_session_manifest(path)
     pprint(epu_session_data)
 
 
 @epu_parser_cli.command()
 def parse_atlas(path: str):
-    atlas_data = EpuParsers.parse_atlas_manifest(path)
+    atlas_data = EpuParser.parse_atlas_manifest(path)
     pprint(atlas_data)
 
 
 @epu_parser_cli.command()
 def parse_gridsquare(path: str):
-    gridsquare_data = EpuParsers.parse_gridsquare_manifest(path)
+    gridsquare_data = EpuParser.parse_gridsquare_manifest(path)
     pprint(gridsquare_data)
 
 
 @epu_parser_cli.command()
 def parse_foilhole(path: str):
-    foilhole_data = EpuParsers.parse_foilhole_manifest(path)
+    foilhole_data = EpuParser.parse_foilhole_manifest(path)
     pprint(foilhole_data)
 
 
 @epu_parser_cli.command()
 def parse_micrograph(path: str):
-    micrograph_data = EpuParsers.parse_micrograph_manifest(path)
+    micrograph_data = EpuParser.parse_micrograph_manifest(path)
     pprint(micrograph_data)
 
+
+@epu_parser_cli.command()
+def validate_epu_dir(path: str):
+    is_valid, errors = EpuParser.validate_project_dir(Path(path))
+
+    if is_valid:
+        title = Text("✅ Valid EPU Directory", style="bold green")
+        content = Text("All required files and directories are present.", style="green")
+    else:
+        title = Text("❌ Invalid EPU Directory", style="bold red")
+        content = Text.assemble(
+            Text("Found the following issues:\n\n", style="red"),
+            *(Text(f"• {error}\n", style="yellow") for error in errors)
+        )
+
+    panel = Panel(
+        content,
+        title=title,
+        border_style="green" if is_valid else "red",
+        padding=(1, 2)
+    )
+
+    console.print(panel)
+    return not is_valid  # Return non-zero exit code if validation fails
 
 if __name__ == "__main__":
     # example datasets
