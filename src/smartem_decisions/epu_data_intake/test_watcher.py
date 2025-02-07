@@ -8,7 +8,6 @@ from pathlib import Path
 import xml.etree.ElementTree as ET
 import typer
 from rich.console import Console
-from typing import Optional
 
 console = Console()
 
@@ -82,7 +81,7 @@ def test_filesystem_changes(
         directory: Path = typer.Argument(..., help="Test directory to create and modify files in"),
         duration: int = typer.Option(60, "--duration", "-d", help="Test duration in seconds"),
         interval: float = typer.Option(0.1, "--interval", "-i", help="Interval between changes in seconds"),
-        seed: Optional[int] = typer.Option(None, "--seed", "-s", help="Random seed for reproducible tests"),
+        seed: int | None = typer.Option(None, "--seed", "-s", help="Random seed for reproducible tests"),
         verbose: bool = typer.Option(False, "--verbose", "-v", help="Show detailed progress"),
         dry_run: bool = typer.Option(False, "--dry-run", help="Show what would be done without making changes")
 ):
