@@ -143,7 +143,9 @@ rm -f -- output.log && rm -rf ../fs-watcher-test-dir/* && \
   --log-file output.log
 
 # In another terminal launch a simulator that randomly writes to target dir:
-python src/smartem_decisions/epu_data_intake/test_watcher.py ../fs-watcher-test-dir
+python src/smartem_decisions/epu_data_intake/test_watcher.py ../fs-watcher-test-dir \
+  -d 60 -i 3 \
+  --template-dir tests/testdata/epu-dir-example
 ```
 
 > Note there might be discrepancies between the kinds of filesystem events (e.g. "created", "modified", "closed")
