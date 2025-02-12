@@ -1,25 +1,29 @@
 #!/usr/bin/env python
 
-from pprint import pprint
-
-from watchdog.observers import Observer
-from watchdog.events import FileSystemEventHandler
+import json
+import logging
+import os
+import platform
+import re
+import signal
 import time
 from datetime import datetime
-import logging
-from pathlib import Path
-import os
-import re
-import json
 from fnmatch import fnmatch
-import typer
+from pathlib import Path
+from pprint import pprint
+
 from rich.console import Console
-import signal
-import platform
+import typer
+from watchdog.events import FileSystemEventHandler
+from watchdog.observers import Observer
 
-from data_model import EpuSession, MicrographData, GridSquareData
+from data_model import (
+    EpuSession,
+    GridSquareData,
+    GridSquareMetadata,
+    MicrographData,
+)
 from fs_parser import EpuParser
-
 
 """Default glob patterns for EPU data files.
 
@@ -65,23 +69,56 @@ class JSONFormatter(logging.Formatter):
 
 
 class RateLimitedHandler(FileSystemEventHandler):
+    """File system event handler with rate limiting capabilities.
+
+    This handler processes file system events from watchdog, specifically watching
+    for file creation and modification events. The implementation ensures reliable
+    file write detection across both Windows and Linux platforms.
+
+    :cvar watched_event_types: List of event types to monitor
+    :type watched_event_types: list[str]
+    :ivar acquisition: EPU session data store handler
+    :type acquisition: EpuSession | None
+    :ivar watch_dir: Directory path being monitored for changes
+    :type watch_dir: Path | None
+    :ivar last_log_time: Timestamp of the last logging event
+    :type last_log_time: float
+    :ivar log_interval: Minimum time between logging events in seconds
+    :type log_interval: float
+    :ivar patterns: List of file patterns to watch for
+    :type patterns: list[str]
+    :ivar verbose: Enable detailed logging output
+    :type verbose: bool
+    :ivar changed_files: Dictionary tracking file modification states
+    :type changed_files: dict
+    :ivar gridsquare_dm_file_pattern: Regex for matching GridSquare DM files
+    :type gridsquare_dm_file_pattern: Pattern[str]
+    :ivar gridsquare_dir_pattern: Regex for matching GridSquare directories
+    :type gridsquare_dir_pattern: Pattern[str]
+    :ivar foilhole_xml_file_pattern: Regex for matching FoilHole XML files
+    :type foilhole_xml_file_pattern: Pattern[str]
+    :ivar micrograph_xml_file_pattern: Regex for matching Micrograph XML files
+    :type micrograph_xml_file_pattern: Pattern[str]
+    """
+
+    watched_event_types = ["created", "modified"]
+    datastore: EpuSession | None = None
+    watch_dir: Path | None = None
+
     def __init__(self, patterns: list[str], log_interval: float = 10.0, verbose: bool = False):
         self.last_log_time = time.time()
         self.log_interval = log_interval
         self.patterns = patterns
         self.verbose = verbose
-        # These events should reliably indicate file writes across both Windows and Linux when using watchdog:
-        self.watched_event_types = ["created", "modified"]
+
         # Distinguish between new and previously seen files.
         # TODO See if this has any benefit or if same can same be achieved through "created" / "modified" file status
         self.changed_files = {}
-        self.watch_dir = None
 
-        self.gridsquare_dm_file_pattern = re.compile(r"GridSquare_(\d+)\.dm$") # under "Metadata/"
-        self.gridsquare_dir_pattern = re.compile(r"GridSquare_(\d+)$") # under Images-Disc*/
-        self.foilhole_xml_file_pattern = re.compile(r'FoilHole_(\d+)_(\d+)_(\d+)\.xml$')
-        self.micrograph_xml_file_pattern = re.compile(r'FoilHole_(\d+)_Data_(\d+)_(\d+)_(\d+)_(\d+)\.xml$')
-
+        self.gridsquare_dm_file_pattern = re.compile(r"GridSquare_(\d+)\.dm$")  # under "Metadata/"
+        self.gridsquare_dir_pattern = re.compile(r"/GridSquare_(\d+)/")  # under Images-Disc*/
+        self.foilhole_xml_file_pattern = re.compile(r'/FoilHole_(\d+)_(\d+)_(\d+)\.xml$')
+        self.micrograph_xml_file_pattern = re.compile(r'/FoilHole_(\d+)_Data_(\d+)_(\d+)_(\d+)_(\d+)\.xml$')
 
     def matches_pattern(self, path: str) -> bool:
         try:
@@ -94,17 +131,105 @@ class RateLimitedHandler(FileSystemEventHandler):
 
     def set_watch_dir(self, path: Path):
         self.watch_dir = path.absolute()
-        self._init_acquisition()
 
 
-    def _init_acquisition(self):
-        self.acquisition = EpuSession(
+    def init_datastore(self):
+        self.datastore = EpuSession(
             EpuParser.resolve_project_dir(self.watch_dir),
             EpuParser.resolve_atlas_dir(self.watch_dir),
         )
 
+    # TODO this method does not logically belong to `watcher` but is coupled to it by shared datastore - refactor
+    def scan_existing_content(self):
+        if self.watch_dir is None:
+            raise RuntimeError("watch_dir not initialized - call set_watch_dir() first")
+        if self.datastore is None:
+            raise RuntimeError("datastore not initialized - call init_datastore() first")
+
+        # 1. locate and parse EpuSession.dm
+        epu_manifest_paths = list( # TODO yes - it's possible to have more than one. problem for later
+            self.datastore.project_dir.glob(f"EpuSession.dm")
+        )
+        if len(epu_manifest_paths) > 0:
+            self.datastore.session_data = EpuParser.parse_epu_session_manifest(epu_manifest_paths[0])
+        else:
+            # TODO establish if it's possible to have anything worth parsing written to fs
+            #   before `EpuSession.dm` materialises. if not - return early; if yes -
+            #   create a temporary placeholder for epu_data until we can get the real thing
+            pass
+
+        # 2. scan all gridsquare IDs from /Metadata directory files - this includes "inactive" and "active" gridsquares
+        metadata_dir_paths = list(  # TODO it's possible to have multiple `/Metadata` parent dirs. problem for later
+            self.datastore.project_dir.glob(f"Metadata/")
+        )
+        if len(metadata_dir_paths) > 0:
+            gridsquares = EpuParser.parse_gridsquares_metadata_dir(metadata_dir_paths[0])
+            for gridsquare_id, filename in gridsquares:
+                if self.verbose: console.print(f"[dim]Discovered gridsquare {gridsquare_id} from file {filename}[/dim]")
+                gridsquare_metadata = EpuParser.parse_gridsquare_metadata(filename)
+
+                # Here we are not worried about overwriting an existing gridsquare
+                #   because this is where they are first discovered and added to collection
+                assert not self.datastore.gridsquares.exists(gridsquare_id)
+
+                self.datastore.gridsquares.add(gridsquare_id, GridSquareData(
+                    id=gridsquare_id,
+                    metadata=gridsquare_metadata
+                ))
+                console.print(self.datastore.gridsquares.get(gridsquare_id))
+
+        # 3. scan all image-disc dir sub-dirs to get a list of active gridsquares. for each gridsquare subdir:
+        for gridsquare_manifest_path in list(
+            self.datastore.project_dir.glob("Images-Disc*/GridSquare_*/GridSquare_*_*.xml")
+        ):
+            # 3.1 scan gridsquare manifest (take care to check for existing gridsquare record and not overwrite it)
+            gridsquare_manifest = EpuParser.parse_gridsquare_manifest(gridsquare_manifest_path)
+            gridsquare_id = re.search(self.gridsquare_dir_pattern, str(gridsquare_manifest_path)).group(1)
+
+            assert self.datastore.gridsquares.exists(gridsquare_id)
+            gridsquare_data = self.datastore.gridsquares.get(gridsquare_id)
+            gridsquare_data.manifest = gridsquare_manifest
+            self.datastore.gridsquares.add(gridsquare_id, gridsquare_data)
+            console.print(self.datastore.gridsquares.get(gridsquare_id))
+
+            # 3.2 scan that gridsquare's Foilholes/ dir to get foilholes
+            for foilhole_manifest_path in list(
+                self.datastore.project_dir.glob(
+                    f"Images-Disc*/GridSquare_{gridsquare_id}/FoilHoles/FoilHole_*_*_*.xml"
+                )
+            ):
+                foilhole_id = re.search(self.foilhole_xml_file_pattern, str(foilhole_manifest_path)).group(1)
+                self.datastore.foilholes.add(foilhole_id, EpuParser.parse_foilhole_manifest(foilhole_manifest_path))
+                console.print(self.datastore.foilholes.get(foilhole_id))
+
+            # 3.3 scan that gridsquare's Foilholes/ dir to get micrographs
+            for micrograph_manifest_path in list(
+                self.datastore.project_dir.glob(
+                    f"Images-Disc*/GridSquare_{gridsquare_id}/Data/FoilHole_*_Data_*_*_*_*.xml"
+                )
+            ):
+                micrograph_manifest = EpuParser.parse_micrograph_manifest(micrograph_manifest_path)
+                match = re.search(self.micrograph_xml_file_pattern, str(micrograph_manifest_path))
+                foilhole_id = match.group(1)
+                location_id = match.group(2)
+                self.datastore.micrographs.add(micrograph_manifest.unique_id, MicrographData(
+                    id = micrograph_manifest.unique_id,
+                    gridsquare_id = gridsquare_id,
+                    foilhole_id = foilhole_id,
+                    location_id=location_id,
+                    high_res_path=Path(""),
+                    manifest_file = micrograph_manifest_path,
+                    manifest = micrograph_manifest,
+                ))
+                console.print(self.datastore.micrographs.get(micrograph_manifest.unique_id))
+
 
     def on_any_event(self, event):
+        if self.watch_dir is None:
+            raise RuntimeError("watch_dir not initialized - call set_watch_dir() first")
+        if self.datastore is None:
+            raise RuntimeError("datastore not initialized - call init_datastore() first")
+
         # Enhancement: record all events to graylog (if reachable) for session debugging and playback
 
         if event.is_directory or not self.matches_pattern(event.src_path):
@@ -129,8 +254,8 @@ class RateLimitedHandler(FileSystemEventHandler):
             if self.verbose:
                 console.print(f"[yellow]Warning:[/yellow] {str(e)}")
 
-        # if not new_file_detected - `event.modified` and `event.size` could be a good indicator if
-        # any interesting changes happened
+        # Optimise: if not `new_file_detected` - `event.modified` and `event.size` could be
+        #   a good indicator if any interesting changes happened
         new_file_detected = event.src_path in self.changed_files
 
         self.changed_files[event.src_path] = (event, current_time, file_stat)
@@ -158,15 +283,15 @@ class RateLimitedHandler(FileSystemEventHandler):
         print(f"Session detected: {path}")
         data = EpuParser.parse_epu_session_manifest(path)
         pprint(data)
-        self.acquisition.session_data = data
+        self.datastore.session_data = data
 
 
     def _on_session_updated(self, path: str):
         print(f"Session updated: {path}")
         new_data = EpuParser.parse_epu_session_manifest(path)
         pprint(new_data)
-        if self.acquisition.session_data != new_data:
-            self.acquisition.session_data = new_data
+        if self.datastore.session_data != new_data:
+            self.datastore.session_data = new_data
 
 
     def _on_sample_detected(self, path: str):
@@ -191,6 +316,9 @@ class RateLimitedHandler(FileSystemEventHandler):
         pprint(manifest)
 
 
+    # TODO this should be split into 2 events: Gridsquare Metadata and Gridsquare Manifest,
+    #   because the dm file in Metadata and the Images-Disk<N>/Gridsquare_<ID>/ dir are
+    #   unlikely to be written simultaneously
     def _on_gridsquare_detected(self, path: str):
         print(f"Gridsquare detected: {path}")
         match = self.gridsquare_dm_file_pattern.search(path) # get Gridsquare ID from filename
@@ -198,11 +326,10 @@ class RateLimitedHandler(FileSystemEventHandler):
         gridsquare_manifest = EpuParser.parse_gridsquare_manifest(path)
         gridsquare_data = GridSquareData(
             id=gridsquare_id,
-            is_active=False,
             manifest=gridsquare_manifest,
         )
         pprint(gridsquare_data)
-        self.acquisition.gridsquares.add(gridsquare_id, gridsquare_data)
+        self.datastore.gridsquares.add(gridsquare_id, gridsquare_data)
 
 
     def _on_gridsquare_updated(self, path: str):
@@ -215,49 +342,7 @@ class RateLimitedHandler(FileSystemEventHandler):
         print(f"Foilhole detected: {path}")
         data = EpuParser.parse_foilhole_manifest(path)
         pprint(data)
-        self.acquisition.foilholes.add(data.id, data)
-
-
-    # def scan_foilholes(self, gridsquare_id: str, gridsquare_dir: Path):
-    # # Check for required subdirectories
-    # gridsquare_data_dir = gridsquare_dir / "Data"
-    # gridsquare_foilholes_dir = gridsquare_dir / "FoilHoles"
-    # if not gridsquare_data_dir.is_dir():
-    #     return
-    # if not gridsquare_foilholes_dir.is_dir():
-    #     return
-    #
-    # # Scan `/FoilHoles` directory for initial foilhole metadata
-    # # OLDTODO grab timestamp from the filename?
-    # foilhole_pattern = re.compile(r'FoilHole_(\d+)_(\d+)_(\d+)\.xml$')
-    # for xml_file in gridsquare_foilholes_dir.glob("*.xml"):
-    #     match = foilhole_pattern.search(xml_file.name)
-    #     if match:
-    #         foilhole_id = match.group(1)
-    #         if foilhole_id not in self.foilholes:
-    #             self.foilholes[foilhole_id] = FoilHoleData(
-    #                 id = foilhole_id,
-    #                 gridsquare_id = gridsquare_id,
-    #                 files = {"foilholes_dir": [], "data_dir": [],}
-    #             )
-    #         self.foilholes[foilhole_id].files["foilholes_dir"].append(xml_file.name)
-    #
-    #
-    # # Scan `/Data` directory for detailed acquisition data
-    # # OLD
-    # data_pattern = re.compile(r'FoilHole_(\d+)_Data_(\d+)_(\d+)_(\d+)_(\d+)\.xml$')
-    # for xml_file in gridsquare_data_dir.glob("*.xml"):
-    #     match = data_pattern.search(xml_file.name)
-    #     if match:
-    #         foilhole_id = match.group(1)
-    #         if foilhole_id not in self.foilholes:
-    #             self.foilholes[foilhole_id] = FoilHoleData(
-    #                 id=foilhole_id,
-    #                 gridsquare_id=gridsquare_id,
-    #                 files={"foilholes_dir": [], "data_dir": [], }
-    #             )
-    #         self.foilholes[foilhole_id].files["data_dir"].append(xml_file.name)
-    #         self.scan_micrographs(gridsquare_id, foilhole_id)
+        self.datastore.foilholes.add(data.id, data)
 
 
     def _on_foilhole_updated(self, path: str):
@@ -276,33 +361,16 @@ class RateLimitedHandler(FileSystemEventHandler):
         manifest = EpuParser.parse_micrograph_manifest(path)
 
         data = MicrographData(
-            id="", # TODO
+            id=manifest.unique_id,
             location_id=location_id,
             gridsquare_id="", # TODO
-            high_res_path=Path(""), # TODO
+            high_res_path=Path(""),
             foilhole_id = foilhole_id,
             manifest_file = Path(path),
             manifest = manifest,
         )
         pprint(data)
-        self.acquisition.micrographs.add(data.id, data)
-
-    # def scan_micrographs(self, gridsquare_id: str, foilhole_id: str):
-    # # there is one file in data_dir per micrograph, so the unique combinations of foil hole and position in foil hole
-    # micrograph_manifest_paths = list(
-    #     self.project_dir.glob(
-    #         f"Images-Disc*/GridSquare_{gridsquare_id}/Data/FoilHole_{foilhole_id}_Data_*_*_*_*.xml"
-    #     )
-    # )
-    # for micrograph_path in micrograph_manifest_paths:
-    #     micrograph_id, micrograph_manifest = self.parse_micrograph_manifest(micrograph_path)
-    #     self.micrographs[micrograph_id] = MicrographData(
-    #         id = micrograph_id,
-    #         gridsquare_id = gridsquare_id,
-    #         foilhole_id = foilhole_id,
-    #         manifest_file = micrograph_path,
-    #         manifest = micrograph_manifest,
-    #     )
+        self.datastore.micrographs.add(data.id, data)
 
 
     def _on_micrograph_updated(self, path: str):
@@ -427,18 +495,24 @@ def watch_directory(
     })
 
     observer = Observer()
+
     handler = RateLimitedHandler(patterns, log_interval, verbose)
     handler.set_watch_dir(path)
+    handler.init_datastore()
+
+    # TODO settle race condition: buffer fs events that occur while `scan_existing_content()` is running
+    #   and make sure incremental parser operates on the buffer before moving on to new events
+    handler.scan_existing_content()
     observer.schedule(handler, str(path), recursive=True)
 
     def handle_exit(signum, frame):
         nonlocal handler
-        console.print(handler.acquisition)
+        console.print(handler.datastore)
         observer.stop()
-        # logging.info({
-        #     "message": "Watching stopped",
-        #     "timestamp": datetime.now().isoformat()
-        # }) # TODO consider adding stack frame info: `frame`
+        logging.info({ # consider adding stack frame info: `frame`
+            "message": "Watching stopped",
+            "timestamp": datetime.now().isoformat()
+        })
         observer.join()
         raise typer.Exit()
 
