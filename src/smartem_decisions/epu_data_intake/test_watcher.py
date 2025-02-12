@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+# TODO move to tests
+
 import os
 import random
 import time

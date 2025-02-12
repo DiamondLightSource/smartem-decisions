@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import os
 import re
 import typer
 from pprint import pprint
@@ -14,6 +15,7 @@ from data_model import (
     EPUSessionData,
     AtlasData,
     AtlasTileData,
+    GridSquareMetadata,
     GridSquareManifest,
     FoilHoleData,
     MicrographManifest,
@@ -53,13 +55,12 @@ console = Console()
 class EpuParser:
 
     @staticmethod
-    def to_cygwin_path(windows_path):
+    def to_cygwin_path(windows_path: str): # TODO add tests
         """This method would convert a Windows path such as:
         'Z:\\DoseFractions\\cm40598-8\\atlas\\Supervisor_20250114_095529_BSAtest_cm40598-8\\Sample9\\Atlas\\Atlas.dm'
         to:
         '/cygdrive/z/DoseFractions/cm40598-8/atlas/Supervisor_20250114_095529_BSAtest_cm40598-8/Sample9/Atlas/Atlas.dm'
         > Note: In MSys2 python will read it as the windows path
-        TODO add tests
         """
         if len(windows_path) >= 2 and windows_path[1] == ':':
             drive_letter = windows_path[0].lower()
@@ -267,6 +268,84 @@ class EpuParser:
             print(f"Failed to parse tile: {str(e)}")
             return None
 
+    @staticmethod
+    def parse_gridsquares_metadata_dir(path: str) -> list[tuple[str, str]]:
+        """Parse a directory containing GridSquare metadata files and return their IDs and filenames.
+
+        Args:
+            path (str): Path to the directory containing GridSquare_*.dm files
+
+        Returns:
+            list[tuple[int, str]]: List of tuples containing (grid_square_id, full_path) pairs
+        """
+
+        pattern = re.compile(r'GridSquare_(\d+)\.dm$') # TODO is already defined elsewhere, re-use
+
+        result = [
+            (pattern.match(filename).group(1), os.path.join(path, filename))
+            for filename in os.listdir(path)
+            if pattern.match(filename)
+        ]
+
+        return sorted(result)
+
+
+    @staticmethod
+    def parse_gridsquare_metadata(path: str) -> GridSquareMetadata | None:
+        try:
+            namespaces = {
+                'epu': 'http://schemas.datacontract.org/2004/07/Applications.Epu.Persistence',
+                'shared': 'http://schemas.datacontract.org/2004/07/Fei.SharedObjects',
+                'a': 'http://schemas.datacontract.org/2004/07/Fei.SharedObjects'
+            }
+
+            context = etree.iterparse(
+                path,
+                tag="{http://schemas.datacontract.org/2004/07/Applications.Epu.Persistence}GridSquareXml",
+                events=('end',)
+            )
+
+            for event, element in context:
+                def get_element_text(xpath):
+                    elements = element.xpath(xpath, namespaces=namespaces)
+                    return elements[0].text if elements else None
+
+                position = {
+                    # TODO perhaps better to use `np.nan` instead of 0.0?
+                    'x': float(get_element_text(".//epu:Position/shared:X") or 0.0),
+                    'y': float(get_element_text(".//epu:Position/shared:Y") or 0.0),
+                    'z': float(get_element_text(".//epu:Position/shared:Z") or 0.0),
+                }
+
+                image_path_str = get_element_text(".//epu:GridSquareImagePath")
+                image_path = Path(EpuParser.to_cygwin_path(image_path_str)) if image_path_str else None
+
+                # Parse boolean values
+                selected_str = get_element_text(".//epu:Selected")
+                unusable_str = get_element_text(".//epu:Unusable")
+                selected = selected_str.lower() == 'true' if selected_str else False
+                unusable = unusable_str.lower() == 'true' if unusable_str else False
+
+                metadata = GridSquareMetadata(
+                    atlas_node_id=int(get_element_text(".//epu:AtlasNodeId") or 0),
+                    position=position,
+                    state=get_element_text(".//epu:State"),
+                    rotation=float(get_element_text(".//epu:Rotation") or 0.0), # TODO use `np.nan`?
+                    image_path=image_path,
+                    selected=selected,
+                    unusable=unusable
+                )
+
+                element.clear()
+                while element.getprevious() is not None:
+                    del element.getparent()[0]
+
+                return metadata
+
+        except Exception as e:
+            print(f"Failed to parse gridsquare metadata: {str(e)}")
+            return None
+
 
     @staticmethod
     def parse_gridsquare_manifest(manifest_path: str) -> GridSquareManifest | None:
@@ -410,13 +489,6 @@ epu_parser_cli = typer.Typer()
 
 @epu_parser_cli.command()
 def parse_acquisition_dir(path: str):
-    # 1. locate and parse EpuSession.dm
-    # 2. scan all gridsquare IDs from /Metadata directory files
-    # 3. scan all image-disc dir sub-dirs to get a list of active gridsquares
-    # 4. for each gridsquare subdir:
-    #   4.1 scan manifest
-    #   4.2 scan Foilholes/
-    #   4.3 scan Data/ to get micrographs
     pass
 
 
@@ -433,9 +505,15 @@ def parse_atlas(path: str):
 
 
 @epu_parser_cli.command()
+def parse_gridsquare_metadata(path: str):
+    metadata = EpuParser.parse_gridsquare_metadata(path)
+    pprint(metadata)
+
+
+@epu_parser_cli.command()
 def parse_gridsquare(path: str):
-    gridsquare_data = EpuParser.parse_gridsquare_manifest(path)
-    pprint(gridsquare_data)
+    gridsquare_manifest_data = EpuParser.parse_gridsquare_manifest(path)
+    pprint(gridsquare_manifest_data)
 
 
 @epu_parser_cli.command()
@@ -475,7 +553,7 @@ def validate_epu_dir(path: str):
     return not is_valid  # Return non-zero exit code if validation fails
 
 if __name__ == "__main__":
-    # example datasets
+    # Example Datasets
     # dir1 = "../metadata_Supervisor_20250108_101446_62_cm40593-1_EPU"
     # dir2 = "../metadata_Supervisor_20250114_220855_23_epuBSAd20_GrOxDDM"
     # dir3 = "../metadata_Supervisor_20241220_140307_72_et2_gangshun"

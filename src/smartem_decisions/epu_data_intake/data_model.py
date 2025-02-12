@@ -1,6 +1,6 @@
 from collections.abc import Iterator
 import logging
-from typing import Generic, TypeVar
+from typing import Generic, TypeVar, NotRequired, TypedDict
 from datetime import datetime
 from pathlib import Path
 from dataclasses import dataclass, field
@@ -103,11 +103,39 @@ class GridSquareManifest:
     data_dir: Path | None = None
 
 
+class Position(TypedDict):
+    x: float
+    y: float
+    z: float
+
+
+@dataclass
+class GridSquareMetadata:
+    """Contains metadata about a grid square's position and properties.
+
+    Attributes:
+        atlas_node_id: Related atlas node identifier
+        position: Dictionary containing x, y, z stage coordinates
+        state: Current state of the grid square (e.g., 'Defined')
+        rotation: float
+        image_path: Path to the grid square MRC image file
+        selected: Whether this grid square is selected for acquisition
+        unusable: Whether this grid square has been marked as unusable
+    """
+    atlas_node_id: int
+    position: Position
+    state: str | None
+    rotation: float
+    image_path: Path | None
+    selected: bool
+    unusable: bool
+
+
 @dataclass
 class GridSquareData:
     id: str
-    is_active: bool = False  # Does additional data exist for this GridSquare under `/Images-Disc<n>`
     data_dir: Path | None = None
+    metadata: GridSquareMetadata | None = None
     manifest: GridSquareManifest | None = None
 
 

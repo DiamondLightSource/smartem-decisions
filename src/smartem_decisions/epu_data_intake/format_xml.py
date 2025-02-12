@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+# TODO: move to tools
+
 import xml.dom.minidom
 import pathlib
 import typer
