@@ -12,13 +12,16 @@ from rich.panel import Panel
 from rich.text import Text
 
 from data_model import (
-    EPUSessionData,
+    EpuSession,
+    EpuSessionData,
     AtlasData,
     AtlasTileData,
     GridSquareMetadata,
     GridSquareManifest,
+    GridSquareData,
     FoilHoleData,
     MicrographManifest,
+    MicrographData,
 )
 
 console = Console()
@@ -53,6 +56,10 @@ console = Console()
 
 
 class EpuParser:
+    gridsquare_dm_file_pattern = re.compile(r"GridSquare_(\d+)\.dm$")  # under "Metadata/"
+    gridsquare_dir_pattern = re.compile(r"/GridSquare_(\d+)/")  # under Images-Disc*/
+    foilhole_xml_file_pattern = re.compile(r'/FoilHole_(\d+)_(\d+)_(\d+)\.xml$')
+    micrograph_xml_file_pattern = re.compile(r'/FoilHole_(\d+)_Data_(\d+)_(\d+)_(\d+)_(\d+)\.xml$')
 
     @staticmethod
     def to_cygwin_path(windows_path: str): # TODO add tests
@@ -158,7 +165,7 @@ class EpuParser:
 
 
     @staticmethod
-    def parse_epu_session_manifest(manifest_path: str) -> EPUSessionData | None:
+    def parse_epu_session_manifest(manifest_path: str) -> EpuSessionData | None:
         try:
             namespaces = {
                 'ns': 'http://schemas.datacontract.org/2004/07/Applications.Epu.Persistence',
@@ -176,7 +183,7 @@ class EpuParser:
 
                     start_time_str = get_element_text("./ns:StartDateTime")
 
-                    return EPUSessionData(
+                    return EpuSessionData(
                         name=get_element_text("./ns:Name"),
                         id=get_element_text("./common:Id"),
                         start_time=datetime.fromisoformat(start_time_str.rstrip('Z')) if start_time_str else None,
@@ -279,12 +286,10 @@ class EpuParser:
             list[tuple[int, str]]: List of tuples containing (grid_square_id, full_path) pairs
         """
 
-        pattern = re.compile(r'GridSquare_(\d+)\.dm$') # TODO is already defined elsewhere, re-use
-
         result = [
-            (pattern.match(filename).group(1), os.path.join(path, filename))
+            (EpuParser.gridsquare_dm_file_pattern.match(filename).group(1), os.path.join(path, filename))
             for filename in os.listdir(path)
-            if pattern.match(filename)
+            if EpuParser.gridsquare_dm_file_pattern.match(filename)
         ]
 
         return sorted(result)
@@ -484,48 +489,88 @@ class EpuParser:
             return None
 
 
+    @staticmethod
+    def parse_acquisition_dir(datastore: EpuSession, verbose: bool = False) -> EpuSession:
+        # 1. locate and parse EpuSession.dm
+        epu_manifest_paths = list( # TODO yes - it's possible to have more than one. problem for later
+            datastore.project_dir.glob(f"EpuSession.dm")
+        )
+        if len(epu_manifest_paths) > 0:
+            datastore.session_data = EpuParser.parse_epu_session_manifest(epu_manifest_paths[0])
+        else:
+            # TODO establish if it's possible to have anything worth parsing written to fs
+            #   before `EpuSession.dm` materialises. if not - return early; if yes -
+            #   create a temporary placeholder for epu_data until we can get the real thing
+            pass
+
+        # 2. scan all gridsquare IDs from /Metadata directory files - this includes "inactive" and "active" gridsquares
+        metadata_dir_paths = list(  # TODO it's possible to have multiple `/Metadata` parent dirs. problem for later
+            datastore.project_dir.glob(f"Metadata/")
+        )
+        if len(metadata_dir_paths) > 0:
+            gridsquares = EpuParser.parse_gridsquares_metadata_dir(metadata_dir_paths[0])
+            for gridsquare_id, filename in gridsquares:
+                if verbose: console.print(f"[dim]Discovered gridsquare {gridsquare_id} from file {filename}[/dim]")
+                gridsquare_metadata = EpuParser.parse_gridsquare_metadata(filename)
+
+                # Here we are not worried about overwriting an existing gridsquare
+                #   because this is where they are first discovered and added to collection
+                assert not datastore.gridsquares.exists(gridsquare_id)
+
+                datastore.gridsquares.add(gridsquare_id, GridSquareData(
+                    id=gridsquare_id,
+                    metadata=gridsquare_metadata
+                ))
+                console.print(datastore.gridsquares.get(gridsquare_id))
+
+        # 3. scan all image-disc dir sub-dirs to get a list of active gridsquares. for each gridsquare subdir:
+        for gridsquare_manifest_path in list(
+            datastore.project_dir.glob("Images-Disc*/GridSquare_*/GridSquare_*_*.xml")
+        ):
+            # 3.1 scan gridsquare manifest (take care to check for existing gridsquare record and not overwrite it)
+            gridsquare_manifest = EpuParser.parse_gridsquare_manifest(gridsquare_manifest_path)
+            gridsquare_id = re.search(EpuParser.gridsquare_dir_pattern, str(gridsquare_manifest_path)).group(1)
+
+            assert datastore.gridsquares.exists(gridsquare_id)
+            gridsquare_data = datastore.gridsquares.get(gridsquare_id)
+            gridsquare_data.manifest = gridsquare_manifest
+            datastore.gridsquares.add(gridsquare_id, gridsquare_data)
+            console.print(datastore.gridsquares.get(gridsquare_id))
+
+            # 3.2 scan that gridsquare's Foilholes/ dir to get foilholes
+            for foilhole_manifest_path in list(
+                datastore.project_dir.glob(
+                    f"Images-Disc*/GridSquare_{gridsquare_id}/FoilHoles/FoilHole_*_*_*.xml"
+                )
+            ):
+                foilhole_id = re.search(EpuParser.foilhole_xml_file_pattern, str(foilhole_manifest_path)).group(1)
+                datastore.foilholes.add(foilhole_id, EpuParser.parse_foilhole_manifest(foilhole_manifest_path))
+                console.print(datastore.foilholes.get(foilhole_id))
+
+            # 3.3 scan that gridsquare's Foilholes/ dir to get micrographs
+            for micrograph_manifest_path in list(
+                datastore.project_dir.glob(
+                    f"Images-Disc*/GridSquare_{gridsquare_id}/Data/FoilHole_*_Data_*_*_*_*.xml"
+                )
+            ):
+                micrograph_manifest = EpuParser.parse_micrograph_manifest(micrograph_manifest_path)
+                match = re.search(EpuParser.micrograph_xml_file_pattern, str(micrograph_manifest_path))
+                foilhole_id = match.group(1)
+                location_id = match.group(2)
+                datastore.micrographs.add(micrograph_manifest.unique_id, MicrographData(
+                    id = micrograph_manifest.unique_id,
+                    gridsquare_id = gridsquare_id,
+                    foilhole_id = foilhole_id,
+                    location_id=location_id,
+                    high_res_path=Path(""),
+                    manifest_file = micrograph_manifest_path,
+                    manifest = micrograph_manifest,
+                ))
+                console.print(datastore.micrographs.get(micrograph_manifest.unique_id))
+        return datastore
+
+
 epu_parser_cli = typer.Typer()
-
-
-@epu_parser_cli.command()
-def parse_acquisition_dir(path: str):
-    pass
-
-
-@epu_parser_cli.command()
-def parse_epu_session(path: str):
-    epu_session_data = EpuParser.parse_epu_session_manifest(path)
-    pprint(epu_session_data)
-
-
-@epu_parser_cli.command()
-def parse_atlas(path: str):
-    atlas_data = EpuParser.parse_atlas_manifest(path)
-    pprint(atlas_data)
-
-
-@epu_parser_cli.command()
-def parse_gridsquare_metadata(path: str):
-    metadata = EpuParser.parse_gridsquare_metadata(path)
-    pprint(metadata)
-
-
-@epu_parser_cli.command()
-def parse_gridsquare(path: str):
-    gridsquare_manifest_data = EpuParser.parse_gridsquare_manifest(path)
-    pprint(gridsquare_manifest_data)
-
-
-@epu_parser_cli.command()
-def parse_foilhole(path: str):
-    foilhole_data = EpuParser.parse_foilhole_manifest(path)
-    pprint(foilhole_data)
-
-
-@epu_parser_cli.command()
-def parse_micrograph(path: str):
-    micrograph_data = EpuParser.parse_micrograph_manifest(path)
-    pprint(micrograph_data)
 
 
 @epu_parser_cli.command()
@@ -542,20 +587,61 @@ def validate_epu_dir(path: str):
             *(Text(f"• {error}\n", style="yellow") for error in errors)
         )
 
-    panel = Panel(
+    console.print(Panel(
         content,
         title=title,
         border_style="green" if is_valid else "red",
         padding=(1, 2)
-    )
+    ))
 
-    console.print(panel)
     return not is_valid  # Return non-zero exit code if validation fails
 
-if __name__ == "__main__":
-    # Example Datasets
-    # dir1 = "../metadata_Supervisor_20250108_101446_62_cm40593-1_EPU"
-    # dir2 = "../metadata_Supervisor_20250114_220855_23_epuBSAd20_GrOxDDM"
-    # dir3 = "../metadata_Supervisor_20241220_140307_72_et2_gangshun"
 
+@epu_parser_cli.command()
+def parse_epu_dir(dir_path: str):
+    datastore = EpuSession(
+        EpuParser.resolve_project_dir(Path(dir_path)),
+        EpuParser.resolve_atlas_dir(Path(dir_path)),
+    )
+    datastore = EpuParser.parse_acquisition_dir(datastore)
+    console.print(datastore)
+
+
+@epu_parser_cli.command()
+def parse_epu_session(path: str):
+    epu_session_data = EpuParser.parse_epu_session_manifest(path)
+    console.print(epu_session_data)
+
+
+@epu_parser_cli.command()
+def parse_atlas(path: str):
+    atlas_data = EpuParser.parse_atlas_manifest(path)
+    console.print(atlas_data)
+
+
+@epu_parser_cli.command()
+def parse_gridsquare_metadata(path: str):
+    metadata = EpuParser.parse_gridsquare_metadata(path)
+    console.print(metadata)
+
+
+@epu_parser_cli.command()
+def parse_gridsquare(path: str):
+    gridsquare_manifest_data = EpuParser.parse_gridsquare_manifest(path)
+    console.print(gridsquare_manifest_data)
+
+
+@epu_parser_cli.command()
+def parse_foilhole(path: str):
+    foilhole_data = EpuParser.parse_foilhole_manifest(path)
+    console.print(foilhole_data)
+
+
+@epu_parser_cli.command()
+def parse_micrograph(path: str):
+    micrograph_data = EpuParser.parse_micrograph_manifest(path)
+    console.print(micrograph_data)
+
+
+if __name__ == "__main__":
     epu_parser_cli()
