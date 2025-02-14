@@ -15,6 +15,16 @@ using a cryo-electron microscope. Data intake scripts can be used to:
 ## Quickies
 
 ```bash
+# parse complete EPU directory
+python src/smartem_decisions/epu_data_intake/fs_parser.py parse-epu-dir \
+  ../metadata_Supervisor_20250108_101446_62_cm40593-1_EPU
+
+python src/smartem_decisions/epu_data_intake/fs_parser.py parse-epu-dir \
+  ../metadata_Supervisor_20250114_220855_23_epuBSAd20_GrOxDDM
+
+python src/smartem_decisions/epu_data_intake/fs_parser.py parse-epu-dir \
+  ../metadata_Supervisor_20241220_140307_72_et2_gangshun
+
 # parse things
 python src/smartem_decisions/epu_data_intake/fs_parser.py parse-epu-session \
   tests/testdata/epu-dir-example/EpuSession.dm
@@ -36,7 +46,6 @@ python src/smartem_decisions/epu_data_intake/fs_parser.py parse-gridsquare-metad
 # ../metadata_Supervisor_20250114_220855_23_epuBSAd20_GrOxDDM/Metadata/GridSquare_13515313.dm
 # ../metadata_Supervisor_20250114_220855_23_epuBSAd20_GrOxDDM/Metadata/GridSquare_13515293.dm
 # ../metadata_Supervisor_20250114_220855_23_epuBSAd20_GrOxDDM/Metadata/GridSquare_13515237.dm
-
 
 python src/smartem_decisions/epu_data_intake/fs_parser.py parse-foilhole \
   tests/testdata/epu-dir-example/Images-Disc1/GridSquare_8999138/FoilHoles/FoilHole_9015889_20250108_154725.xml

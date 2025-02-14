@@ -159,7 +159,7 @@ class AtlasData:
 
 
 @dataclass
-class EPUSessionData:
+class EpuSessionData:
     name: str
     id: str
     start_time: datetime
@@ -177,7 +177,7 @@ class EpuSession:
     project_dir: Path
     atlas_dir: Path
 
-    session_data: EPUSessionData | None = None
+    session_data: EpuSessionData | None = None
     gridsquares: EntityStore[GridSquareData] = field(default_factory=EntityStore)
     foilholes: EntityStore[FoilHoleData] = field(default_factory=EntityStore)
     micrographs: EntityStore[MicrographData] = field(default_factory=EntityStore)
