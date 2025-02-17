@@ -3,7 +3,6 @@
 import os
 import re
 import typer
-from pprint import pprint
 from pathlib import Path
 from datetime import datetime
 from lxml import etree
@@ -56,10 +55,17 @@ console = Console()
 
 
 class EpuParser:
+
+    METADATA_DIR = "Metadata"
+    EPU_SESSION_FILENAME = "EpuSession.dm"
+    session_dm_pattern = re.compile(rf"{EPU_SESSION_FILENAME}$")
+    sample_dm_pattern = re.compile(r"Sample\.dm$")
+    atlas_dm_pattern = re.compile(r"Atlas/Atlas\.dm$")
     gridsquare_dm_file_pattern = re.compile(r"GridSquare_(\d+)\.dm$")  # under "Metadata/"
+    images_disc_dir_pattern = re.compile(r"/Images-Disc(\d+)$")
     gridsquare_dir_pattern = re.compile(r"/GridSquare_(\d+)/")  # under Images-Disc*/
-    foilhole_xml_file_pattern = re.compile(r'/FoilHole_(\d+)_(\d+)_(\d+)\.xml$')
-    micrograph_xml_file_pattern = re.compile(r'/FoilHole_(\d+)_Data_(\d+)_(\d+)_(\d+)_(\d+)\.xml$')
+    foilhole_xml_file_pattern = re.compile(r"FoilHole_(\d+)_(\d+)_(\d+)\.xml$")
+    micrograph_xml_file_pattern = re.compile(r"FoilHole_(\d+)_Data_(\d+)_(\d+)_(\d+)_(\d+)\.xml$")
 
     @staticmethod
     def to_cygwin_path(windows_path: str): # TODO add tests
@@ -90,19 +96,19 @@ class EpuParser:
         errors = []
 
         # 1. Check for `/EpuSession.dm` file
-        epu_session_path = path / "EpuSession.dm"
+        epu_session_path = path / EpuParser.EPU_SESSION_FILENAME
         if not epu_session_path.is_file():
             errors.append("Missing required file: EpuSession.dm")
 
         # 2. Check for `/Metadata` directory
-        metadata_path = path / "Metadata"
+        metadata_path = path / EpuParser.METADATA_DIR
         if not metadata_path.is_dir():
             errors.append("Missing required directory: Metadata")
 
         # 3. Check for `/Images-Disc*` directories (at least `/Images-Disc1`)
         imagedisc_dirs = sorted([
             path / Path(d.name) for d in path.iterdir()
-            if d.is_dir() and d.name.startswith('Images-Disc')
+            if d.is_dir() and EpuParser.images_disc_dir_pattern.search(str(path / d.name))
         ])
 
         if not imagedisc_dirs:
@@ -114,7 +120,7 @@ class EpuParser:
                     continue
 
                 # Check if the directory name matches the expected pattern
-                match = re.match(r"Images-Disc(\d+)$", dir_path.name)
+                match = EpuParser.images_disc_dir_pattern.search(str(dir_path))
                 if not match:
                     errors.append(f"Invalid directory name format: {dir_path.name}")
                     continue
@@ -412,13 +418,12 @@ class EpuParser:
                         return elements[0].text if elements else None
 
                     filename = Path(manifest_path).name
-                    match = re.match(r'FoilHole_(\d+)_.*\.xml', filename)
-                    if not match:
+
+                    if not (match := re.search(EpuParser.foilhole_xml_file_pattern, filename)):
                         return None
                     foilhole_id = match.group(1)
 
-                    match = re.search(r'GridSquare_(\d+)', str(manifest_path))
-                    if not match:
+                    if not (match := re.search(EpuParser.gridsquare_dir_pattern, str(manifest_path))):
                         return None
                     gridsquare_id = match.group(1)
 

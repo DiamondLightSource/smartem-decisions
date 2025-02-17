@@ -53,28 +53,36 @@ python src/smartem_decisions/epu_data_intake/fs_parser.py parse-foilhole \
 python src/smartem_decisions/epu_data_intake/fs_parser.py parse-micrograph \
   tests/testdata/epu-dir-example/Images-Disc1/GridSquare_8999138/Data/FoilHole_9015883_Data_9017354_6_20250108_154918.xml
   
-# validate epu project dirs
+# Validate epu project dirs:
+
+# expect failure:
 python src/smartem_decisions/epu_data_intake/fs_parser.py validate-epu-dir \
   tests/testdata/bi37708-28/Supervisor_20250129_114842_73_bi37708-28_grid7_EPU
 
+# expect success:
 python src/smartem_decisions/epu_data_intake/fs_parser.py validate-epu-dir \
   tests/testdata/bi37708-28/Supervisor_20250129_134723_36_bi37708-28_grid7_EPU
 
+# expect failure:
 python src/smartem_decisions/epu_data_intake/fs_parser.py validate-epu-dir \
   tests/testdata/bi37708-28/Supervisor_20250130_105058_11
 
+# expect success:
 python src/smartem_decisions/epu_data_intake/fs_parser.py validate-epu-dir \
   tests/testdata/bi37708-28/Supervisor_20250130_133418_68apoferritin
 
 python src/smartem_decisions/epu_data_intake/fs_parser.py validate-epu-dir \
   tests/testdata/bi37708-28/Supervisor_20250130_143856_44Practice
 
+# expect success:
 python src/smartem_decisions/epu_data_intake/fs_parser.py validate-epu-dir \
   tests/testdata/bi37708-28/Supervisor_20250130_145409_68
 
+# expect success:
 python src/smartem_decisions/epu_data_intake/fs_parser.py validate-epu-dir \
   tests/testdata/bi37708-28/Supervisor_20250130_145409_68practice2
 
+# expect failure:
 python src/smartem_decisions/epu_data_intake/fs_parser.py validate-epu-dir \
   tests/testdata/bi37708-28/Supervisor_20250130_150924_1grid3
 
