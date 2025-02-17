@@ -80,6 +80,15 @@ python src/smartem_decisions/epu_data_intake/fs_parser.py validate-epu-dir \
 
 ```
 
+### Other helpful quickies
+
+```bash
+# To find all foilhole manifest duplicates in a directory, recursively: 
+tools/find_foilhole_duplicates.py --help
+# e.g.
+tools/find_foilhole_duplicates.py ./tests/testdata/bi37708-28
+```
+
 ## Directory structure
 
 Directory layout on the EPU machine will differ from the layout of that

@@ -538,11 +538,12 @@ class EpuParser:
             console.print(datastore.gridsquares.get(gridsquare_id))
 
             # 3.2 scan that gridsquare's Foilholes/ dir to get foilholes
-            for foilhole_manifest_path in list(
-                datastore.project_dir.glob(
-                    f"Images-Disc*/GridSquare_{gridsquare_id}/FoilHoles/FoilHole_*_*_*.xml"
-                )
-            ):
+            foilhole_manifest_paths = sorted(
+                datastore.project_dir.glob(f"Images-Disc*/GridSquare_{gridsquare_id}/FoilHoles/FoilHole_*_*_*.xml"),
+                key=lambda p: p.name  # sorts based on just the filename part. This is important because it's possible
+                # to sometimes have multiple foilhole manifests side-by-side and only the latest one is relevant.
+            )
+            for foilhole_manifest_path in foilhole_manifest_paths:
                 foilhole_id = re.search(EpuParser.foilhole_xml_file_pattern, str(foilhole_manifest_path)).group(1)
                 datastore.foilholes.add(foilhole_id, EpuParser.parse_foilhole_manifest(foilhole_manifest_path))
                 console.print(datastore.foilholes.get(foilhole_id))

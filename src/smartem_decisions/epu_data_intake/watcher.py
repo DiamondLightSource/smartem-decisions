@@ -169,95 +169,72 @@ class RateLimitedHandler(FileSystemEventHandler):
             case path if path.endswith("EpuSession.dm"):
                 # Needs testing to see if this is a practical way to detect session start or if there's an
                 #   alternative / additional way, e.g. appearance of a project dir
-                self._on_session_detected(path) if new_file_detected else self._on_session_updated(path)
+                self._on_session_detected(path, new_file_detected)
             case path if path.endswith("Sample.dm"):
-                self._on_sample_detected(path) if new_file_detected else self._on_sample_updated(path)
+                self._on_sample_detected(path, new_file_detected)
             case path if path.endswith("Atlas/Atlas.dm"):
-                self._on_atlas_detected(path) if new_file_detected else self._on_atlas_updated(path)
+                self._on_atlas_detected(path, new_file_detected)
             case path if re.match(r".*/GridSquare_[^/]*\.dm$", path):
-                self._on_gridsquare_detected(path) if new_file_detected else self._on_gridsquare_updated(path)
+                self._on_gridsquare_detected(path, new_file_detected)
             case path if re.match(r".*/FoilHole_[^/]*_[^/]*_[^/]*\.xml$", path):
+                # `rg --files --glob '*.xml' | rg '^.*\/FoilHoles\/FoilHole_(\d+)_\d{8}_\d{6}\.xml$'`
                 # TODO between multiple files relating to the same foilhole keep latest one as encoded by timestamp in filename,
                 #   e.g. between `FoilHole_9016620_20250108_181906.xml` and `FoilHole_9016620_20250108_181916.xml` pick the latter.
                 #   https://github.com/DiamondLightSource/smartem-decisions/issues/52
-                self._on_foilhole_detected(path) if new_file_detected else self._on_foilhole_updated(path)
+                self._on_foilhole_detected(path, new_file_detected)
             case path if re.match(r".*/FoilHole_[^/]*_Data_[^/]*_[^/]*_[^/]*_[^/]*\.xml$", path):
-                self._on_micrograph_detected(path) if new_file_detected else self._on_micrograph_updated(path)
+                self._on_micrograph_detected(path, new_file_detected)
 
 
-    def _on_session_detected(self, path: str):
-        console.print(f"Session detected: {path}")
+    def _on_session_detected(self, path: str, is_new_file:bool = True):
+        console.print(f"Session manifest {'detected' if is_new_file else 'updated'}: {path}")
         data = EpuParser.parse_epu_session_manifest(path)
-        if self.verbose: console.print(data)
-        self.datastore.session_data = data
+        if is_new_file and data != self.datastore.session_data:
+            self.datastore.session_data = data
+            console.print(data)
 
 
-    def _on_session_updated(self, path: str):
-        print(f"Session updated: {path}")
-        new_data = EpuParser.parse_epu_session_manifest(path)
-        if self.datastore.session_data != new_data:
-            self.datastore.session_data = new_data
-            if self.verbose: console.print(new_data)
+    def _on_sample_detected(self, path: str, is_new_file:bool = True):
+        console.print(f"Sample {'detected' if is_new_file else 'updated'}: {path}")
+        # not yet sure if there's anything interesting there worth parsing
 
 
-    def _on_sample_detected(self, path: str):
-        console.print(f"Sample detected: {path}")
-        # though not yet sure if there's anything interesting there we might want
-
-
-    def _on_sample_updated(self, path: str):
-        console.print(f"Sample updated: {path}")
-        # though not yet sure if there's anything interesting there we might want
-
-
-    def _on_atlas_detected(self, path: str):
-        console.print(f"Atlas detected: {path}")
+    def _on_atlas_detected(self, path: str, is_new_file:bool = True):
+        console.print(f"Atlas {'detected' if is_new_file else 'updated'}: {path}")
         manifest = EpuParser.parse_atlas_manifest(path)
-        if self.verbose: console.print(manifest)
-
-
-    def _on_atlas_updated(self, path: str):
-        console.print(f"Atlas updated: {path}")
-        manifest = EpuParser.parse_atlas_manifest(path)
-        if self.verbose: console.print(manifest)
+        console.print(manifest)
 
 
     # TODO this should be split into 2 events: Gridsquare Metadata and Gridsquare Manifest,
     #   because the dm file in Metadata and the Images-Disk<N>/Gridsquare_<ID>/ dir are
     #   unlikely to be written simultaneously
-    def _on_gridsquare_detected(self, path: str):
-        console.print(f"Gridsquare detected: {path}")
-        match = EpuParser.gridsquare_dm_file_pattern.search(path) # get Gridsquare ID from filename
-        gridsquare_id = match.group(1)
+    def _on_gridsquare_detected(self, path: str, is_new_file:bool = True):
+        console.print(f"Gridsquare manifest {'detected' if is_new_file else 'updated'} in /Metadata: {path}")
+        gridsquare_id = EpuParser.gridsquare_dm_file_pattern.search(path).group(1)
         gridsquare_manifest = EpuParser.parse_gridsquare_manifest(path)
         gridsquare_data = GridSquareData(
             id=gridsquare_id,
             manifest=gridsquare_manifest,
         )
         self.datastore.gridsquares.add(gridsquare_id, gridsquare_data)
-        if self.verbose: console.print(gridsquare_data)
-
-    def _on_gridsquare_updated(self, path: str):
-        console.print(f"Gridsquare updated: {path}")
-        manifest = EpuParser.parse_gridsquare_manifest(path)
-        pprint(manifest)
+        console.print(gridsquare_data)
 
 
-    def _on_foilhole_detected(self, path: str):
-        console.print(f"Foilhole detected: {path}")
+    def _on_foilhole_detected(self, path: str, is_new_file:bool = True):
+        console.print(f"Foilhole {'detected' if is_new_file else 'updated'}: {path}")
         data = EpuParser.parse_foilhole_manifest(path)
+        # Here it is by intent that any previously recorded data for given foilhole is overwritten as
+        # there are instances of multiple manifest files written to fs and in these cases
+        # only the newest (by timestamp) is relevant.
+        # TODO It is assumed that latest foilhole manifest by timestamp in filename will also be
+        #  last to be written to fs, but additional filename-based checks wouldn't hurt - resolve latest
+        #  based on timestamp found in filename.
         self.datastore.foilholes.add(data.id, data)
-        if self.verbose: console.print(data)
+        console.print(data)
 
 
-    def _on_foilhole_updated(self, path: str):
-        console.print(f"Foilhole updated: {path}")
-        manifest = EpuParser.parse_foilhole_manifest(path)
-        if self.verbose: console.print(manifest)
-
-
-    def _on_micrograph_detected(self, path: str):
-        console.print(f"Micrograph detected: {path}")
+    def _on_micrograph_detected(self, path: str, is_new_file:bool = True):
+        console.print(f"Micrograph {'detected' if is_new_file else 'updated'}: {path}")
 
         match = re.match(r"FoilHole_(\d+)_Data_(\d+)_(\d+)_(\d+)_(\d+).xml$", path) # TODO
         foilhole_id = match.group(1)
@@ -275,13 +252,7 @@ class RateLimitedHandler(FileSystemEventHandler):
             manifest = manifest,
         )
         self.datastore.micrographs.add(data.id, data)
-        if self.verbose: console.print(data)
-
-
-    def _on_micrograph_updated(self, path: str):
-        console.print(f"Micrograph updated: {path}")
-        manifest = EpuParser.parse_micrograph_manifest(path)
-        if self.verbose: console.print(manifest)
+        console.print(data)
 
 
     def _on_session_complete(self):
