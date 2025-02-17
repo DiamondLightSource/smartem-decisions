@@ -4,7 +4,6 @@ import subprocess
 import re
 import sys
 from pathlib import Path
-from typing import Dict, List, Tuple, Optional
 from collections import defaultdict
 
 import typer
@@ -12,7 +11,6 @@ from rich.console import Console
 from rich.table import Table
 from rich.progress import track
 from rich.panel import Panel
-from rich import print as rprint
 import json
 
 # Initialize rich console
@@ -20,10 +18,7 @@ console = Console()
 app = typer.Typer(help="Find FoilHole XML files with matching numbers but different timestamps.")
 
 
-def find_foilhole_duplicates(
-        directory: Path,
-        verbose: bool
-) -> Dict[str, List[Tuple[str, str]]]:
+def find_foilhole_duplicates(directory: Path, verbose: bool):
     """Find duplicate FoilHole XML files with matching numbers but different timestamps."""
 
     if verbose:
@@ -70,7 +65,7 @@ def find_foilhole_duplicates(
         raise typer.Exit(code=1)
 
 
-def create_summary_table(duplicates: Dict[str, List[Tuple[str, str]]]) -> Table:
+def create_summary_table(duplicates):
     """Create a rich table with summary information."""
     table = Table(title="Duplicate Files Summary")
 
@@ -115,11 +110,12 @@ def main(
         )
 ):
     """
-    Find and report FoilHole XML files that have matching numbers but different timestamps.
+    Find and report FoilHole XML files that have matching numbers but different timestamps
 
     This tool recursively searches through directories to find XML files in FoilHoles
     directories and identifies cases where files share the same FoilHole number but
-    have different timestamps.
+    have different timestamps. Assumes ripgrep is installed on the system
+    and is on PATH: https://github.com/BurntSushi/ripgrep
     """
 
     if no_color:
