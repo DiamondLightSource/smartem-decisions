@@ -10,7 +10,6 @@ import time
 from datetime import datetime
 from fnmatch import fnmatch
 from pathlib import Path
-from pprint import pprint
 
 from rich.console import Console
 import typer
@@ -160,33 +159,27 @@ class RateLimitedHandler(FileSystemEventHandler):
 
         # Optimise: if not `new_file_detected` - `event.modified` and `event.size` could be
         #   a good indicator if any interesting changes happened
-        new_file_detected = event.src_path in self.changed_files
-
+        new_file_detected = event.src_path not in self.changed_files
         self.changed_files[event.src_path] = (event, current_time, file_stat)
 
-        # TODO refactor pattern definitions to EpuParser
         match event.src_path:
-            case path if path.endswith("EpuSession.dm"):
+            case path if re.search(EpuParser.session_dm_pattern, path):
                 # Needs testing to see if this is a practical way to detect session start or if there's an
                 #   alternative / additional way, e.g. appearance of a project dir
                 self._on_session_detected(path, new_file_detected)
-            case path if path.endswith("Sample.dm"):
+            case path if re.search(EpuParser.sample_dm_pattern, path):
                 self._on_sample_detected(path, new_file_detected)
-            case path if path.endswith("Atlas/Atlas.dm"):
+            case path if re.search(EpuParser.atlas_dm_pattern, path):
                 self._on_atlas_detected(path, new_file_detected)
-            case path if re.match(r".*/GridSquare_[^/]*\.dm$", path):
+            case path if re.search(EpuParser.gridsquare_dm_file_pattern, path):
                 self._on_gridsquare_detected(path, new_file_detected)
-            case path if re.match(r".*/FoilHole_[^/]*_[^/]*_[^/]*\.xml$", path):
-                # `rg --files --glob '*.xml' | rg '^.*\/FoilHoles\/FoilHole_(\d+)_\d{8}_\d{6}\.xml$'`
-                # TODO between multiple files relating to the same foilhole keep latest one as encoded by timestamp in filename,
-                #   e.g. between `FoilHole_9016620_20250108_181906.xml` and `FoilHole_9016620_20250108_181916.xml` pick the latter.
-                #   https://github.com/DiamondLightSource/smartem-decisions/issues/52
+            case path if re.search(EpuParser.foilhole_xml_file_pattern, path):
                 self._on_foilhole_detected(path, new_file_detected)
-            case path if re.match(r".*/FoilHole_[^/]*_Data_[^/]*_[^/]*_[^/]*_[^/]*\.xml$", path):
+            case path if re.search(EpuParser.micrograph_xml_file_pattern, path):
                 self._on_micrograph_detected(path, new_file_detected)
 
 
-    def _on_session_detected(self, path: str, is_new_file:bool = True):
+    def _on_session_detected(self, path: str, is_new_file: bool = True):
         console.print(f"Session manifest {'detected' if is_new_file else 'updated'}: {path}")
         data = EpuParser.parse_epu_session_manifest(path)
         if is_new_file and data != self.datastore.session_data:
@@ -194,12 +187,12 @@ class RateLimitedHandler(FileSystemEventHandler):
             console.print(data)
 
 
-    def _on_sample_detected(self, path: str, is_new_file:bool = True):
+    def _on_sample_detected(self, path: str, is_new_file: bool = True):
         console.print(f"Sample {'detected' if is_new_file else 'updated'}: {path}")
         # not yet sure if there's anything interesting there worth parsing
 
 
-    def _on_atlas_detected(self, path: str, is_new_file:bool = True):
+    def _on_atlas_detected(self, path: str, is_new_file: bool = True):
         console.print(f"Atlas {'detected' if is_new_file else 'updated'}: {path}")
         manifest = EpuParser.parse_atlas_manifest(path)
         console.print(manifest)
@@ -208,7 +201,8 @@ class RateLimitedHandler(FileSystemEventHandler):
     # TODO this should be split into 2 events: Gridsquare Metadata and Gridsquare Manifest,
     #   because the dm file in Metadata and the Images-Disk<N>/Gridsquare_<ID>/ dir are
     #   unlikely to be written simultaneously
-    def _on_gridsquare_detected(self, path: str, is_new_file:bool = True):
+
+    def _on_gridsquare_detected(self, path: str, is_new_file: bool = True):
         console.print(f"Gridsquare manifest {'detected' if is_new_file else 'updated'} in /Metadata: {path}")
         gridsquare_id = EpuParser.gridsquare_dm_file_pattern.search(path).group(1)
         gridsquare_manifest = EpuParser.parse_gridsquare_manifest(path)
@@ -220,7 +214,7 @@ class RateLimitedHandler(FileSystemEventHandler):
         console.print(gridsquare_data)
 
 
-    def _on_foilhole_detected(self, path: str, is_new_file:bool = True):
+    def _on_foilhole_detected(self, path: str, is_new_file: bool = True):
         console.print(f"Foilhole {'detected' if is_new_file else 'updated'}: {path}")
         data = EpuParser.parse_foilhole_manifest(path)
         # Here it is by intent that any previously recorded data for given foilhole is overwritten as
@@ -233,10 +227,10 @@ class RateLimitedHandler(FileSystemEventHandler):
         console.print(data)
 
 
-    def _on_micrograph_detected(self, path: str, is_new_file:bool = True):
+    def _on_micrograph_detected(self, path: str, is_new_file: bool = True):
         console.print(f"Micrograph {'detected' if is_new_file else 'updated'}: {path}")
 
-        match = re.match(r"FoilHole_(\d+)_Data_(\d+)_(\d+)_(\d+)_(\d+).xml$", path) # TODO
+        match = re.search(EpuParser.micrograph_xml_file_pattern, path)
         foilhole_id = match.group(1)
         location_id = match.group(2)
 
