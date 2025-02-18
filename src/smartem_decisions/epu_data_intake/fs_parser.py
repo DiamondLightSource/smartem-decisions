@@ -59,7 +59,6 @@ class EpuParser:
     METADATA_DIR = "Metadata"
     EPU_SESSION_FILENAME = "EpuSession.dm"
     session_dm_pattern = re.compile(rf"{EPU_SESSION_FILENAME}$")
-    sample_dm_pattern = re.compile(r"Sample\.dm$")
     atlas_dm_pattern = re.compile(r"Atlas/Atlas\.dm$")
     gridsquare_dm_file_pattern = re.compile(r"GridSquare_(\d+)\.dm$")  # under "Metadata/"
     gridsquare_xml_file_pattern = re.compile(r"GridSquare_(\d+)_(\d+).xml$")
@@ -135,10 +134,6 @@ class EpuParser:
                     errors.append(f"Invalid disk number format in {dir_path.name}")
 
         return len(errors) == 0, errors
-
-
-    # Tooling runs on an "EPU Session Output" directory, under such dir many
-    #  "Grid Directories" may exist, each grid isolated in data scope.
 
 
     @staticmethod

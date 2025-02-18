@@ -36,7 +36,6 @@ Patterns match the following files:
 * Foil hole data XML files
 * Foil hole location XML files
 * Atlas overview files
-* Sample metadata files
 
 :type: list[str]
 """
@@ -47,7 +46,6 @@ DEFAULT_PATTERNS = [ # TODO consider merging with props in EpuParser
     "Images-Disc*/GridSquare_*/Data/FoilHole_*_Data_*_*_*_*.xml",
     "Images-Disc*/GridSquare_*/FoilHoles/FoilHole_*_*_*.xml",
     "Sample*/Atlas/Atlas.dm",
-    "Sample*/Sample.dm",
 ]
 
 
@@ -96,6 +94,7 @@ class RateLimitedHandler(FileSystemEventHandler):
     datastore: EpuSession | None = None
     watch_dir: Path | None = None
 
+
     def __init__(self, patterns: list[str], log_interval: float = 10.0, verbose: bool = False):
         self.last_log_time = time.time()
         self.log_interval = log_interval
@@ -106,6 +105,7 @@ class RateLimitedHandler(FileSystemEventHandler):
         # TODO See if this has any benefit or if same can same be achieved through "created" / "modified" file status.
         #   Maybe useful for: https://github.com/DiamondLightSource/smartem-decisions/issues/52
         self.changed_files = {}
+
 
     def matches_pattern(self, path: str) -> bool:
         try:
@@ -165,10 +165,8 @@ class RateLimitedHandler(FileSystemEventHandler):
         match event.src_path:
             case path if re.search(EpuParser.session_dm_pattern, path):
                 # Needs testing to see if this is a practical way to detect session start or if there's an
-                #   alternative / additional way, e.g. appearance of a project dir
+                #   alternative / additional way, e.g. appearance of a project dir. TODO: not a valid way!!!!
                 self._on_session_detected(path, new_file_detected)
-            case path if re.search(EpuParser.sample_dm_pattern, path):
-                self._on_sample_detected(path, new_file_detected)
             case path if re.search(EpuParser.atlas_dm_pattern, path):
                 self._on_atlas_detected(path, new_file_detected)
             case path if re.search(EpuParser.gridsquare_dm_file_pattern, path):
@@ -187,11 +185,6 @@ class RateLimitedHandler(FileSystemEventHandler):
         if is_new_file and data != self.datastore.session_data:
             self.datastore.session_data = data
             console.print(data)
-
-
-    def _on_sample_detected(self, path: str, is_new_file: bool = True):
-        console.print(f"Sample {'detected' if is_new_file else 'updated'}: {path}")
-        # not yet sure if there's anything interesting there worth parsing
 
 
     def _on_atlas_detected(self, path: str, is_new_file: bool = True):
@@ -387,9 +380,10 @@ def watch_directory(
     handler.set_watch_dir(path)
     handler.init_datastore()
 
-    # TODO settle a potential race condition:
+    # TODO settle a potential race condition, test if exists:
     handler.datastore = EpuParser.parse_acquisition_dir(handler.datastore, verbose)
     observer.schedule(handler, str(path), recursive=True)
+
 
     def handle_exit(signum, frame):
         nonlocal handler
