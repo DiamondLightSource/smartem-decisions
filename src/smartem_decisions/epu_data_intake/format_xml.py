@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 
 # TODO: move to tools
+# TODO: this is redundant, better done with ripgrep + xq
+#  - https://github.com/sibprogrammer/xq
 
 import xml.dom.minidom
 import pathlib

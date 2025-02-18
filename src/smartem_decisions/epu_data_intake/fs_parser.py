@@ -62,6 +62,7 @@ class EpuParser:
     sample_dm_pattern = re.compile(r"Sample\.dm$")
     atlas_dm_pattern = re.compile(r"Atlas/Atlas\.dm$")
     gridsquare_dm_file_pattern = re.compile(r"GridSquare_(\d+)\.dm$")  # under "Metadata/"
+    gridsquare_xml_file_pattern = re.compile(r"GridSquare_(\d+)_(\d+).xml$")
     images_disc_dir_pattern = re.compile(r"/Images-Disc(\d+)$")
     gridsquare_dir_pattern = re.compile(r"/GridSquare_(\d+)/")  # under Images-Disc*/
     foilhole_xml_file_pattern = re.compile(r"FoilHole_(\d+)_(\d+)_(\d+)\.xml$")
@@ -134,6 +135,10 @@ class EpuParser:
                     errors.append(f"Invalid disk number format in {dir_path.name}")
 
         return len(errors) == 0, errors
+
+
+    # Tooling runs on an "EPU Session Output" directory, under such dir many
+    #  "Grid Directories" may exist, each grid isolated in data scope.
 
 
     @staticmethod
@@ -505,7 +510,8 @@ class EpuParser:
         else:
             # TODO establish if it's possible to have anything worth parsing written to fs
             #   before `EpuSession.dm` materialises. if not - return early; if yes -
-            #   create a temporary placeholder for epu_data until we can get the real thing
+            #   create a temporary placeholder for epu_data until we can get the real thing.
+            #   - Yes - according to Dan H that does happen. `EpuSession.dm` can get written last!!!!
             pass
 
         # 2. scan all gridsquare IDs from /Metadata directory files - this includes "inactive" and "active" gridsquares

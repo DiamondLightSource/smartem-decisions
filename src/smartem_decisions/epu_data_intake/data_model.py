@@ -56,7 +56,7 @@ class MicrographManifest:
 
 
 # TODO:
-#   - Record Path to high-res micrograph image
+#   - Record Path to high-res micrograph image (same name as jpeg, but tiff or mrc)
 @dataclass
 class MicrographData:
     """Represents metadata for a micrograph image.
