@@ -40,7 +40,7 @@ Patterns match the following files:
 
 :type: list[str]
 """
-DEFAULT_PATTERNS = [
+DEFAULT_PATTERNS = [ # TODO consider merging with props in EpuParser
     "EpuSession.dm",
     "Metadata/GridSquare_*.dm",
     "Images-Disc*/GridSquare_*/GridSquare_*_*.xml",
@@ -172,7 +172,9 @@ class RateLimitedHandler(FileSystemEventHandler):
             case path if re.search(EpuParser.atlas_dm_pattern, path):
                 self._on_atlas_detected(path, new_file_detected)
             case path if re.search(EpuParser.gridsquare_dm_file_pattern, path):
-                self._on_gridsquare_detected(path, new_file_detected)
+                self._on_gridsquare_metadata_detected(path, new_file_detected)
+            case path if re.search(EpuParser.gridsquare_xml_file_pattern, path):
+                self._on_gridsquare_manifest_detected(path, new_file_detected)
             case path if re.search(EpuParser.foilhole_xml_file_pattern, path):
                 self._on_foilhole_detected(path, new_file_detected)
             case path if re.search(EpuParser.micrograph_xml_file_pattern, path):
@@ -198,18 +200,44 @@ class RateLimitedHandler(FileSystemEventHandler):
         console.print(manifest)
 
 
-    # TODO this should be split into 2 events: Gridsquare Metadata and Gridsquare Manifest,
-    #   because the dm file in Metadata and the Images-Disk<N>/Gridsquare_<ID>/ dir are
-    #   unlikely to be written simultaneously
+    def _on_gridsquare_metadata_detected(self, path: str, is_new_file: bool = True):
+        console.print(f"Gridsquare metadata {'detected' if is_new_file else 'updated'}: {path}")
 
-    def _on_gridsquare_detected(self, path: str, is_new_file: bool = True):
-        console.print(f"Gridsquare manifest {'detected' if is_new_file else 'updated'} in /Metadata: {path}")
         gridsquare_id = EpuParser.gridsquare_dm_file_pattern.search(path).group(1)
+        assert gridsquare_id is not None, f"gridsquare_id should not be None: {gridsquare_id}"
+
+        gridsquare_metadata = EpuParser.parse_gridsquare_metadata(path)
+
+        if not self.datastore.gridsquares.exists(gridsquare_id):
+            gridsquare_data = GridSquareData(
+                id=gridsquare_id,
+                metadata=gridsquare_metadata,
+            )
+        else:
+            gridsquare_data = self.datastore.gridsquares.get(gridsquare_id)
+            gridsquare_data.metadata = gridsquare_metadata
+
+        self.datastore.gridsquares.add(gridsquare_id, gridsquare_data)
+        console.print(gridsquare_data)
+
+
+    def _on_gridsquare_manifest_detected(self, path: str, is_new_file: bool = True):
+        console.print(f"Gridsquare manifest {'detected' if is_new_file else 'updated'}: {path}")
+
+        gridsquare_id = re.search(EpuParser.gridsquare_dir_pattern, str(path)).group(1)
+        assert gridsquare_id is not None, f"gridsquare_id should not be None: {gridsquare_id}"
+
         gridsquare_manifest = EpuParser.parse_gridsquare_manifest(path)
-        gridsquare_data = GridSquareData(
-            id=gridsquare_id,
-            manifest=gridsquare_manifest,
-        )
+
+        if not self.datastore.gridsquares.exists(gridsquare_id):
+            gridsquare_data = GridSquareData(
+                id=gridsquare_id,
+                manifest=gridsquare_manifest,
+            )
+        else:
+            gridsquare_data = self.datastore.gridsquares.get(gridsquare_id)
+            gridsquare_data.manifest = gridsquare_manifest
+
         self.datastore.gridsquares.add(gridsquare_id, gridsquare_data)
         console.print(gridsquare_data)
 
