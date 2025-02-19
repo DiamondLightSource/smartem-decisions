@@ -15,6 +15,8 @@ from data_model import (
     EpuSessionData,
     AtlasData,
     AtlasTileData,
+    Position,
+    FoilHolePosition,
     GridSquareMetadata,
     GridSquareManifest,
     GridSquareData,
@@ -24,34 +26,6 @@ from data_model import (
 )
 
 console = Console()
-
-
-# TODO: use or loose
-# def get_tile_coordinates(self, atlas_info: AtlasInfo) -> List[tuple]:
-#     """Returns list of (x,y) coordinates for all tiles"""
-#     return [tile.position for tile in atlas_info.tiles if tile is not None]
-#
-# def get_tile_dimensions(self, atlas_info: AtlasInfo) -> List[tuple]:
-#     """Returns list of (width,height) dimensions for all tiles"""
-#     return [tile.size for tile in atlas_info.tiles if tile is not None]
-#
-# def analyze_tile_layout(self, atlas_info: AtlasData) -> dict:
-#     """Analyzes the tile layout and returns statistics"""
-#     coordinates = self.get_tile_coordinates(atlas_info)
-#     dimensions = self.get_tile_dimensions(atlas_info)
-#
-#     x_coords = [coord[0] for coord in coordinates]
-#     y_coords = [coord[1] for coord in coordinates]
-#     widths = [dim[0] for dim in dimensions]
-#     heights = [dim[1] for dim in dimensions]
-#
-#     return {
-#         "total_tiles": len(coordinates),
-#         "grid_width": max(x_coords) - min(x_coords) + max(widths),
-#         "grid_height": max(y_coords) - min(y_coords) + max(heights),
-#         "avg_tile_width": sum(widths) / len(widths),
-#         "avg_tile_height": sum(heights) / len(heights)
-#     }
 
 
 class EpuParser:
@@ -303,55 +277,136 @@ class EpuParser:
 
     @staticmethod
     def parse_gridsquare_metadata(path: str) -> GridSquareMetadata | None:
+        """Parse a GridSquare metadata file and extract both basic metadata and foil hole positions."""
         try:
             namespaces = {
-                'epu': 'http://schemas.datacontract.org/2004/07/Applications.Epu.Persistence',
-                'shared': 'http://schemas.datacontract.org/2004/07/Fei.SharedObjects',
-                'a': 'http://schemas.datacontract.org/2004/07/Fei.SharedObjects'
+                'def': 'http://schemas.datacontract.org/2004/07/Applications.Epu.Persistence',
+                'i': 'http://www.w3.org/2001/XMLSchema-instance',
+                'z': 'http://schemas.microsoft.com/2003/10/Serialization/',
+                'common': 'http://schemas.datacontract.org/2004/07/Fei.Applications.Common.Types',
+                'a': 'http://schemas.microsoft.com/2003/10/Serialization/Arrays',
+                'b': 'http://schemas.datacontract.org/2004/07/System.Collections.Generic',
+                'c': 'http://schemas.datacontract.org/2004/07/System.Drawing',
+                'shared': 'http://schemas.datacontract.org/2004/07/Fei.SharedObjects'
             }
 
-            context = etree.iterparse(
-                path,
-                tag="{http://schemas.datacontract.org/2004/07/Applications.Epu.Persistence}GridSquareXml",
-                events=('end',)
+            tree = etree.parse(path)
+            root = tree.getroot()
+
+            def get_element_text(xpath, elem=root): # TODO refactor
+                try:
+                    elements = elem.xpath(xpath, namespaces=namespaces)
+                    return elements[0].text if elements else None
+                except etree.XPathEvalError as e:
+                    print(f"XPath error for expression '{xpath}': {str(e)}")
+                    return None
+
+            # Helper function for safe float conversion
+            def safe_float(value: str | None, default: float = 0.0) -> float:
+                if not value:
+                    return default
+                try:
+                    return float(value)
+                except (ValueError, TypeError):
+                    return default
+
+            # Basic metadata parsing
+            # ----------------------
+            position = Position(
+                x=safe_float(get_element_text("//def:Position/shared:X")),
+                y=safe_float(get_element_text("//def:Position/shared:Y")),
+                z=safe_float(get_element_text("//def:Position/shared:Z"))
             )
 
-            for event, element in context:
-                def get_element_text(xpath):
-                    elements = element.xpath(xpath, namespaces=namespaces)
-                    return elements[0].text if elements else None
+            image_path_str = get_element_text("//def:GridSquareImagePath")
+            image_path = Path(EpuParser.to_cygwin_path(image_path_str)) if image_path_str else None
 
-                position = {
-                    # TODO perhaps better to use `np.nan` instead of 0.0?
-                    'x': float(get_element_text(".//epu:Position/shared:X") or 0.0),
-                    'y': float(get_element_text(".//epu:Position/shared:Y") or 0.0),
-                    'z': float(get_element_text(".//epu:Position/shared:Z") or 0.0),
-                }
+            selected_str = get_element_text("//def:Selected")
+            unusable_str = get_element_text("//def:Unusable")
+            selected = selected_str.lower() == 'true' if selected_str else False
+            unusable = unusable_str.lower() == 'true' if unusable_str else False
 
-                image_path_str = get_element_text(".//epu:GridSquareImagePath")
-                image_path = Path(EpuParser.to_cygwin_path(image_path_str)) if image_path_str else None
+            # Parse foil hole positions
+            # -------------------------
+            foilhole_positions: dict[int, FoilHolePosition] = {}
 
-                # Parse boolean values
-                selected_str = get_element_text(".//epu:Selected")
-                unusable_str = get_element_text(".//epu:Unusable")
-                selected = selected_str.lower() == 'true' if selected_str else False
-                unusable = unusable_str.lower() == 'true' if unusable_str else False
+            # Find all KeyValuePair elements
+            kvp_xpath = ".//def:TargetLocationsEfficient/a:m_serializationArray/*[starts-with(local-name(), 'KeyValuePairOfintTargetLocation')]"
+            kvp_elements = root.xpath(kvp_xpath, namespaces=namespaces)
 
-                metadata = GridSquareMetadata(
-                    atlas_node_id=int(get_element_text(".//epu:AtlasNodeId") or 0),
-                    position=position,
-                    state=get_element_text(".//epu:State"),
-                    rotation=float(get_element_text(".//epu:Rotation") or 0.0), # TODO use `np.nan`?
-                    image_path=image_path,
-                    selected=selected,
-                    unusable=unusable
-                )
+            for element in kvp_elements:
+                try:
+                    key_elem = element.find("{http://schemas.datacontract.org/2004/07/System.Collections.Generic}key")
+                    if key_elem is None:
+                        continue
+                    fh_id = int(key_elem.text)
 
-                element.clear()
-                while element.getprevious() is not None:
-                    del element.getparent()[0]
+                    value_elem = element.find(
+                        "{http://schemas.datacontract.org/2004/07/System.Collections.Generic}value")
+                    if value_elem is None:
+                        continue
 
-                return metadata
+                    # Check IsNearGridBar
+                    is_near_grid_bar = value_elem.find(
+                        "{http://schemas.datacontract.org/2004/07/Applications.Epu.Persistence}IsNearGridBar")
+                    if is_near_grid_bar is not None and is_near_grid_bar.text.lower() == 'true':
+                        continue
+
+                    # Find stage position
+                    stage_pos = value_elem.find(
+                        "{http://schemas.datacontract.org/2004/07/Applications.Epu.Persistence}StagePosition")
+                    if stage_pos is not None:
+                        stage_x = safe_float(
+                            stage_pos.find("{http://schemas.datacontract.org/2004/07/Fei.SharedObjects}X").text)
+                        stage_y = safe_float(
+                            stage_pos.find("{http://schemas.datacontract.org/2004/07/Fei.SharedObjects}Y").text)
+                    else:
+                        stage_x = stage_y = 0.0
+
+                    # Find pixel position
+                    pixel_center = value_elem.find(
+                        "{http://schemas.datacontract.org/2004/07/Applications.Epu.Persistence}PixelCenter")
+                    if pixel_center is not None:
+                        pixel_x = safe_float(
+                            pixel_center.find("{http://schemas.datacontract.org/2004/07/System.Drawing}x").text)
+                        pixel_y = safe_float(
+                            pixel_center.find("{http://schemas.datacontract.org/2004/07/System.Drawing}y").text)
+                    else:
+                        continue
+
+                    # Find pixel dimensions
+                    pixel_size = value_elem.find(
+                        "{http://schemas.datacontract.org/2004/07/Applications.Epu.Persistence}PixelWidthHeight")
+                    if pixel_size is not None:
+                        diameter = safe_float(
+                            pixel_size.find("{http://schemas.datacontract.org/2004/07/System.Drawing}width").text)
+                    else:
+                        continue
+
+                    foilhole_positions[fh_id] = FoilHolePosition(
+                        x_location=int(pixel_x),
+                        y_location=int(pixel_y),
+                        x_stage_position=stage_x,
+                        y_stage_position=stage_y,
+                        diameter=int(diameter)
+                    )
+
+                except Exception as e:
+                    print(f"Error processing foil hole {fh_id}: {str(e)}")
+                    continue
+
+            metadata = GridSquareMetadata(
+                atlas_node_id=int(get_element_text("//def:AtlasNodeId") or 0),
+                position=position,
+                state=get_element_text("//def:State"),
+                rotation=safe_float(get_element_text("//def:Rotation")),
+                image_path=image_path,
+                selected=selected,
+                unusable=unusable,
+                foilhole_positions=foilhole_positions
+            )
+
+            return metadata
 
         except Exception as e:
             print(f"Failed to parse gridsquare metadata: {str(e)}")
@@ -514,8 +569,7 @@ class EpuParser:
             datastore.project_dir.glob(f"Metadata/")
         )
         if len(metadata_dir_paths) > 0:
-            gridsquares = EpuParser.parse_gridsquares_metadata_dir(metadata_dir_paths[0])
-            for gridsquare_id, filename in gridsquares:
+            for gridsquare_id, filename in EpuParser.parse_gridsquares_metadata_dir(metadata_dir_paths[0]):
                 if verbose: console.print(f"[dim]Discovered gridsquare {gridsquare_id} from file {filename}[/dim]")
                 gridsquare_metadata = EpuParser.parse_gridsquare_metadata(filename)
 
