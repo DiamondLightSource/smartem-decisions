@@ -37,6 +37,8 @@ python src/smartem_decisions/epu_data_intake/fs_parser.py parse-gridsquare \
 
 python src/smartem_decisions/epu_data_intake/fs_parser.py parse-gridsquare-metadata \
   tests/testdata/epu-dir-example/Metadata/GridSquare_8999138.dm
+python src/smartem_decisions/epu_data_intake/fs_parser.py parse-gridsquare-metadata \
+  ./tests/testdata/bi37708-28/Supervisor_20250129_134723_36_bi37708-28_grid7_EPU/Metadata/GridSquare_29273435.dm
 # ../metadata_Supervisor_20241220_140307_72_et2_gangshun/Metadata/GridSquare_20688814.dm
 # ../metadata_Supervisor_20241220_140307_72_et2_gangshun/Metadata/GridSquare_20688837.dm
 # ../metadata_Supervisor_20241220_140307_72_et2_gangshun/Metadata/GridSquare_20688878.dm
@@ -95,6 +97,12 @@ python src/smartem_decisions/epu_data_intake/fs_parser.py validate-epu-dir \
 tools/find_foilhole_duplicates.py --help
 # e.g.
 tools/find_foilhole_duplicates.py ./tests/testdata/bi37708-28
+
+
+# To find all files matching glob recursively, and list them in descending order by file size:
+rg --files -g 'GridSquare_*.dm' ./tests/testdata/bi37708-28 \
+  | xargs -d '\n' ls -lh | sort -k5 -rn | awk '{print $9, $5}'
+
 ```
 
 ## Directory structure

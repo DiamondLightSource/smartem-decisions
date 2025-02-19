@@ -103,10 +103,36 @@ class GridSquareManifest:
     data_dir: Path | None = None
 
 
-class Position(TypedDict):
+@dataclass
+class Position:
+    """Represents a 3D position in stage coordinates.
+
+    Attributes:
+        x: X-coordinate in stage position
+        y: Y-coordinate in stage position
+        z: Z-coordinate in stage position
+    """
     x: float
     y: float
     z: float
+
+
+@dataclass
+class FoilHolePosition:
+    """Contains position and dimensional data for a foil hole.
+
+    Attributes:
+        x_location: Pixel X-coordinate of the foil hole center
+        y_location: Pixel Y-coordinate of the foil hole center
+        x_stage_position: Stage X-coordinate of the foil hole
+        y_stage_position: Stage Y-coordinate of the foil hole
+        diameter: Diameter of the foil hole in pixels
+    """
+    x_location: int
+    y_location: int
+    x_stage_position: float
+    y_stage_position: float
+    diameter: int
 
 
 @dataclass
@@ -121,6 +147,7 @@ class GridSquareMetadata:
         image_path: Path to the grid square MRC image file
         selected: Whether this grid square is selected for acquisition
         unusable: Whether this grid square has been marked as unusable
+        foilhole_positions: Positions of foilholes on gridsquare
     """
     atlas_node_id: int
     position: Position
@@ -129,6 +156,12 @@ class GridSquareMetadata:
     image_path: Path | None
     selected: bool
     unusable: bool
+    foilhole_positions: dict[int, FoilHolePosition] | None
+
+    def __post_init__(self):
+        """Ensures the foilhole_positions dictionary is initialized if None is provided."""
+        if self.foilhole_positions is None:
+            self.foilhole_positions = {}
 
 
 @dataclass
