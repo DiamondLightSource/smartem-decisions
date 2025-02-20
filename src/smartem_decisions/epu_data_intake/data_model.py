@@ -104,7 +104,7 @@ class GridSquareManifest:
 
 
 @dataclass
-class Position:
+class GridSquareStagePosition:
     """Represents a 3D position in stage coordinates.
 
     Attributes:
@@ -136,12 +136,20 @@ class FoilHolePosition:
 
 
 @dataclass
+class GridSquarePosition:
+    center: tuple[int, int] | None  # pixel centre coordinates on Atlas
+    physical: tuple[float, float] | None  # estimated stage position (m scaled to nm)
+    size: tuple[int, int] | None  # pixel size on Atlas
+    rotation: float | None
+
+
+@dataclass
 class GridSquareMetadata:
     """Contains metadata about a grid square's position and properties.
 
     Attributes:
         atlas_node_id: Related atlas node identifier
-        position: Dictionary containing x, y, z stage coordinates
+        stage_position: Dictionary containing x, y, z stage coordinates
         state: Current state of the grid square (e.g., 'Defined')
         rotation: float
         image_path: Path to the grid square MRC image file
@@ -150,7 +158,8 @@ class GridSquareMetadata:
         foilhole_positions: Positions of foilholes on gridsquare
     """
     atlas_node_id: int
-    position: Position
+    stage_position: GridSquareStagePosition
+    # position: GridSquarePosition | None
     state: str | None
     rotation: float
     image_path: Path | None
@@ -173,12 +182,17 @@ class GridSquareData:
 
 
 @dataclass
+class AtlasTilePosition:
+    position: tuple[int, int] | None
+    size: tuple[int, int] | None
+
+
+@dataclass
 class AtlasTileData:
     id: str
-    position: tuple  # (x, y)
-    size: tuple     # (width, height)
-    file_format: str
-    base_filename: str
+    tile_position: AtlasTilePosition
+    file_format: str | None
+    base_filename: str | None
 
 
 @dataclass
@@ -189,6 +203,7 @@ class AtlasData:
     description: str
     name: str
     tiles: list[AtlasTileData]
+    gridsquare_positions: dict[int, GridSquarePosition] | None
 
 
 @dataclass
@@ -211,6 +226,7 @@ class EpuSession:
     atlas_dir: Path
 
     session_data: EpuSessionData | None = None
+    atlas_data: AtlasData | None = None
     gridsquares: EntityStore[GridSquareData] = field(default_factory=EntityStore)
     foilholes: EntityStore[FoilHoleData] = field(default_factory=EntityStore)
     micrographs: EntityStore[MicrographData] = field(default_factory=EntityStore)

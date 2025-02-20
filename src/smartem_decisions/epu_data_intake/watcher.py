@@ -181,16 +181,18 @@ class RateLimitedHandler(FileSystemEventHandler):
 
     def _on_session_detected(self, path: str, is_new_file: bool = True):
         console.print(f"Session manifest {'detected' if is_new_file else 'updated'}: {path}")
-        data = EpuParser.parse_epu_session_manifest(path)
-        if is_new_file and data != self.datastore.session_data:
-            self.datastore.session_data = data
-            console.print(data)
+        session_data = EpuParser.parse_epu_session_manifest(path)
+        if session_data != self.datastore.session_data:
+            self.datastore.session_data = session_data
+            console.print(self.datastore.session_data)
 
 
     def _on_atlas_detected(self, path: str, is_new_file: bool = True):
         console.print(f"Atlas {'detected' if is_new_file else 'updated'}: {path}")
-        manifest = EpuParser.parse_atlas_manifest(path)
-        console.print(manifest)
+        atlas_data = EpuParser.parse_atlas_manifest(path)
+        if atlas_data != self.datastore.atlas_data:
+            self.datastore.atlas_data = atlas_data
+            console.print(self.datastore.atlas_data)
 
 
     def _on_gridsquare_metadata_detected(self, path: str, is_new_file: bool = True):
@@ -356,9 +358,7 @@ def watch_directory(
             help="Enable verbose output"
         ),
 ):
-    """
-    Watch directory for file changes and log them in JSON format.
-    Supports Windows/Cygwin environments.
+    """Watch directory for file changes and log them in JSON format. Supports Windows/Cygwin environments.
     """
     path = Path(path).absolute()
     if not path.exists():
