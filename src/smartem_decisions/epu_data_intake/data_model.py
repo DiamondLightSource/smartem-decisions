@@ -133,6 +133,7 @@ class FoilHolePosition:
     x_stage_position: float
     y_stage_position: float
     diameter: int
+    is_near_grid_bar: bool = False
 
 
 @dataclass
@@ -149,7 +150,7 @@ class GridSquareMetadata:
 
     Attributes:
         atlas_node_id: Related atlas node identifier
-        stage_position: Dictionary containing x, y, z stage coordinates
+        stage_position: GridSquareStagePosition containing x, y, z stage coordinates
         state: Current state of the grid square (e.g., 'Defined')
         rotation: float
         image_path: Path to the grid square MRC image file
@@ -158,8 +159,7 @@ class GridSquareMetadata:
         foilhole_positions: Positions of foilholes on gridsquare
     """
     atlas_node_id: int
-    stage_position: GridSquareStagePosition
-    # position: GridSquarePosition | None
+    stage_position: GridSquareStagePosition | None
     state: str | None
     rotation: float
     image_path: Path | None
