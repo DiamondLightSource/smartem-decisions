@@ -14,8 +14,10 @@ from data_model import (
     EpuSession,
     EpuSessionData,
     AtlasData,
+    AtlasTilePosition,
     AtlasTileData,
-    Position,
+    GridSquarePosition,
+    GridSquareStagePosition,
     FoilHolePosition,
     GridSquareMetadata,
     GridSquareManifest,
@@ -40,6 +42,7 @@ class EpuParser:
     gridsquare_dir_pattern = re.compile(r"/GridSquare_(\d+)/")  # under Images-Disc*/
     foilhole_xml_file_pattern = re.compile(r"FoilHole_(\d+)_(\d+)_(\d+)\.xml$")
     micrograph_xml_file_pattern = re.compile(r"FoilHole_(\d+)_Data_(\d+)_(\d+)_(\d+)_(\d+)\.xml$")
+
 
     @staticmethod
     def to_cygwin_path(windows_path: str): # TODO add tests
@@ -210,12 +213,76 @@ class EpuParser:
                             for tile in
                             element.xpath(".//ns:Atlas/ns:TilesEfficient/ns:_items/ns:TileXml", namespaces=namespaces)
                             if tile.xpath(".//common:Id", namespaces=namespaces)
-                        ]
+                        ],
+                        gridsquare_positions=EpuParser._parse_gridsquare_positions(element)
                     )
 
         except Exception as e:
             print(f"Failed to parse Atlas manifest: {str(e)}")
             return None
+
+
+    @staticmethod
+    def _parse_gridsquare_positions(atlas_xml):
+        """Parse grid square positions from Atlas XML."""
+        gridsquare_positions = {}
+
+        namespaces = {
+            'ns': 'http://schemas.datacontract.org/2004/07/Applications.SciencesAppsShared.GridAtlas.Persistence',
+            'gen': 'http://schemas.datacontract.org/2004/07/System.Collections.Generic',
+            'b': 'http://schemas.datacontract.org/2004/07/Applications.SciencesAppsShared.GridAtlas.Persistence',
+            'c': 'http://schemas.datacontract.org/2004/07/Applications.SciencesAppsShared.GridAtlas.Datamodel',
+            'd': 'http://schemas.datacontract.org/2004/07/System.Drawing'
+        }
+
+        tiles = atlas_xml.xpath(".//ns:Atlas/ns:TilesEfficient/ns:_items/ns:TileXml", namespaces=namespaces)
+
+        for tile in tiles:
+            if (nodes := tile.find(".//ns:Nodes", namespaces=namespaces)) is None:
+                continue
+
+            # Get key-value pairs using local-name() to match the node-naming pattern
+            pairs = nodes.xpath(".//gen:*[starts-with(local-name(), 'KeyValuePairOfintNodeXml')]",
+                                namespaces=namespaces)
+            for pair in pairs:
+                try:
+                    if (key := pair.findtext("gen:key", namespaces=namespaces)) is None:
+                        continue
+
+                    gs_id = int(key)
+
+                    if (value := pair.find("gen:value", namespaces=namespaces)) is None:
+                        continue
+
+                    if (position := value.xpath(".//b:PositionOnTheAtlas", namespaces=namespaces)[0]) is None:
+                        continue
+
+                    center = position.find("c:Center", namespaces=namespaces)
+                    center_x = int(float(center.find("d:x", namespaces=namespaces).text))
+                    center_y = int(float(center.find("d:y", namespaces=namespaces).text))
+
+                    physical = position.find("c:Physical", namespaces=namespaces)
+                    phys_x = float(physical.find("d:x", namespaces=namespaces).text) * 1e9
+                    phys_y = float(physical.find("d:y", namespaces=namespaces).text) * 1e9
+
+                    size = position.find("c:Size", namespaces=namespaces)
+                    width = int(float(size.find("d:width", namespaces=namespaces).text))
+                    height = int(float(size.find("d:height", namespaces=namespaces).text))
+
+                    rotation = float(position.find("c:Rotation", namespaces=namespaces).text)
+
+                    gridsquare_positions[gs_id] = GridSquarePosition(
+                        center=(center_x, center_y),
+                        physical=(phys_x, phys_y),
+                        size=(width, height),
+                        rotation=rotation
+                    )
+
+                except (AttributeError, IndexError, ValueError, TypeError) as e:
+                    console.print(f"Failed to parse grid square position: {str(e)}")
+                    continue
+
+        return gridsquare_positions
 
 
     @staticmethod
@@ -235,25 +302,26 @@ class EpuParser:
             if not tile_id:
                 return None
 
-            x = int(get_element_text("./ns:AtlasPixelPosition/draw:x"))
-            y = int(get_element_text("./ns:AtlasPixelPosition/draw:y"))
-            width = int(get_element_text("./ns:AtlasPixelPosition/draw:width"))
-            height = int(get_element_text("./ns:AtlasPixelPosition/draw:height"))
-
-            file_format = get_element_text("./ns:TileImageReference/common:FileFormat")
-            base_filename = get_element_text("./ns:TileImageReference/common:BaseFileName")
-
             return AtlasTileData(
                 id=tile_id,
-                position=(x, y),
-                size=(width, height),
-                file_format=file_format,
-                base_filename=base_filename
+                tile_position=AtlasTilePosition(
+                    position=(
+                        int(get_element_text("./ns:AtlasPixelPosition/draw:x")),
+                        int(get_element_text("./ns:AtlasPixelPosition/draw:y")),
+                    ),
+                    size=(
+                        int(get_element_text("./ns:AtlasPixelPosition/draw:width")),
+                        int(get_element_text("./ns:AtlasPixelPosition/draw:height"))
+                    ),
+                ),
+                file_format=get_element_text("./ns:TileImageReference/common:FileFormat"),
+                base_filename=get_element_text("./ns:TileImageReference/common:BaseFileName"),
             )
 
         except Exception as e:
             print(f"Failed to parse tile: {str(e)}")
             return None
+
 
     @staticmethod
     def parse_gridsquares_metadata_dir(path: str) -> list[tuple[str, str]]:
@@ -293,7 +361,7 @@ class EpuParser:
             tree = etree.parse(path)
             root = tree.getroot()
 
-            def get_element_text(xpath, elem=root): # TODO refactor
+            def get_element_text(xpath, elem=root):
                 try:
                     elements = elem.xpath(xpath, namespaces=namespaces)
                     return elements[0].text if elements else None
@@ -312,7 +380,8 @@ class EpuParser:
 
             # Basic metadata parsing
             # ----------------------
-            position = Position(
+            # TODO confirm what this is and use more specific naming
+            stage_position = GridSquareStagePosition(
                 x=safe_float(get_element_text("//def:Position/shared:X")),
                 y=safe_float(get_element_text("//def:Position/shared:Y")),
                 z=safe_float(get_element_text("//def:Position/shared:Z"))
@@ -397,7 +466,8 @@ class EpuParser:
 
             metadata = GridSquareMetadata(
                 atlas_node_id=int(get_element_text("//def:AtlasNodeId") or 0),
-                position=position,
+                stage_position=stage_position,
+                # position=None,
                 state=get_element_text("//def:State"),
                 rotation=safe_float(get_element_text("//def:Rotation")),
                 image_path=image_path,
@@ -557,12 +627,18 @@ class EpuParser:
         )
         if len(epu_manifest_paths) > 0:
             datastore.session_data = EpuParser.parse_epu_session_manifest(epu_manifest_paths[0])
-        else:
-            # TODO establish if it's possible to have anything worth parsing written to fs
-            #   before `EpuSession.dm` materialises. if not - return early; if yes -
-            #   create a temporary placeholder for epu_data until we can get the real thing.
-            #   - Yes - according to Dan H that does happen. `EpuSession.dm` can get written last!!!!
-            pass
+        # TODO establish if it's possible to have anything worth parsing written to fs
+        #   before `EpuSession.dm` materialises. if not - return early; if yes -
+        #   create a temporary placeholder for epu_data until we can get the real thing.
+        #   - Yes - according to Dan H that does happen. `EpuSession.dm` can get written last!!!!
+
+
+        # 1.1 locate and parse Atlas.dm
+        atlas_manifest_paths = list( # TODO yes - it's possible to have more than one. problem for later
+            datastore.project_dir.glob(f"Atlas.dm")
+        )
+        if len(atlas_manifest_paths) > 0:
+            datastore.atlas_data = EpuParser.parse_atlas_manifest(atlas_manifest_paths[0])
 
         # 2. scan all gridsquare IDs from /Metadata directory files - this includes "inactive" and "active" gridsquares
         metadata_dir_paths = list(  # TODO it's possible to have multiple `/Metadata` parent dirs. problem for later
