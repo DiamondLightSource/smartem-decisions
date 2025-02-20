@@ -370,7 +370,7 @@ class EpuParser:
                     return None
 
             # Helper function for safe float conversion
-            def safe_float(value: str | None, default: float = 0.0) -> float:
+            def safe_float(value: str | None, default = None) -> float | None:
                 if not value:
                     return default
                 try:
@@ -427,7 +427,7 @@ class EpuParser:
                         stage_y = safe_float(
                             stage_pos.find("{http://schemas.datacontract.org/2004/07/Fei.SharedObjects}Y").text)
                     else:
-                        stage_x = stage_y = 0.0
+                        stage_x = stage_y = None
 
                     # Find pixel position
                     if (pixel_center := value_elem.find(
@@ -447,11 +447,11 @@ class EpuParser:
                         continue
 
                     foilhole_positions[fh_id] = FoilHolePosition(
-                        x_location=int(pixel_x),
-                        y_location=int(pixel_y),
+                        x_location=int(pixel_x) if pixel_x else None,
+                        y_location=int(pixel_y) if pixel_y else None,
                         x_stage_position=stage_x,
                         y_stage_position=stage_y,
-                        diameter=int(diameter),
+                        diameter=int(diameter) if diameter else None,
                         is_near_grid_bar=is_near_grid_bar,
                     )
 
@@ -460,7 +460,7 @@ class EpuParser:
                     continue
 
             metadata = GridSquareMetadata(
-                atlas_node_id=int(get_element_text("//def:AtlasNodeId") or 0),
+                atlas_node_id=int(get_element_text("//def:AtlasNodeId") or None),
                 stage_position=stage_position,
                 state=get_element_text("//def:State"),
                 rotation=safe_float(get_element_text("//def:Rotation")),
