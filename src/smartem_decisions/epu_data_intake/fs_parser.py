@@ -405,26 +405,23 @@ class EpuParser:
 
             for element in kvp_elements:
                 try:
-                    key_elem = element.find("{http://schemas.datacontract.org/2004/07/System.Collections.Generic}key")
-                    if key_elem is None:
+                    if (key_elem := element.find("{http://schemas.datacontract.org/2004/07/System.Collections.Generic}key")) is None:
                         continue
                     fh_id = int(key_elem.text)
 
-                    value_elem = element.find(
-                        "{http://schemas.datacontract.org/2004/07/System.Collections.Generic}value")
-                    if value_elem is None:
+                    if (value_elem := element.find(
+                        "{http://schemas.datacontract.org/2004/07/System.Collections.Generic}value")) is None:
                         continue
 
                     # Check IsNearGridBar
-                    is_near_grid_bar = value_elem.find(
-                        "{http://schemas.datacontract.org/2004/07/Applications.Epu.Persistence}IsNearGridBar")
-                    if is_near_grid_bar is not None and is_near_grid_bar.text.lower() == 'true':
-                        continue
+                    is_near_grid_bar = (value_elem.find(
+                        "{http://schemas.datacontract.org/2004/07/Applications.Epu.Persistence}IsNearGridBar") is not None
+                                        and value_elem.find(
+                                "{http://schemas.datacontract.org/2004/07/Applications.Epu.Persistence}IsNearGridBar").text.lower() == 'true')
 
                     # Find stage position
-                    stage_pos = value_elem.find(
-                        "{http://schemas.datacontract.org/2004/07/Applications.Epu.Persistence}StagePosition")
-                    if stage_pos is not None:
+                    if (stage_pos := value_elem.find(
+                        "{http://schemas.datacontract.org/2004/07/Applications.Epu.Persistence}StagePosition")) is not None:
                         stage_x = safe_float(
                             stage_pos.find("{http://schemas.datacontract.org/2004/07/Fei.SharedObjects}X").text)
                         stage_y = safe_float(
@@ -433,9 +430,8 @@ class EpuParser:
                         stage_x = stage_y = 0.0
 
                     # Find pixel position
-                    pixel_center = value_elem.find(
-                        "{http://schemas.datacontract.org/2004/07/Applications.Epu.Persistence}PixelCenter")
-                    if pixel_center is not None:
+                    if (pixel_center := value_elem.find(
+                        "{http://schemas.datacontract.org/2004/07/Applications.Epu.Persistence}PixelCenter")) is not None:
                         pixel_x = safe_float(
                             pixel_center.find("{http://schemas.datacontract.org/2004/07/System.Drawing}x").text)
                         pixel_y = safe_float(
@@ -443,10 +439,8 @@ class EpuParser:
                     else:
                         continue
 
-                    # Find pixel dimensions
-                    pixel_size = value_elem.find(
-                        "{http://schemas.datacontract.org/2004/07/Applications.Epu.Persistence}PixelWidthHeight")
-                    if pixel_size is not None:
+                    if (pixel_size := value_elem.find(
+                        "{http://schemas.datacontract.org/2004/07/Applications.Epu.Persistence}PixelWidthHeight")) is not None:
                         diameter = safe_float(
                             pixel_size.find("{http://schemas.datacontract.org/2004/07/System.Drawing}width").text)
                     else:
@@ -457,17 +451,17 @@ class EpuParser:
                         y_location=int(pixel_y),
                         x_stage_position=stage_x,
                         y_stage_position=stage_y,
-                        diameter=int(diameter)
+                        diameter=int(diameter),
+                        is_near_grid_bar=is_near_grid_bar,
                     )
 
                 except Exception as e:
-                    print(f"Error processing foil hole {fh_id}: {str(e)}")
+                    console.print(f"Error processing foil hole {fh_id}: {str(e)}")
                     continue
 
             metadata = GridSquareMetadata(
                 atlas_node_id=int(get_element_text("//def:AtlasNodeId") or 0),
                 stage_position=stage_position,
-                # position=None,
                 state=get_element_text("//def:State"),
                 rotation=safe_float(get_element_text("//def:Rotation")),
                 image_path=image_path,
@@ -479,7 +473,7 @@ class EpuParser:
             return metadata
 
         except Exception as e:
-            print(f"Failed to parse gridsquare metadata: {str(e)}")
+            console.print(f"Failed to parse gridsquare metadata: {str(e)}")
             return None
 
 
