@@ -128,11 +128,11 @@ class FoilHolePosition:
         y_stage_position: Stage Y-coordinate of the foil hole
         diameter: Diameter of the foil hole in pixels
     """
-    x_location: int
-    y_location: int
-    x_stage_position: float
-    y_stage_position: float
-    diameter: int
+    x_location: int | None
+    y_location: int | None
+    x_stage_position: float | None
+    y_stage_position: float | None
+    diameter: int | None
     is_near_grid_bar: bool = False
 
 
@@ -158,10 +158,10 @@ class GridSquareMetadata:
         unusable: Whether this grid square has been marked as unusable
         foilhole_positions: Positions of foilholes on gridsquare
     """
-    atlas_node_id: int
+    atlas_node_id: int | None
     stage_position: GridSquareStagePosition | None
     state: str | None
-    rotation: float
+    rotation: float | None
     image_path: Path | None
     selected: bool
     unusable: bool
