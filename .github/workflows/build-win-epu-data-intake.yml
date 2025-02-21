@@ -1,4 +1,4 @@
-name: Build EPU data intake Win binary
+name: Build EPU Data Intake binary for Windows
 
 on:
   push:
@@ -7,13 +7,21 @@ on:
       - 'src/epu_data_intake/**'
       - '.github/workflows/build-win-epu-data-intake.yml'
   workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Build from branch'
+        required: true
+        default: 'main'
+        type: string
 
 jobs:
   build:
     runs-on: windows-latest
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
+      with:
+        ref: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.branch || github.ref }}
 
     - name: Set up Python 3.12
       uses: actions/setup-python@v4
@@ -45,5 +53,5 @@ jobs:
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: epu-data-intake-tools
+        name: epu-data-intake-tools-v${{ github.run_number }}-${{ github.sha }}
         path: dist/
