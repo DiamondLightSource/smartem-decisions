@@ -1,4 +1,4 @@
-name: Build Windows Executable
+name: Build EPU data intake Win binary
 
 on:
   push:
@@ -26,14 +26,24 @@ jobs:
         pip install pyinstaller
         pip install -r requirements.txt
 
-    - name: Build with PyInstaller
+    - name: Build parser util with PyInstaller
       run: >-
         pyinstaller --onefile
-        --name smartem_decisions_epu_data_intake
-        src/epu_data_intake/watcher.py
+        --name smartem_epu_data_intake_parser
+        src/epu_data_intake/fs_parser.py
+
+    - name: Build watcher util with PyInstaller
+      run: >-
+        pyinstaller --onefile
+        --name smartem_data_intake_watcher
+        src/epu_data_intake/fs_watcher.py
+
+    - name: Copy README to dist directory
+      run: |
+        copy src/epu_data_intake/README.md dist/
 
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: smartem_decisions_epu_data_intake
+        name: epu-data-intake-tools
         path: dist/
