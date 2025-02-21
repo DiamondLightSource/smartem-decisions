@@ -17,28 +17,28 @@ using a cryo-electron microscope. Data intake scripts can be used to:
 
 ```bash
 # parse complete EPU directory
-python src/smartem_decisions/epu_data_intake/fs_parser.py parse-epu-dir \
+python src/epu_data_intake/fs_parser.py parse-epu-dir \
   ../metadata_Supervisor_20250108_101446_62_cm40593-1_EPU
 
-python src/smartem_decisions/epu_data_intake/fs_parser.py parse-epu-dir \
+python src/epu_data_intake/fs_parser.py parse-epu-dir \
   ../metadata_Supervisor_20250114_220855_23_epuBSAd20_GrOxDDM
 
-python src/smartem_decisions/epu_data_intake/fs_parser.py parse-epu-dir \
+python src/epu_data_intake/fs_parser.py parse-epu-dir \
   ../metadata_Supervisor_20241220_140307_72_et2_gangshun
 
 # parse things
-python src/smartem_decisions/epu_data_intake/fs_parser.py parse-epu-session \
+python src/epu_data_intake/fs_parser.py parse-epu-session \
   tests/testdata/epu-dir-example/EpuSession.dm
 
-python src/smartem_decisions/epu_data_intake/fs_parser.py parse-atlas \
+python src/epu_data_intake/fs_parser.py parse-atlas \
   tests/testdata/Atlas.dm
 
-python src/smartem_decisions/epu_data_intake/fs_parser.py parse-gridsquare \
+python src/epu_data_intake/fs_parser.py parse-gridsquare \
   tests/testdata/epu-dir-example/Images-Disc1/GridSquare_8999138/GridSquare_20250108_151151.xml
 
-python src/smartem_decisions/epu_data_intake/fs_parser.py parse-gridsquare-metadata \
+python src/epu_data_intake/fs_parser.py parse-gridsquare-metadata \
   tests/testdata/epu-dir-example/Metadata/GridSquare_8999138.dm
-python src/smartem_decisions/epu_data_intake/fs_parser.py parse-gridsquare-metadata \
+python src/epu_data_intake/fs_parser.py parse-gridsquare-metadata \
   ./tests/testdata/bi37708-28/Supervisor_20250129_134723_36_bi37708-28_grid7_EPU/Metadata/GridSquare_29273435.dm
 # ../metadata_Supervisor_20241220_140307_72_et2_gangshun/Metadata/GridSquare_20688814.dm
 # ../metadata_Supervisor_20241220_140307_72_et2_gangshun/Metadata/GridSquare_20688837.dm
@@ -50,43 +50,43 @@ python src/smartem_decisions/epu_data_intake/fs_parser.py parse-gridsquare-metad
 # ../metadata_Supervisor_20250114_220855_23_epuBSAd20_GrOxDDM/Metadata/GridSquare_13515293.dm
 # ../metadata_Supervisor_20250114_220855_23_epuBSAd20_GrOxDDM/Metadata/GridSquare_13515237.dm
 
-python src/smartem_decisions/epu_data_intake/fs_parser.py parse-foilhole \
+python src/epu_data_intake/fs_parser.py parse-foilhole \
   tests/testdata/epu-dir-example/Images-Disc1/GridSquare_8999138/FoilHoles/FoilHole_9015889_20250108_154725.xml
 
-python src/smartem_decisions/epu_data_intake/fs_parser.py parse-micrograph \
+python src/epu_data_intake/fs_parser.py parse-micrograph \
   tests/testdata/epu-dir-example/Images-Disc1/GridSquare_8999138/Data/FoilHole_9015883_Data_9017354_6_20250108_154918.xml
   
 # Validate epu project dirs:
 
 # expect failure:
-python src/smartem_decisions/epu_data_intake/fs_parser.py validate-epu-dir \
+python src/epu_data_intake/fs_parser.py validate-epu-dir \
   tests/testdata/bi37708-28/Supervisor_20250129_114842_73_bi37708-28_grid7_EPU
 
 # expect success:
-python src/smartem_decisions/epu_data_intake/fs_parser.py validate-epu-dir \
+python src/epu_data_intake/fs_parser.py validate-epu-dir \
   tests/testdata/bi37708-28/Supervisor_20250129_134723_36_bi37708-28_grid7_EPU
 
 # expect failure:
-python src/smartem_decisions/epu_data_intake/fs_parser.py validate-epu-dir \
+python src/epu_data_intake/fs_parser.py validate-epu-dir \
   tests/testdata/bi37708-28/Supervisor_20250130_105058_11
 
 # expect success:
-python src/smartem_decisions/epu_data_intake/fs_parser.py validate-epu-dir \
+python src/epu_data_intake/fs_parser.py validate-epu-dir \
   tests/testdata/bi37708-28/Supervisor_20250130_133418_68apoferritin
 
-python src/smartem_decisions/epu_data_intake/fs_parser.py validate-epu-dir \
+python src/epu_data_intake/fs_parser.py validate-epu-dir \
   tests/testdata/bi37708-28/Supervisor_20250130_143856_44Practice
 
 # expect success:
-python src/smartem_decisions/epu_data_intake/fs_parser.py validate-epu-dir \
+python src/epu_data_intake/fs_parser.py validate-epu-dir \
   tests/testdata/bi37708-28/Supervisor_20250130_145409_68
 
 # expect success:
-python src/smartem_decisions/epu_data_intake/fs_parser.py validate-epu-dir \
+python src/epu_data_intake/fs_parser.py validate-epu-dir \
   tests/testdata/bi37708-28/Supervisor_20250130_145409_68practice2
 
 # expect failure:
-python src/smartem_decisions/epu_data_intake/fs_parser.py validate-epu-dir \
+python src/epu_data_intake/fs_parser.py validate-epu-dir \
   tests/testdata/bi37708-28/Supervisor_20250130_150924_1grid3
 
 ```
@@ -178,7 +178,7 @@ tests/testdata/epu-dir-example
   - The rest of GridSquare files under `Metadata/` are typically around 2.8Kb in size
 - An EPU directory contains at least one subdirectory named `Images-Disc1/` at root level,
   and it's possible to have multiple subdirectories with a naming convention `Images-Disc<int>`, though in most
-  cases there will only be one. 
+  cases there will only be one.
   - An `Images-Disc<int>/` directory will contain a number of subdirectories following a naming convention
     `GridSquare_<gridsquare_id>/`, corresponding to GridSquare files in `Metadata/`, but only for GridSquares of
     interest where further scanning took place
@@ -194,11 +194,11 @@ We need to watch the EPU output directory for changes, to that end:
 ```bash
 # Launch the watcher:
 rm -f -- output.log && rm -rf ../fs-watcher-test-dir/* && \
-  python src/smartem_decisions/epu_data_intake/watcher.py ../fs-watcher-test-dir/ \
+  python src/epu_data_intake/watcher.py ../fs-watcher-test-dir/ \
   --log-file output.log
 
 # In another terminal launch a simulator that randomly writes to target dir:
-python src/smartem_decisions/epu_data_intake/test_watcher.py ../fs-watcher-test-dir \
+python src/epu_data_intake/test_watcher.py ../fs-watcher-test-dir \
   -d 60 -i 3 \
   --template-dir tests/testdata/epu-dir-example
 ```
@@ -212,14 +212,14 @@ python src/smartem_decisions/epu_data_intake/test_watcher.py ../fs-watcher-test-
 ```bash
 # To reformat all `.xml` and `.dm` files in a given directory recursively, rewriting in-place
 # from single-line to human-readable:
-python src/smartem_decisions/epu_data_intake/format_xml.py <tests/testdata/some_dir> -r
+python src/epu_data_intake/format_xml.py <tests/testdata/some_dir> -r
 
 # Multiple dirs:
-python src/smartem_decisions/epu_data_intake/format_xml.py -r \
+python src/epu_data_intake/format_xml.py -r \
   ../metadata_Supervisor_20250114_220855_23_epuBSAd20_GrOxDDM \
   ../metadata_Supervisor_20241220_140307_72_et2_gangshun \
   ../metadata_Supervisor_20250108_101446_62_cm40593-1_EPU
 
 # For more options see:
-python src/smartem_decisions/epu_data_intake/format_xml.py --help
+python src/epu_data_intake/format_xml.py --help
 ```
