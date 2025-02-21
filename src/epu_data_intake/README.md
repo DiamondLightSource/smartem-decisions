@@ -194,7 +194,7 @@ We need to watch the EPU output directory for changes, to that end:
 ```bash
 # Launch the watcher:
 rm -f -- output.log && rm -rf ../fs-watcher-test-dir/* && \
-  python src/epu_data_intake/watcher.py ../fs-watcher-test-dir/ \
+  python src/epu_data_intake/fs_watcher.py ../fs-watcher-test-dir/ \
   --log-file output.log
 
 # In another terminal launch a simulator that randomly writes to target dir:
