@@ -50,6 +50,13 @@ jobs:
       run: |
         copy src/epu_data_intake/README.md dist/
 
+    - name: Smoke test
+      run: |
+        ./dist/smartem_epu_data_intake_parser.exe --help
+        if ($LASTEXITCODE -ne 0) { throw "Parser smoke test failed" }
+        ./dist/smartem_data_intake_watcher.exe --help
+        if ($LASTEXITCODE -ne 0) { throw "Watcher smoke test failed" }
+
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
       with:
