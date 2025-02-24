@@ -115,6 +115,13 @@ podman run -p 8000:8000 localhost/smartem_decisions # run container
 podman image rm localhost/smartem_decisions -f # clean up before rebuild
 ```
 
+## Generate docs
+
+```sh
+tox -e docs
+python -m http.server -d build/html
+```
+
 ## Notes
 
 - mock the decision-making stuff

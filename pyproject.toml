@@ -56,7 +56,7 @@ dev = [
 ]
 
 [project.scripts]
-smartem-decisions = "smartem_decisions.__main__:main"
+smartem-decisions = "smartem_decisions.__main__:epu_data_take"
 
 [project.urls]
 GitHub = "https://github.com/DiamondLightSource/smartem-decisions"
