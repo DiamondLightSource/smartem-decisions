@@ -19,7 +19,6 @@ from watchdog.observers import Observer
 from data_model import (
     EpuSession,
     GridSquareData,
-    GridSquareMetadata,
     MicrographData,
 )
 from fs_parser import EpuParser
