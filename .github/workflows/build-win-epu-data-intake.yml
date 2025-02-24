@@ -38,12 +38,14 @@ jobs:
       run: >-
         pyinstaller --onefile
         --name smartem_epu_data_intake_parser
+        --paths src/epu_data_intake
         src/epu_data_intake/fs_parser.py
 
     - name: Build watcher util with PyInstaller
       run: >-
         pyinstaller --onefile
         --name smartem_data_intake_watcher
+        --paths src/epu_data_intake
         src/epu_data_intake/fs_watcher.py
 
     - name: Copy README to dist directory
