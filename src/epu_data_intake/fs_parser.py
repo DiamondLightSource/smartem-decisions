@@ -258,23 +258,36 @@ class EpuParser:
                         continue
 
                     center = position.find("c:Center", namespaces=namespaces)
-                    center_x = int(float(center.find("d:x", namespaces=namespaces).text))
-                    center_y = int(float(center.find("d:y", namespaces=namespaces).text))
+                    center_tuple = None
+                    if center is not None:
+                        x_elem = center.find("d:x", namespaces=namespaces)
+                        y_elem = center.find("d:y", namespaces=namespaces)
+                        if x_elem is not None and y_elem is not None:
+                            center_tuple = (int(float(x_elem.text)), int(float(y_elem.text)))
 
                     physical = position.find("c:Physical", namespaces=namespaces)
-                    phys_x = float(physical.find("d:x", namespaces=namespaces).text) * 1e9
-                    phys_y = float(physical.find("d:y", namespaces=namespaces).text) * 1e9
+                    physical_tuple = None
+                    if physical is not None:
+                        x_elem = physical.find("d:x", namespaces=namespaces)
+                        y_elem = physical.find("d:y", namespaces=namespaces)
+                        if x_elem is not None and y_elem is not None:
+                            physical_tuple = (float(x_elem.text) * 1e9, float(y_elem.text) * 1e9)
 
                     size = position.find("c:Size", namespaces=namespaces)
-                    width = int(float(size.find("d:width", namespaces=namespaces).text))
-                    height = int(float(size.find("d:height", namespaces=namespaces).text))
+                    size_tuple = None
+                    if size is not None:
+                        width_elem = size.find("d:width", namespaces=namespaces)
+                        height_elem = size.find("d:height", namespaces=namespaces)
+                        if width_elem is not None and height_elem is not None:
+                            size_tuple = (int(float(width_elem.text)), int(float(height_elem.text)))
 
-                    rotation = float(position.find("c:Rotation", namespaces=namespaces).text)
+                    rotation_elem = position.find("c:Rotation", namespaces=namespaces)
+                    rotation = float(rotation_elem.text) if rotation_elem is not None else None
 
                     gridsquare_positions[gs_id] = GridSquarePosition(
-                        center=(center_x, center_y),
-                        physical=(phys_x, phys_y),
-                        size=(width, height),
+                        center=center_tuple,
+                        physical=physical_tuple,
+                        size=size_tuple,
                         rotation=rotation
                     )
 
@@ -302,17 +315,19 @@ class EpuParser:
             if not tile_id:
                 return None
 
+            x_text = get_element_text("./ns:AtlasPixelPosition/draw:x")
+            y_text = get_element_text("./ns:AtlasPixelPosition/draw:y")
+            position_tuple = (int(x_text), int(y_text)) if x_text and y_text else None
+
+            width_text = get_element_text("./ns:AtlasPixelPosition/draw:width")
+            height_text = get_element_text("./ns:AtlasPixelPosition/draw:height")
+            size_tuple = (int(width_text), int(height_text)) if width_text and height_text else None
+
             return AtlasTileData(
                 id=tile_id,
                 tile_position=AtlasTilePosition(
-                    position=(
-                        int(get_element_text("./ns:AtlasPixelPosition/draw:x")),
-                        int(get_element_text("./ns:AtlasPixelPosition/draw:y")),
-                    ),
-                    size=(
-                        int(get_element_text("./ns:AtlasPixelPosition/draw:width")),
-                        int(get_element_text("./ns:AtlasPixelPosition/draw:height"))
-                    ),
+                    position=position_tuple,
+                    size=size_tuple,
                 ),
                 file_format=get_element_text("./ns:TileImageReference/common:FileFormat"),
                 base_filename=get_element_text("./ns:TileImageReference/common:BaseFileName"),
@@ -370,7 +385,7 @@ class EpuParser:
                     return None
 
             # Helper function for safe float conversion
-            def safe_float(value: str | None, default: float = 0.0) -> float:
+            def safe_float(value: str | None, default: float = None) -> float | None:
                 if not value:
                     return default
                 try:
@@ -427,7 +442,7 @@ class EpuParser:
                         stage_y = safe_float(
                             stage_pos.find("{http://schemas.datacontract.org/2004/07/Fei.SharedObjects}Y").text)
                     else:
-                        stage_x = stage_y = 0.0
+                        stage_x = stage_y = None
 
                     # Find pixel position
                     if (pixel_center := value_elem.find(
@@ -503,13 +518,19 @@ class EpuParser:
                         acquisition_datetime=datetime.fromisoformat(
                             acquisition_date_str.replace('Z', '+00:00')
                         ) if acquisition_date_str else None,
-                        defocus=float(get_element_text(".//ms:microscopeData/ms:optics/ms:Defocus") or 0.0),
+                        defocus=float(
+                            get_element_text(".//ms:microscopeData/ms:optics/ms:Defocus")) if get_element_text(
+                            ".//ms:microscopeData/ms:optics/ms:Defocus") else None,
                         magnification=float(get_element_text(
-                            ".//ms:microscopeData/ms:optics/ms:TemMagnification/ms:NominalMagnification") or 0.0),
-                        pixel_size=float(
-                            get_element_text(".//ms:SpatialScale/ms:pixelSize/ms:x/ms:numericValue") or 0.0),
-                        detector_name=get_custom_value("DetectorCommercialName") or "Unknown",
-                        applied_defocus=float(get_custom_value("AppliedDefocus") or 0.0),
+                            ".//ms:microscopeData/ms:optics/ms:TemMagnification/ms:NominalMagnification")) if get_element_text(
+                            ".//ms:microscopeData/ms:optics/ms:TemMagnification/ms:NominalMagnification") else None,
+                        pixel_size=float(get_element_text(
+                            ".//ms:SpatialScale/ms:pixelSize/ms:x/ms:numericValue")) if get_element_text(
+                            ".//ms:SpatialScale/ms:pixelSize/ms:x/ms:numericValue") else None,
+                        detector_name=get_custom_value("DetectorCommercialName") if get_custom_value(
+                            "DetectorCommercialName") else None,
+                        applied_defocus=float(get_custom_value("AppliedDefocus")) if get_custom_value(
+                            "AppliedDefocus") else None,
                         data_dir=Path(manifest_path).parent
                     )
 
@@ -550,17 +571,23 @@ class EpuParser:
                         id=foilhole_id,
                         gridsquare_id=gridsquare_id,
                         center_x=float(get_element_text(
-                            ".//arr:KeyValueOfstringanyType[arr:Key='FindFoilHoleCenterResults']/arr:Value/b:Center/c:x") or 0),
+                            ".//arr:KeyValueOfstringanyType[arr:Key='FindFoilHoleCenterResults']/arr:Value/b:Center/c:x")) if get_element_text(
+                            ".//arr:KeyValueOfstringanyType[arr:Key='FindFoilHoleCenterResults']/arr:Value/b:Center/c:x") else None,
                         center_y=float(get_element_text(
-                            ".//arr:KeyValueOfstringanyType[arr:Key='FindFoilHoleCenterResults']/arr:Value/b:Center/c:y") or 0),
+                            ".//arr:KeyValueOfstringanyType[arr:Key='FindFoilHoleCenterResults']/arr:Value/b:Center/c:y")) if get_element_text(
+                            ".//arr:KeyValueOfstringanyType[arr:Key='FindFoilHoleCenterResults']/arr:Value/b:Center/c:y") else None,
                         quality=float(get_element_text(
-                            ".//arr:KeyValueOfstringanyType[arr:Key='FindFoilHoleCenterResults']/arr:Value/b:Quality") or 0),
+                            ".//arr:KeyValueOfstringanyType[arr:Key='FindFoilHoleCenterResults']/arr:Value/b:Quality")) if get_element_text(
+                            ".//arr:KeyValueOfstringanyType[arr:Key='FindFoilHoleCenterResults']/arr:Value/b:Quality") else None,
                         rotation=float(get_element_text(
-                            ".//arr:KeyValueOfstringanyType[arr:Key='FindFoilHoleCenterResults']/arr:Value/b:Rotation") or 0),
+                            ".//arr:KeyValueOfstringanyType[arr:Key='FindFoilHoleCenterResults']/arr:Value/b:Rotation")) if get_element_text(
+                            ".//arr:KeyValueOfstringanyType[arr:Key='FindFoilHoleCenterResults']/arr:Value/b:Rotation") else None,
                         size_width=float(get_element_text(
-                            ".//arr:KeyValueOfstringanyType[arr:Key='FindFoilHoleCenterResults']/arr:Value/b:Size/c:width") or 0),
+                            ".//arr:KeyValueOfstringanyType[arr:Key='FindFoilHoleCenterResults']/arr:Value/b:Size/c:width")) if get_element_text(
+                            ".//arr:KeyValueOfstringanyType[arr:Key='FindFoilHoleCenterResults']/arr:Value/b:Size/c:width") else None,
                         size_height=float(get_element_text(
-                            ".//arr:KeyValueOfstringanyType[arr:Key='FindFoilHoleCenterResults']/arr:Value/b:Size/c:height") or 0)
+                            ".//arr:KeyValueOfstringanyType[arr:Key='FindFoilHoleCenterResults']/arr:Value/b:Size/c:height")) if get_element_text(
+                            ".//arr:KeyValueOfstringanyType[arr:Key='FindFoilHoleCenterResults']/arr:Value/b:Size/c:height") else None
                     )
 
         except Exception as e:
@@ -598,14 +625,19 @@ class EpuParser:
                             get_element_text(".//ms:microscopeData/ms:acquisition/ms:acquisitionDateTime").replace('Z',
                                                                                                                    '+00:00')
                         ),
-                        defocus=float(get_element_text(".//ms:microscopeData/ms:optics/ms:Defocus") or 0.0),
+                        defocus=float(get_element_text(".//ms:microscopeData/ms:optics/ms:Defocus")) if get_element_text(
+                            ".//ms:microscopeData/ms:optics/ms:Defocus") else None,
                         detector_name=get_custom_value("DetectorCommercialName") or "Unknown",
                         energy_filter=get_element_text(".//ms:microscopeData/ms:optics/ms:EFTEMOn") == 'true',
                         phase_plate=get_custom_value("PhasePlateUsed") == 'true',
-                        image_size_x=int(readout_area.xpath(".//draw:width", namespaces=namespaces)[0].text or 0),
-                        image_size_y=int(readout_area.xpath(".//draw:height", namespaces=namespaces)[0].text or 0),
+                        image_size_x=int(
+                            readout_area.xpath(".//draw:width", namespaces=namespaces)[0].text) if readout_area.xpath(
+                            ".//draw:width", namespaces=namespaces) else None,
+                        image_size_y=int(
+                            readout_area.xpath(".//draw:height", namespaces=namespaces)[0].text) if readout_area.xpath(
+                            ".//draw:height", namespaces=namespaces) else None,
                         binning_x=int(binning.xpath(".//draw:x", namespaces=namespaces)[0].text or 1),
-                        binning_y=int(binning.xpath(".//draw:y", namespaces=namespaces)[0].text or 1)
+                        binning_y=int(binning.xpath(".//draw:y", namespaces=namespaces)[0].text or 1),
                     )
 
         except Exception as e:

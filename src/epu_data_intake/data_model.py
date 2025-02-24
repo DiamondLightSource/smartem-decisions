@@ -38,21 +38,21 @@ class EntityStore(Generic[T]):
 class MicrographManifest:
     unique_id: str
     acquisition_datetime: datetime
-    defocus: float
+    defocus: float | None
     detector_name: str
     energy_filter: bool
     phase_plate: bool
-    image_size_x: int
-    image_size_y: int
+    image_size_x: int | None
+    image_size_y: int | None
     binning_x: int
     binning_y: int
 
     def __post_init__(self):
         """Validate that size and binning values are positive."""
-        for field in ['image_size_x', 'image_size_y', 'binning_x', 'binning_y']:
-            value = getattr(self, field)
-            if value <= 0:
-                raise ValueError(f"{field} must be positive, got {value}")
+        for natural_num in ['image_size_x', 'image_size_y', 'binning_x', 'binning_y']:
+            value = getattr(self, natural_num)
+            if natural_num is not None and value <= 0:
+                raise ValueError(f"{natural_num} must be positive, got {value}")
 
 
 # TODO:
@@ -95,11 +95,11 @@ class FoilHoleData:
 @dataclass
 class GridSquareManifest:
     acquisition_datetime: datetime
-    defocus: float  # in meters
-    magnification: float
-    pixel_size: float  # in meters
+    defocus: float | None # in meters
+    magnification: float | None
+    pixel_size: float | None # in meters
     detector_name: str
-    applied_defocus: float
+    applied_defocus: float | None
     data_dir: Path | None = None
 
 
@@ -112,9 +112,9 @@ class GridSquareStagePosition:
         y: Y-coordinate in stage position
         z: Z-coordinate in stage position
     """
-    x: float
-    y: float
-    z: float
+    x: float | None
+    y: float | None
+    z: float | None
 
 
 @dataclass
@@ -130,8 +130,8 @@ class FoilHolePosition:
     """
     x_location: int
     y_location: int
-    x_stage_position: float
-    y_stage_position: float
+    x_stage_position: float | None
+    y_stage_position: float | None
     diameter: int
     is_near_grid_bar: bool = False
 
@@ -161,7 +161,7 @@ class GridSquareMetadata:
     atlas_node_id: int
     stage_position: GridSquareStagePosition | None
     state: str | None
-    rotation: float
+    rotation: float | None
     image_path: Path | None
     selected: bool
     unusable: bool
