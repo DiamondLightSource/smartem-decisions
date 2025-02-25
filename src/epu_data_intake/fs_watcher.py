@@ -1,27 +1,19 @@
-#!/usr/bin/env python
-
-import json
-import logging
 import os
-import platform
 import re
-import signal
+import sys
 import time
 from datetime import datetime
 from fnmatch import fnmatch
 from pathlib import Path
-
-from rich.console import Console
-import typer
 from watchdog.events import FileSystemEventHandler
-from watchdog.observers import Observer
 
-from data_model import (
+from src.epu_data_intake.data_model import (
     EpuSession,
     GridSquareData,
     MicrographData,
 )
-from fs_parser import EpuParser
+from src.epu_data_intake.fs_parser import EpuParser
+from src.epu_data_intake.utils import logging
 
 """Default glob patterns for EPU data files.
 
@@ -46,22 +38,6 @@ DEFAULT_PATTERNS = [ # TODO consider merging with props in EpuParser
     "Images-Disc*/GridSquare_*/FoilHoles/FoilHole_*_*_*.xml",
     "Sample*/Atlas/Atlas.dm",
 ]
-
-
-console = Console()
-
-
-class JSONFormatter(logging.Formatter):
-    def format(self, record):
-        if isinstance(record.msg, dict):
-            log_entry = record.msg
-        else:
-            log_entry = {
-                "message": record.msg,
-                "level": record.levelname,
-                "timestamp": datetime.now().isoformat()
-            }
-        return json.dumps(log_entry, indent=2)
 
 
 class RateLimitedHandler(FileSystemEventHandler):
@@ -136,12 +112,12 @@ class RateLimitedHandler(FileSystemEventHandler):
 
         if event.is_directory or not self.matches_pattern(event.src_path):
             if self.verbose and not event.is_directory:
-                console.print(f"[dim]Skipping non-matching path: {event.src_path}[/dim]")
+                print(f"Skipping non-matching path: {event.src_path}")
             return
 
         if event.event_type not in self.watched_event_types:
             if self.verbose and not event.is_directory:
-                console.print(f"[dim]Skipping non-matching event type: {event.event_type}[/dim]")
+                print(f"Skipping non-matching event type: {event.event_type}")
             return
 
         current_time = time.time()
@@ -154,7 +130,7 @@ class RateLimitedHandler(FileSystemEventHandler):
                 file_stat = os.stat(event.src_path)
         except (FileNotFoundError, PermissionError) as e:
             if self.verbose:
-                console.print(f"[yellow]Warning:[/yellow] {str(e)}")
+                print(f"Warning: {str(e)}")
 
         # Optimise: if not `new_file_detected` - `event.modified` and `event.size` could be
         #   a good indicator if any interesting changes happened
@@ -179,23 +155,23 @@ class RateLimitedHandler(FileSystemEventHandler):
 
 
     def _on_session_detected(self, path: str, is_new_file: bool = True):
-        console.print(f"Session manifest {'detected' if is_new_file else 'updated'}: {path}")
+        print(f"Session manifest {'detected' if is_new_file else 'updated'}: {path}")
         session_data = EpuParser.parse_epu_session_manifest(path)
         if session_data != self.datastore.session_data:
             self.datastore.session_data = session_data
-            console.print(self.datastore.session_data)
+            print(self.datastore.session_data)
 
 
     def _on_atlas_detected(self, path: str, is_new_file: bool = True):
-        console.print(f"Atlas {'detected' if is_new_file else 'updated'}: {path}")
+        print(f"Atlas {'detected' if is_new_file else 'updated'}: {path}")
         atlas_data = EpuParser.parse_atlas_manifest(path)
         if atlas_data != self.datastore.atlas_data:
             self.datastore.atlas_data = atlas_data
-            console.print(self.datastore.atlas_data)
+            print(self.datastore.atlas_data)
 
 
     def _on_gridsquare_metadata_detected(self, path: str, is_new_file: bool = True):
-        console.print(f"Gridsquare metadata {'detected' if is_new_file else 'updated'}: {path}")
+        print(f"Gridsquare metadata {'detected' if is_new_file else 'updated'}: {path}")
 
         gridsquare_id = EpuParser.gridsquare_dm_file_pattern.search(path).group(1)
         assert gridsquare_id is not None, f"gridsquare_id should not be None: {gridsquare_id}"
@@ -212,11 +188,11 @@ class RateLimitedHandler(FileSystemEventHandler):
             gridsquare_data.metadata = gridsquare_metadata
 
         self.datastore.gridsquares.add(gridsquare_id, gridsquare_data)
-        console.print(gridsquare_data)
+        print(gridsquare_data)
 
 
     def _on_gridsquare_manifest_detected(self, path: str, is_new_file: bool = True):
-        console.print(f"Gridsquare manifest {'detected' if is_new_file else 'updated'}: {path}")
+        print(f"Gridsquare manifest {'detected' if is_new_file else 'updated'}: {path}")
 
         gridsquare_id = re.search(EpuParser.gridsquare_dir_pattern, str(path)).group(1)
         assert gridsquare_id is not None, f"gridsquare_id should not be None: {gridsquare_id}"
@@ -233,11 +209,11 @@ class RateLimitedHandler(FileSystemEventHandler):
             gridsquare_data.manifest = gridsquare_manifest
 
         self.datastore.gridsquares.add(gridsquare_id, gridsquare_data)
-        console.print(gridsquare_data)
+        print(gridsquare_data)
 
 
     def _on_foilhole_detected(self, path: str, is_new_file: bool = True):
-        console.print(f"Foilhole {'detected' if is_new_file else 'updated'}: {path}")
+        print(f"Foilhole {'detected' if is_new_file else 'updated'}: {path}")
         data = EpuParser.parse_foilhole_manifest(path)
         # Here it is by intent that any previously recorded data for given foilhole is overwritten as
         # there are instances of multiple manifest files written to fs and in these cases
@@ -246,11 +222,11 @@ class RateLimitedHandler(FileSystemEventHandler):
         #  last to be written to fs, but additional filename-based checks wouldn't hurt - resolve latest
         #  based on timestamp found in filename.
         self.datastore.foilholes.add(data.id, data)
-        console.print(data)
+        print(data)
 
 
     def _on_micrograph_detected(self, path: str, is_new_file: bool = True):
-        console.print(f"Micrograph {'detected' if is_new_file else 'updated'}: {path}")
+        print(f"Micrograph {'detected' if is_new_file else 'updated'}: {path}")
 
         match = re.search(EpuParser.micrograph_xml_file_pattern, path)
         foilhole_id = match.group(1)
@@ -268,7 +244,7 @@ class RateLimitedHandler(FileSystemEventHandler):
             manifest = manifest,
         )
         self.datastore.micrographs.add(data.id, data)
-        console.print(data)
+        print(data)
 
 
     def _on_session_complete(self):
@@ -319,95 +295,8 @@ class RateLimitedHandler(FileSystemEventHandler):
         self.last_log_time = time.time()
 
 
-def setup_logging(log_file: str | None, verbose: bool):
-    json_formatter = JSONFormatter()
-    root_logger = logging.getLogger()
-    root_logger.setLevel(logging.INFO if not verbose else logging.DEBUG)
-
-    if log_file:
-        file_handler = logging.FileHandler(log_file)
-        file_handler.setFormatter(json_formatter)
-        root_logger.addHandler(file_handler)
-
-    console_handler = logging.StreamHandler()
-    console_handler.setFormatter(json_formatter)
-    root_logger.addHandler(console_handler)
-
-
-def watch_directory(
-        path: Path = typer.Argument(..., help="Directory to watch"),
-        patterns: list[str] = typer.Option(
-            DEFAULT_PATTERNS,
-            "--pattern", "-p",
-            help="File patterns to watch (can be specified multiple times)"
-        ),
-        log_file: str | None = typer.Option(
-            "fs_changes.log",
-            "--log-file", "-l",
-            help="Log file path (optional)"
-        ),
-        log_interval: float = typer.Option(
-            10.0,
-            "--interval", "-i",
-            help="Minimum interval between log entries in seconds"
-        ),
-        verbose: bool = typer.Option(
-            False,
-            "--verbose", "-v",
-            help="Enable verbose output"
-        ),
-):
-    """Watch directory for file changes and log them in JSON format. Supports Windows/Cygwin environments.
-    """
-    path = Path(path).absolute()
-    if not path.exists():
-        console.print(f"[red]Error:[/red] Directory {path} does not exist")
-        raise typer.Exit(1)
-
-    setup_logging(log_file, verbose)
-
-    logging.info({
-        "message": f"Starting to watch directory: {str(path)} (including subdirectories)",
-        "path": str(path),
-        "patterns": patterns,
-        "timestamp": datetime.now().isoformat()
-    })
-
-    observer = Observer()
-
-    handler = RateLimitedHandler(patterns, log_interval, verbose)
-    handler.set_watch_dir(path)
-    handler.init_datastore()
-
-    # TODO settle a potential race condition, test if exists:
-    handler.datastore = EpuParser.parse_acquisition_dir(handler.datastore, verbose)
-    observer.schedule(handler, str(path), recursive=True)
-
-
-    def handle_exit(signum, frame):
-        nonlocal handler
-        console.print(handler.datastore)
-        observer.stop()
-        logging.info({ # consider adding stack frame info: `frame`
-            "message": "Watching stopped",
-            "timestamp": datetime.now().isoformat()
-        })
-        observer.join()
-        raise typer.Exit()
-
-    # Handle both CTRL+C and Windows signals
-    signal.signal(signal.SIGINT, handle_exit)
-    if platform.system() == 'Windows':
-        signal.signal(signal.SIGBREAK, handle_exit)
-
-    observer.start()
-
-    try:
-        while True:
-            time.sleep(1)
-    except KeyboardInterrupt:
-        handle_exit(None, None)
 
 
 if __name__ == "__main__":
-    typer.run(watch_directory)
+    print("This module is not meant to be run directly. Import and use its components instead.")
+    sys.exit(1)

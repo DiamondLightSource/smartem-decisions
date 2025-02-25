@@ -34,19 +34,12 @@ jobs:
         pip install pyinstaller
         pip install -r requirements.txt
 
-    - name: Build parser util with PyInstaller
+    - name: Build EPU tools with PyInstaller
       run: >-
         pyinstaller --onefile
-        --name smartem_epu_data_intake_parser
+        --name smartem_epu_data_intake_tools
         --paths src/epu_data_intake
-        src/epu_data_intake/fs_parser.py
-
-    - name: Build watcher util with PyInstaller
-      run: >-
-        pyinstaller --onefile
-        --name smartem_data_intake_watcher
-        --paths src/epu_data_intake
-        src/epu_data_intake/fs_watcher.py
+        src/epu_data_intake/__main__.py
 
     - name: Copy README to dist directory
       run: |
@@ -54,13 +47,11 @@ jobs:
 
     - name: Smoke test
       run: |
-        ./dist/smartem_epu_data_intake_parser.exe --help
-        if ($LASTEXITCODE -ne 0) { throw "Parser smoke test failed" }
-        ./dist/smartem_data_intake_watcher.exe --help
-        if ($LASTEXITCODE -ne 0) { throw "Watcher smoke test failed" }
+        ./dist/smartem_epu_data_intake_tools.exe --help
+        if ($LASTEXITCODE -ne 0) { throw "SmartEM data intake tools smoke test failed" }
 
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: epu-data-intake-tools-v${{ github.run_number }}-${{ github.sha }}
+        name: smartem_epu_data_intake_tools-v${{ github.run_number }}-${{ github.sha }}
         path: dist/
