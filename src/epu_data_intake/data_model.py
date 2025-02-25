@@ -1,6 +1,6 @@
 from collections.abc import Iterator
 import logging
-from typing import Generic, TypeVar, NotRequired, TypedDict
+from typing import Generic, TypeVar
 from datetime import datetime
 from pathlib import Path
 from dataclasses import dataclass, field

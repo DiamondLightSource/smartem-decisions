@@ -16,10 +16,8 @@ ENV PATH=/venv/bin:$PATH
 FROM developer AS build
 COPY . /context
 WORKDIR /context
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
-RUN pip install --no-cache-dir uvicorn
-#RUN touch dev-requirements.txt && pip install -c dev-requirements.txt .
+COPY pyproject.toml .
+RUN pip install --no-cache-dir . uvicorn
 
 # The runtime stage copies the built venv into a slim runtime container
 FROM python:${PYTHON_VERSION}-slim AS runtime

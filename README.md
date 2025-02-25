@@ -21,7 +21,7 @@ some relevant examples. If it is a library then you might put some
 introductory code here:
 
 ```python
-from smartem_decisions import __version__
+from src._version import __version__
 
 print(f"Hello smartem_decisions {__version__}")
 ```
@@ -86,11 +86,13 @@ graph LR
 
 ## Running in development
 
+> (TODO: move this section to a separate README under `src/smartem_decisions`)
+
 ```bash
 # venv and requirements
 python -m venv .venv
 source .venv/bin/activate
-pip install -r dev-requirements.txt # or should it be done using poetry and .pyproject.toml?
+pip install -e .[dev,common,core]
 
 # create env and launch service stack locally:
 cp .env.example .env
