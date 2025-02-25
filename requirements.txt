@@ -1,5 +1,4 @@
 annotated-types==0.7.0
-click==8.1.7
 graypy==2.1.0
 markdown-it-py==3.0.0
 mdurl==0.1.2
@@ -10,7 +9,6 @@ Pygments==2.18.0
 python-dateutil==2.9.0.post0
 python-dotenv==1.0.1
 PyYAML==6.0.2
-rich==13.9.4
 shellingham==1.5.4
 six==1.16.0
 typer==0.13.0

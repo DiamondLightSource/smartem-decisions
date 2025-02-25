@@ -1,16 +1,12 @@
-#!/usr/bin/env python
-
 import os
 import re
-import typer
+import sys
+
 from pathlib import Path
 from datetime import datetime
 from lxml import etree
-from rich.console import Console
-from rich.panel import Panel
-from rich.text import Text
 
-from data_model import (
+from src.epu_data_intake.data_model import (
     EpuSession,
     EpuSessionData,
     AtlasData,
@@ -26,8 +22,6 @@ from data_model import (
     MicrographManifest,
     MicrographData,
 )
-
-console = Console()
 
 
 class EpuParser:
@@ -292,7 +286,7 @@ class EpuParser:
                     )
 
                 except (AttributeError, IndexError, ValueError, TypeError) as e:
-                    console.print(f"Failed to parse grid square position: {str(e)}")
+                    print(f"Failed to parse grid square position: {str(e)}")
                     continue
 
         return gridsquare_positions
@@ -395,7 +389,6 @@ class EpuParser:
 
             # Basic metadata parsing
             # ----------------------
-            # TODO confirm what this is and use more specific naming
             stage_position = GridSquareStagePosition(
                 x=safe_float(get_element_text("//def:Position/shared:X")),
                 y=safe_float(get_element_text("//def:Position/shared:Y")),
@@ -471,7 +464,7 @@ class EpuParser:
                     )
 
                 except Exception as e:
-                    console.print(f"Error processing foil hole {fh_id}: {str(e)}")
+                    print(f"Error processing foil hole {fh_id}: {str(e)}")
                     continue
 
             metadata = GridSquareMetadata(
@@ -488,7 +481,7 @@ class EpuParser:
             return metadata
 
         except Exception as e:
-            console.print(f"Failed to parse gridsquare metadata: {str(e)}")
+            print(f"Failed to parse gridsquare metadata: {str(e)}")
             return None
 
 
@@ -672,7 +665,7 @@ class EpuParser:
         )
         if len(metadata_dir_paths) > 0:
             for gridsquare_id, filename in EpuParser.parse_gridsquares_metadata_dir(metadata_dir_paths[0]):
-                if verbose: console.print(f"[dim]Discovered gridsquare {gridsquare_id} from file {filename}[/dim]")
+                if verbose: print(f"[dim]Discovered gridsquare {gridsquare_id} from file {filename}[/dim]")
                 gridsquare_metadata = EpuParser.parse_gridsquare_metadata(filename)
 
                 # Here we are not worried about overwriting an existing gridsquare
@@ -683,7 +676,7 @@ class EpuParser:
                     id=gridsquare_id,
                     metadata=gridsquare_metadata
                 ))
-                console.print(datastore.gridsquares.get(gridsquare_id))
+                print(datastore.gridsquares.get(gridsquare_id))
 
         # 3. scan all image-disc dir sub-dirs to get a list of active gridsquares. for each gridsquare subdir:
         for gridsquare_manifest_path in list(
@@ -697,7 +690,7 @@ class EpuParser:
             gridsquare_data = datastore.gridsquares.get(gridsquare_id)
             gridsquare_data.manifest = gridsquare_manifest
             datastore.gridsquares.add(gridsquare_id, gridsquare_data)
-            console.print(datastore.gridsquares.get(gridsquare_id))
+            print(datastore.gridsquares.get(gridsquare_id))
 
             # 3.2 scan that gridsquare's Foilholes/ dir to get foilholes
             foilhole_manifest_paths = sorted(
@@ -708,7 +701,7 @@ class EpuParser:
             for foilhole_manifest_path in foilhole_manifest_paths:
                 foilhole_id = re.search(EpuParser.foilhole_xml_file_pattern, str(foilhole_manifest_path)).group(1)
                 datastore.foilholes.add(foilhole_id, EpuParser.parse_foilhole_manifest(foilhole_manifest_path))
-                console.print(datastore.foilholes.get(foilhole_id))
+                print(datastore.foilholes.get(foilhole_id))
 
             # 3.3 scan that gridsquare's Foilholes/ dir to get micrographs
             for micrograph_manifest_path in list(
@@ -729,82 +722,10 @@ class EpuParser:
                     manifest_file = micrograph_manifest_path,
                     manifest = micrograph_manifest,
                 ))
-                console.print(datastore.micrographs.get(micrograph_manifest.unique_id))
+                print(datastore.micrographs.get(micrograph_manifest.unique_id))
         return datastore
 
 
-epu_parser_cli = typer.Typer()
-
-
-@epu_parser_cli.command()
-def validate_epu_dir(path: str):
-    is_valid, errors = EpuParser.validate_project_dir(Path(path))
-
-    if is_valid:
-        title = Text("✅ Valid EPU Directory", style="bold green")
-        content = Text("All required files and directories are present.", style="green")
-    else:
-        title = Text("❌ Invalid EPU Directory", style="bold red")
-        content = Text.assemble(
-            Text("Found the following issues:\n\n", style="red"),
-            *(Text(f"• {error}\n", style="yellow") for error in errors)
-        )
-
-    console.print(Panel(
-        content,
-        title=title,
-        border_style="green" if is_valid else "red",
-        padding=(1, 2)
-    ))
-
-    return not is_valid  # Return non-zero exit code if validation fails
-
-
-@epu_parser_cli.command()
-def parse_epu_dir(dir_path: str):
-    datastore = EpuSession(
-        EpuParser.resolve_project_dir(Path(dir_path)),
-        EpuParser.resolve_atlas_dir(Path(dir_path)),
-    )
-    datastore = EpuParser.parse_acquisition_dir(datastore)
-    console.print(datastore)
-
-
-@epu_parser_cli.command()
-def parse_epu_session(path: str):
-    epu_session_data = EpuParser.parse_epu_session_manifest(path)
-    console.print(epu_session_data)
-
-
-@epu_parser_cli.command()
-def parse_atlas(path: str):
-    atlas_data = EpuParser.parse_atlas_manifest(path)
-    console.print(atlas_data)
-
-
-@epu_parser_cli.command()
-def parse_gridsquare_metadata(path: str):
-    metadata = EpuParser.parse_gridsquare_metadata(path)
-    console.print(metadata)
-
-
-@epu_parser_cli.command()
-def parse_gridsquare(path: str):
-    gridsquare_manifest_data = EpuParser.parse_gridsquare_manifest(path)
-    console.print(gridsquare_manifest_data)
-
-
-@epu_parser_cli.command()
-def parse_foilhole(path: str):
-    foilhole_data = EpuParser.parse_foilhole_manifest(path)
-    console.print(foilhole_data)
-
-
-@epu_parser_cli.command()
-def parse_micrograph(path: str):
-    micrograph_data = EpuParser.parse_micrograph_manifest(path)
-    console.print(micrograph_data)
-
-
 if __name__ == "__main__":
-    epu_parser_cli()
+    print("This module is not meant to be run directly. Import and use its components instead.")
+    sys.exit(1)
