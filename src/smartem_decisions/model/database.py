@@ -87,6 +87,31 @@ class Micrograph(SQLModel, table=True, table_name="micrograph"):
     foilhole: FoilHole | None = Relationship(back_populates="micrographs")
 
 
+class QualityPredictionModel(SQLModel, table=True):  # type: ignore
+    id: Optional[int] = Field(default=None, primary_key=True)
+    name: str 
+    description: str = ""
+    model_states: List["QualityPredictionModelState"] = Relationship(back_populates="quality_prediction_model", cascade_delete=True)
+    model_parameters: List["QualityPredictionModelParameter"] = Relationship(back_populates="quality_prediction_model", cascade_delete=True)
+
+
+class QualityPredictionModelParameter(SQLModel, table=True):  # type: ignore
+    id: Optional[int] = Field(default=None, primary_key=True)
+    model_id: int = Field(foreign_key="qualitypredictionmodel.id")
+    index: int 
+    name: str
+    value: float
+    quality_prediction_model: Optional[QualityPredictionModel] = Relationship(back_populates="model_parameters")
+
+
+class QualityPredictionModelState(SQLModel, table=True):  # type: ignore
+    id: Optional[int] = Field(default=None, primary_key=True)
+    model_id: int = Field(foreign_key="qualitypredictionmodel.id")
+    index: int 
+    prior_weight: float
+    quality_prediction_model: Optional[QualityPredictionModel] = Relationship(back_populates="model_states")
+
+
 def _create_db_and_tables(engine):
     with SQLModelSession(engine) as sess:
         teardown_query = text("""
