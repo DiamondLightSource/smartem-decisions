@@ -9,6 +9,7 @@ from lxml import etree
 from src.epu_data_intake.data_model import (
     EpuSession,
     EpuSessionData,
+    Grid,
     AtlasData,
     AtlasTilePosition,
     AtlasTileData,
@@ -33,7 +34,7 @@ class EpuParser:
     gridsquare_dm_file_pattern = re.compile(r"GridSquare_(\d+)\.dm$")  # under "Metadata/"
     gridsquare_xml_file_pattern = re.compile(r"GridSquare_(\d+)_(\d+).xml$")
     images_disc_dir_pattern = re.compile(r"/Images-Disc(\d+)$")
-    gridsquare_dir_pattern = re.compile(r"/GridSquare_(\d+)/")  # under Images-Disc*/
+    gridsquare_dir_pattern = re.compile(r"[/\\]GridSquare_(\d+)[/\\]")  # under Images-Disc*/
     foilhole_xml_file_pattern = re.compile(r"FoilHole_(\d+)_(\d+)_(\d+)\.xml$")
     micrograph_xml_file_pattern = re.compile(r"FoilHole_(\d+)_Data_(\d+)_(\d+)_(\d+)_(\d+)\.xml$")
 
@@ -108,40 +109,6 @@ class EpuParser:
 
 
     @staticmethod
-    def resolve_project_dir(watched_dir: Path):
-        """
-        Watched dir may contain a number of subdirectories, one per each EPU
-        acquisition. Disregarding any project_dir candidate that does not conform to
-        a valid EPU Acquisition directory structure (using `EpuParser.validate_project_dir`)
-        wouldn't work for an incremental parser, but receipt of fs events from any given subdirectory
-        can be an indicator that the dir is actively written to by EPU software. TODO
-        """
-        return watched_dir
-
-
-    @staticmethod
-    def resolve_atlas_dir(watched_dir: Path):
-        """In atlas dir `tree -d` may look like so (files omitted):
-        └── Supervisor_20250129_111544_bi37708-28_atlas
-            ├── Atlas
-            ├── Sample0
-            │   └── Atlas
-            ├── Sample1
-            │   └── Atlas
-            ├── Sample3
-            │   └── Atlas
-            ├── Sample4
-            │   └── Atlas
-            ├── Sample6
-            │   └── Atlas
-            └── Sample7
-                └── Atlas
-        TODO: confirm if `atlas/` can ever have more than a single child dir
-        """
-        return watched_dir / "atlas"
-
-
-    @staticmethod
     def parse_epu_session_manifest(manifest_path: str) -> EpuSessionData | None:
         try:
             namespaces = {
@@ -151,24 +118,32 @@ class EpuParser:
                 'z': 'http://schemas.microsoft.com/2003/10/Serialization/'
             }
 
-            for event, element in etree.iterparse(manifest_path,
-                                                  tag="{http://schemas.datacontract.org/2004/07/Applications.Epu.Persistence}EpuSessionXml"):
-                if event == 'end':
-                    def get_element_text(xpath):
-                        elements = element.xpath(xpath, namespaces=namespaces)
-                        return elements[0].text if elements else None
+            tree = etree.parse(manifest_path)
+            root = tree.getroot()
 
-                    start_time_str = get_element_text("./ns:StartDateTime")
+            def get_element_text(xpath):
+                elements = root.xpath(xpath, namespaces=namespaces)
+                return elements[0].text if elements else None
 
-                    return EpuSessionData(
-                        name=get_element_text("./ns:Name"),
-                        id=get_element_text("./common:Id"),
-                        start_time=datetime.fromisoformat(start_time_str.rstrip('Z')) if start_time_str else None,
-                        atlas_id=get_element_text("./ns:AtlasId"),
-                        storage_path=get_element_text("./ns:Path"),
-                        clustering_mode=get_element_text("./ns:ClusteringMode"),
-                        clustering_radius=get_element_text("./ns:ClusteringRadius"),
-                    )
+            atlas_id = get_element_text(".//ns:Samples/ns:_items/ns:SampleXml[1]/ns:AtlasId")
+            storage_path = get_element_text(".//ns:StorageFolders/ns:_items/ns:StorageFolderXml[1]/ns:Path")
+
+            if atlas_id and storage_path and atlas_id.startswith(storage_path):
+                atlas_id = atlas_id[len(storage_path):].replace('\\', '/')
+            if atlas_id.startswith('/'): # remove leading forward slash
+                atlas_id = atlas_id.lstrip('/')
+
+            start_time_str = get_element_text("./ns:StartDateTime")
+
+            return EpuSessionData(
+                name=get_element_text("./ns:Name"),
+                id=get_element_text("./common:Id"),
+                start_time=datetime.fromisoformat(start_time_str.rstrip('Z')) if start_time_str else None,
+                atlas_path=atlas_id,
+                storage_path=EpuParser.to_cygwin_path(storage_path) if storage_path else None,
+                clustering_mode=get_element_text("./ns:ClusteringMode"),
+                clustering_radius=get_element_text("./ns:ClusteringRadius"),
+            )
 
         except Exception as e:
             print(f"Failed to parse EPU session manifest: {str(e)}")
@@ -639,73 +614,78 @@ class EpuParser:
 
 
     @staticmethod
-    def parse_acquisition_dir(datastore: EpuSession, verbose: bool = False) -> EpuSession:
-        # 1. locate and parse EpuSession.dm
-        epu_manifest_paths = list( # TODO yes - it's possible to have more than one. problem for later
-            datastore.project_dir.glob(f"EpuSession.dm")
-        )
-        if len(epu_manifest_paths) > 0:
-            datastore.session_data = EpuParser.parse_epu_session_manifest(epu_manifest_paths[0])
-        # TODO establish if it's possible to have anything worth parsing written to fs
-        #   before `EpuSession.dm` materialises. if not - return early; if yes -
-        #   create a temporary placeholder for epu_data until we can get the real thing.
-        #   - Yes - according to Dan H that does happen. `EpuSession.dm` can get written last!!!!
+    def parse_epu_output_dir(datastore: EpuSession, verbose: bool = False):
+        """Parse the entire EPU output directory, containing one or more grids/samples
+        during a given microscopy session.
+        """
+
+        # Start with locating all EpuSession.dm files - init a grid for each found
+        for epu_session_manifest in list(datastore.root_dir.glob("**/*EpuSession.dm")):
+            grid = EpuParser.parse_grid_dir(str(Path(epu_session_manifest).parent), verbose)
+            datastore.grids.add(grid.session_data.name, grid)
+
+        return datastore
 
 
-        # 1.1 locate and parse Atlas.dm
-        atlas_manifest_paths = list( # TODO yes - it's possible to have more than one. problem for later
-            datastore.project_dir.glob(f"Atlas.dm")
-        )
-        if len(atlas_manifest_paths) > 0:
-            datastore.atlas_data = EpuParser.parse_atlas_manifest(atlas_manifest_paths[0])
+    @staticmethod
+    def parse_grid_dir(grid_data_dir: str, verbose: bool = False) -> Grid:
+        gridstore = Grid(str(Path(grid_data_dir).resolve()))
+
+        # 1. parse EpuSession.dm
+        epu_manifest_path = str(gridstore.data_dir / "EpuSession.dm")
+        gridstore.session_data = EpuParser.parse_epu_session_manifest(epu_manifest_path)
+        # Build out the absolute atlas_dir path
+        gridstore.atlas_dir = Path(Path(grid_data_dir) / Path("..") / Path(gridstore.session_data.atlas_path)).resolve()
+        gridstore.name = "" # TODO
+
+        # 1.1 parse Atlas.dm. Path to `Atlas.dm` specified in `EpuSession.dm`
+        if gridstore.session_data.atlas_path:
+            gridstore.atlas_data = EpuParser.parse_atlas_manifest(str(gridstore.atlas_dir))
 
         # 2. scan all gridsquare IDs from /Metadata directory files - this includes "inactive" and "active" gridsquares
-        metadata_dir_paths = list(  # TODO it's possible to have multiple `/Metadata` parent dirs. problem for later
-            datastore.project_dir.glob(f"Metadata/")
-        )
-        if len(metadata_dir_paths) > 0:
-            for gridsquare_id, filename in EpuParser.parse_gridsquares_metadata_dir(metadata_dir_paths[0]):
-                if verbose: print(f"[dim]Discovered gridsquare {gridsquare_id} from file {filename}[/dim]")
-                gridsquare_metadata = EpuParser.parse_gridsquare_metadata(filename)
+        metadata_dir_path = str(gridstore.data_dir / "Metadata")
+        for gridsquare_id, filename in EpuParser.parse_gridsquares_metadata_dir(metadata_dir_path):
+            verbose and print(f"Discovered gridsquare {gridsquare_id} from file {filename}")
+            gridsquare_metadata = EpuParser.parse_gridsquare_metadata(filename)
 
-                # Here we are not worried about overwriting an existing gridsquare
-                #   because this is where they are first discovered and added to collection
-                assert not datastore.gridsquares.exists(gridsquare_id)
+            # Here we are not worried about overwriting an existing gridsquare
+            #   because this is where they are first discovered and added to collection
+            assert not gridstore.gridsquares.exists(gridsquare_id)
 
-                datastore.gridsquares.add(gridsquare_id, GridSquareData(
-                    id=gridsquare_id,
-                    metadata=gridsquare_metadata
-                ))
-                print(datastore.gridsquares.get(gridsquare_id))
+            gridstore.gridsquares.add(gridsquare_id, GridSquareData(
+                id=gridsquare_id,
+                metadata=gridsquare_metadata
+            ))
+            verbose and print(gridstore.gridsquares.get(gridsquare_id))
 
         # 3. scan all image-disc dir sub-dirs to get a list of active gridsquares. for each gridsquare subdir:
         for gridsquare_manifest_path in list(
-            datastore.project_dir.glob("Images-Disc*/GridSquare_*/GridSquare_*_*.xml")
+            gridstore.data_dir.glob("Images-Disc*/GridSquare_*/GridSquare_*_*.xml")
         ):
             # 3.1 scan gridsquare manifest (take care to check for existing gridsquare record and not overwrite it)
             gridsquare_manifest = EpuParser.parse_gridsquare_manifest(gridsquare_manifest_path)
             gridsquare_id = re.search(EpuParser.gridsquare_dir_pattern, str(gridsquare_manifest_path)).group(1)
 
-            assert datastore.gridsquares.exists(gridsquare_id)
-            gridsquare_data = datastore.gridsquares.get(gridsquare_id)
+            assert gridstore.gridsquares.exists(gridsquare_id)
+            gridsquare_data = gridstore.gridsquares.get(gridsquare_id)
             gridsquare_data.manifest = gridsquare_manifest
-            datastore.gridsquares.add(gridsquare_id, gridsquare_data)
-            print(datastore.gridsquares.get(gridsquare_id))
+            gridstore.gridsquares.add(gridsquare_id, gridsquare_data)
+            verbose and print(gridstore.gridsquares.get(gridsquare_id))
 
             # 3.2 scan that gridsquare's Foilholes/ dir to get foilholes
             foilhole_manifest_paths = sorted(
-                datastore.project_dir.glob(f"Images-Disc*/GridSquare_{gridsquare_id}/FoilHoles/FoilHole_*_*_*.xml"),
+                gridstore.data_dir.glob(f"Images-Disc*/GridSquare_{gridsquare_id}/FoilHoles/FoilHole_*_*_*.xml"),
                 key=lambda p: p.name  # sorts based on just the filename part. This is important because it's possible
                 # to sometimes have multiple foilhole manifests side-by-side and only the latest one is relevant.
             )
             for foilhole_manifest_path in foilhole_manifest_paths:
                 foilhole_id = re.search(EpuParser.foilhole_xml_file_pattern, str(foilhole_manifest_path)).group(1)
-                datastore.foilholes.add(foilhole_id, EpuParser.parse_foilhole_manifest(foilhole_manifest_path))
-                print(datastore.foilholes.get(foilhole_id))
+                gridstore.foilholes.add(foilhole_id, EpuParser.parse_foilhole_manifest(foilhole_manifest_path))
+                verbose and print(gridstore.foilholes.get(foilhole_id))
 
             # 3.3 scan that gridsquare's Foilholes/ dir to get micrographs
             for micrograph_manifest_path in list(
-                datastore.project_dir.glob(
+                gridstore.data_dir.glob(
                     f"Images-Disc*/GridSquare_{gridsquare_id}/Data/FoilHole_*_Data_*_*_*_*.xml"
                 )
             ):
@@ -713,7 +693,7 @@ class EpuParser:
                 match = re.search(EpuParser.micrograph_xml_file_pattern, str(micrograph_manifest_path))
                 foilhole_id = match.group(1)
                 location_id = match.group(2)
-                datastore.micrographs.add(micrograph_manifest.unique_id, MicrographData(
+                gridstore.micrographs.add(micrograph_manifest.unique_id, MicrographData(
                     id = micrograph_manifest.unique_id,
                     gridsquare_id = gridsquare_id,
                     foilhole_id = foilhole_id,
@@ -722,8 +702,9 @@ class EpuParser:
                     manifest_file = micrograph_manifest_path,
                     manifest = micrograph_manifest,
                 ))
-                print(datastore.micrographs.get(micrograph_manifest.unique_id))
-        return datastore
+                verbose and print(gridstore.micrographs.get(micrograph_manifest.unique_id))
+
+        return gridstore
 
 
 if __name__ == "__main__":
