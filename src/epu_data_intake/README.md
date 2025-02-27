@@ -27,6 +27,8 @@ python -m epu_data_intake parse dir \
 # parse things
 python -m epu_data_intake parse session \
   tests/testdata/epu-dir-example/EpuSession.dm
+python -m epu_data_intake validate \
+  tests/testdata/bi37708-28/Supervisor_20250129_134723_36_bi37708-28_grid7_EPU/EpuSession.dm
 
 python -m epu_data_intake parse atlas \
   tests/testdata/Atlas.dm
@@ -107,8 +109,10 @@ rg --files -g 'GridSquare_*.dm' ./tests/testdata/bi37708-28 \
 
 ## Directory structure
 
+> TODO re-write docs to account for epu_output_dir
+
 Directory layout on the EPU machine will differ from the layout of that
-same directory synced to file storage. Layout relevant to the watched
+same directory synced to file storage. Layout relevant to epu data intake component
 is as it appears on the EPU machines, where the watcher runs.
 
 In a user visit there can be more than one `EpuSession.dm` and more than one "project dir"

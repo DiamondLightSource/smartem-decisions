@@ -92,14 +92,11 @@ class RateLimitedHandler(FileSystemEventHandler):
 
 
     def set_watch_dir(self, path: Path):
-        self.watch_dir = path.absolute()
+        self.watch_dir = path.absolute() # TODO this could cause problems in Win
 
 
     def init_datastore(self):
-        self.datastore = EpuSession(
-            EpuParser.resolve_project_dir(self.watch_dir),
-            EpuParser.resolve_atlas_dir(self.watch_dir),
-        )
+        self.datastore = EpuSession(str(self.watch_dir))
 
 
     def on_any_event(self, event):
@@ -137,101 +134,118 @@ class RateLimitedHandler(FileSystemEventHandler):
         new_file_detected = event.src_path not in self.changed_files
         self.changed_files[event.src_path] = (event, current_time, file_stat)
 
+        # work out which grid the touched file relates to
+        grid_id = self.datastore.get_grid_by_path(event.src_path)
+        if grid_id is None:
+            if self.verbose:
+                print(f"Could not determine which grid this data belongs to: {event.src_path}")
+            return
+
         match event.src_path:
             case path if re.search(EpuParser.session_dm_pattern, path):
                 # Needs testing to see if this is a practical way to detect session start or if there's an
                 #   alternative / additional way, e.g. appearance of a project dir. TODO: not a valid way!!!!
-                self._on_session_detected(path, new_file_detected)
+                self._on_session_detected(path, grid_id, new_file_detected)
             case path if re.search(EpuParser.atlas_dm_pattern, path):
-                self._on_atlas_detected(path, new_file_detected)
+                self._on_atlas_detected(path, grid_id, new_file_detected)
             case path if re.search(EpuParser.gridsquare_dm_file_pattern, path):
-                self._on_gridsquare_metadata_detected(path, new_file_detected)
+                self._on_gridsquare_metadata_detected(path, grid_id, new_file_detected)
             case path if re.search(EpuParser.gridsquare_xml_file_pattern, path):
-                self._on_gridsquare_manifest_detected(path, new_file_detected)
+                self._on_gridsquare_manifest_detected(path, grid_id, new_file_detected)
             case path if re.search(EpuParser.foilhole_xml_file_pattern, path):
-                self._on_foilhole_detected(path, new_file_detected)
+                self._on_foilhole_detected(path, grid_id, new_file_detected)
             case path if re.search(EpuParser.micrograph_xml_file_pattern, path):
-                self._on_micrograph_detected(path, new_file_detected)
+                self._on_micrograph_detected(path, grid_id, new_file_detected)
 
 
-    def _on_session_detected(self, path: str, is_new_file: bool = True):
+    def _on_session_detected(self, path: str, grid_id, is_new_file: bool = True):
         print(f"Session manifest {'detected' if is_new_file else 'updated'}: {path}")
         session_data = EpuParser.parse_epu_session_manifest(path)
-        if session_data != self.datastore.session_data:
-            self.datastore.session_data = session_data
-            print(self.datastore.session_data)
+        gridstore = self.datastore.grids.get(grid_id)
+        if gridstore and session_data != gridstore.session_data: # Only update if the data is different
+            gridstore.session_data = session_data
+            print(f"Updated session data for grid {grid_id}")
+            self.verbose and print(gridstore.session_data)
 
 
-    def _on_atlas_detected(self, path: str, is_new_file: bool = True):
+    def _on_atlas_detected(self, path: str, grid_id, is_new_file: bool = True):
         print(f"Atlas {'detected' if is_new_file else 'updated'}: {path}")
+        gridstore = self.datastore.grids.get(grid_id)
         atlas_data = EpuParser.parse_atlas_manifest(path)
-        if atlas_data != self.datastore.atlas_data:
-            self.datastore.atlas_data = atlas_data
-            print(self.datastore.atlas_data)
+        if atlas_data != gridstore.atlas_data:
+            gridstore.atlas_data = atlas_data
+            self.verbose and print(gridstore.atlas_data)
 
 
-    def _on_gridsquare_metadata_detected(self, path: str, is_new_file: bool = True):
+    def _on_gridsquare_metadata_detected(self, path: str, grid_id, is_new_file: bool = True):
         print(f"Gridsquare metadata {'detected' if is_new_file else 'updated'}: {path}")
 
         gridsquare_id = EpuParser.gridsquare_dm_file_pattern.search(path).group(1)
         assert gridsquare_id is not None, f"gridsquare_id should not be None: {gridsquare_id}"
 
+        gridstore = self.datastore.grids.get(grid_id)
         gridsquare_metadata = EpuParser.parse_gridsquare_metadata(path)
 
-        if not self.datastore.gridsquares.exists(gridsquare_id):
+        if not gridstore.gridsquares.exists(gridsquare_id):
             gridsquare_data = GridSquareData(
                 id=gridsquare_id,
                 metadata=gridsquare_metadata,
             )
         else:
-            gridsquare_data = self.datastore.gridsquares.get(gridsquare_id)
+            gridsquare_data = gridstore.gridsquares.get(gridsquare_id)
             gridsquare_data.metadata = gridsquare_metadata
 
-        self.datastore.gridsquares.add(gridsquare_id, gridsquare_data)
-        print(gridsquare_data)
+        gridstore.gridsquares.add(gridsquare_id, gridsquare_data)
+        self.verbose and print(gridsquare_data)
 
 
-    def _on_gridsquare_manifest_detected(self, path: str, is_new_file: bool = True):
+    def _on_gridsquare_manifest_detected(self, path: str, grid_id, is_new_file: bool = True):
         print(f"Gridsquare manifest {'detected' if is_new_file else 'updated'}: {path}")
 
         gridsquare_id = re.search(EpuParser.gridsquare_dir_pattern, str(path)).group(1)
         assert gridsquare_id is not None, f"gridsquare_id should not be None: {gridsquare_id}"
 
+        gridstore = self.datastore.grids.get(grid_id)
         gridsquare_manifest = EpuParser.parse_gridsquare_manifest(path)
 
-        if not self.datastore.gridsquares.exists(gridsquare_id):
+        if not gridstore.gridsquares.exists(gridsquare_id):
             gridsquare_data = GridSquareData(
                 id=gridsquare_id,
                 manifest=gridsquare_manifest,
             )
         else:
-            gridsquare_data = self.datastore.gridsquares.get(gridsquare_id)
+            gridsquare_data = gridstore.gridsquares.get(gridsquare_id)
             gridsquare_data.manifest = gridsquare_manifest
 
-        self.datastore.gridsquares.add(gridsquare_id, gridsquare_data)
-        print(gridsquare_data)
+        gridstore.gridsquares.add(gridsquare_id, gridsquare_data)
+        self.verbose and print(gridsquare_data)
 
 
-    def _on_foilhole_detected(self, path: str, is_new_file: bool = True):
+    def _on_foilhole_detected(self, path: str, grid_id, is_new_file: bool = True):
         print(f"Foilhole {'detected' if is_new_file else 'updated'}: {path}")
+
+        gridstore = self.datastore.grids.get(grid_id)
         data = EpuParser.parse_foilhole_manifest(path)
-        # Here it is by intent that any previously recorded data for given foilhole is overwritten as
+
+        # Here it is intentional that any previously recorded data for given foilhole is overwritten as
         # there are instances of multiple manifest files written to fs and in these cases
         # only the newest (by timestamp) is relevant.
         # TODO It is assumed that latest foilhole manifest by timestamp in filename will also be
         #  last to be written to fs, but additional filename-based checks wouldn't hurt - resolve latest
         #  based on timestamp found in filename.
-        self.datastore.foilholes.add(data.id, data)
-        print(data)
+
+        gridstore.foilholes.add(data.id, data)
+        self.verbose and print(data)
 
 
-    def _on_micrograph_detected(self, path: str, is_new_file: bool = True):
+    def _on_micrograph_detected(self, path: str, grid_id, is_new_file: bool = True):
         print(f"Micrograph {'detected' if is_new_file else 'updated'}: {path}")
 
         match = re.search(EpuParser.micrograph_xml_file_pattern, path)
         foilhole_id = match.group(1)
         location_id = match.group(2)
 
+        gridstore = self.datastore.grids.get(grid_id)
         manifest = EpuParser.parse_micrograph_manifest(path)
 
         data = MicrographData(
@@ -243,8 +257,8 @@ class RateLimitedHandler(FileSystemEventHandler):
             manifest_file = Path(path),
             manifest = manifest,
         )
-        self.datastore.micrographs.add(data.id, data)
-        print(data)
+        gridstore.micrographs.add(data.id, data)
+        self.verbose and print(data)
 
 
     def _on_session_complete(self):

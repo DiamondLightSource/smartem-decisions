@@ -25,14 +25,24 @@ epu_data_intake_cli.add_typer(parse_cli, name="parse")
 
 
 @parse_cli.command("dir")
-def parse_epu_dir(dir_path: str):
-    """Parse an entire EPU directory structure."""
-    datastore = EpuSession(
-        EpuParser.resolve_project_dir(Path(dir_path)),
-        EpuParser.resolve_atlas_dir(Path(dir_path)),
-    )
-    datastore = EpuParser.parse_acquisition_dir(datastore)
+def parse_epu_output_dir(epu_output_dir: str):
+    """Parse an entire EPU output directory structure. May contain multiple grids"""
+    datastore = EpuSession(epu_output_dir)
+    datastore = EpuParser.parse_epu_output_dir(datastore)
     print(datastore)
+
+
+@parse_cli.command("grid")
+def parse_grid(grid_data_dir: str):
+    is_valid, errors = EpuParser.validate_project_dir(Path(grid_data_dir))
+
+    if not is_valid:
+        print("Grid data dir dir is structurally invalid. Found the following issues:\n")
+        for error in errors:
+            print(f"- {error}")
+    else:
+        gridstore = EpuParser.parse_grid_dir(grid_data_dir)
+        print(gridstore)
 
 
 @parse_cli.command("session")
@@ -138,8 +148,10 @@ def watch_directory(
     handler.set_watch_dir(path)
     handler.init_datastore()
 
-    # TODO settle a potential race condition, test if exists:
-    handler.datastore = EpuParser.parse_acquisition_dir(handler.datastore, verbose)
+    print("Parsing existing directory contents...")
+    # TODO settle a potential race condition if one exists:
+    handler.datastore = EpuParser.parse_epu_output_dir(handler.datastore, verbose)
+    print("..done! Now listening for new filesystem events")
     observer.schedule(handler, str(path), recursive=True)
 
     def handle_exit(signum, frame):

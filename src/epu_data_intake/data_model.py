@@ -211,19 +211,16 @@ class EpuSessionData:
     name: str
     id: str
     start_time: datetime
-    atlas_id: str | None = None
+    atlas_path: str | None = None
     storage_path: str | None = None # Path of parent directory containing the epu session dir
     clustering_mode: str | None = None
     clustering_radius: str | None = None
 
 
-class EpuSession:
-    """Purpose of this class is to hold state of EPU session detection as incremental data parsing is performed.
-    On object of this class will be shared among all fs event handlers and parsers. TBD: merge with EpuParser class?
-    """
-
-    project_dir: Path
-    atlas_dir: Path
+@dataclass
+class Grid:
+    data_dir: Path | None
+    atlas_dir: Path | None = None
 
     session_data: EpuSessionData | None = None
     atlas_data: AtlasData | None = None
@@ -231,26 +228,74 @@ class EpuSession:
     foilholes: EntityStore[FoilHoleData] = field(default_factory=EntityStore)
     micrographs: EntityStore[MicrographData] = field(default_factory=EntityStore)
 
-    def __init__(self, project_dir, atlas_dir):
+    def __init__(self, data_dir: str):
         self.logger = logging.getLogger(__name__)
-        self.project_dir = Path(project_dir)
-        self.atlas_dir = Path(atlas_dir)
+        self.data_dir = Path(data_dir)
         self.gridsquares = EntityStore()
         self.foilholes = EntityStore()
         self.micrographs = EntityStore()
 
-
     def __str__(self):
         return (
-            f"\nEPU Acquisition Summary:\n"
             f"==================\n"
             # f"ID: {self.session_data.id}\n"
             # f"Name: {self.session_data.name}\n"
             # f"Start time: {self.session_data.start_time}\n"
-            f"Project directory: {self.project_dir}\n"
+            f"Data directory: {self.data_dir}\n"
             f"Atlas directory: {self.atlas_dir}\n"
             f"Entities discovered:\n"
+            f"  Atlas gridsquare positions: {len(self.atlas_data.gridsquare_positions)}\n"
+            f"  Atlas tiles: {len(self.atlas_data.tiles)}\n"
             f"  Gridsquares: {len(self.gridsquares)}\n"
             f"  Foilholes: {len(self.foilholes)}\n"
             f"  Micrographs: {len(self.micrographs)}\n"
         )
+
+
+class EpuSession:
+    """Purpose of this class is to hold state of EPU session detection as data parsing is performed.
+    On object of this class will be shared among all fs event handlers and parsers.
+    """
+    root_dir: Path
+
+
+    def __init__(self, root_dir: str):
+        self.logger = logging.getLogger(__name__)
+        self.root_dir = Path(root_dir)
+        self.grids = EntityStore()
+
+
+    def get_grid_by_path(self, path: str):
+        """
+        Retrieve a grid from the EntityStore where the provided path is inside
+        the grid's data_dir or atlas_dir.
+
+        Args:
+            path (str): The specific path that should be inside a grid's directory
+
+        Returns:
+            The matching grid entity or None if no match is found
+        """
+
+        for grid_id, grid in self.grids.items():
+            # Check if the provided path is inside the grid's data_dir or atlas_dir
+            if path.startswith(str(grid.data_dir)) or path.startswith(str(grid.atlas_dir)):
+                return grid_id
+
+        # If no matching grid is found
+        self.logger.debug(f"No grid found for path: {path}")
+        return None
+
+
+    def __str__(self):
+        result = (
+            f"\nEPU Acquisition Summary:\n"
+            f"  Root dir: {self.root_dir}\n"
+            f"  Grids: {len(self.grids)}\n"
+        )
+
+        # Add each grid's string representation TODO debug this doesn't seem to work
+        for grid_id, grid in self.grids.items():
+            result += f"Grid ID: {grid_id}\n{grid}\n"
+
+        return result
