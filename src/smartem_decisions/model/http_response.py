@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from datetime import datetime
 from typing import Optional
 
@@ -20,8 +20,7 @@ class AcquisitionResponse(BaseModel):
     session_end_time: Optional[datetime]
     session_paused_time: Optional[datetime]
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class GridResponse(BaseModel):
@@ -32,8 +31,7 @@ class GridResponse(BaseModel):
     scan_start_time: Optional[datetime]
     scan_end_time: Optional[datetime]
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class GridSquareResponse(BaseModel):
@@ -43,8 +41,7 @@ class GridSquareResponse(BaseModel):
     atlastile_img: str
     name: str
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class FoilHoleResponse(BaseModel):
@@ -53,8 +50,7 @@ class FoilHoleResponse(BaseModel):
     status: FoilHoleStatus
     name: str
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class MicrographResponse(BaseModel):
@@ -70,5 +66,4 @@ class MicrographResponse(BaseModel):
     number_of_particles_picked: Optional[int]
     pick_distribution: Optional[str]
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)

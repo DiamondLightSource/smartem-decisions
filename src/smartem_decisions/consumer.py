@@ -100,25 +100,22 @@ def _log_issue(message):
     )
 
 
-assert os.getenv("RABBITMQ_HOST") is not None, "Could not get env var RABBITMQ_HOST"
-assert os.getenv("RABBITMQ_PORT") is not None, "Could not get env var RABBITMQ_PORT"
-assert os.getenv("RABBITMQ_USER") is not None, "Could not get env var RABBITMQ_USER"
-assert os.getenv("RABBITMQ_PASSWORD") is not None, "Could not get env var RABBITMQ_PASSWORD"
-connection = pika.BlockingConnection(
-    pika.ConnectionParameters(
-        host=os.getenv("RABBITMQ_HOST"),  # type: ignore
-        port=int(os.getenv("RABBITMQ_PORT")),  # type: ignore
-        credentials=pika.PlainCredentials(
-            os.getenv("RABBITMQ_USER"),  # type: ignore
-            os.getenv("RABBITMQ_PASSWORD"),  # type: ignore
-        ),
+def setup_rabbitmq_connection():
+    assert os.getenv("RABBITMQ_HOST") is not None, "Could not get env var RABBITMQ_HOST"
+    assert os.getenv("RABBITMQ_PORT") is not None, "Could not get env var RABBITMQ_PORT"
+    assert os.getenv("RABBITMQ_USER") is not None, "Could not get env var RABBITMQ_USER"
+    assert os.getenv("RABBITMQ_PASSWORD") is not None, "Could not get env var RABBITMQ_PASSWORD"
+    connection = pika.BlockingConnection(
+        pika.ConnectionParameters(
+            host=os.getenv("RABBITMQ_HOST"),  # type: ignore
+            port=int(os.getenv("RABBITMQ_PORT")),  # type: ignore
+            credentials=pika.PlainCredentials(
+                os.getenv("RABBITMQ_USER"),  # type: ignore
+                os.getenv("RABBITMQ_PASSWORD"),  # type: ignore
+            ),
+        )
     )
-)
-
-channel = connection.channel()
-
-channel.queue_declare(queue=conf["rabbitmq"]["queue_name"], durable=True)
-print(" [*] Waiting for messages. To exit press CTRL+C")
+    return connection
 
 assert os.getenv("POSTGRES_USER") is not None, "Could not get env var POSTGRES_USER"
 assert os.getenv("POSTGRES_PASSWORD") is not None, "Could not get env var POSTGRES_PASSWORD"
@@ -214,7 +211,22 @@ def on_message(ch, method, properties, body):
     print("\n")
 
 
-channel.basic_qos(prefetch_count=1)
-channel.basic_consume(queue=conf["rabbitmq"]["queue_name"], on_message_callback=on_message)
+def main():
+    # Set up RabbitMQ connection
+    connection = setup_rabbitmq_connection()
+    channel = connection.channel()
+    
+    # Set up queue
+    channel.queue_declare(queue=conf["rabbitmq"]["queue_name"], durable=True)
+    print(" [*] Waiting for messages. To exit press CTRL+C")
+    
+    # Configure consumption
+    channel.basic_qos(prefetch_count=1)
+    channel.basic_consume(queue=conf["rabbitmq"]["queue_name"], on_message_callback=on_message)
+    
+    # Start consuming
+    channel.start_consuming()
 
-channel.start_consuming()
+
+if __name__ == "__main__":
+    main()

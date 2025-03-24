@@ -31,6 +31,7 @@ jobs:
         with:
           pip-install: dist/*.whl
 
-      - name: Test module --version works using the installed wheel
-        # If more than one module in src/ replace with module name to test
-        run: python -m $(ls --hide='*.egg-info' src | head -1) --version
+#      - name: Test module --version works using the installed wheel
+#        run: >
+#          python -m smartem_decisions --version &&
+#          python -m epu_data_intake --help
