@@ -3,6 +3,7 @@
 import json
 import os
 from uuid import uuid4
+import time
 
 import pika
 import typer
@@ -16,14 +17,37 @@ load_dotenv()
 conf = load_conf()
 
 simulate_msg_cli = typer.Typer()
-conf = yaml.safe_load(open(os.path.join(os.path.dirname(__file__), "config.yaml")))
 
+# Load the config file
+try:
+    with open(os.path.join(os.path.dirname(__file__), "config.yaml")) as f:
+        conf = yaml.safe_load(f)
+except Exception as e:
+    print(f"Error loading config file: {e}")
+    conf = {"rabbitmq": {"queue_name": "smartem_events", "routing_key": "smartem_events"}}
+
+# Check for required environment variables
 assert os.getenv("RABBITMQ_HOST") is not None, "Could not get env var RABBITMQ_HOST"
 assert os.getenv("RABBITMQ_PORT") is not None, "Could not get env var RABBITMQ_PORT"
 assert os.getenv("RABBITMQ_USER") is not None, "Could not get env var RABBITMQ_USER"
 assert os.getenv("RABBITMQ_PASSWORD") is not None, "Could not get env var RABBITMQ_PASSWORD"
-connection = pika.BlockingConnection(
-    pika.ConnectionParameters(
+
+
+def get_connection(max_retries=3, retry_delay=2):
+    """
+    Create and return a connection to RabbitMQ with retry logic.
+    
+    Args:
+        max_retries: Maximum number of connection attempts
+        retry_delay: Delay between retries in seconds
+        
+    Returns:
+        A pika.BlockingConnection object
+        
+    Raises:
+        pika.exceptions.AMQPConnectionError: If connection cannot be established after retries
+    """
+    connection_params = pika.ConnectionParameters(
         host=os.getenv("RABBITMQ_HOST"),  # type: ignore
         port=int(os.getenv("RABBITMQ_PORT")),  # type: ignore
         credentials=pika.PlainCredentials(
@@ -31,20 +55,69 @@ connection = pika.BlockingConnection(
             os.getenv("RABBITMQ_PASSWORD"),  # type: ignore
         ),
     )
-)
+    
+    for attempt in range(max_retries):
+        try:
+            print(f"Attempting to connect to RabbitMQ (attempt {attempt + 1}/{max_retries})...")
+            connection = pika.BlockingConnection(connection_params)
+            print("Successfully connected to RabbitMQ")
+            return connection
+        except pika.exceptions.AMQPConnectionError as e:
+            if attempt < max_retries - 1:
+                print(f"Connection failed: {e}. Retrying in {retry_delay} seconds...")
+                time.sleep(retry_delay)
+            else:
+                print(f"Failed to connect to RabbitMQ after {max_retries} attempts")
+                raise
+        except Exception as e:
+            print(f"Unexpected error while connecting to RabbitMQ: {e}")
+            raise
 
 
 def _send_msg(msg):
-    channel = connection.channel()
-    channel.queue_declare(queue=conf["rabbitmq"]["queue_name"], durable=True)
-    channel.basic_publish(
-        exchange="",
-        routing_key=conf["rabbitmq"]["routing_key"],
-        body=json.dumps(msg),
-        properties=pika.BasicProperties(delivery_mode=pika.DeliveryMode.Persistent),
-    )
-    print(f" [x] Sent {msg}")
-    connection.close()
+    """
+    Send a message to RabbitMQ
+    
+    Args:
+        msg: The message to send
+        
+    Raises:
+        Exception: If the message cannot be sent
+    """
+    connection = None
+    try:
+        # Get a connection with retry logic
+        connection = get_connection()
+        
+        # Create a channel and declare the queue
+        channel = connection.channel()
+        channel.queue_declare(queue=conf["rabbitmq"]["queue_name"], durable=True)
+        
+        # Publish the message
+        channel.basic_publish(
+            exchange="",
+            routing_key=conf["rabbitmq"]["routing_key"],
+            body=json.dumps(msg),
+            properties=pika.BasicProperties(delivery_mode=pika.DeliveryMode.Persistent),
+        )
+        print(f" [x] Sent {msg}")
+    except pika.exceptions.AMQPConnectionError as e:
+        print(f"AMQP Connection Error: {e}")
+        raise
+    except pika.exceptions.AMQPChannelError as e:
+        print(f"AMQP Channel Error: {e}")
+        raise
+    except Exception as e:
+        print(f"Error sending message: {e}")
+        raise
+    finally:
+        # Ensure connection is closed even if an exception occurs
+        if connection is not None and connection.is_open:
+            try:
+                connection.close()
+                print("Connection closed")
+            except Exception as e:
+                print(f"Error closing connection: {e}")
 
 
 @simulate_msg_cli.command()

@@ -30,7 +30,8 @@ from .entity_status import (
 )
 
 
-class Acquisition(SQLModel, table=True):  # type: ignore
+class Acquisition(SQLModel, table=True, table_name="acquisition"):  # type: ignore
+    __table_args__ = {"extend_existing": True}
     id: Optional[int] = Field(default=None, primary_key=True)
     epu_id: Optional[str] = Field(default=None)
     name: str
@@ -41,7 +42,8 @@ class Acquisition(SQLModel, table=True):  # type: ignore
     grids: List["Grid"] = Relationship(back_populates="acquisition", cascade_delete=True)
 
 
-class Grid(SQLModel, table=True):  # type: ignore
+class Grid(SQLModel, table=True, table_name="grid"):  # type: ignore
+    __table_args__ = {"extend_existing": True}
     id: Optional[int] = Field(default=None, primary_key=True)
     acquisition_id: Optional[int] = Field(default=None, foreign_key="acquisition.id")
     status: GridStatus = Field(default=GridStatus.NONE, sa_column=Column(GridStatusType()))
@@ -52,7 +54,8 @@ class Grid(SQLModel, table=True):  # type: ignore
     gridsquares: List["GridSquare"] = Relationship(back_populates="grid", cascade_delete=True)
 
 
-class GridSquare(SQLModel, table=True):  # type: ignore
+class GridSquare(SQLModel, table=True, table_name="gridsquare"):  # type: ignore
+    __table_args__ = {"extend_existing": True}
     id: Optional[int] = Field(default=None, primary_key=True)
     grid_id: Optional[int] = Field(default=None, foreign_key="grid.id")
     status: GridSquareStatus = Field(default=GridSquareStatus.NONE, sa_column=Column(GridSquareStatusType()))
@@ -63,7 +66,8 @@ class GridSquare(SQLModel, table=True):  # type: ignore
     foilholes: List["FoilHole"] = Relationship(back_populates="gridsquare", cascade_delete=True)
 
 
-class FoilHole(SQLModel, table=True):  # type: ignore
+class FoilHole(SQLModel, table=True, table_name="foilhole"):  # type: ignore
+    __table_args__ = {"extend_existing": True}
     id: Optional[int] = Field(default=None, primary_key=True)
     gridsquare_id: Optional[int] = Field(default=None, foreign_key="gridsquare.id")
     status: FoilHoleStatus = Field(default=FoilHoleStatus.NONE, sa_column=Column(FoilHoleStatusType()))
@@ -72,7 +76,8 @@ class FoilHole(SQLModel, table=True):  # type: ignore
     micrographs: List["Micrograph"] = Relationship(back_populates="foilhole", cascade_delete=True)
 
 
-class Micrograph(SQLModel, table=True):  # type: ignore
+class Micrograph(SQLModel, table=True, table_name="micrograph"):  # type: ignore
+    __table_args__ = {"extend_existing": True}
     id: Optional[int] = Field(default=None, primary_key=True)
     foilhole_id: Optional[int] = Field(default=None, foreign_key="foilhole.id")
     status: MicrographStatus = Field(default=MicrographStatus.NONE, sa_column=Column(MicrographStatusType()))

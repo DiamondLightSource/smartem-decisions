@@ -276,10 +276,12 @@ class EpuSession:
         Returns:
             The matching grid entity or None if no match is found
         """
+        path = Path(path)
 
         for grid_id, grid in self.grids.items():
-            # Check if the provided path is inside the grid's data_dir or atlas_dir
-            if path.startswith(str(grid.data_dir)) or path.startswith(str(grid.atlas_dir)):
+            # Check if either directory is defined and contains the path
+            if (grid.data_dir and path.is_relative_to(grid.data_dir)) or \
+               (grid.atlas_dir and path.is_relative_to(grid.atlas_dir)):
                 return grid_id
 
         # If no matching grid is found
