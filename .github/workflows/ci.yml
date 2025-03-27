@@ -1,17 +1,18 @@
 name: CI
 
 on:
-  workflow_dispatch:  # Manual trigger
+  workflow_dispatch:
   push:
     branches:
-      - main  # Only run on pushes to main
+      - main
   pull_request:
     branches:
-      - main  # Only run on PRs targeting main
+      - main
     types:
       - opened        # When PR is first created
-      - synchronize   # When PR is updated with new commits
+      - synchronize   # When new commits are pushed to PR
       - ready_for_review  # When a draft PR is marked as ready
+      - edited        # When PR title/description is edited
     paths-ignore:
       - '**.md'       # Skip when only markdown files change. TODO actually we'd want to rebuild the docs in this case
       - 'docs/**'     # Skip when only documentation changes. TODO actually we'd want to rebuild the docs in this case
@@ -20,6 +21,8 @@ on:
 
 jobs:
   check:
+    # Skip job if PR title starts with [WIP] but still run for non-PR events
+    if: ${{ !startsWith(github.event.pull_request.title, '[WIP]') || github.event_name != 'pull_request' }}
     uses: ./.github/workflows/_check.yml
 
 # TODO restore
