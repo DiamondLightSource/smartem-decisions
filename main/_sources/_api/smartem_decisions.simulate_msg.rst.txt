@@ -1,0 +1,59 @@
+``smartem_decisions.simulate_msg``
+==================================
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+
+.. automodule:: smartem_decisions.simulate_msg
+    :members:
+
+    
+    
+    
+
+    
+    
+    .. rubric:: Members
+
+    .. autosummary::
+        :nosignatures:
+    
+        acquisition_end
+        acquisition_start
+        ctf_complete
+        ctf_start
+        foil_holes_decision_complete
+        foil_holes_decision_start
+        foil_holes_detected
+        get_connection
+        grid_scan_complete
+        grid_scan_start
+        grid_squares_decision_complete
+        grid_squares_decision_start
+        micrographs_detected
+        motion_correction_complete
+        motion_correction_start
+        particle_picking_complete
+        particle_picking_start
+        particle_selection_complete
+        particle_selection_start
+        rogue_message
+    
+    

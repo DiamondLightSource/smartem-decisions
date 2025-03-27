@@ -1,0 +1,27 @@
+``smartem_decisions.consumer``
+==============================
+        
+        
+        
+        
+
+.. automodule:: smartem_decisions.consumer
+    :members:
+
+    
+    
+    
+
+    
+    
+    .. rubric:: Members
+
+    .. autosummary::
+        :nosignatures:
+    
+        handle_event
+        main
+        on_message
+        setup_rabbitmq_connection
+    
+    

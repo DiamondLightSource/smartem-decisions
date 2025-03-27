@@ -1,0 +1,28 @@
+﻿``smartem_decisions``
+=====================
+
+.. automodule:: smartem_decisions
+    :members:
+
+    
+    
+    .. rubric:: Submodules
+
+    .. autosummary::
+        :toctree:
+        :template: custom-module-template.rst
+        :recursive:
+    
+        consumer
+        http_api
+        model
+        plugin_logging
+        simulate_msg
+        utils
+        workflow
+    
+    
+
+    
+    
+    

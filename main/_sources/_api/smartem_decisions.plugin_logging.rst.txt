@@ -1,0 +1,29 @@
+``smartem_decisions.plugin_logging``
+====================================
+        
+        
+        
+        
+        
+
+.. automodule:: smartem_decisions.plugin_logging
+    :members:
+
+    
+    
+    
+
+    
+    
+    .. rubric:: Members
+
+    .. autosummary::
+        :nosignatures:
+    
+        DowngradeFilter
+        GraylogTCPHandler
+        GraylogUDPHandler
+        Logging
+        LoggingIncrementer
+    
+    

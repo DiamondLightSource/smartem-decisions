@@ -1,0 +1,29 @@
+``smartem_decisions.model.http_response``
+=========================================
+        
+        
+        
+        
+        
+
+.. automodule:: smartem_decisions.model.http_response
+    :members:
+
+    
+    
+    
+
+    
+    
+    .. rubric:: Members
+
+    .. autosummary::
+        :nosignatures:
+    
+        AcquisitionResponse
+        FoilHoleResponse
+        GridResponse
+        GridSquareResponse
+        MicrographResponse
+    
+    
