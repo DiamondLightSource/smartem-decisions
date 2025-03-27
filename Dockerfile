@@ -17,7 +17,7 @@ FROM developer AS build
 COPY . /context
 WORKDIR /context
 COPY pyproject.toml .
-RUN pip install --no-cache-dir . uvicorn
+RUN pip install --no-cache-dir . uvicorn # TODO might need to do `pip install -e .[all]` to get all the deps
 
 # The runtime stage copies the built venv into a slim runtime container
 FROM python:${PYTHON_VERSION}-slim AS runtime
@@ -26,7 +26,7 @@ COPY --from=build /venv/ /venv/
 COPY --from=build /context/ /app/
 ENV PATH=/venv/bin:$PATH
 
-# Copy .env.example as .env
+# Copy .env.example as .env TODO this is now done by setup.py
 COPY .env.example /.env
 
 # change this entrypoint if it is not the same as the repo
