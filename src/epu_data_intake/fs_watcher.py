@@ -8,6 +8,7 @@ from pathlib import Path
 from watchdog.events import FileSystemEventHandler
 
 from src.epu_data_intake.data_model import (
+    Grid,
     EpuSession,
     GridSquareData,
     MicrographData,
@@ -77,11 +78,13 @@ class RateLimitedHandler(FileSystemEventHandler):
         self.verbose = verbose
 
         # Distinguish between new and previously seen files.
-        # TODO See if this has any benefit or if same can same be achieved through "created" / "modified" file status.
-        #   Maybe useful for: https://github.com/DiamondLightSource/smartem-decisions/issues/52
         self.changed_files = {}
 
+        # Maintain a buffer of "orphaned" files - files that appear to belong to a grid that doesn't exist yet
+        self.orphaned_files = {}  # path -> (event, timestamp, file_stat)
 
+
+    # TODO unit test thi method
     def matches_pattern(self, path: str) -> bool:
         try:
             rel_path = str(Path(path).relative_to(self.watch_dir))
@@ -129,23 +132,31 @@ class RateLimitedHandler(FileSystemEventHandler):
             if self.verbose:
                 print(f"Warning: {str(e)}")
 
-        # Optimise: if not `new_file_detected` - `event.modified` and `event.size` could be
-        #   a good indicator if any interesting changes happened
         new_file_detected = event.src_path not in self.changed_files
         self.changed_files[event.src_path] = (event, current_time, file_stat)
 
-        # work out which grid the touched file relates to
+        # New grid discovered? If so - instantiate in store
+        if new_file_detected and re.search(EpuParser.session_dm_pattern, event.src_path):
+            assert self.datastore.get_grid_by_path(event.src_path) is None # guaranteed because is a new file
+            grid = Grid(str(Path(event.src_path).parent.resolve()))
+            session_data = EpuParser.parse_epu_session_manifest(str(Path(event.src_path).resolve())) # just to get the name really, techdebt
+            self.datastore.grids.add(session_data.name, grid)
+
+        # try to work out which grid the touched file relates to
         grid_id = self.datastore.get_grid_by_path(event.src_path)
         if grid_id is None:
+            # This must be an orphaned file since it matched one of patterns for files we are interested in,
+            #   but a containing grid doesn't exist yet - store it for when we have the grid.
             if self.verbose:
-                print(f"Could not determine which grid this data belongs to: {event.src_path}")
+                print(f"Could not determine which grid this data belongs to: {event.src_path}, adding to orphans")
+            self.orphaned_files[event.src_path] = (event, current_time, file_stat)
             return
 
         match event.src_path:
             case path if re.search(EpuParser.session_dm_pattern, path):
-                # Needs testing to see if this is a practical way to detect session start or if there's an
-                #   alternative / additional way, e.g. appearance of a project dir. TODO: not a valid way!!!!
                 self._on_session_detected(path, grid_id, new_file_detected)
+                # After processing the session file, check for any orphaned files belonging to this grid
+                self._process_orphaned_files(grid_id)
             case path if re.search(EpuParser.atlas_dm_pattern, path):
                 self._on_atlas_detected(path, grid_id, new_file_detected)
             case path if re.search(EpuParser.gridsquare_dm_file_pattern, path):
@@ -166,6 +177,22 @@ class RateLimitedHandler(FileSystemEventHandler):
             gridstore.session_data = session_data
             print(f"Updated session data for grid {grid_id}")
             self.verbose and print(gridstore.session_data)
+
+
+    def _process_orphaned_files(self, grid_id):
+        """Process any orphaned files that belong to this grid"""
+        for path, (event, timestamp, file_stat) in self.orphaned_files.items():
+            # Check if this orphaned file belongs to the new grid
+            if self.datastore.get_grid_by_path(path) == grid_id:
+                if self.verbose:
+                    print(f"Processing previously orphaned file: {path}")
+                self.on_any_event(event) # Process the file as if we just received the event
+
+        # Create a new dictionary excluding the processed files
+        self.orphaned_files = {
+            path: data for path, data in self.orphaned_files.items()
+            if self.datastore.get_grid_by_path(path) != grid_id
+        }
 
 
     def _on_atlas_detected(self, path: str, grid_id, is_new_file: bool = True):
