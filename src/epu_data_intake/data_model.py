@@ -1,11 +1,30 @@
-from collections.abc import Iterator
 import logging
-from typing import Generic, TypeVar
+from collections.abc import Iterator
+from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
-from dataclasses import dataclass, field
+from typing import Generic, TypeVar
 
-T = TypeVar('T')
+from sqlmodel import Engine, Session
+
+from smartem_decisions.model.database import (
+    Acquisition,
+)
+from smartem_decisions.model.database import (
+    FoilHole as DBFoilHole,
+)
+from smartem_decisions.model.database import (
+    Grid as DBGrid,
+)
+from smartem_decisions.model.database import (
+    GridSquare as DBGridSquare,
+)
+from smartem_decisions.model.database import (
+    Micrograph as DBMicrograph,
+)
+from smartem_decisions.model.entity_status import AcquisitionStatus
+
+T = TypeVar("T")
 
 
 @dataclass
@@ -49,7 +68,7 @@ class MicrographManifest:
 
     def __post_init__(self):
         """Validate that size and binning values are positive."""
-        for natural_num in ['image_size_x', 'image_size_y', 'binning_x', 'binning_y']:
+        for natural_num in ["image_size_x", "image_size_y", "binning_x", "binning_y"]:
             value = getattr(self, natural_num)
             if natural_num is not None and value <= 0:
                 raise ValueError(f"{natural_num} must be positive, got {value}")
@@ -71,6 +90,7 @@ class MicrographData:
     :param manifest: Associated manifest data
     :type manifest: MicrographManifest
     """
+
     id: str
     gridsquare_id: str
     foilhole_id: str
@@ -95,9 +115,9 @@ class FoilHoleData:
 @dataclass
 class GridSquareManifest:
     acquisition_datetime: datetime
-    defocus: float | None # in meters
+    defocus: float | None  # in meters
     magnification: float | None
-    pixel_size: float | None # in meters
+    pixel_size: float | None  # in meters
     detector_name: str
     applied_defocus: float | None
     data_dir: Path | None = None
@@ -112,6 +132,7 @@ class GridSquareStagePosition:
         y: Y-coordinate in stage position
         z: Z-coordinate in stage position
     """
+
     x: float | None
     y: float | None
     z: float | None
@@ -128,6 +149,7 @@ class FoilHolePosition:
         y_stage_position: Stage Y-coordinate of the foil hole
         diameter: Diameter of the foil hole in pixels
     """
+
     x_location: int
     y_location: int
     x_stage_position: float | None
@@ -158,6 +180,7 @@ class GridSquareMetadata:
         unusable: Whether this grid square has been marked as unusable
         foilhole_positions: Positions of foilholes on gridsquare
     """
+
     atlas_node_id: int
     stage_position: GridSquareStagePosition | None
     state: str | None
@@ -212,7 +235,7 @@ class EpuSessionData:
     id: str
     start_time: datetime
     atlas_path: str | None = None
-    storage_path: str | None = None # Path of parent directory containing the epu session dir
+    storage_path: str | None = None  # Path of parent directory containing the epu session dir
     clustering_mode: str | None = None
     clustering_radius: str | None = None
 
@@ -256,14 +279,13 @@ class EpuSession:
     """Purpose of this class is to hold state of EPU session detection as data parsing is performed.
     On object of this class will be shared among all fs event handlers and parsers.
     """
-    root_dir: Path
 
+    root_dir: Path
 
     def __init__(self, root_dir: str):
         self.logger = logging.getLogger(__name__)
         self.root_dir = Path(root_dir)
         self.grids = EntityStore()
-
 
     def get_grid_by_path(self, path: str):
         """
@@ -280,24 +302,48 @@ class EpuSession:
 
         for grid_id, grid in self.grids.items():
             # Check if either directory is defined and contains the path
-            if (grid.data_dir and path.is_relative_to(grid.data_dir)) or \
-               (grid.atlas_dir and path.is_relative_to(grid.atlas_dir)):
+            if (grid.data_dir and path.is_relative_to(grid.data_dir)) or (
+                grid.atlas_dir and path.is_relative_to(grid.atlas_dir)
+            ):
                 return grid_id
 
         # If no matching grid is found
         self.logger.debug(f"No grid found for path: {path}")
         return None
 
-
     def __str__(self):
-        result = (
-            f"\nEPU Acquisition Summary:\n"
-            f"  Root dir: {self.root_dir}\n"
-            f"  Grids: {len(self.grids)}\n"
-        )
+        result = f"\nEPU Acquisition Summary:\n  Root dir: {self.root_dir}\n  Grids: {len(self.grids)}\n"
 
         # Add each grid's string representation TODO debug this doesn't seem to work
         for grid_id, grid in self.grids.items():
             result += f"Grid ID: {grid_id}\n{grid}\n"
 
         return result
+
+    def to_db(self, engine: Engine):
+        for grid in self.grids.values():
+            acq = Acquisition(
+                epu_id=grid.session_data.id, name=grid.session_data.name, status=AcquisitionStatus.COMPLETED
+            )
+            with Session(engine) as session:
+                session.add(acq)
+                session.commit()
+            db_grid = DBGrid(acquisition_id=acq.id, name=grid.session_data.name)
+            with Session(engine) as session:
+                session.add(db_grid)
+                session.commit()
+            squares = [DBGridSquare(name=str(gsid), grid_id=db_grid.id) for gsid in grid.gridsquares.ids()]
+            with Session(engine) as session:
+                session.add_all(squares)
+                session.commit()
+            holes = [
+                DBFoilHole(id=fhid, name=str(fhid), gridsquare_id=fh.gridsquare_id)
+                for fhid, fh in grid.foilholes.items()
+            ]
+            with Session(engine) as session:
+                session.add_all(holes)
+                session.commit()
+            mics = [DBMicrograph(foilhole_id=m.foilhole_id) for m in grid.micrographs.values()]
+            with Session(engine) as session:
+                session.add_all(mics)
+                session.commit()
