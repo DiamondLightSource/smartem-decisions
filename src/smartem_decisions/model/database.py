@@ -1,10 +1,10 @@
 from datetime import datetime
-from sqlalchemy import text, Column
+from sqlalchemy import text, Column, Enum as SQLAlchemyEnum
 from sqlmodel import (
     Field,
-    Session as SQLModelSession,
-    SQLModel,
     Relationship,
+    SQLModel,
+    Session as SQLModelSession,
 )
 
 from src.smartem_decisions.utils import (
@@ -14,12 +14,12 @@ from src.smartem_decisions.utils import (
 from src.smartem_decisions.model.entity_status import (
     AcquisitionStatus,
     AcquisitionStatusType,
-    GridStatus,
-    GridStatusType,
-    GridSquareStatus,
-    GridSquareStatusType,
     FoilHoleStatus,
     FoilHoleStatusType,
+    GridSquareStatus,
+    GridSquareStatusType,
+    GridStatus,
+    GridStatusType,
     MicrographStatus,
     MicrographStatusType,
 )
@@ -27,64 +27,65 @@ from src.smartem_decisions.model.entity_status import (
 
 class Acquisition(SQLModel, table=True, table_name="acquisition"):
     __table_args__ = {"extend_existing": True}
-    id: int = Field(default=None, primary_key=True)
-    epu_id: str = Field(default=None)
+    id: int | None = Field(default=None, primary_key=True)
+    epu_id: str | None = Field(default=None)
     name: str
     status: AcquisitionStatus = Field(default=AcquisitionStatus.PLANNED, sa_column=Column(AcquisitionStatusType()))
-    start_time: datetime = Field(default=None)
-    end_time: datetime = Field(default=None)
-    paused_time: datetime = Field(default=None)
+    start_time: datetime | None = Field(default=None)
+    end_time: datetime | None = Field(default=None)
+    paused_time: datetime | None = Field(default=None)
     grids: list["Grid"] = Relationship(back_populates="acquisition", cascade_delete=True)
 
 
 class Grid(SQLModel, table=True, table_name="grid"):
     __table_args__ = {"extend_existing": True}
-    id: int = Field(default=None, primary_key=True)
-    acquisition_id: int = Field(default=None, foreign_key="acquisition.id")
+    id: int | None = Field(default=None, primary_key=True)
+    acquisition_id: int | None = Field(default=None, foreign_key="acquisition.id")
     status: GridStatus = Field(default=GridStatus.NONE, sa_column=Column(GridStatusType()))
     name: str
-    scan_start_time: datetime = Field(default=None)
-    scan_end_time: datetime = Field(default=None)
-    acquisition: Acquisition = Relationship(back_populates="grids")
+    scan_start_time: datetime | None = Field(default=None)
+    scan_end_time: datetime | None = Field(default=None)
+    acquisition: Acquisition | None = Relationship(back_populates="grids")
     gridsquares: list["GridSquare"] = Relationship(back_populates="grid", cascade_delete=True)
 
 
 class GridSquare(SQLModel, table=True, table_name="gridsquare"):
     __table_args__ = {"extend_existing": True}
-    id: int = Field(default=None, primary_key=True)
-    grid_id: int = Field(default=None, foreign_key="grid.id")
+    id: int | None = Field(default=None, primary_key=True)
+    grid_id: int | None = Field(default=None, foreign_key="grid.id")
     status: GridSquareStatus = Field(default=GridSquareStatus.NONE, sa_column=Column(GridSquareStatusType()))
     # grid_position 5 by 5
     atlastile_img: str = Field(default="")  # path to tile image
+    gridsquare_img: str = Field(default="")
     name: str
-    grid: Grid = Relationship(back_populates="gridsquares")
+    grid: Grid | None = Relationship(back_populates="gridsquares")
     foilholes: list["FoilHole"] = Relationship(back_populates="gridsquare", cascade_delete=True)
 
 
 class FoilHole(SQLModel, table=True, table_name="foilhole"):
     __table_args__ = {"extend_existing": True}
-    id: int = Field(default=None, primary_key=True)
-    gridsquare_id: int = Field(default=None, foreign_key="gridsquare.id")
+    id: int | None = Field(default=None, primary_key=True)
+    gridsquare_id: int | None = Field(default=None, foreign_key="gridsquare.id")
     status: FoilHoleStatus = Field(default=FoilHoleStatus.NONE, sa_column=Column(FoilHoleStatusType()))
     name: str
-    gridsquare: GridSquare = Relationship(back_populates="foilholes")
+    gridsquare: GridSquare | None = Relationship(back_populates="foilholes")
     micrographs: list["Micrograph"] = Relationship(back_populates="foilhole", cascade_delete=True)
 
 
 class Micrograph(SQLModel, table=True, table_name="micrograph"):
     __table_args__ = {"extend_existing": True}
-    id: int = Field(default=None, primary_key=True)
-    foilhole_id: int = Field(default=None, foreign_key="foilhole.id")
+    id: int | None = Field(default=None, primary_key=True)
+    foilhole_id: int | None = Field(default=None, foreign_key="foilhole.id")
     status: MicrographStatus = Field(default=MicrographStatus.NONE, sa_column=Column(MicrographStatusType()))
-    total_motion: float = Field(default=None)  # TODO non-negative or null
-    average_motion: float = Field(default=None)  # TODO non-negative or null
-    ctf_max_resolution_estimate: float = Field(default=None)  # TODO non-negative or null
-    number_of_particles_selected: int = Field(default=None)
-    number_of_particles_rejected: int = Field(default=None)
-    selection_distribution: str = Field(default=None)  # TODO dict type (create a user-defined?)
-    number_of_particles_picked: int = Field(default=None)  # TODO non-negative or null
-    pick_distribution: str = Field(default=None)  # TODO dict type (create a user-defined?)
-    foilhole: FoilHole = Relationship(back_populates="micrographs")
+    total_motion: float | None = Field(default=None)  # TODO non-negative or null
+    average_motion: float | None = Field(default=None)  # TODO non-negative or null
+    ctf_max_resolution_estimate: float | None = Field(default=None)  # TODO non-negative or null
+    number_of_particles_selected: int | None = Field(default=None)
+    number_of_particles_rejected: int | None = Field(default=None)
+    selection_distribution: str | None = Field(default=None)  # TODO dict type (create a user-defined?)
+    number_of_particles_picked: int | None = Field(default=None)  # TODO non-negative or null
+    pick_distribution: str | None = Field(default=None)  # TODO dict type (create a user-defined?)
+    foilhole: FoilHole | None = Relationship(back_populates="micrographs")
 
 
 def _create_db_and_tables(engine):
