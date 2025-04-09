@@ -33,3 +33,18 @@ tools/find_foilhole_duplicates.py ./tests/testdata/bi37708-28
 rg --files -g 'GridSquare_*.dm' ./tests/testdata/bi37708-28 \
   | xargs -d '\n' ls -lh | sort -k5 -rn | awk '{print $9, $5}'
 ```
+
+## Clean up test datasets to reduce file size
+
+```bash
+# recursively find all distinct file extensions in directory
+find . -type f |
+  sed -E 's/.*\.([^.]+)$/\1/' |
+  grep -v "/" |
+  sort |
+  uniq -c |
+  sort -nr
+
+# recursively empty all jpg, png, mrc files:
+find . -type f \( -name "*.jpg" -o -name "*.png" -o -name "*.mrc" \) -exec truncate -s 0 {} \;
+```
