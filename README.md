@@ -32,6 +32,7 @@ Or if it is a commandline tool then you might put some example commands here:
 
 See https://DiamondLightSource.github.io/smartem-decisions for more detailed documentation.
 
+
 ## Architectural Overview
 
 ```mermaid
@@ -84,38 +85,34 @@ graph LR
     linkStyle 0,1,2,3,4,5,6,7,8 stroke:#666
 ```
 
-## Running in development
 
-> (TODO: move this section to a separate README under `src/smartem_decisions`)
+## Running in development
 
 ```bash
 # venv and requirements
 python -m venv .venv
 source .venv/bin/activate
-pip install -e .[dev,common,core]
+pip install -e .[all] # .[dev,common,core]
+```
 
-# create env and launch service stack locally:
-cp .env.example .env
-docker compose up -d
 
-# launch RabbitMQ worker (consumer)
-python src/smartem_decisions/consumer.py
+### Generate docs
 
-# simulating an system event: 
-./src/smartem_decisions/simulate_msg.py --help # to see list of options
-./tools/simulate-messages.sh # run a simulation, triggering system events in sequence
+```sh
+tox -e docs
+python -m http.server -d build/html
+```
 
-# to install fastapi CLI: `pip install "fastapi[standard]"`
-fastapi dev src/smartem_decisions/http_api.py # run HTTP API in development
-source .env && uvicorn src.smartem_decisions.http_api:app --host 0.0.0.0 --port $HTTP_API_PORT # run HTTP API in  production
 
-python -m smartem_decisions --version
+### Containerization
 
+```bash
 # podman image/container operations:
 podman build --format docker . -t smartem_decisions # build image
-podman run -p 8000:8000 localhost/smartem_decisions # run container
+podman run -p 8000:8000 localhost/smartem_decisions # run container (TODO debug Postgres connection)
 podman image rm localhost/smartem_decisions -f # clean up before rebuild
 
+# TODO but we should push to Github not Gitlab
 # Once built, tagging and pushing is done like so:
 # Refs:
 #  - https://confluence.diamond.ac.uk/display/CLOUD/Container+Registry
@@ -124,12 +121,6 @@ podman tag 55646974a136 gcr.io/diamond-pubreg/smartem_decisions/smartem_decision
 podman push gcr.io/diamond-pubreg/smartem_decisions/smartem_decisions:latest
 ```
 
-## Generate docs
-
-```sh
-tox -e docs
-python -m http.server -d build/html
-```
 
 ## Notes
 

@@ -1,18 +1,11 @@
 from enum import Enum
-from uuid import UUID, uuid4
-from typing import Optional
 
 from pydantic import (
     BaseModel,
     computed_field,
-    # ValidationError,
-    Field,
     field_serializer,
     model_validator,
 )
-
-# import json
-# from typing import no_type_check, Type, Any
 
 
 class MessageQueueEventType(str, Enum):
@@ -54,7 +47,7 @@ class GenericEventMessageBody(BaseModel):
 
 class AcquisitionStartBody(GenericEventMessageBody):
     name: str
-    epu_id: Optional[str] = None
+    epu_id: str | None = None
 
 
 class GridScanStartBody(GenericEventMessageBody):

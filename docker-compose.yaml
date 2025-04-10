@@ -65,7 +65,8 @@ services:
     restart: no
 
   graylog:
-    image: graylog/graylog:5.1
+#    image: graylog/graylog:5.1
+    image: graylog/graylog:6.1.10
     environment:
       GRAYLOG_HTTP_EXTERNAL_URI: "http://${GRAYLOG_HOST}:${GRAYLOG_UI_PORT}/"
       GRAYLOG_ELASTICSEARCH_HOSTS: "http://elasticsearch:9200"

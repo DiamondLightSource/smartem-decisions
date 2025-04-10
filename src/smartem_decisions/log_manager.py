@@ -7,6 +7,35 @@ import json
 import graypy
 
 
+# TODO: use or loose
+def _monkeypatch_graypy() -> None:
+    """
+    Monkeypatch a helper class into graypy to support log levels in Graylog.
+    This translates Python integer level numbers to syslog levels.
+    """
+
+    class PythonLevelToSyslogConverter:
+        @staticmethod
+        def get(level, _):
+            match level:
+                case level if level < 20:
+                    return 7  # DEBUG
+                case level if level < 25:
+                    return 6  # INFO
+                case level if level < 30:
+                    return 5  # NOTICE
+                case level if level < 40:
+                    return 4  # WARNING
+                case level if level < 50:
+                    return 3  # ERROR
+                case level if level < 60:
+                    return 2  # CRITICAL
+                case _:
+                    return 1  # ALERT
+
+    graypy.handler.SYSLOG_LEVELS = PythonLevelToSyslogConverter()
+
+
 # Custom GELF HTTP handler to fix graypy's issue with ssl parameter
 class FixedGELFHTTPHandler(graypy.handler.BaseGELFHandler):
     """
@@ -132,6 +161,8 @@ class LogManager:
 
         # Graylog handler using graypy
         if config.graylog_host and config.graylog_port:
+            # _monkeypatch_graypy() TODO: use or loose
+
             # Set up common parameters
             facility = config.graylog_facility or self.name
 

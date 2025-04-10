@@ -56,8 +56,11 @@ cov.xml
 *.mo
 *.pot
 
-# Django stuff:
+# Ignore all log files
 *.log
+
+# Ignore rotated log files (like smartem_decisions-core.log.1)
+*.log.*
 
 # Sphinx documentation
 docs/_build/
