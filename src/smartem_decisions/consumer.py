@@ -1,17 +1,18 @@
 #!/usr/bin/env python
 
 import json
-import os
-from inspect import currentframe, getframeinfo
-from logging import LogRecord
 
-import pika
 from dotenv import load_dotenv
-from sqlmodel import create_engine, Session as SQLModelSession
-from smartem_decisions.plugin_logging import GraylogUDPHandler
+from sqlmodel import Session as SQLModelSession
 from pydantic import ValidationError
-from smartem_decisions.utils import load_conf
-from smartem_decisions.model.mq_event import (
+
+from src.smartem_decisions.utils import (
+    load_conf,
+    logger,
+    setup_rabbitmq_connection,
+    setup_postgres_connection,
+)
+from src.smartem_decisions.model.mq_event import (
     MessageQueueEventType,
     AcquisitionStartBody,
     GridScanStartBody,
@@ -32,7 +33,7 @@ from smartem_decisions.model.mq_event import (
     ParticleSelectionCompleteBody,
     AcquisitionEndBody,
 )
-from smartem_decisions.workflow import (
+from src.smartem_decisions.workflow import (
     acquisition_start,
     grid_scan_start,
     grid_scan_complete,
@@ -55,76 +56,7 @@ from smartem_decisions.workflow import (
 
 load_dotenv()
 conf = load_conf()
-
-graylog_handler = GraylogUDPHandler(
-    host=os.environ["GRAYLOG_HOST"],
-    # For testing without graylog, run `nc -klu 12209` to see what's been sent:
-    # port=12209
-    port=int(os.environ["GRAYLOG_UDP_PORT"]),
-)
-
-
-def _log_info(message):
-    frame = currentframe()
-    assert frame is not None, "Could not get the current frame"
-    frame_info = getframeinfo(frame)
-    # Ref: https://docs.python.org/3/library/logging.html#logging.LogRecord
-    graylog_handler.handle(
-        LogRecord(
-            name=conf["app"]["name"],
-            level=20,  # INFO
-            pathname=frame_info.filename,  # TODO get pathname not filename
-            lineno=frame_info.lineno,
-            args={},
-            exc_info=None,
-            msg=json.dumps(message),
-        )
-    )
-
-
-def _log_issue(message):
-    frame = currentframe()
-    assert frame is not None, "Could not get the current frame"
-    frame_info = getframeinfo(frame)
-    # Ref: https://docs.python.org/3/library/logging.html#logging.LogRecord
-    graylog_handler.handle(
-        LogRecord(
-            name=conf["app"]["name"],
-            level=40,  # ERROR
-            pathname=frame_info.filename,  # TODO get pathname not filename
-            lineno=frame_info.lineno,
-            args={},
-            exc_info=None,
-            msg=json.dumps(message),
-        )
-    )
-
-
-def setup_rabbitmq_connection():
-    assert os.getenv("RABBITMQ_HOST") is not None, "Could not get env var RABBITMQ_HOST"
-    assert os.getenv("RABBITMQ_PORT") is not None, "Could not get env var RABBITMQ_PORT"
-    assert os.getenv("RABBITMQ_USER") is not None, "Could not get env var RABBITMQ_USER"
-    assert os.getenv("RABBITMQ_PASSWORD") is not None, "Could not get env var RABBITMQ_PASSWORD"
-    connection = pika.BlockingConnection(
-        pika.ConnectionParameters(
-            host=os.getenv("RABBITMQ_HOST"),  # type: ignore
-            port=int(os.getenv("RABBITMQ_PORT")),  # type: ignore
-            credentials=pika.PlainCredentials(
-                os.getenv("RABBITMQ_USER"),  # type: ignore
-                os.getenv("RABBITMQ_PASSWORD"),  # type: ignore
-            ),
-        )
-    )
-    return connection
-
-assert os.getenv("POSTGRES_USER") is not None, "Could not get env var POSTGRES_USER"
-assert os.getenv("POSTGRES_PASSWORD") is not None, "Could not get env var POSTGRES_PASSWORD"
-assert os.getenv("POSTGRES_PORT") is not None, "Could not get env var POSTGRES_PORT"
-assert os.getenv("POSTGRES_DB") is not None, "Could not get env var POSTGRES_DB"
-engine = create_engine(
-    f"postgresql+psycopg2://{os.getenv("POSTGRES_USER")}:{os.getenv("POSTGRES_PASSWORD")}@localhost:{os.getenv("POSTGRES_PORT")}/{os.getenv("POSTGRES_DB")}",
-    echo=True,
-)
+db_engine = setup_postgres_connection()
 
 
 def handle_event(event_type: MessageQueueEventType, message: dict, ch, method, sess):
@@ -166,7 +98,7 @@ def handle_event(event_type: MessageQueueEventType, message: dict, ch, method, s
     try:
         body = body_class(**message)
         print(f" [+] {event_type.value} {body}")
-        _log_info(
+        logger.info(
             dict(
                 message,
                 **{"info": f"{event_type.value} {body}"},
@@ -176,7 +108,7 @@ def handle_event(event_type: MessageQueueEventType, message: dict, ch, method, s
         handler(body, sess)
     except ValidationError as pve:
         print(f" [!] Failed to parse {event_type.value} body: {pve}")
-        _log_issue(
+        logger.warning(
             dict(
                 message,
                 **{"issue": f"Failed to parse {event_type.value} body: {pve}"},
@@ -191,7 +123,7 @@ def on_message(ch, method, properties, body):
 
     if "event_type" not in message:
         print(f" [!] Message missing 'event_type' field: {message}")
-        _log_issue(dict(message, **{"issue": "Message missing event_type field"}))
+        logger.warning(dict(message, **{"issue": "Message missing event_type field"}))
         ch.basic_nack(delivery_tag=method.delivery_tag, requeue=False)
         print("\n")
         return
@@ -200,31 +132,26 @@ def on_message(ch, method, properties, body):
         event_type = MessageQueueEventType(message["event_type"])
     except ValueError:
         print(f" [!] Message 'event_type' value not recognised: {message}")
-        _log_issue(dict(message, **{"issue": "Message event_type value not recognised"}))
+        logger.warning(dict(message, **{"issue": "Message event_type value not recognised"}))
         ch.basic_nack(delivery_tag=method.delivery_tag, requeue=False)
         print("\n")
         return
 
-    with SQLModelSession(engine) as sess:
+    with SQLModelSession(db_engine) as sess:
         handle_event(event_type, message, ch, method, sess)
 
     print("\n")
 
 
 def main():
-    # Set up RabbitMQ connection
-    connection = setup_rabbitmq_connection()
-    channel = connection.channel()
-    
-    # Set up queue
+    rmq_connection = setup_rabbitmq_connection()
+    channel = rmq_connection.channel()
+
     channel.queue_declare(queue=conf["rabbitmq"]["queue_name"], durable=True)
-    print(" [*] Waiting for messages. To exit press CTRL+C")
-    
-    # Configure consumption
+    logger.info(" [*] Waiting for messages. To exit press CTRL+C")
+
     channel.basic_qos(prefetch_count=1)
     channel.basic_consume(queue=conf["rabbitmq"]["queue_name"], on_message_callback=on_message)
-    
-    # Start consuming
     channel.start_consuming()
 
 

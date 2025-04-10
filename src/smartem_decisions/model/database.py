@@ -1,22 +1,17 @@
-import os
 from datetime import datetime
-from typing import Optional, List
-
-# import logging
-# logging.basicConfig()
-# logging.getLogger("sqlalchemy.engine").setLevel(logging.DEBUG)
-
-from dotenv import load_dotenv
-from sqlalchemy import text, Column, Enum as SQLAlchemyEnum
+from sqlalchemy import text, Column
 from sqlmodel import (
     Field,
     Session as SQLModelSession,
     SQLModel,
-    create_engine,
     Relationship,
 )
 
-from .entity_status import (
+from src.smartem_decisions.utils import (
+    logger,
+    setup_postgres_connection,
+)
+from src.smartem_decisions.model.entity_status import (
     AcquisitionStatus,
     AcquisitionStatusType,
     GridStatus,
@@ -30,66 +25,66 @@ from .entity_status import (
 )
 
 
-class Acquisition(SQLModel, table=True, table_name="acquisition"):  # type: ignore
+class Acquisition(SQLModel, table=True, table_name="acquisition"):
     __table_args__ = {"extend_existing": True}
-    id: Optional[int] = Field(default=None, primary_key=True)
-    epu_id: Optional[str] = Field(default=None)
+    id: int = Field(default=None, primary_key=True)
+    epu_id: str = Field(default=None)
     name: str
     status: AcquisitionStatus = Field(default=AcquisitionStatus.PLANNED, sa_column=Column(AcquisitionStatusType()))
-    start_time: Optional[datetime] = Field(default=None)
-    end_time: Optional[datetime] = Field(default=None)
-    paused_time: Optional[datetime] = Field(default=None)
-    grids: List["Grid"] = Relationship(back_populates="acquisition", cascade_delete=True)
+    start_time: datetime = Field(default=None)
+    end_time: datetime = Field(default=None)
+    paused_time: datetime = Field(default=None)
+    grids: list["Grid"] = Relationship(back_populates="acquisition", cascade_delete=True)
 
 
-class Grid(SQLModel, table=True, table_name="grid"):  # type: ignore
+class Grid(SQLModel, table=True, table_name="grid"):
     __table_args__ = {"extend_existing": True}
-    id: Optional[int] = Field(default=None, primary_key=True)
-    acquisition_id: Optional[int] = Field(default=None, foreign_key="acquisition.id")
+    id: int = Field(default=None, primary_key=True)
+    acquisition_id: int = Field(default=None, foreign_key="acquisition.id")
     status: GridStatus = Field(default=GridStatus.NONE, sa_column=Column(GridStatusType()))
     name: str
-    scan_start_time: Optional[datetime] = Field(default=None)
-    scan_end_time: Optional[datetime] = Field(default=None)
-    acquisition: Optional[Acquisition] = Relationship(back_populates="grids")
-    gridsquares: List["GridSquare"] = Relationship(back_populates="grid", cascade_delete=True)
+    scan_start_time: datetime = Field(default=None)
+    scan_end_time: datetime = Field(default=None)
+    acquisition: Acquisition = Relationship(back_populates="grids")
+    gridsquares: list["GridSquare"] = Relationship(back_populates="grid", cascade_delete=True)
 
 
-class GridSquare(SQLModel, table=True, table_name="gridsquare"):  # type: ignore
+class GridSquare(SQLModel, table=True, table_name="gridsquare"):
     __table_args__ = {"extend_existing": True}
-    id: Optional[int] = Field(default=None, primary_key=True)
-    grid_id: Optional[int] = Field(default=None, foreign_key="grid.id")
+    id: int = Field(default=None, primary_key=True)
+    grid_id: int = Field(default=None, foreign_key="grid.id")
     status: GridSquareStatus = Field(default=GridSquareStatus.NONE, sa_column=Column(GridSquareStatusType()))
     # grid_position 5 by 5
     atlastile_img: str = Field(default="")  # path to tile image
     name: str
-    grid: Optional[Grid] = Relationship(back_populates="gridsquares")
-    foilholes: List["FoilHole"] = Relationship(back_populates="gridsquare", cascade_delete=True)
+    grid: Grid = Relationship(back_populates="gridsquares")
+    foilholes: list["FoilHole"] = Relationship(back_populates="gridsquare", cascade_delete=True)
 
 
-class FoilHole(SQLModel, table=True, table_name="foilhole"):  # type: ignore
+class FoilHole(SQLModel, table=True, table_name="foilhole"):
     __table_args__ = {"extend_existing": True}
-    id: Optional[int] = Field(default=None, primary_key=True)
-    gridsquare_id: Optional[int] = Field(default=None, foreign_key="gridsquare.id")
+    id: int = Field(default=None, primary_key=True)
+    gridsquare_id: int = Field(default=None, foreign_key="gridsquare.id")
     status: FoilHoleStatus = Field(default=FoilHoleStatus.NONE, sa_column=Column(FoilHoleStatusType()))
     name: str
-    gridsquare: Optional[GridSquare] = Relationship(back_populates="foilholes")
-    micrographs: List["Micrograph"] = Relationship(back_populates="foilhole", cascade_delete=True)
+    gridsquare: GridSquare = Relationship(back_populates="foilholes")
+    micrographs: list["Micrograph"] = Relationship(back_populates="foilhole", cascade_delete=True)
 
 
-class Micrograph(SQLModel, table=True, table_name="micrograph"):  # type: ignore
+class Micrograph(SQLModel, table=True, table_name="micrograph"):
     __table_args__ = {"extend_existing": True}
-    id: Optional[int] = Field(default=None, primary_key=True)
-    foilhole_id: Optional[int] = Field(default=None, foreign_key="foilhole.id")
+    id: int = Field(default=None, primary_key=True)
+    foilhole_id: int = Field(default=None, foreign_key="foilhole.id")
     status: MicrographStatus = Field(default=MicrographStatus.NONE, sa_column=Column(MicrographStatusType()))
-    total_motion: Optional[float] = Field(default=None)  # TODO non-negative or null
-    average_motion: Optional[float] = Field(default=None)  # TODO non-negative or null
-    ctf_max_resolution_estimate: Optional[float] = Field(default=None)  # TODO non-negative or null
-    number_of_particles_selected: Optional[int] = Field(default=None)
-    number_of_particles_rejected: Optional[int] = Field(default=None)
-    selection_distribution: Optional[str] = Field(default=None)  # TODO dict type (create a user-defined?)
-    number_of_particles_picked: Optional[int] = Field(default=None)  # TODO non-negative or null
-    pick_distribution: Optional[str] = Field(default=None)  # TODO dict type (create a user-defined?)
-    foilhole: Optional[FoilHole] = Relationship(back_populates="micrographs")
+    total_motion: float = Field(default=None)  # TODO non-negative or null
+    average_motion: float = Field(default=None)  # TODO non-negative or null
+    ctf_max_resolution_estimate: float = Field(default=None)  # TODO non-negative or null
+    number_of_particles_selected: int = Field(default=None)
+    number_of_particles_rejected: int = Field(default=None)
+    selection_distribution: str = Field(default=None)  # TODO dict type (create a user-defined?)
+    number_of_particles_picked: int = Field(default=None)  # TODO non-negative or null
+    pick_distribution: str = Field(default=None)  # TODO dict type (create a user-defined?)
+    foilhole: FoilHole = Relationship(back_populates="micrographs")
 
 
 def _create_db_and_tables(engine):
@@ -128,18 +123,8 @@ def _create_db_and_tables(engine):
 
 
 def main():
-    load_dotenv()
-
-    assert os.getenv("POSTGRES_USER") is not None, "Could not get env var POSTGRES_USER"
-    assert os.getenv("POSTGRES_PASSWORD") is not None, "Could not get env var POSTGRES_PASSWORD"
-    assert os.getenv("POSTGRES_PORT") is not None, "Could not get env var POSTGRES_PORT"
-    assert os.getenv("POSTGRES_DB") is not None, "Could not get env var POSTGRES_DB"
-    engine = create_engine(
-        f"postgresql+psycopg2://{os.getenv("POSTGRES_USER")}:{os.getenv("POSTGRES_PASSWORD")}@localhost:{os.getenv("POSTGRES_PORT")}/{os.getenv("POSTGRES_DB")}",
-        echo=True,
-    )
-
-    _create_db_and_tables(engine)
+    db_engine = setup_postgres_connection()
+    _create_db_and_tables(db_engine)
 
 
 if __name__ == "__main__":

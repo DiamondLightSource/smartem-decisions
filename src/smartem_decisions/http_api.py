@@ -1,11 +1,7 @@
-import os
-from dotenv import load_dotenv
-
 from fastapi import FastAPI, Depends, HTTPException
 from sqlalchemy.orm import sessionmaker, Session as SqlAlchemySession
-from sqlalchemy import create_engine
-from typing import List
 
+from src.smartem_decisions.utils import setup_postgres_connection
 from src.smartem_decisions.model.http_response import (
     AcquisitionResponse,
     GridResponse,
@@ -14,18 +10,16 @@ from src.smartem_decisions.model.http_response import (
     MicrographResponse,
 )
 
-from src.smartem_decisions.model.database import Acquisition, Grid, GridSquare, FoilHole, Micrograph
-
-load_dotenv()
-assert os.getenv("POSTGRES_USER") is not None, "Could not get env var POSTGRES_USER"
-assert os.getenv("POSTGRES_PASSWORD") is not None, "Could not get env var POSTGRES_PASSWORD"
-assert os.getenv("POSTGRES_PORT") is not None, "Could not get env var POSTGRES_PORT"
-assert os.getenv("POSTGRES_DB") is not None, "Could not get env var POSTGRES_DB"
-engine = create_engine(
-    f"postgresql+psycopg2://{os.getenv("POSTGRES_USER")}:{os.getenv("POSTGRES_PASSWORD")}@localhost:{os.getenv("POSTGRES_PORT")}/{os.getenv("POSTGRES_DB")}",
-    echo=True,
+from src.smartem_decisions.model.database import (
+    Acquisition,
+    Grid,
+    GridSquare,
+    FoilHole,
+    Micrograph,
 )
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+db_engine = setup_postgres_connection()
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=db_engine)
 
 # TODO Fill this in
 #   Ref: https://fastapi.tiangolo.com/tutorial/metadata/#metadata-for-api
@@ -71,20 +65,28 @@ def get_db():
         db.close()
 
 
-@app.get("/acquisitions", response_model=List[AcquisitionResponse])
+@app.get("/acquisitions", response_model=list[AcquisitionResponse])
 def get_acquisitions(db: SqlAlchemySession = Depends(get_db)):
     return db.query(Acquisition).all()
 
 
 @app.get("/acquisitions/{acquisition_id}", response_model=AcquisitionResponse)
 def get_acquisition(acquisition_id: int, db: SqlAlchemySession = Depends(get_db)):
+    # Note: we can safely ignore the warnings from PyCharm/VSCode akin `.filter(Acquisition.id == acquisition_id)`.
+    # This is a common situation with SQLAlchemy and FastAPI where the type checker has some confusion about what's being
+    # passed to the filter method. The code `Acquisition.id == acquisition_id` is perfectly valid SQLAlchemy syntax for
+    # creating a filter condition. It's comparing a column (`Acquisition.id`) with a value (`acquisition_id`) to generate
+    # a `SQL WHERE` clause. This works correctly at runtime because SQLAlchemy overloads the `==` operator for its column
+    # objects to return a comparison expression rather than a boolean. The type checker is expecting a more specific
+    # SQLAlchemy type, but the actual runtime behavior is exactly what we want. Since the code works fine in practice,
+    # this is just a limitation in how PyCharm's type system understands SQLAlchemy's expression language.
     session = db.query(Acquisition).filter(Acquisition.id == acquisition_id).first()
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
     return session
 
 
-@app.get("/grids", response_model=List[GridResponse])
+@app.get("/grids", response_model=list[GridResponse])
 def get_grids(db: SqlAlchemySession = Depends(get_db)):
     return db.query(Grid).all()
 
@@ -97,12 +99,12 @@ def get_grid(grid_id: int, db: SqlAlchemySession = Depends(get_db)):
     return grid
 
 
-@app.get("/acquisitions/{acquisition_id}/grids", response_model=List[GridResponse])
+@app.get("/acquisitions/{acquisition_id}/grids", response_model=list[GridResponse])
 def get_acquisition_grids(acquisition_id: int, db: SqlAlchemySession = Depends(get_db)):
     return db.query(Grid).filter(Grid.session_id == acquisition_id).all()
 
 
-@app.get("/gridsquares", response_model=List[GridSquareResponse])
+@app.get("/gridsquares", response_model=list[GridSquareResponse])
 def get_gridsquares(db: SqlAlchemySession = Depends(get_db)):
     return db.query(GridSquare).all()
 
@@ -115,12 +117,12 @@ def get_gridsquare(gridsquare_id: int, db: SqlAlchemySession = Depends(get_db)):
     return gridsquare
 
 
-@app.get("/grids/{grid_id}/gridsquares", response_model=List[GridSquareResponse])
+@app.get("/grids/{grid_id}/gridsquares", response_model=list[GridSquareResponse])
 def get_grid_gridsquares(grid_id: int, db: SqlAlchemySession = Depends(get_db)):
     return db.query(GridSquare).filter(GridSquare.grid_id == grid_id).all()
 
 
-@app.get("/foilholes", response_model=List[FoilHoleResponse])
+@app.get("/foilholes", response_model=list[FoilHoleResponse])
 def get_foilholes(db: SqlAlchemySession = Depends(get_db)):
     return db.query(FoilHole).all()
 
@@ -133,12 +135,12 @@ def get_foilhole(foilhole_id: int, db: SqlAlchemySession = Depends(get_db)):
     return foilhole
 
 
-@app.get("/gridsquares/{gridsquare_id}/foilholes", response_model=List[FoilHoleResponse])
+@app.get("/gridsquares/{gridsquare_id}/foilholes", response_model=list[FoilHoleResponse])
 def get_gridsquare_foilholes(gridsquare_id: int, db: SqlAlchemySession = Depends(get_db)):
     return db.query(FoilHole).filter(FoilHole.gridsquare_id == gridsquare_id).all()
 
 
-@app.get("/micrographs", response_model=List[MicrographResponse])
+@app.get("/micrographs", response_model=list[MicrographResponse])
 def get_micrographs(db: SqlAlchemySession = Depends(get_db)):
     return db.query(Micrograph).all()
 
@@ -151,7 +153,6 @@ def get_micrograph(micrograph_id: int, db: SqlAlchemySession = Depends(get_db)):
     return micrograph
 
 
-@app.get("/foilholes/{foilhole_id}/micrographs", response_model=List[MicrographResponse])
+@app.get("/foilholes/{foilhole_id}/micrographs", response_model=list[MicrographResponse])
 def get_foilhole_micrographs(foilhole_id: int, db: SqlAlchemySession = Depends(get_db)):
     return db.query(Micrograph).filter(Micrograph.foilhole_id == foilhole_id).all()
-
