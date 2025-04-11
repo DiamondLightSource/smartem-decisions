@@ -28,15 +28,10 @@ print(f"Hello smartem_decisions {__version__}")
 
 Or if it is a commandline tool then you might put some example commands here:
 
-<!-- README only content. Anything below this line won't be included in index.md -->
-
-See https://DiamondLightSource.github.io/smartem-decisions for more detailed documentation.
-
-
 ## Architectural Overview
 
 ```mermaid
-graph LR
+ graph TD
     subgraph k8s["Kubernetes Cluster (Scientific Compute)"]
         subgraph core["Core Services"]
             api["SmartEM Core Service & API"]
@@ -141,3 +136,8 @@ podman push gcr.io/diamond-pubreg/smartem_decisions/smartem_decisions:latest
     a list of coordinates of particles on that image:
     https://github.com/DiamondLightSource/cryoem-services/blob/main/src/cryoemservices/services/cryolo.py
   - particle filtering service: https://github.com/DiamondLightSource/cryoem-services/blob/main/src/cryoemservices/services/select_particles.py
+
+
+<!-- README only content. Anything below this line won't be included in index.md -->
+
+See https://DiamondLightSource.github.io/smartem-decisions for more detailed documentation.

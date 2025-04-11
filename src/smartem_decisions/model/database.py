@@ -1,5 +1,5 @@
 from datetime import datetime
-from sqlalchemy import text, Column, Enum as SQLAlchemyEnum
+from sqlalchemy import text, Column
 from sqlmodel import (
     Field,
     Relationship,
@@ -8,7 +8,6 @@ from sqlmodel import (
 )
 
 from src.smartem_decisions.utils import (
-    logger,
     setup_postgres_connection,
 )
 from src.smartem_decisions.model.entity_status import (

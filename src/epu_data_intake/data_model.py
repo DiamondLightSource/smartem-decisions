@@ -9,24 +9,15 @@ from sqlalchemy.engine import Engine
 from sqlmodel import Session
 
 from smartem_decisions.model.database import (
-    Acquisition,
-)
-from smartem_decisions.model.database import (
+    Acquisition as DBAcquisition,
     FoilHole as DBFoilHole,
-)
-from smartem_decisions.model.database import (
     Grid as DBGrid,
-)
-from smartem_decisions.model.database import (
     GridSquare as DBGridSquare,
-)
-from smartem_decisions.model.database import (
     Micrograph as DBMicrograph,
 )
 from smartem_decisions.model.entity_status import AcquisitionStatus
 
 T = TypeVar("T")
-
 
 @dataclass
 class EntityStore(Generic[T]):
@@ -323,7 +314,7 @@ class EpuSession:
 
     def to_db(self, engine: Engine):
         for grid in self.grids.values():
-            acq = Acquisition(
+            acq = DBAcquisition(
                 epu_id=grid.session_data.id, name=grid.session_data.name, status=AcquisitionStatus.COMPLETED
             )
             with Session(engine) as session:
