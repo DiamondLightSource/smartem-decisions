@@ -7,7 +7,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>smartem_decisions.model.mq_event &#8212; smartem-decisions 0.1.dev108+g180a67e documentation</title>
+    <title>smartem_decisions.model.mq_event &#8212; smartem-decisions 0.1.dev110+ga20dacb documentation</title>
   
   
   
@@ -40,7 +40,7 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../../../_static/documentation_options.js?v=b92fb7f2"></script>
+    <script src="../../../_static/documentation_options.js?v=57785a0f"></script>
     <script src="../../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -443,20 +443,13 @@
                   
   <h1>Source code for smartem_decisions.model.mq_event</h1><div class="highlight"><pre>
 <span></span><span class="kn">from</span><span class="w"> </span><span class="nn">enum</span><span class="w"> </span><span class="kn">import</span> <span class="n">Enum</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">uuid</span><span class="w"> </span><span class="kn">import</span> <span class="n">UUID</span><span class="p">,</span> <span class="n">uuid4</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Optional</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">pydantic</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">BaseModel</span><span class="p">,</span>
     <span class="n">computed_field</span><span class="p">,</span>
-    <span class="c1"># ValidationError,</span>
-    <span class="n">Field</span><span class="p">,</span>
     <span class="n">field_serializer</span><span class="p">,</span>
     <span class="n">model_validator</span><span class="p">,</span>
 <span class="p">)</span>
-
-<span class="c1"># import json</span>
-<span class="c1"># from typing import no_type_check, Type, Any</span>
 
 
 <div class="viewcode-block" id="MessageQueueEventType">
@@ -501,7 +494,7 @@
 
 <span class="k">class</span><span class="w"> </span><span class="nc">AcquisitionStartBody</span><span class="p">(</span><span class="n">GenericEventMessageBody</span><span class="p">):</span>
     <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
-    <span class="n">epu_id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">epu_id</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
 
 
 <span class="k">class</span><span class="w"> </span><span class="nc">GridScanStartBody</span><span class="p">(</span><span class="n">GenericEventMessageBody</span><span class="p">):</span>

@@ -15,8 +15,8 @@
     
         consumer
         http_api
+        log_manager
         model
-        plugin_logging
         simulate_msg
         utils
         workflow

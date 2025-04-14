@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Run in a container &#8212; smartem-decisions 0.1.dev110+ga20dacb documentation</title>
+    <title>smartem_decisions.log_manager &#8212; smartem-decisions 0.1.dev110+ga20dacb documentation</title>
   
   
   
@@ -47,7 +47,7 @@
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
     <script src="../_static/copybutton.js?v=30646c52"></script>
     <script src="../_static/design-tabs.js?v=f930bc37"></script>
-    <script>DOCUMENTATION_OPTIONS.pagename = 'how-to/run-container';</script>
+    <script>DOCUMENTATION_OPTIONS.pagename = '_api/smartem_decisions.log_manager';</script>
     <script>
         DOCUMENTATION_OPTIONS.theme_version = '0.16.1';
         DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://DiamondLightSource.github.io/smartem-decisions/switcher.json';
@@ -58,8 +58,8 @@
     <link rel="icon" href="../_static/dls-logo.svg"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="Explanations" href="../explanations.html" />
-    <link rel="prev" title="Contribute to the project" href="contribute.html" />
+    <link rel="next" title="smartem_decisions.model" href="smartem_decisions.model.html" />
+    <link rel="prev" title="smartem_decisions" href="smartem_decisions.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
   <meta name="docsearch:version" content="main" />
@@ -153,7 +153,7 @@
 </li>
 
 
-<li class="nav-item current active">
+<li class="nav-item ">
   <a class="nav-link nav-internal" href="../how-to.html">
     How-to Guides
   </a>
@@ -167,7 +167,7 @@
 </li>
 
 
-<li class="nav-item ">
+<li class="nav-item current active">
   <a class="nav-link nav-internal" href="../reference.html">
     Reference
   </a>
@@ -301,7 +301,7 @@
 </li>
 
 
-<li class="nav-item current active">
+<li class="nav-item ">
   <a class="nav-link nav-internal" href="../how-to.html">
     How-to Guides
   </a>
@@ -315,7 +315,7 @@
 </li>
 
 
-<li class="nav-item ">
+<li class="nav-item current active">
   <a class="nav-link nav-internal" href="../reference.html">
     Reference
   </a>
@@ -397,8 +397,17 @@
      aria-label="Section Navigation">
   <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
   <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
-<li class="toctree-l1"><a class="reference internal" href="contribute.html">Contribute to the project</a></li>
-<li class="toctree-l1 current active"><a class="current reference internal" href="#">Run in a container</a></li>
+<li class="toctree-l1 current active has-children"><a class="reference internal" href="smartem_decisions.html">API</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l2 current active"><a class="current reference internal" href="#"><code class="docutils literal notranslate"><span class="pre">smartem_decisions.log_manager</span></code></a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="smartem_decisions.model.html"><code class="docutils literal notranslate"><span class="pre">smartem_decisions.model</span></code></a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="smartem_decisions.model.entity_status.html"><code class="docutils literal notranslate"><span class="pre">smartem_decisions.model.entity_status</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="smartem_decisions.model.mq_event.html"><code class="docutils literal notranslate"><span class="pre">smartem_decisions.model.mq_event</span></code></a></li>
+</ul>
+</details></li>
+</ul>
+</details></li>
+<li class="toctree-l1"><a class="reference internal" href="../genindex.html">Index</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/DiamondLightSource/smartem-decisions/releases">Release Notes</a></li>
 </ul>
 </div>
 </nav></div>
@@ -440,9 +449,12 @@
       </a>
     </li>
     
-    <li class="breadcrumb-item"><a href="../how-to.html" class="nav-link">How-to Guides</a></li>
+    <li class="breadcrumb-item"><a href="../reference.html" class="nav-link">Reference</a></li>
     
-    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Run in a container</span></li>
+    
+    <li class="breadcrumb-item"><a href="smartem_decisions.html" class="nav-link"><code class="docutils literal notranslate"><span class="pre">smartem_decisions</span></code></a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis"><code class="docutils literal notranslate"><span class="pre">smartem_decisions.log_manager</span></code></span></li>
   </ul>
 </nav>
 </div>
@@ -459,18 +471,43 @@
 <div id="searchbox"></div>
                 <article class="bd-article">
                   
-  <section id="run-in-a-container">
-<h1>Run in a container<a class="headerlink" href="#run-in-a-container" title="Link to this heading">#</a></h1>
-<p>Pre-built containers with smartem-decisions and its dependencies already
-installed are available on <a class="reference external" href="https://ghcr.io/DiamondLightSource/smartem-decisions">Github Container Registry</a>.</p>
-<section id="starting-the-container">
-<h2>Starting the container<a class="headerlink" href="#starting-the-container" title="Link to this heading">#</a></h2>
-<p>To pull the container from github container registry and run:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ docker run ghcr.io/DiamondLightSource/smartem-decisions:latest --version
-</pre></div>
+  <section id="module-smartem_decisions.log_manager">
+<span id="smartem-decisions-log-manager"></span><h1><code class="docutils literal notranslate"><span class="pre">smartem_decisions.log_manager</span></code><a class="headerlink" href="#module-smartem_decisions.log_manager" title="Link to this heading">#</a></h1>
+<p class="rubric">Members</p>
+<div class="pst-scrollable-table-container"><table class="autosummary longtable table">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#smartem_decisions.log_manager.FixedGELFHTTPHandler" title="smartem_decisions.log_manager.FixedGELFHTTPHandler"><code class="xref py py-obj docutils literal notranslate"><span class="pre">FixedGELFHTTPHandler</span></code></a></p></td>
+<td><p>A replacement for GELFHTTPHandler that properly handles the ssl parameter.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#smartem_decisions.log_manager.LogConfig" title="smartem_decisions.log_manager.LogConfig"><code class="xref py py-obj docutils literal notranslate"><span class="pre">LogConfig</span></code></a></p></td>
+<td><p>LogConfig(level: int = 20, console: bool = True, file_path: str | None = None, file_max_size: int = 10485760, file_backup_count: int = 5, graylog_host: str | None = None, graylog_port: int | None = None, graylog_protocol: str = 'udp', graylog_facility: str | None = None, graylog_source: str | None = None, graylog_extra_fields: dict = &lt;factory&gt;, graylog_debugging: bool = False, graylog_tls: bool = False, format_string: str = '%(asctime)s - %(name)s - %(levelname)s - %(message)s')</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">LogManager</span></code></p></td>
+<td><p></p></td>
+</tr>
+</tbody>
+</table>
 </div>
-<p>To get a released version, use a numbered release instead of <code class="docutils literal notranslate"><span class="pre">latest</span></code>.</p>
-</section>
+<dl class="py class">
+<dt class="sig sig-object py" id="smartem_decisions.log_manager.FixedGELFHTTPHandler">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">smartem_decisions.log_manager.</span></span><span class="sig-name descname"><span class="pre">FixedGELFHTTPHandler</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">host</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">port</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">12202</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">compress</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'/'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ssl</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timeout</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">5.0</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/smartem_decisions/log_manager.html#FixedGELFHTTPHandler"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#smartem_decisions.log_manager.FixedGELFHTTPHandler" title="Link to this definition">#</a></dt>
+<dd><p>A replacement for GELFHTTPHandler that properly handles the ssl parameter.</p>
+<p>This implementation fixes the issue with the ssl parameter in graypy’s original
+GELFHTTPHandler by directly inheriting from BaseGELFHandler and implementing
+the correct HTTP functionality.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="smartem_decisions.log_manager.FixedGELFHTTPHandler.emit">
+<span class="sig-name descname"><span class="pre">emit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">record</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/smartem_decisions/log_manager.html#FixedGELFHTTPHandler.emit"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#smartem_decisions.log_manager.FixedGELFHTTPHandler.emit" title="Link to this definition">#</a></dt>
+<dd><p>Emit a record by sending it as a GELF message via HTTP/HTTPS.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="smartem_decisions.log_manager.LogConfig">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">smartem_decisions.log_manager.</span></span><span class="sig-name descname"><span class="pre">LogConfig</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">level:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">20</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">console:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">file_path:</span> <span class="pre">str</span> <span class="pre">|</span> <span class="pre">None</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">file_max_size:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">10485760</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">file_backup_count:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">graylog_host:</span> <span class="pre">str</span> <span class="pre">|</span> <span class="pre">None</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">graylog_port:</span> <span class="pre">int</span> <span class="pre">|</span> <span class="pre">None</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">graylog_protocol:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">'udp'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">graylog_facility:</span> <span class="pre">str</span> <span class="pre">|</span> <span class="pre">None</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">graylog_source:</span> <span class="pre">str</span> <span class="pre">|</span> <span class="pre">None</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">graylog_extra_fields:</span> <span class="pre">dict</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">graylog_debugging:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">graylog_tls:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">format_string:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">'%(asctime)s</span> <span class="pre">-</span> <span class="pre">%(name)s</span> <span class="pre">-</span> <span class="pre">%(levelname)s</span> <span class="pre">-</span> <span class="pre">%(message)s'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/smartem_decisions/log_manager.html#LogConfig"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#smartem_decisions.log_manager.LogConfig" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
 </section>
 
 
@@ -484,20 +521,20 @@ installed are available on <a class="reference external" href="https://ghcr.io/D
                   
 <div class="prev-next-area">
     <a class="left-prev"
-       href="contribute.html"
+       href="smartem_decisions.html"
        title="previous page">
       <i class="fa-solid fa-angle-left"></i>
       <div class="prev-next-info">
         <p class="prev-next-subtitle">previous</p>
-        <p class="prev-next-title">Contribute to the project</p>
+        <p class="prev-next-title"><code class="docutils literal notranslate"><span class="pre">smartem_decisions</span></code></p>
       </div>
     </a>
     <a class="right-next"
-       href="../explanations.html"
+       href="smartem_decisions.model.html"
        title="next page">
       <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">Explanations</p>
+        <p class="prev-next-title"><code class="docutils literal notranslate"><span class="pre">smartem_decisions.model</span></code></p>
       </div>
       <i class="fa-solid fa-angle-right"></i>
     </a>
@@ -520,7 +557,11 @@ installed are available on <a class="reference external" href="https://ghcr.io/D
   </div>
   <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
     <ul class="visible nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#starting-the-container">Starting the container</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#smartem_decisions.log_manager.FixedGELFHTTPHandler"><code class="docutils literal notranslate"><span class="pre">FixedGELFHTTPHandler</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#smartem_decisions.log_manager.FixedGELFHTTPHandler.emit"><code class="docutils literal notranslate"><span class="pre">FixedGELFHTTPHandler.emit()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#smartem_decisions.log_manager.LogConfig"><code class="docutils literal notranslate"><span class="pre">LogConfig</span></code></a></li>
 </ul>
   </nav></div>
 
@@ -528,7 +569,7 @@ installed are available on <a class="reference external" href="https://ghcr.io/D
 
   
   <div class="tocsection editthispage">
-    <a href="https://github.com/DiamondLightSource/smartem-decisions/edit/main/docs/how-to/run-container.md">
+    <a href="https://github.com/DiamondLightSource/smartem-decisions/edit/main/docs/_api/smartem_decisions.log_manager.rst">
       <i class="fa-solid fa-pencil"></i>
       
       
@@ -544,7 +585,7 @@ installed are available on <a class="reference external" href="https://ghcr.io/D
   <div role="note" aria-label="source link">
     <h3>This Page</h3>
     <ul class="this-page-menu">
-      <li><a href="../_sources/how-to/run-container.md.txt"
+      <li><a href="../_sources/_api/smartem_decisions.log_manager.rst.txt"
             rel="nofollow">Show Source</a></li>
     </ul>
    </div></div>
