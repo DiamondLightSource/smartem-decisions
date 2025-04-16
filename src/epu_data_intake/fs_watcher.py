@@ -1,3 +1,4 @@
+import logging
 import os
 import re
 import sys
@@ -14,7 +15,6 @@ from src.epu_data_intake.data_model import (
     MicrographData,
 )
 from src.epu_data_intake.fs_parser import EpuParser
-from src.smartem_decisions.utils import logging
 
 """Default glob patterns for EPU data files.
 
@@ -112,12 +112,12 @@ class RateLimitedHandler(FileSystemEventHandler):
 
         if event.is_directory or not self.matches_pattern(event.src_path):
             if self.verbose and not event.is_directory:
-                print(f"Skipping non-matching path: {event.src_path}")
+                logging.info(f"Skipping non-matching path: {event.src_path}")
             return
 
         if event.event_type not in self.watched_event_types:
             if self.verbose and not event.is_directory:
-                print(f"Skipping non-matching event type: {event.event_type}")
+                logging.info(f"Skipping non-matching event type: {event.event_type}")
             return
 
         current_time = time.time()
@@ -130,7 +130,7 @@ class RateLimitedHandler(FileSystemEventHandler):
                 file_stat = os.stat(event.src_path)
         except (FileNotFoundError, PermissionError) as e:
             if self.verbose:
-                print(f"Warning: {str(e)}")
+                logging.warning(f"{str(e)}")
 
         new_file_detected = event.src_path not in self.changed_files
         self.changed_files[event.src_path] = (event, current_time, file_stat)
@@ -148,7 +148,7 @@ class RateLimitedHandler(FileSystemEventHandler):
             # This must be an orphaned file since it matched one of patterns for files we are interested in,
             #   but a containing grid doesn't exist yet - store it for when we have the grid.
             if self.verbose:
-                print(f"Could not determine which grid this data belongs to: {event.src_path}, adding to orphans")
+                logging.info(f"Could not determine which grid this data belongs to: {event.src_path}, adding to orphans")
             self.orphaned_files[event.src_path] = (event, current_time, file_stat)
             return
 
@@ -170,13 +170,13 @@ class RateLimitedHandler(FileSystemEventHandler):
 
 
     def _on_session_detected(self, path: str, grid_id, is_new_file: bool = True):
-        print(f"Session manifest {'detected' if is_new_file else 'updated'}: {path}")
+        logging.info(f"Session manifest {'detected' if is_new_file else 'updated'}: {path}")
         session_data = EpuParser.parse_epu_session_manifest(path)
         gridstore = self.datastore.grids.get(grid_id)
         if gridstore and session_data != gridstore.session_data: # Only update if the data is different
             gridstore.session_data = session_data
-            print(f"Updated session data for grid {grid_id}")
-            self.verbose and print(gridstore.session_data)
+            logging.info(f"Updated session data for grid {grid_id}")
+            self.verbose and logging.info(gridstore.session_data)
 
 
     def _process_orphaned_files(self, grid_id):
@@ -184,8 +184,7 @@ class RateLimitedHandler(FileSystemEventHandler):
         for path, (event, timestamp, file_stat) in self.orphaned_files.items():
             # Check if this orphaned file belongs to the new grid
             if self.datastore.get_grid_by_path(path) == grid_id:
-                if self.verbose:
-                    print(f"Processing previously orphaned file: {path}")
+                self.verbose and logging.info(f"Processing previously orphaned file: {path}")
                 self.on_any_event(event) # Process the file as if we just received the event
 
         # Create a new dictionary excluding the processed files
@@ -196,16 +195,16 @@ class RateLimitedHandler(FileSystemEventHandler):
 
 
     def _on_atlas_detected(self, path: str, grid_id, is_new_file: bool = True):
-        print(f"Atlas {'detected' if is_new_file else 'updated'}: {path}")
+        logging.info(f"Atlas {'detected' if is_new_file else 'updated'}: {path}")
         gridstore = self.datastore.grids.get(grid_id)
         atlas_data = EpuParser.parse_atlas_manifest(path)
         if atlas_data != gridstore.atlas_data:
             gridstore.atlas_data = atlas_data
-            self.verbose and print(gridstore.atlas_data)
+            self.verbose and logging.info(gridstore.atlas_data)
 
 
     def _on_gridsquare_metadata_detected(self, path: str, grid_id, is_new_file: bool = True):
-        print(f"Gridsquare metadata {'detected' if is_new_file else 'updated'}: {path}")
+        logging.info(f"Gridsquare metadata {'detected' if is_new_file else 'updated'}: {path}")
 
         gridsquare_id = EpuParser.gridsquare_dm_file_pattern.search(path).group(1)
         assert gridsquare_id is not None, f"gridsquare_id should not be None: {gridsquare_id}"
@@ -223,11 +222,11 @@ class RateLimitedHandler(FileSystemEventHandler):
             gridsquare_data.metadata = gridsquare_metadata
 
         gridstore.gridsquares.add(gridsquare_id, gridsquare_data)
-        self.verbose and print(gridsquare_data)
+        self.verbose and logging.info(gridsquare_data)
 
 
     def _on_gridsquare_manifest_detected(self, path: str, grid_id, is_new_file: bool = True):
-        print(f"Gridsquare manifest {'detected' if is_new_file else 'updated'}: {path}")
+        logging.info(f"Gridsquare manifest {'detected' if is_new_file else 'updated'}: {path}")
 
         gridsquare_id = re.search(EpuParser.gridsquare_dir_pattern, str(path)).group(1)
         assert gridsquare_id is not None, f"gridsquare_id should not be None: {gridsquare_id}"
@@ -245,11 +244,11 @@ class RateLimitedHandler(FileSystemEventHandler):
             gridsquare_data.manifest = gridsquare_manifest
 
         gridstore.gridsquares.add(gridsquare_id, gridsquare_data)
-        self.verbose and print(gridsquare_data)
+        self.verbose and logging.info(gridsquare_data)
 
 
     def _on_foilhole_detected(self, path: str, grid_id, is_new_file: bool = True):
-        print(f"Foilhole {'detected' if is_new_file else 'updated'}: {path}")
+        logging.info(f"Foilhole {'detected' if is_new_file else 'updated'}: {path}")
 
         gridstore = self.datastore.grids.get(grid_id)
         data = EpuParser.parse_foilhole_manifest(path)
@@ -262,11 +261,11 @@ class RateLimitedHandler(FileSystemEventHandler):
         #  based on timestamp found in filename.
 
         gridstore.foilholes.add(data.id, data)
-        self.verbose and print(data)
+        self.verbose and logging.info(data)
 
 
     def _on_micrograph_detected(self, path: str, grid_id, is_new_file: bool = True):
-        print(f"Micrograph {'detected' if is_new_file else 'updated'}: {path}")
+        logging.info(f"Micrograph {'detected' if is_new_file else 'updated'}: {path}")
 
         match = re.search(EpuParser.micrograph_xml_file_pattern, path)
         foilhole_id = match.group(1)
@@ -285,7 +284,7 @@ class RateLimitedHandler(FileSystemEventHandler):
             manifest = manifest,
         )
         gridstore.micrographs.add(data.id, data)
-        self.verbose and print(data)
+        self.verbose and logging.info(data)
 
 
     def _on_session_complete(self):
@@ -339,5 +338,5 @@ class RateLimitedHandler(FileSystemEventHandler):
 
 
 if __name__ == "__main__":
-    print("This module is not meant to be run directly. Import and use its components instead.")
+    logging.warning("This module is not meant to be run directly. Import and use its components instead.")
     sys.exit(1)

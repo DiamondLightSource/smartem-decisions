@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 
+import logging
 import platform
 import signal
 import time
 import typer
-from datetime import datetime
 from pathlib import Path
 from watchdog.observers import Observer
 
@@ -14,10 +14,10 @@ from src.epu_data_intake.fs_watcher import (
     DEFAULT_PATTERNS,
     RateLimitedHandler,
 )
-from src.smartem_decisions.utils import (
-    logging,
-    setup_postgres_connection,
-)
+# from src.smartem_decisions.utils import (
+#     logging,
+#     setup_postgres_connection,
+# )
 
 epu_data_intake_cli = typer.Typer(help="EPU Data Intake Tools")
 parse_cli = typer.Typer(help="Commands for parsing EPU data")
@@ -154,7 +154,7 @@ def watch_directory(
         # Temporary functionality - save to local DB while in development.
         # In production there'll be an HTTP API to talk to, which will queue writes
         # to RabbitMQ and the consumer will pick these up
-        handler.datastore.to_db(setup_postgres_connection())
+        # handler.datastore.to_db(setup_postgres_connection())
 
         observer.stop()
         logging.info("Watching stopped")
