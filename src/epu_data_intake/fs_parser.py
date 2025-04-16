@@ -1,3 +1,4 @@
+import logging
 import os
 import re
 import sys
@@ -146,7 +147,7 @@ class EpuParser:
             )
 
         except Exception as e:
-            print(f"Failed to parse EPU session manifest: {str(e)}")
+            logging.error(f"Failed to parse EPU session manifest: {str(e)}")
             return None
 
 
@@ -187,7 +188,7 @@ class EpuParser:
                     )
 
         except Exception as e:
-            print(f"Failed to parse Atlas manifest: {str(e)}")
+            logging.error(f"Failed to parse Atlas manifest: {str(e)}")
             return None
 
 
@@ -261,7 +262,7 @@ class EpuParser:
                     )
 
                 except (AttributeError, IndexError, ValueError, TypeError) as e:
-                    print(f"Failed to parse grid square position: {str(e)}")
+                    logging.error(f"Failed to parse grid square position: {str(e)}")
                     continue
 
         return gridsquare_positions
@@ -303,7 +304,7 @@ class EpuParser:
             )
 
         except Exception as e:
-            print(f"Failed to parse tile: {str(e)}")
+            logging.error(f"Failed to parse tile: {str(e)}")
             return None
 
 
@@ -350,7 +351,7 @@ class EpuParser:
                     elements = elem.xpath(xpath, namespaces=namespaces)
                     return elements[0].text if elements else None
                 except etree.XPathEvalError as e:
-                    print(f"XPath error for expression '{xpath}': {str(e)}")
+                    logging.error(f"XPath error for expression '{xpath}': {str(e)}")
                     return None
 
             # Helper function for safe float conversion
@@ -439,7 +440,7 @@ class EpuParser:
                     )
 
                 except Exception as e:
-                    print(f"Error processing foil hole {fh_id}: {str(e)}")
+                    logging.error(f"Error processing foil hole {fh_id}: {str(e)}")
                     continue
 
             metadata = GridSquareMetadata(
@@ -456,7 +457,7 @@ class EpuParser:
             return metadata
 
         except Exception as e:
-            print(f"Failed to parse gridsquare metadata: {str(e)}")
+            logging.error(f"Failed to parse gridsquare metadata: {str(e)}")
             return None
 
 
@@ -503,7 +504,7 @@ class EpuParser:
                     )
 
         except Exception as e:
-            print(f"Failed to parse grid square manifest: {str(e)}")
+            logging.error(f"Failed to parse grid square manifest: {str(e)}")
             return None
 
 
@@ -559,7 +560,7 @@ class EpuParser:
                     )
 
         except Exception as e:
-            print(f"Failed to parse foil hole manifest: {str(e)}")
+            logging.error(f"Failed to parse foil hole manifest: {str(e)}")
             return None
 
 
@@ -609,7 +610,7 @@ class EpuParser:
                     )
 
         except Exception as e:
-            print(f"Failed to parse micrograph manifest: {str(e)}")
+            logging.error(f"Failed to parse micrograph manifest: {str(e)}")
             return None
 
 
@@ -645,7 +646,7 @@ class EpuParser:
         # 2. scan all gridsquare IDs from /Metadata directory files - this includes "inactive" and "active" gridsquares
         metadata_dir_path = str(gridstore.data_dir / "Metadata")
         for gridsquare_id, filename in EpuParser.parse_gridsquares_metadata_dir(metadata_dir_path):
-            verbose and print(f"Discovered gridsquare {gridsquare_id} from file {filename}")
+            verbose and logging.info(f"Discovered gridsquare {gridsquare_id} from file {filename}")
             gridsquare_metadata = EpuParser.parse_gridsquare_metadata(filename)
 
             # Here we are not worried about overwriting an existing gridsquare
@@ -656,7 +657,7 @@ class EpuParser:
                 id=gridsquare_id,
                 metadata=gridsquare_metadata
             ))
-            verbose and print(gridstore.gridsquares.get(gridsquare_id))
+            verbose and logging.info(gridstore.gridsquares.get(gridsquare_id))
 
         # 3. scan all image-disc dir sub-dirs to get a list of active gridsquares. for each gridsquare subdir:
         for gridsquare_manifest_path in list(
@@ -670,7 +671,7 @@ class EpuParser:
             gridsquare_data = gridstore.gridsquares.get(gridsquare_id)
             gridsquare_data.manifest = gridsquare_manifest
             gridstore.gridsquares.add(gridsquare_id, gridsquare_data)
-            verbose and print(gridstore.gridsquares.get(gridsquare_id))
+            verbose and logging.info(gridstore.gridsquares.get(gridsquare_id))
 
             # 3.2 scan that gridsquare's Foilholes/ dir to get foilholes
             foilhole_manifest_paths = sorted(
@@ -681,7 +682,7 @@ class EpuParser:
             for foilhole_manifest_path in foilhole_manifest_paths:
                 foilhole_id = re.search(EpuParser.foilhole_xml_file_pattern, str(foilhole_manifest_path)).group(1)
                 gridstore.foilholes.add(foilhole_id, EpuParser.parse_foilhole_manifest(foilhole_manifest_path))
-                verbose and print(gridstore.foilholes.get(foilhole_id))
+                verbose and logging.info(gridstore.foilholes.get(foilhole_id))
 
             # 3.3 scan that gridsquare's Foilholes/ dir to get micrographs
             for micrograph_manifest_path in list(
@@ -702,11 +703,11 @@ class EpuParser:
                     manifest_file = micrograph_manifest_path,
                     manifest = micrograph_manifest,
                 ))
-                verbose and print(gridstore.micrographs.get(micrograph_manifest.unique_id))
+                verbose and logging.info(gridstore.micrographs.get(micrograph_manifest.unique_id))
 
         return gridstore
 
 
 if __name__ == "__main__":
-    print("This module is not meant to be run directly. Import and use its components instead.")
+    logging.warning("This module is not meant to be run directly. Import and use its components instead.")
     sys.exit(1)
