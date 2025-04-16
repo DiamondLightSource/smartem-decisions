@@ -14,9 +14,9 @@ from src.epu_data_intake.fs_watcher import (
     DEFAULT_PATTERNS,
     RateLimitedHandler,
 )
-from src.epu_data_intake.utils import (
+from src.smartem_decisions.utils import (
     logging,
-    setup_logging,
+    setup_postgres_connection,
 )
 
 epu_data_intake_cli = typer.Typer(help="EPU Data Intake Tools")
@@ -29,7 +29,7 @@ def parse_epu_output_dir(epu_output_dir: str):
     """Parse an entire EPU output directory structure. May contain multiple grids"""
     datastore = EpuSession(epu_output_dir)
     datastore = EpuParser.parse_epu_output_dir(datastore)
-    print(datastore)
+    logging.info(datastore)
 
 
 @parse_cli.command("grid")
@@ -37,54 +37,54 @@ def parse_grid(grid_data_dir: str):
     is_valid, errors = EpuParser.validate_project_dir(Path(grid_data_dir))
 
     if not is_valid:
-        print("Grid data dir dir is structurally invalid. Found the following issues:\n")
+        logging.info("Grid data dir dir is structurally invalid. Found the following issues:\n")
         for error in errors:
-            print(f"- {error}")
+            logging.info(f"- {error}")
     else:
         gridstore = EpuParser.parse_grid_dir(grid_data_dir)
-        print(gridstore)
+        logging.info(gridstore)
 
 
 @parse_cli.command("session")
 def parse_epu_session(path: str):
     """Parse an EPU session manifest file."""
     epu_session_data = EpuParser.parse_epu_session_manifest(path)
-    print(epu_session_data)
+    logging.info(epu_session_data)
 
 
 @parse_cli.command("atlas")
 def parse_atlas(path: str):
     """Parse an atlas manifest file."""
     atlas_data = EpuParser.parse_atlas_manifest(path)
-    print(atlas_data)
+    logging.info(atlas_data)
 
 
 @parse_cli.command("gridsquare-metadata")
 def parse_gridsquare_metadata(path: str):
     """Parse grid square metadata."""
     metadata = EpuParser.parse_gridsquare_metadata(path)
-    print(metadata)
+    logging.info(metadata)
 
 
 @parse_cli.command("gridsquare")
 def parse_gridsquare(path: str):
     """Parse a grid square manifest file."""
     gridsquare_manifest_data = EpuParser.parse_gridsquare_manifest(path)
-    print(gridsquare_manifest_data)
+    logging.info(gridsquare_manifest_data)
 
 
 @parse_cli.command("foilhole")
 def parse_foilhole(path: str):
     """Parse a foil hole manifest file."""
     foilhole_data = EpuParser.parse_foilhole_manifest(path)
-    print(foilhole_data)
+    logging.info(foilhole_data)
 
 
 @parse_cli.command("micrograph")
 def parse_micrograph(path: str):
     """Parse a micrograph manifest file."""
     micrograph_data = EpuParser.parse_micrograph_manifest(path)
-    print(micrograph_data)
+    logging.info(micrograph_data)
 
 
 @epu_data_intake_cli.command("validate")
@@ -94,11 +94,11 @@ def validate_epu_dir(path: str):
     is_valid, errors = EpuParser.validate_project_dir(Path(path))
 
     if is_valid:
-        print("EPU project dir is structurally valid")
+        logging.info("EPU project dir is structurally valid")
     else:
-        print("Invalid EPU project dir. Found the following issues:\n")
+        logging.info("Invalid EPU project dir. Found the following issues:\n")
         for error in errors:
-            print(f"- {error}")
+            logging.info(f"- {error}")
 
     return not is_valid  # Return non-zero exit code if validation fails
 
@@ -111,6 +111,7 @@ def watch_directory(
             "--pattern", "-p",
             help="File patterns to watch (can be specified multiple times)"
         ),
+        # TODO currently unused because logging now comes from `smartem_decisions` module
         log_file: str | None = typer.Option(
             "fs_changes.log",
             "--log-file", "-l",
@@ -130,17 +131,9 @@ def watch_directory(
     """Watch directory for file changes and log them in JSON format."""
     path = Path(path).absolute()
     if not path.exists():
-        print(f"Error: Directory {path} does not exist")
+        logging.error(f"Error: Directory {path} does not exist")
         raise typer.Exit(1)
-
-    setup_logging(log_file, verbose)
-
-    logging.info({
-        "message": f"Starting to watch directory: {str(path)} (including subdirectories)",
-        "path": str(path),
-        "patterns": patterns,
-        "timestamp": datetime.now().isoformat()
-    })
+    logging.info(f"Starting to watch directory: {str(path)} (including subdirectories) for patterns: {patterns}")
 
     observer = Observer()
 
@@ -148,20 +141,23 @@ def watch_directory(
     handler.set_watch_dir(path)
     handler.init_datastore()
 
-    print("Parsing existing directory contents...")
+    logging.info("Parsing existing directory contents...")
     # TODO settle a potential race condition if one exists:
     handler.datastore = EpuParser.parse_epu_output_dir(handler.datastore, verbose)
-    print("..done! Now listening for new filesystem events")
+    logging.info("..done! Now listening for new filesystem events")
     observer.schedule(handler, str(path), recursive=True)
 
     def handle_exit(signum, frame):
         nonlocal handler
-        print(handler.datastore)
+        logging.info(handler.datastore)
+
+        # Temporary functionality - save to local DB while in development.
+        # In production there'll be an HTTP API to talk to, which will queue writes
+        # to RabbitMQ and the consumer will pick these up
+        handler.datastore.to_db(setup_postgres_connection())
+
         observer.stop()
-        logging.info({
-            "message": "Watching stopped",
-            "timestamp": datetime.now().isoformat()
-        })
+        logging.info("Watching stopped")
         observer.join()
         raise typer.Exit()
 

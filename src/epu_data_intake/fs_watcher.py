@@ -14,7 +14,7 @@ from src.epu_data_intake.data_model import (
     MicrographData,
 )
 from src.epu_data_intake.fs_parser import EpuParser
-from src.epu_data_intake.utils import logging
+from src.smartem_decisions.utils import logging
 
 """Default glob patterns for EPU data files.
 
