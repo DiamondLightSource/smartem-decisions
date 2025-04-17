@@ -4,6 +4,9 @@ from sqlmodel import (
     Field,
     Relationship,
     SQLModel,
+    create_engine,
+)
+from sqlmodel import (
     Session as SQLModelSession,
 )
 
@@ -46,7 +49,12 @@ class Grid(SQLModel, table=True, table_name="grid"):
     scan_end_time: datetime | None = Field(default=None)
     acquisition: Acquisition | None = Relationship(back_populates="grids")
     gridsquares: list["GridSquare"] = Relationship(back_populates="grid", cascade_delete=True)
-
+    quality_model_parameters: list["QualityPredictionModelParameter"] = Relationship(
+        back_populates="grid", cascade_delete=True
+    )
+    quality_model_weights: list["QualityPredictionModelWeight"] = Relationship(
+        back_populates="grid", cascade_delete=True
+    )
 
 class GridSquare(SQLModel, table=True, table_name="gridsquare"):
     __table_args__ = {"extend_existing": True}
@@ -59,9 +67,10 @@ class GridSquare(SQLModel, table=True, table_name="gridsquare"):
     name: str
     grid: Grid | None = Relationship(back_populates="gridsquares")
     foilholes: list["FoilHole"] = Relationship(back_populates="gridsquare", cascade_delete=True)
+    prediction: list["QualityPrediction"] = Relationship(back_populates="gridsquare", cascade_delete=True)
 
 
-class FoilHole(SQLModel, table=True, table_name="foilhole"):
+class FoilHole(SQLModel, table=True, table_name="foilhole"):  # type: ignore
     __table_args__ = {"extend_existing": True}
     id: int | None = Field(default=None, primary_key=True)
     gridsquare_id: int | None = Field(default=None, foreign_key="gridsquare.id")
@@ -69,9 +78,10 @@ class FoilHole(SQLModel, table=True, table_name="foilhole"):
     name: str
     gridsquare: GridSquare | None = Relationship(back_populates="foilholes")
     micrographs: list["Micrograph"] = Relationship(back_populates="foilhole", cascade_delete=True)
+    prediction: list["QualityPrediction"] = Relationship(back_populates="foilhole", cascade_delete=True)
 
 
-class Micrograph(SQLModel, table=True, table_name="micrograph"):
+class Micrograph(SQLModel, table=True, table_name="micrograph"):  # type: ignore
     __table_args__ = {"extend_existing": True}
     id: int | None = Field(default=None, primary_key=True)
     foilhole_id: int | None = Field(default=None, foreign_key="foilhole.id")
@@ -85,31 +95,59 @@ class Micrograph(SQLModel, table=True, table_name="micrograph"):
     number_of_particles_picked: int | None = Field(default=None)  # TODO non-negative or null
     pick_distribution: str | None = Field(default=None)  # TODO dict type (create a user-defined?)
     foilhole: FoilHole | None = Relationship(back_populates="micrographs")
+    quality_model_weights: list["QualityPredictionModelWeight"] = Relationship(
+        back_populates="micrograph", cascade_delete=True
+    )
 
 
 class QualityPredictionModel(SQLModel, table=True):  # type: ignore
-    id: Optional[int] = Field(default=None, primary_key=True)
-    name: str 
+    __table_args__ = {"extend_existing": True}
+    name: str = Field(primary_key=True)
     description: str = ""
-    model_states: List["QualityPredictionModelState"] = Relationship(back_populates="quality_prediction_model", cascade_delete=True)
-    model_parameters: List["QualityPredictionModelParameter"] = Relationship(back_populates="quality_prediction_model", cascade_delete=True)
+    parameters: list["QualityPredictionModelParameter"] = Relationship(back_populates="model", cascade_delete=True)
+    weights: list["QualityPredictionModelWeight"] = Relationship(back_populates="model", cascade_delete=True)
+    predictions: list["QualityPrediction"] = Relationship(back_populates="model", cascade_delete=True)
 
 
 class QualityPredictionModelParameter(SQLModel, table=True):  # type: ignore
-    id: Optional[int] = Field(default=None, primary_key=True)
-    model_id: int = Field(foreign_key="qualitypredictionmodel.id")
-    index: int 
-    name: str
+    __table_args__ = {"extend_existing": True}
+    id: int | None = Field(default=None, primary_key=True)
+    id: int | None = Field(default=None, primary_key=True)
+    grid_id: int = Field(foreign_key="grid.id")
+    timestamp: datetime = Field(default_factory=datetime.now)
+    prediction_model_name: str = Field(foreign_key="qualitypredictionmodel.name")
+    key: str
     value: float
-    quality_prediction_model: Optional[QualityPredictionModel] = Relationship(back_populates="model_parameters")
+    model: QualityPredictionModel | None = Relationship(back_populates="parameters")
+    grid: Grid | None = Relationship(back_populates="quality_model_parameters")
 
 
-class QualityPredictionModelState(SQLModel, table=True):  # type: ignore
-    id: Optional[int] = Field(default=None, primary_key=True)
-    model_id: int = Field(foreign_key="qualitypredictionmodel.id")
-    index: int 
-    prior_weight: float
-    quality_prediction_model: Optional[QualityPredictionModel] = Relationship(back_populates="model_states")
+class QualityPredictionModelWeight(SQLModel, table=True):  # type: ignore
+    __table_args__ = {"extend_existing": True}
+    id: int | None = Field(default=None, primary_key=True)
+    grid_id: int = Field(foreign_key="grid.id")
+    micrograph_id: int | None = Field(default=None, foreign_key="micrograph.id")
+    micrograph_quality: bool | None = Field(default=None)
+    timestamp: datetime = Field(default_factory=datetime.now)
+    origin: str | None = Field(default=None)
+    prediction_model_name: str = Field(foreign_key="qualitypredictionmodel.name")
+    weight: float
+    model: QualityPredictionModel | None = Relationship(back_populates="weights")
+    grid: Grid | None = Relationship(back_populates="quality_model_weights")
+    micrograph: Micrograph | None = Relationship(back_poopulates="quality_model_weights")
+
+
+class QualityPrediction(SQLModel, table=True):  # type: ignore
+    __table_args__ = {"extend_existing": True}
+    id: int | None = Field(default=None, primary_key=True)
+    timestamp: datetime = Field(default_factory=datetime.now)
+    value: float
+    prediction_model_name: str = Field(foreign_key="qualitypredictionmodel.name")
+    foilhole_id: int | None = Field(default=None, foreign_key="foilhole.id")
+    gridsquare_id: int | None = Field(default=None, foreign_key="gridsquare.id")
+    foilhole: FoilHole | None = Relationship(back_populates="prediction")
+    gridsquare: GridSquare | None = Relationship(back_populates="prediction")
+    model: QualityPredictionModel | None = Relationship(back_populates="predictions")
 
 
 def _create_db_and_tables(engine):
