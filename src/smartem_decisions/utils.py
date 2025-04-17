@@ -6,7 +6,7 @@ import yaml
 from sqlmodel import create_engine
 from dotenv import load_dotenv
 
-from _version import __version__
+from src.smartem_decisions._version import __version__
 from src.smartem_decisions.log_manager import (
     LogConfig,
     LogManager,
