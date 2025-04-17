@@ -312,39 +312,3 @@ class EpuSession:
             result += f"Grid ID: {grid_id}\n{grid}\n"
 
         return result
-
-    # This is a temporary method, to be removed. Presently commented out as cross-module dependencies
-    #   introduced by this method break the EPU agent Win build
-    # def to_db(self, engine: Engine):
-    #     for grid in self.grids.values():
-    #         acq = DBAcquisition(
-    #             epu_id=grid.session_data.id, name=grid.session_data.name, status=AcquisitionStatus.COMPLETED
-    #         )
-    #         with DBSession(engine) as session:
-    #             session.add(acq)
-    #             session.commit()
-    #             db_grid = DBGrid(acquisition_id=acq.id, name=grid.session_data.name)
-    #             session.add(db_grid)
-    #             session.commit()
-    #             squares = [
-    #                 DBGridSquare(
-    #                     id=gsid, name=str(gsid), grid_id=db_grid.id, gridsquare_img=str(gs.metadata.image_path)
-    #                 )
-    #                 for gsid, gs in grid.gridsquares.items()
-    #             ]
-    #             session.add_all(squares)
-    #             session.commit()
-    #             holes = [
-    #                 DBFoilHole(id=fhid, name=str(fhid), gridsquare_id=fh.gridsquare_id)
-    #                 for fhid, fh in grid.foilholes.items()
-    #             ]
-    #             hole_ids = {h.id for h in holes}
-    #             session.add_all(holes)
-    #             session.commit()
-    #             mics = [
-    #                 DBMicrograph(foilhole_id=m.foilhole_id)
-    #                 for m in grid.micrographs.values()
-    #                 if m.foilhole_id in hole_ids
-    #             ]
-    #             session.add_all(mics)
-    #             session.commit()

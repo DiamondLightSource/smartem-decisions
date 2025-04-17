@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 from datetime import datetime
 
 from src.smartem_decisions.model.entity_status import (
@@ -10,7 +10,7 @@ from src.smartem_decisions.model.entity_status import (
 )
 
 # Acquisition models
-class AcquisitionBase(BaseModel):
+class AcquisitionBaseRequest(BaseModel):
     name: str
     epu_id: str | None = None
     status: AcquisitionStatus | None = None
@@ -23,11 +23,11 @@ class AcquisitionBase(BaseModel):
     clustering_radius: str | None = None
 
 
-class AcquisitionCreate(AcquisitionBase):
+class AcquisitionCreateRequest(AcquisitionBaseRequest):
     pass
 
 
-class AcquisitionUpdate(BaseModel):
+class AcquisitionUpdateRequest(BaseModel):
     name: str | None = None
     epu_id: str | None = None
     status: AcquisitionStatus | None = None
@@ -41,7 +41,7 @@ class AcquisitionUpdate(BaseModel):
 
 
 # Atlas models
-class AtlasTileBase(BaseModel):
+class AtlasTileBaseRequest(BaseModel):
     tile_id: str
     position_x: int | None = None
     position_y: int | None = None
@@ -51,11 +51,11 @@ class AtlasTileBase(BaseModel):
     base_filename: str | None = None
 
 
-class AtlasTileCreate(AtlasTileBase):
+class AtlasTileCreateRequest(AtlasTileBaseRequest):
     atlas_id: int
 
 
-class AtlasTileUpdate(BaseModel):
+class AtlasTileUpdateRequest(BaseModel):
     tile_id: str | None = None
     position_x: int | None = None
     position_y: int | None = None
@@ -65,7 +65,7 @@ class AtlasTileUpdate(BaseModel):
     base_filename: str | None = None
 
 
-class AtlasBase(BaseModel):
+class AtlasBaseRequest(BaseModel):
     atlas_id: str
     grid_id: int
     acquisition_date: datetime | None = None
@@ -74,11 +74,11 @@ class AtlasBase(BaseModel):
     name: str
 
 
-class AtlasCreate(AtlasBase):
-    tiles: list[AtlasTileCreate] | None = None
+class AtlasCreateRequest(AtlasBaseRequest):
+    tiles: list[AtlasTileCreateRequest] | None = None
 
 
-class AtlasUpdate(BaseModel):
+class AtlasUpdateRequest(BaseModel):
     atlas_id: str | None = None
     acquisition_date: datetime | None = None
     storage_folder: str | None = None
@@ -87,7 +87,7 @@ class AtlasUpdate(BaseModel):
 
 
 # Grid models
-class GridBase(BaseModel):
+class GridBaseRequest(BaseModel):
     name: str
     acquisition_id: int  # Changed from session_id to acquisition_id
     status: GridStatus | None = None
@@ -97,11 +97,11 @@ class GridBase(BaseModel):
     scan_end_time: datetime | None = None
 
 
-class GridCreate(GridBase):
+class GridCreateRequest(GridBaseRequest):
     pass
 
 
-class GridUpdate(BaseModel):
+class GridUpdateRequest(BaseModel):
     name: str | None = None
     acquisition_id: int | None = None  # Changed from session_id to acquisition_id
     status: GridStatus | None = None
@@ -112,7 +112,7 @@ class GridUpdate(BaseModel):
 
 
 # GridSquare models
-class GridSquareBase(BaseModel):
+class GridSquareBaseRequest(BaseModel):
     grid_id: int
     gridsquare_id: str  # Original string ID from data model
     data_dir: str | None = None
@@ -149,11 +149,11 @@ class GridSquareBase(BaseModel):
     status: GridSquareStatus | None = None
 
 
-class GridSquareCreate(GridSquareBase):
+class GridSquareCreateRequest(GridSquareBaseRequest):
     pass
 
 
-class GridSquareUpdate(BaseModel):
+class GridSquareUpdateRequest(BaseModel):
     gridsquare_id: str | None = None
     data_dir: str | None = None
 
@@ -191,7 +191,7 @@ class GridSquareUpdate(BaseModel):
 
 
 # FoilHole models
-class FoilHoleBase(BaseModel):
+class FoilHoleBaseRequest(BaseModel):
     gridsquare_id: int
     foilhole_id: str  # Original string ID from data model
 
@@ -214,11 +214,11 @@ class FoilHoleBase(BaseModel):
     status: FoilHoleStatus | None = None
 
 
-class FoilHoleCreate(FoilHoleBase):
+class FoilHoleCreateRequest(FoilHoleBaseRequest):
     pass
 
 
-class FoilHoleUpdate(BaseModel):
+class FoilHoleUpdateRequest(BaseModel):
     foilhole_id: str | None = None
 
     # From FoilHoleData
@@ -242,7 +242,7 @@ class FoilHoleUpdate(BaseModel):
 
 
 # Micrograph models
-class MicrographBase(BaseModel):
+class MicrographBaseRequest(BaseModel):
     foilhole_id: int
     micrograph_id: str  # Original string ID from data model
     location_id: str | None = None
@@ -273,11 +273,11 @@ class MicrographBase(BaseModel):
     status: MicrographStatus | None = None
 
 
-class MicrographCreate(MicrographBase):
+class MicrographCreateRequest(MicrographBaseRequest):
     pass
 
 
-class MicrographUpdate(BaseModel):
+class MicrographUpdateRequest(BaseModel):
     micrograph_id: str | None = None
     location_id: str | None = None
     high_res_path: str | None = None

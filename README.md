@@ -119,6 +119,13 @@ podman push gcr.io/diamond-pubreg/smartem_decisions/smartem_decisions:latest
 
 ## Notes
 
+> TODO recycle these to `docs/`
+
+- The number of micrographs in a single foil hole will be typically between 4 and 10.
+- The total number of micrographs collected from a grid is normally 10-50k.
+- The number of particles picked is about 300 per micrograph.
+- About half of those are selected and half rejected
+
 - mock the decision-making stuff
   - to be tackled separately
   - to be decoupled and modular, so we can easily swap out decision-making authorities in the future
