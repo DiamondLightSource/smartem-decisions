@@ -14,10 +14,6 @@ from src.epu_data_intake.fs_watcher import (
     DEFAULT_PATTERNS,
     RateLimitedHandler,
 )
-# from src.smartem_decisions.utils import (
-#     logging,
-#     setup_postgres_connection,
-# )
 
 epu_data_intake_cli = typer.Typer(help="EPU Data Intake Tools")
 parse_cli = typer.Typer(help="Commands for parsing EPU data")
@@ -111,7 +107,8 @@ def watch_directory(
             "--pattern", "-p",
             help="File patterns to watch (can be specified multiple times)"
         ),
-        # TODO currently unused because logging now comes from `smartem_decisions` module
+        # TODO currently unused because logging should come from `smartem_decisions` module,
+        #  and the log filename should be wired to `log_manager` instantiation once that's in place.
         log_file: str | None = typer.Option(
             "fs_changes.log",
             "--log-file", "-l",
@@ -150,11 +147,6 @@ def watch_directory(
     def handle_exit(signum, frame):
         nonlocal handler
         logging.info(handler.datastore)
-
-        # Temporary functionality - save to local DB while in development.
-        # In production there'll be an HTTP API to talk to, which will queue writes
-        # to RabbitMQ and the consumer will pick these up
-        # handler.datastore.to_db(setup_postgres_connection())
 
         observer.stop()
         logging.info("Watching stopped")
