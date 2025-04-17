@@ -1,18 +1,15 @@
 from datetime import datetime
-from sqlalchemy import text, Column
+
+from sqlalchemy import Column, text
 from sqlmodel import (
     Field,
     Relationship,
     SQLModel,
-    create_engine,
 )
 from sqlmodel import (
     Session as SQLModelSession,
 )
 
-from src.smartem_decisions.utils import (
-    setup_postgres_connection,
-)
 from src.smartem_decisions.model.entity_status import (
     AcquisitionStatus,
     AcquisitionStatusType,
@@ -24,6 +21,9 @@ from src.smartem_decisions.model.entity_status import (
     GridStatusType,
     MicrographStatus,
     MicrographStatusType,
+)
+from src.smartem_decisions.utils import (
+    setup_postgres_connection,
 )
 
 
@@ -55,6 +55,7 @@ class Grid(SQLModel, table=True, table_name="grid"):
     quality_model_weights: list["QualityPredictionModelWeight"] = Relationship(
         back_populates="grid", cascade_delete=True
     )
+
 
 class GridSquare(SQLModel, table=True, table_name="gridsquare"):
     __table_args__ = {"extend_existing": True}
