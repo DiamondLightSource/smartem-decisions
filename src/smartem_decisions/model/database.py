@@ -135,7 +135,7 @@ class QualityPredictionModelWeight(SQLModel, table=True):  # type: ignore
     weight: float
     model: QualityPredictionModel | None = Relationship(back_populates="weights")
     grid: Grid | None = Relationship(back_populates="quality_model_weights")
-    micrograph: Micrograph | None = Relationship(back_poopulates="quality_model_weights")
+    micrograph: Micrograph | None = Relationship(back_populates="quality_model_weights")
 
 
 class QualityPrediction(SQLModel, table=True):  # type: ignore
