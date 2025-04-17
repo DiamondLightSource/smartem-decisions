@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 from sqlmodel import select
 from sqlalchemy.exc import SQLAlchemyError
 
-from src.smartem_decisions.utils import logger
+from src.smartem_decisions.log_manager import logger
 
 from src.smartem_decisions.model.mq_event import (
     AcquisitionStartBody,
@@ -38,6 +38,8 @@ from src.smartem_decisions.model.database import (
     FoilHoleStatus,
     MicrographStatus,
 )
+
+# TODO this is deprecated, recycle and remove
 
 """
 The number of micrographs in a single foil hole will be typically between 4 and 10.

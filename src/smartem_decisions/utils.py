@@ -1,43 +1,10 @@
-import logging
 import os
-import pika
-import time
 import yaml
 from sqlmodel import create_engine
 from dotenv import load_dotenv
 
-from src.smartem_decisions._version import __version__
-from src.smartem_decisions.log_manager import (
-    LogConfig,
-    LogManager,
-)
-
-
-def setup_logger():
-    load_dotenv()
-    required_env_vars = ["GRAYLOG_HOST", "GRAYLOG_UDP_PORT"]
-
-    env_vars = {}
-    for key in required_env_vars:
-        value = os.getenv(key)
-        if value is None:
-            print(f"Error: Required environment variable '{key}' is not set")
-            exit(1)
-        env_vars[key] = value
-
-    log_manager = LogManager.get_instance("smartem_decisions")
-    return log_manager.configure(LogConfig(
-        level=logging.DEBUG,
-        console=True,
-        file_path="smartem_decisions-core.log", # TODO define in app config
-        graylog_host=env_vars['GRAYLOG_HOST'],
-        graylog_port=int(env_vars['GRAYLOG_UDP_PORT']),
-        graylog_protocol="udp",
-        graylog_facility="smartem_decisions-core", # TODO define in app config
-        graylog_extra_fields={"environment": "development", "version": __version__}
-    ))
-
-logger = setup_logger()
+from smartem_decisions.rabbitmq_publisher import RabbitMQPublisher
+from src.smartem_decisions.log_manager import logger
 
 
 def load_conf():
@@ -75,55 +42,47 @@ def setup_postgres_connection():
     return engine
 
 
-def setup_rabbitmq_connection(max_retries=3, retry_delay=2):
+def create_rabbitmq_publisher(connection_params: dict | None = None,
+                              exchange: str = "",
+                              queue: str = "smartem_decisions") -> RabbitMQPublisher:
     """
-    Create and return a connection to RabbitMQ with retry logic.
+    Create a new RabbitMQ publisher instance
 
     Args:
-        max_retries: Maximum number of connection attempts
-        retry_delay: Delay between retries in seconds
+        connection_params: Connection parameters for RabbitMQ. If None, load from environment variables
+        exchange: Exchange name (default is direct exchange "")
+        queue: Queue name (default is "smartem_decisions")
 
     Returns:
-        A pika.BlockingConnection object
-
-    Raises:
-        pika.exceptions.AMQPConnectionError: If connection cannot be established after retries
+        RabbitMQPublisher: A new publisher instance
     """
+    if connection_params is None:
+        load_dotenv()
 
-    load_dotenv()
+        required_env_vars = ["RABBITMQ_HOST", "RABBITMQ_PORT", "RABBITMQ_USER", "RABBITMQ_PASSWORD"]
+        for key in required_env_vars:
+            if os.getenv(key) is None:
+                logger.error(f"Error: Required environment variable '{key}' is not set")
+                exit(1)
 
-    required_env_vars = ["RABBITMQ_HOST", "RABBITMQ_PORT", "RABBITMQ_USER", "RABBITMQ_PASSWORD"]
-    env_vars = {}
-    for key in required_env_vars:
-        value = os.getenv(key)
-        if value is None:
-            logger.error(f"Error: Required environment variable '{key}' is not set")
-            exit(1)
-        env_vars[key] = value
+        connection_params = {
+            "host": os.getenv("RABBITMQ_HOST", "localhost"),
+            "port": int(os.getenv("RABBITMQ_PORT", "5672")),
+            "virtual_host": os.getenv("RABBITMQ_VHOST", "/"),
+            "credentials": {
+                "username": os.getenv("RABBITMQ_USER", "guest"),
+                "password": os.getenv("RABBITMQ_PASSWORD", "guest"),
+            }
+        }
 
-    connection_params = pika.ConnectionParameters(
-        host=env_vars["RABBITMQ_HOST"],
-        port=int(env_vars["RABBITMQ_PORT"]),
-        credentials=pika.PlainCredentials(
-            env_vars["RABBITMQ_USER"],
-            env_vars["RABBITMQ_PASSWORD"],
-        ),
-    )
+        # Use queue from environment if provided
+        queue_from_env = os.getenv("RABBITMQ_QUEUE")
+        if queue_from_env:
+            queue = queue_from_env
 
-    for attempt in range(max_retries):
-        try:
-            logger.info(f"Attempting to connect to RabbitMQ (attempt {attempt + 1}/{max_retries})...")
-            connection = pika.BlockingConnection(connection_params)
-            logger.info("Successfully connected to RabbitMQ")
-            return connection
-        except pika.exceptions.AMQPConnectionError as e:
-            if attempt < max_retries - 1:
-                logger.warning(f"Connection failed: {e}. Retrying in {retry_delay} seconds...")
-                time.sleep(retry_delay)
-            else:
-                logger.error(f"Failed to connect to RabbitMQ after {max_retries} attempts")
-                raise
-        except Exception as e:
-            logger.error(f"Unexpected error while connecting to RabbitMQ: {e}")
-            raise
+    publisher = RabbitMQPublisher(connection_params, exchange, queue)
+    return publisher
 
+
+# Singleton instance that can be imported and used throughout the application
+rmq_publisher = create_rabbitmq_publisher()
