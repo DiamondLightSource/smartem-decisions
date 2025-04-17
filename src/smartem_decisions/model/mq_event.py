@@ -8,6 +8,8 @@ from pydantic import (
 )
 
 
+# TODO this is deprecated, recycle and remove
+
 class MessageQueueEventType(str, Enum):
     """Enum listing various system events that are mapped to messages in RabbitMQ"""
 

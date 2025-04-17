@@ -1,3 +1,4 @@
+import os
 import logging
 import logging.handlers
 import sys
@@ -5,7 +6,9 @@ from dataclasses import dataclass, field
 import json
 
 import graypy
+from dotenv import load_dotenv
 
+from src.smartem_decisions._version import __version__
 
 # TODO: use or loose
 def _monkeypatch_graypy() -> None:
@@ -216,6 +219,31 @@ class LogManager:
 
         return self.logger
 
+
+def setup_logger():
+    load_dotenv()
+    required_env_vars = ["GRAYLOG_HOST", "GRAYLOG_UDP_PORT"]
+
+    env_vars = {}
+    for key in required_env_vars:
+        value = os.getenv(key)
+        if value is None:
+            print(f"Error: Required environment variable '{key}' is not set")
+            exit(1)
+        env_vars[key] = value
+
+    return LogManager.get_instance("smartem_decisions").configure(LogConfig(
+        level=logging.DEBUG,
+        console=True,
+        file_path="smartem_decisions-core.log", # TODO define in app config
+        graylog_host=env_vars['GRAYLOG_HOST'],
+        graylog_port=int(env_vars['GRAYLOG_UDP_PORT']),
+        graylog_protocol="udp",
+        graylog_facility="smartem_decisions-core", # TODO define in app config
+        graylog_extra_fields={"environment": "development", "version": __version__}
+    ))
+
+logger = setup_logger()
 
 # Usage example
 if __name__ == "__main__":
