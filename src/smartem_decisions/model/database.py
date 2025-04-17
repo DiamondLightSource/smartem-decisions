@@ -5,8 +5,6 @@ from sqlmodel import (
     Field,
     Relationship,
     SQLModel,
-)
-from sqlmodel import (
     Session as SQLModelSession,
 )
 
@@ -36,7 +34,39 @@ class Acquisition(SQLModel, table=True, table_name="acquisition"):
     start_time: datetime | None = Field(default=None)
     end_time: datetime | None = Field(default=None)
     paused_time: datetime | None = Field(default=None)
-    grids: list["Grid"] = Relationship(back_populates="acquisition", cascade_delete=True)
+    # Added fields from EpuSessionData
+    storage_path: str | None = Field(default=None)
+    atlas_path: str | None = Field(default=None)
+    clustering_mode: str | None = Field(default=None)
+    clustering_radius: str | None = Field(default=None)
+    grids: list["Grid"] = Relationship(sa_relationship_kwargs={"back_populates": "acquisition"}, cascade_delete=True)
+
+
+class Atlas(SQLModel, table=True, table_name="atlas"):
+    __table_args__ = {"extend_existing": True}
+    id: int | None = Field(default=None, primary_key=True)
+    atlas_id: str = Field(default="")
+    grid_id: int | None = Field(default=None, foreign_key="grid.id")
+    acquisition_date: datetime | None = Field(default=None)
+    storage_folder: str | None = Field(default=None)
+    description: str | None = Field(default=None)
+    name: str = Field(default="")
+    grid: "Grid" = Relationship(sa_relationship_kwargs={"back_populates": "atlas"})
+    atlas_tiles: list["AtlasTile"] = Relationship(sa_relationship_kwargs={"back_populates": "atlas"}, cascade_delete=True)
+
+
+class AtlasTile(SQLModel, table=True, table_name="atlas_tile"):
+    __table_args__ = {"extend_existing": True}
+    id: int | None = Field(default=None, primary_key=True)
+    atlas_id: int | None = Field(default=None, foreign_key="atlas.id")
+    tile_id: str = Field(default="")
+    position_x: int | None = Field(default=None)
+    position_y: int | None = Field(default=None)
+    size_x: int | None = Field(default=None)
+    size_y: int | None = Field(default=None)
+    file_format: str | None = Field(default=None)
+    base_filename: str | None = Field(default=None)
+    atlas: Atlas = Relationship(sa_relationship_kwargs={"back_populates": "atlas_tiles"})
 
 
 class Grid(SQLModel, table=True, table_name="grid"):
@@ -45,10 +75,13 @@ class Grid(SQLModel, table=True, table_name="grid"):
     acquisition_id: int | None = Field(default=None, foreign_key="acquisition.id")
     status: GridStatus = Field(default=GridStatus.NONE, sa_column=Column(GridStatusType()))
     name: str
+    data_dir: str | None = Field(default=None)
+    atlas_dir: str | None = Field(default=None)
     scan_start_time: datetime | None = Field(default=None)
     scan_end_time: datetime | None = Field(default=None)
-    acquisition: Acquisition | None = Relationship(back_populates="grids")
-    gridsquares: list["GridSquare"] = Relationship(back_populates="grid", cascade_delete=True)
+    acquisition: Acquisition = Relationship(sa_relationship_kwargs={"back_populates": "grids"})
+    gridsquares: list["GridSquare"] = Relationship(sa_relationship_kwargs={"back_populates": "grid"}, cascade_delete=True)
+    atlas: Atlas = Relationship(sa_relationship_kwargs={"back_populates": "grid"})
     quality_model_parameters: list["QualityPredictionModelParameter"] = Relationship(
         back_populates="grid", cascade_delete=True
     )
@@ -62,46 +95,111 @@ class GridSquare(SQLModel, table=True, table_name="gridsquare"):
     id: int | None = Field(default=None, primary_key=True)
     grid_id: int | None = Field(default=None, foreign_key="grid.id")
     status: GridSquareStatus = Field(default=GridSquareStatus.NONE, sa_column=Column(GridSquareStatusType()))
-    # grid_position 5 by 5
-    atlastile_img: str = Field(default="")  # path to tile image
-    gridsquare_img: str = Field(default="")
-    name: str
-    grid: Grid | None = Relationship(back_populates="gridsquares")
-    foilholes: list["FoilHole"] = Relationship(back_populates="gridsquare", cascade_delete=True)
+    gridsquare_id: str = Field(default="")  # From the original model id field
+    data_dir: str | None = Field(default=None)
+
+    # From GridSquareMetadata
+    atlas_node_id: int | None = Field(default=None)
+    state: str | None = Field(default=None)
+    rotation: float | None = Field(default=None)
+    image_path: str | None = Field(default=None)
+    selected: bool | None = Field(default=None)
+    unusable: bool | None = Field(default=None)
+
+    # From GridSquareStagePosition
+    stage_position_x: float | None = Field(default=None)
+    stage_position_y: float | None = Field(default=None)
+    stage_position_z: float | None = Field(default=None)
+
+    # From GridSquarePosition
+    center_x: int | None = Field(default=None)
+    center_y: int | None = Field(default=None)
+    physical_x: float | None = Field(default=None)
+    physical_y: float | None = Field(default=None)
+    size_width: int | None = Field(default=None)
+    size_height: int | None = Field(default=None)
+
+    # From GridSquareManifest
+    acquisition_datetime: datetime | None = Field(default=None)
+    defocus: float | None = Field(default=None)
+    magnification: float | None = Field(default=None)
+    pixel_size: float | None = Field(default=None)
+    detector_name: str | None = Field(default=None)
+    applied_defocus: float | None = Field(default=None)
+
+    grid: Grid = Relationship(sa_relationship_kwargs={"back_populates": "gridsquares"})
+    foilholes: list["FoilHole"] = Relationship(sa_relationship_kwargs={"back_populates": "gridsquare"}, cascade_delete=True)
     prediction: list["QualityPrediction"] = Relationship(back_populates="gridsquare", cascade_delete=True)
 
 
-class FoilHole(SQLModel, table=True, table_name="foilhole"):  # type: ignore
+class FoilHole(SQLModel, table=True, table_name="foilhole"):
     __table_args__ = {"extend_existing": True}
     id: int | None = Field(default=None, primary_key=True)
     gridsquare_id: int | None = Field(default=None, foreign_key="gridsquare.id")
     status: FoilHoleStatus = Field(default=FoilHoleStatus.NONE, sa_column=Column(FoilHoleStatusType()))
-    name: str
-    gridsquare: GridSquare | None = Relationship(back_populates="foilholes")
-    micrographs: list["Micrograph"] = Relationship(back_populates="foilhole", cascade_delete=True)
+    foilhole_id: str = Field(default="")  # From the original model id field
+
+    # From FoilHoleData
+    center_x: float | None = Field(default=None)
+    center_y: float | None = Field(default=None)
+    quality: float | None = Field(default=None)
+    rotation: float | None = Field(default=None)
+    size_width: float | None = Field(default=None)
+    size_height: float | None = Field(default=None)
+
+    # From FoilHolePosition
+    x_location: int | None = Field(default=None)
+    y_location: int | None = Field(default=None)
+    x_stage_position: float | None = Field(default=None)
+    y_stage_position: float | None = Field(default=None)
+    diameter: int | None = Field(default=None)
+    is_near_grid_bar: bool = Field(default=False)
+
+    gridsquare: GridSquare = Relationship(sa_relationship_kwargs={"back_populates": "foilholes"})
+    micrographs: list["Micrograph"] = Relationship(sa_relationship_kwargs={"back_populates": "foilhole"}, cascade_delete=True)
     prediction: list["QualityPrediction"] = Relationship(back_populates="foilhole", cascade_delete=True)
 
 
-class Micrograph(SQLModel, table=True, table_name="micrograph"):  # type: ignore
+class Micrograph(SQLModel, table=True, table_name="micrograph"):
     __table_args__ = {"extend_existing": True}
     id: int | None = Field(default=None, primary_key=True)
     foilhole_id: int | None = Field(default=None, foreign_key="foilhole.id")
     status: MicrographStatus = Field(default=MicrographStatus.NONE, sa_column=Column(MicrographStatusType()))
-    total_motion: float | None = Field(default=None)  # TODO non-negative or null
-    average_motion: float | None = Field(default=None)  # TODO non-negative or null
-    ctf_max_resolution_estimate: float | None = Field(default=None)  # TODO non-negative or null
+
+    # Fields from MicrographData
+    micrograph_id: str = Field(default="")  # From the original model id field
+    location_id: str | None = Field(default=None)
+    high_res_path: str | None = Field(default=None)
+    manifest_file: str | None = Field(default=None)
+
+    # Fields from MicrographManifest
+    acquisition_datetime: datetime | None = Field(default=None)
+    defocus: float | None = Field(default=None)
+    detector_name: str | None = Field(default=None)
+    energy_filter: bool | None = Field(default=None)
+    phase_plate: bool | None = Field(default=None)
+    image_size_x: int | None = Field(default=None)
+    image_size_y: int | None = Field(default=None)
+    binning_x: int | None = Field(default=None)
+    binning_y: int | None = Field(default=None)
+
+    # Pre-existing fields
+    total_motion: float | None = Field(default=None)
+    average_motion: float | None = Field(default=None)
+    ctf_max_resolution_estimate: float | None = Field(default=None)
     number_of_particles_selected: int | None = Field(default=None)
     number_of_particles_rejected: int | None = Field(default=None)
-    selection_distribution: str | None = Field(default=None)  # TODO dict type (create a user-defined?)
-    number_of_particles_picked: int | None = Field(default=None)  # TODO non-negative or null
-    pick_distribution: str | None = Field(default=None)  # TODO dict type (create a user-defined?)
-    foilhole: FoilHole | None = Relationship(back_populates="micrographs")
+    selection_distribution: str | None = Field(default=None)
+    number_of_particles_picked: int | None = Field(default=None)
+    pick_distribution: str | None = Field(default=None)
+
+    foilhole: FoilHole = Relationship(sa_relationship_kwargs={"back_populates": "micrographs"})
     quality_model_weights: list["QualityPredictionModelWeight"] = Relationship(
         back_populates="micrograph", cascade_delete=True
     )
 
 
-class QualityPredictionModel(SQLModel, table=True):  # type: ignore
+class QualityPredictionModel(SQLModel, table=True):
     __table_args__ = {"extend_existing": True}
     name: str = Field(primary_key=True)
     description: str = ""
@@ -110,7 +208,7 @@ class QualityPredictionModel(SQLModel, table=True):  # type: ignore
     predictions: list["QualityPrediction"] = Relationship(back_populates="model", cascade_delete=True)
 
 
-class QualityPredictionModelParameter(SQLModel, table=True):  # type: ignore
+class QualityPredictionModelParameter(SQLModel, table=True):
     __table_args__ = {"extend_existing": True}
     id: int | None = Field(default=None, primary_key=True)
     id: int | None = Field(default=None, primary_key=True)
@@ -123,7 +221,7 @@ class QualityPredictionModelParameter(SQLModel, table=True):  # type: ignore
     grid: Grid | None = Relationship(back_populates="quality_model_parameters")
 
 
-class QualityPredictionModelWeight(SQLModel, table=True):  # type: ignore
+class QualityPredictionModelWeight(SQLModel, table=True):
     __table_args__ = {"extend_existing": True}
     id: int | None = Field(default=None, primary_key=True)
     grid_id: int = Field(foreign_key="grid.id")
@@ -138,7 +236,7 @@ class QualityPredictionModelWeight(SQLModel, table=True):  # type: ignore
     micrograph: Micrograph | None = Relationship(back_populates="quality_model_weights")
 
 
-class QualityPrediction(SQLModel, table=True):  # type: ignore
+class QualityPrediction(SQLModel, table=True):
     __table_args__ = {"extend_existing": True}
     id: int | None = Field(default=None, primary_key=True)
     timestamp: datetime = Field(default_factory=datetime.now)
@@ -173,7 +271,7 @@ def _create_db_and_tables(engine):
                 DROP TYPE IF EXISTS micrographstatus CASCADE;
             END $$;
         """)
-        sess.execute(teardown_query)
+        sess.execute(teardown_query) # We do in fact want to use `sess.execute` not `.exec` here
         sess.commit()
 
     SQLModel.metadata.create_all(engine)
