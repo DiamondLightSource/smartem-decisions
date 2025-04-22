@@ -34,7 +34,7 @@ from src.smartem_decisions.model.database import (
 )
 
 # Import event service for publishing to RabbitMQ
-from src.smartem_decisions.service.event_service import (
+from src.smartem_decisions.mq_publisher import (
     publish_acquisition_created, publish_acquisition_updated, publish_acquisition_deleted,
     publish_atlas_created, publish_atlas_updated, publish_atlas_deleted,
     publish_atlas_tile_created, publish_atlas_tile_updated, publish_atlas_tile_deleted,
