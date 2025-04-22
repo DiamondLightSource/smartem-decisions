@@ -14,7 +14,7 @@ console = Console()
 
 
 def random_string(length=10):
-    return ''.join(random.choices(string.ascii_letters + string.digits, k=length))
+    return "".join(random.choices(string.ascii_letters + string.digits, k=length))
 
 
 class EPUTemplates:
@@ -26,36 +26,36 @@ class EPUTemplates:
     def _load_templates(self):
         """Load template files into memory"""
         # Load DM files
-        self._cache['dm'] = {}
-        for dm_file in self.template_dir.rglob('*.dm'):
-            with open(dm_file, 'rb') as f:
-                self._cache['dm'][dm_file.name] = f.read()
+        self._cache["dm"] = {}
+        for dm_file in self.template_dir.rglob("*.dm"):
+            with open(dm_file, "rb") as f:
+                self._cache["dm"][dm_file.name] = f.read()
 
         # Load XML files
-        self._cache['xml'] = {}
-        for xml_file in self.template_dir.rglob('*.xml'):
-            with open(xml_file, 'rb') as f:
-                self._cache['xml'][xml_file.name] = f.read()
+        self._cache["xml"] = {}
+        for xml_file in self.template_dir.rglob("*.xml"):
+            with open(xml_file, "rb") as f:
+                self._cache["xml"][xml_file.name] = f.read()
 
     def get_dm_content(self, filename=None):
         """Get content for a .dm file, either specific or random"""
-        if not self._cache['dm']:
+        if not self._cache["dm"]:
             return os.urandom(10 * 1024)  # Fallback to random if no templates
 
-        if filename and filename in self._cache['dm']:
-            return self._cache['dm'][filename]
-        return random.choice(list(self._cache['dm'].values()))
+        if filename and filename in self._cache["dm"]:
+            return self._cache["dm"][filename]
+        return random.choice(list(self._cache["dm"].values()))
 
     def get_xml_content(self, filename=None):
         """Get content for an .xml file, either specific or random"""
-        if not self._cache['xml']:
+        if not self._cache["xml"]:
             root = ET.Element("MicroscopeImage")
             ET.SubElement(root, "Timestamp").text = time.strftime("%Y-%m-%d %H:%M:%S")
             return ET.tostring(root)
 
-        if filename and filename in self._cache['xml']:
-            return self._cache['xml'][filename]
-        return random.choice(list(self._cache['xml'].values()))
+        if filename and filename in self._cache["xml"]:
+            return self._cache["xml"][filename]
+        return random.choice(list(self._cache["xml"].values()))
 
 
 def create_epu_structure(base_dir: Path, templates: Optional[EPUTemplates], verbose: bool = False):
@@ -131,7 +131,7 @@ def run_filesystem_changes(
     interval: float = 0.1,
     seed: Optional[Union[int, str]] = None,
     verbose: bool = False,
-    dry_run: bool = False
+    dry_run: bool = False,
 ) -> None:
     """
     Core function to generate test data simulating EPU microscope file changes.
@@ -161,7 +161,7 @@ def run_filesystem_changes(
     create_epu_structure(directory, templates, verbose)
     create_random_structure(directory, verbose)
 
-    actions = ['modify_epu', 'modify_random', 'create_epu', 'create_random', 'delete_random']
+    actions = ["modify_epu", "modify_random", "create_epu", "create_random", "delete_random"]
 
     with console.status("[bold green]Running file system changes...") as status:
         end_time = time.time() + duration
@@ -170,29 +170,30 @@ def run_filesystem_changes(
             if verbose:
                 console.print(f"[dim]Action: {action}[/dim]")
 
-            if action == 'modify_epu':
-                epu_files = list(directory.glob('**/*.dm')) + list(directory.glob('**/*.xml'))
+            if action == "modify_epu":
+                epu_files = list(directory.glob("**/*.dm")) + list(directory.glob("**/*.xml"))
                 if epu_files:
                     file_to_modify = random.choice(epu_files)
-                    content = (templates.get_dm_content() if file_to_modify.suffix == '.dm'
-                            else templates.get_xml_content())
+                    content = (
+                        templates.get_dm_content() if file_to_modify.suffix == ".dm" else templates.get_xml_content()
+                    )
                     file_to_modify.write_bytes(content)
 
-            elif action == 'modify_random':
-                random_files = list(directory.glob('**/*.txt'))
+            elif action == "modify_random":
+                random_files = list(directory.glob("**/*.txt"))
                 if random_files:
                     file_to_modify = random.choice(random_files)
-                    with open(file_to_modify, 'ab') as f:
+                    with open(file_to_modify, "ab") as f:
                         f.write(os.urandom(random.randint(1, 100) * 1024))
 
-            elif action == 'create_epu':
+            elif action == "create_epu":
                 create_epu_structure(directory, templates, verbose)
 
-            elif action == 'create_random':
+            elif action == "create_random":
                 create_random_structure(directory, verbose)
 
-            elif action == 'delete_random':
-                random_files = list(directory.glob('**/*.txt'))
+            elif action == "delete_random":
+                random_files = list(directory.glob("**/*.txt"))
                 if random_files:
                     to_delete = random.choice(random_files)
                     to_delete.unlink()
@@ -202,18 +203,14 @@ def run_filesystem_changes(
 
 def filesystem_changes(
     directory: Path = typer.Argument(..., help="Test directory to create and modify files in"),
-    template_dir: Optional[Path] = typer.Option(None, "--template-dir", "-t",
-                                        help="Directory containing template files"),
-    duration: int = typer.Option(60, "--duration", "-d",
-                            help="Test duration in seconds"),
-    interval: float = typer.Option(0.1, "--interval", "-i",
-                            help="Interval between changes in seconds"),
-    seed: Optional[int] = typer.Option(None, "--seed", "-s",
-                                help="Random seed for reproducible tests"),
-    verbose: bool = typer.Option(False, "--verbose", "-v",
-                            help="Show detailed progress"),
-    dry_run: bool = typer.Option(False, "--dry-run",
-                            help="Show what would be done without making changes")
+    template_dir: Optional[Path] = typer.Option(
+        None, "--template-dir", "-t", help="Directory containing template files"
+    ),
+    duration: int = typer.Option(60, "--duration", "-d", help="Test duration in seconds"),
+    interval: float = typer.Option(0.1, "--interval", "-i", help="Interval between changes in seconds"),
+    seed: Optional[int] = typer.Option(None, "--seed", "-s", help="Random seed for reproducible tests"),
+    verbose: bool = typer.Option(False, "--verbose", "-v", help="Show detailed progress"),
+    dry_run: bool = typer.Option(False, "--dry-run", help="Show what would be done without making changes"),
 ) -> None:
     """CLI wrapper for run_filesystem_changes"""
     run_filesystem_changes(
@@ -223,10 +220,9 @@ def filesystem_changes(
         interval=interval,
         seed=seed,
         verbose=verbose,
-        dry_run=dry_run
+        dry_run=dry_run,
     )
 
 
 if __name__ == "__main__":
     typer.run(filesystem_changes)
-

@@ -2,21 +2,20 @@ import unittest
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-from src.epu_data_intake.data_model import EpuSession
+from src.epu_data_intake.data_model import EpuAcquisitionSessionStore
 
 
 class TestEpuSessionGetGridByPath(unittest.TestCase):
-
     def setUp(self):
         # Set up a mock EntityStore for our tests
         self.mock_store = {}
 
         # Patch the EntityStore class
-        self.patcher = patch('epu_data_intake.data_model.EntityStore', return_value=self.mock_store)
+        self.patcher = patch("epu_data_intake.data_model.EntityStore", return_value=self.mock_store)
         self.mock_entity_store = self.patcher.start()
 
         # Create the EpuSession with a temp root dir
-        self.session = EpuSession(root_dir="/temp/epu_root")
+        self.session = EpuAcquisitionSessionStore(root_dir="/temp/epu_root")
 
         # Create mock grid objects with data_dir and atlas_dir attributes
         self.grid1 = MagicMock()
@@ -68,7 +67,7 @@ class TestEpuSessionGetGridByPath(unittest.TestCase):
         result = self.session.get_grid_by_path(path)
         self.assertIsNone(result)
 
-    @patch('logging.Logger.debug')
+    @patch("logging.Logger.debug")
     def test_logging_when_no_grid_found(self, mock_debug):
         # Test that we log a debug message when no grid is found
         path = "/temp/nonexistent/path"
@@ -77,5 +76,5 @@ class TestEpuSessionGetGridByPath(unittest.TestCase):
         mock_debug.assert_called_once_with(f"No grid found for path: {path}")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

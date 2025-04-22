@@ -6,6 +6,7 @@ from pydantic import BaseModel
 from src.smartem_decisions.log_manager import logger
 from src.smartem_decisions.model.mq_event import MessageQueueEventType
 
+
 class RabbitMQPublisher:
     """
     Publisher class for sending messages to RabbitMQ
@@ -30,9 +31,7 @@ class RabbitMQPublisher:
         """Establish connection to RabbitMQ server"""
         if self._connection is None or self._connection.is_closed:
             try:
-                self._connection = pika.BlockingConnection(
-                    pika.ConnectionParameters(**self.connection_params)
-                )
+                self._connection = pika.BlockingConnection(pika.ConnectionParameters(**self.connection_params))
                 self._channel = self._connection.channel()
 
                 # Declare queue with durable=True to ensure it survives broker restarts
@@ -72,10 +71,7 @@ class RabbitMQPublisher:
                 payload_dict = payload
 
             # Create message with event_type and payload
-            message = {
-                "event_type": event_type.value,
-                **payload_dict
-            }
+            message = {"event_type": event_type.value, **payload_dict}
 
             # Convert message to JSON
             message_json = json.dumps(message)
@@ -87,8 +83,8 @@ class RabbitMQPublisher:
                 body=message_json,
                 properties=pika.BasicProperties(
                     delivery_mode=2,  # Make message persistent
-                    content_type='application/json'
-                )
+                    content_type="application/json",
+                ),
             )
 
             logger.info(f"Published {event_type.value} event to RabbitMQ")

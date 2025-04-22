@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 """Setup script to handle version file copying and dotenv instantiation."""
+
 import os
 import shutil
 from pathlib import Path
@@ -16,10 +17,7 @@ def copy_version_files():
         print(f"Warning: {source_file} does not exist, nothing to copy")
         return
 
-    target_files = [
-        Path("src/smartem_decisions/_version.py"),
-        Path("src/epu_data_intake/_version.py")
-    ]
+    target_files = [Path("src/smartem_decisions/_version.py"), Path("src/epu_data_intake/_version.py")]
 
     # Make sure target directories exist
     for target in target_files:
@@ -73,9 +71,9 @@ class CustomEggInfo(egg_info):
 setup(
     name="smartem-decisions",  # Required for some setuptools versions
     cmdclass={
-        'develop': CustomDevelop,
-        'install': CustomInstall,
-        'egg_info': CustomEggInfo,
+        "develop": CustomDevelop,
+        "install": CustomInstall,
+        "egg_info": CustomEggInfo,
     },
     # We're using pyproject.toml for the rest
 )

@@ -52,7 +52,9 @@ class Atlas(SQLModel, table=True, table_name="atlas"):
     description: str | None = Field(default=None)
     name: str = Field(default="")
     grid: "Grid" = Relationship(sa_relationship_kwargs={"back_populates": "atlas"})
-    atlas_tiles: list["AtlasTile"] = Relationship(sa_relationship_kwargs={"back_populates": "atlas"}, cascade_delete=True)
+    atlas_tiles: list["AtlasTile"] = Relationship(
+        sa_relationship_kwargs={"back_populates": "atlas"}, cascade_delete=True
+    )
 
 
 class AtlasTile(SQLModel, table=True, table_name="atlas_tile"):
@@ -80,7 +82,9 @@ class Grid(SQLModel, table=True, table_name="grid"):
     scan_start_time: datetime | None = Field(default=None)
     scan_end_time: datetime | None = Field(default=None)
     acquisition: Acquisition = Relationship(sa_relationship_kwargs={"back_populates": "grids"})
-    gridsquares: list["GridSquare"] = Relationship(sa_relationship_kwargs={"back_populates": "grid"}, cascade_delete=True)
+    gridsquares: list["GridSquare"] = Relationship(
+        sa_relationship_kwargs={"back_populates": "grid"}, cascade_delete=True
+    )
     atlas: Atlas = Relationship(sa_relationship_kwargs={"back_populates": "grid"})
     quality_model_parameters: list["QualityPredictionModelParameter"] = Relationship(
         back_populates="grid", cascade_delete=True
@@ -128,7 +132,9 @@ class GridSquare(SQLModel, table=True, table_name="gridsquare"):
     applied_defocus: float | None = Field(default=None)
 
     grid: Grid = Relationship(sa_relationship_kwargs={"back_populates": "gridsquares"})
-    foilholes: list["FoilHole"] = Relationship(sa_relationship_kwargs={"back_populates": "gridsquare"}, cascade_delete=True)
+    foilholes: list["FoilHole"] = Relationship(
+        sa_relationship_kwargs={"back_populates": "gridsquare"}, cascade_delete=True
+    )
     prediction: list["QualityPrediction"] = Relationship(back_populates="gridsquare", cascade_delete=True)
 
 
@@ -156,7 +162,9 @@ class FoilHole(SQLModel, table=True, table_name="foilhole"):
     is_near_grid_bar: bool = Field(default=False)
 
     gridsquare: GridSquare = Relationship(sa_relationship_kwargs={"back_populates": "foilholes"})
-    micrographs: list["Micrograph"] = Relationship(sa_relationship_kwargs={"back_populates": "foilhole"}, cascade_delete=True)
+    micrographs: list["Micrograph"] = Relationship(
+        sa_relationship_kwargs={"back_populates": "foilhole"}, cascade_delete=True
+    )
     prediction: list["QualityPrediction"] = Relationship(back_populates="foilhole", cascade_delete=True)
 
 
@@ -271,7 +279,7 @@ def _create_db_and_tables(engine):
                 DROP TYPE IF EXISTS micrographstatus CASCADE;
             END $$;
         """)
-        sess.execute(teardown_query) # We do in fact want to use `sess.execute` not `.exec` here
+        sess.execute(teardown_query)  # We do in fact want to use `sess.execute` not `.exec` here
         sess.commit()
 
     SQLModel.metadata.create_all(engine)

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import json
-from typing import Dict, Any, Callable
+from typing import Any, Callable
 
 from dotenv import load_dotenv
 from sqlalchemy.orm import Session as SqlAlchemySession
@@ -15,8 +15,12 @@ from src.smartem_decisions.utils import (
 )
 from src.smartem_decisions.rabbitmq import MessageQueueEventType
 from src.smartem_decisions.model.mq_event import (
-    AcquisitionCreatedEvent, AcquisitionUpdatedEvent, AcquisitionDeletedEvent,
-    AtlasCreatedEvent, AtlasUpdatedEvent, AtlasDeletedEvent,
+    AcquisitionCreatedEvent,
+    AcquisitionUpdatedEvent,
+    AcquisitionDeletedEvent,
+    AtlasCreatedEvent,
+    AtlasUpdatedEvent,
+    AtlasDeletedEvent,
 )
 from src.smartem_decisions.model.database import (
     Acquisition,
@@ -29,7 +33,7 @@ conf = load_conf()
 db_engine = setup_postgres_connection()
 
 
-def handle_acquisition_created(event_data: Dict[str, Any], session: SqlAlchemySession) -> None:
+def handle_acquisition_created(event_data: dict[str, Any], session: SqlAlchemySession) -> None:
     """
     Handle acquisition created event by creating an acquisition in the database
 
@@ -52,7 +56,7 @@ def handle_acquisition_created(event_data: Dict[str, Any], session: SqlAlchemySe
             epu_id=event.epu_id,
             start_time=event.start_time,
             end_time=event.end_time,
-            metadata=event.metadata
+            metadata=event.metadata,
         )
         session.add(acquisition)
         session.commit()
@@ -66,7 +70,7 @@ def handle_acquisition_created(event_data: Dict[str, Any], session: SqlAlchemySe
         raise
 
 
-def handle_acquisition_updated(event_data: Dict[str, Any], session: SqlAlchemySession) -> None:
+def handle_acquisition_updated(event_data: dict[str, Any], session: SqlAlchemySession) -> None:
     """
     Handle acquisition updated event by updating an acquisition in the database
 
@@ -106,7 +110,7 @@ def handle_acquisition_updated(event_data: Dict[str, Any], session: SqlAlchemySe
         raise
 
 
-def handle_acquisition_deleted(event_data: Dict[str, Any], session: SqlAlchemySession) -> None:
+def handle_acquisition_deleted(event_data: dict[str, Any], session: SqlAlchemySession) -> None:
     """
     Handle acquisition deleted event by deleting an acquisition from the database
 
@@ -134,7 +138,7 @@ def handle_acquisition_deleted(event_data: Dict[str, Any], session: SqlAlchemySe
         raise
 
 
-def handle_atlas_created(event_data: Dict[str, Any], session: SqlAlchemySession) -> None:
+def handle_atlas_created(event_data: dict[str, Any], session: SqlAlchemySession) -> None:
     """
     Handle atlas created event by creating an atlas in the database
 
@@ -151,11 +155,7 @@ def handle_atlas_created(event_data: Dict[str, Any], session: SqlAlchemySession)
             return
 
         atlas = Atlas(
-            id=event.id,
-            name=event.name,
-            grid_id=event.grid_id,
-            pixel_size=event.pixel_size,
-            metadata=event.metadata
+            id=event.id, name=event.name, grid_id=event.grid_id, pixel_size=event.pixel_size, metadata=event.metadata
         )
         session.add(atlas)
         session.commit()
@@ -169,7 +169,7 @@ def handle_atlas_created(event_data: Dict[str, Any], session: SqlAlchemySession)
         raise
 
 
-def handle_atlas_updated(event_data: Dict[str, Any], session: SqlAlchemySession) -> None:
+def handle_atlas_updated(event_data: dict[str, Any], session: SqlAlchemySession) -> None:
     """
     Handle atlas updated event by updating an atlas in the database
 
@@ -205,7 +205,7 @@ def handle_atlas_updated(event_data: Dict[str, Any], session: SqlAlchemySession)
         raise
 
 
-def handle_atlas_deleted(event_data: Dict[str, Any], session: SqlAlchemySession) -> None:
+def handle_atlas_deleted(event_data: dict[str, Any], session: SqlAlchemySession) -> None:
     """
     Handle atlas deleted event by deleting an atlas from the database
 
@@ -234,7 +234,7 @@ def handle_atlas_deleted(event_data: Dict[str, Any], session: SqlAlchemySession)
 
 
 # Create a mapping from event types to their handler functions
-def get_event_handlers() -> Dict[str, Callable]:
+def get_event_handlers() -> dict[str, Callable]:
     """
     Get a mapping of event types to their handler functions
 
@@ -245,11 +245,9 @@ def get_event_handlers() -> Dict[str, Callable]:
         MessageQueueEventType.ACQUISITION_CREATED.value: handle_acquisition_created,
         MessageQueueEventType.ACQUISITION_UPDATED.value: handle_acquisition_updated,
         MessageQueueEventType.ACQUISITION_DELETED.value: handle_acquisition_deleted,
-
         MessageQueueEventType.ATLAS_CREATED.value: handle_atlas_created,
         MessageQueueEventType.ATLAS_UPDATED.value: handle_atlas_updated,
         MessageQueueEventType.ATLAS_DELETED.value: handle_atlas_deleted,
-
         # TODO: Add handlers for all other event types
     }
 

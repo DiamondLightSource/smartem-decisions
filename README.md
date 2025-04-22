@@ -5,7 +5,8 @@
 
 # smartem_decisions
 
-Project board: <https://github.com/orgs/DiamondLightSource/projects/33/views/1>
+- Project board: <https://github.com/orgs/DiamondLightSource/projects/33/views/1>
+- Test Datasets: https://gitlab.diamond.ac.uk/scisoft/cryoem/smartem-decisions-test-datasets
 
 This is where you should write a short paragraph that describes what your module does,
 how it does it, and why people should use it.
