@@ -8,7 +8,7 @@ import typer
 from pathlib import Path
 from watchdog.observers import Observer
 
-from src.epu_data_intake.data_model import EpuSession
+from src.epu_data_intake.data_model import EpuAcquisitionSessionStore
 from src.epu_data_intake.fs_parser import EpuParser
 from src.epu_data_intake.fs_watcher import (
     DEFAULT_PATTERNS,
@@ -23,7 +23,7 @@ epu_data_intake_cli.add_typer(parse_cli, name="parse")
 @parse_cli.command("dir")
 def parse_epu_output_dir(epu_output_dir: str):
     """Parse an entire EPU output directory structure. May contain multiple grids"""
-    datastore = EpuSession(epu_output_dir)
+    datastore = EpuAcquisitionSessionStore(epu_output_dir)
     datastore = EpuParser.parse_epu_output_dir(datastore)
     logging.info(datastore)
 
@@ -101,42 +101,42 @@ def validate_epu_dir(path: str):
 
 @epu_data_intake_cli.command("watch")
 def watch_directory(
-        path: Path = typer.Argument(..., help="Directory to watch"),
-        patterns: list[str] = typer.Option(
-            DEFAULT_PATTERNS,
-            "--pattern", "-p",
-            help="File patterns to watch (can be specified multiple times)"
-        ),
-        # TODO currently unused because logging should come from `smartem_decisions` module,
-        #  and the log filename should be wired to `log_manager` instantiation once that's in place.
-        log_file: str | None = typer.Option(
-            "fs_changes.log",
-            "--log-file", "-l",
-            help="Log file path (optional)"
-        ),
-        log_interval: float = typer.Option(
-            10.0,
-            "--interval", "-i",
-            help="Minimum interval between log entries in seconds"
-        ),
-        verbose: bool = typer.Option(
-            False,
-            "--verbose", "-v",
-            help="Enable verbose output"
-        ),
+    path: Path = typer.Argument(..., help="Directory to watch"),
+    dry_run: bool = typer.Option(
+        False, "--dry_run", "-n", "Enables dry run mode, writing data in-memory and not posting to Core's HTTP API"
+    ),
+    # TODO provide via env but allow override via CLI, introduce a localhost default for local dev
+    api_url: str = typer.Option(
+        None, "--api-url", help="URL for the Core API (required unless in dry run mode)"
+    ),
+    # TODO currently unused because logging should come from `~smartem_decisions~` `shared` module,
+    #  and the log filename should be wired to `log_manager` instantiation once that's in place.
+    log_file: str | None = typer.Option("fs_changes.log", "--log-file", "-l", help="Log file path (optional)"),
+    log_interval: float = typer.Option(
+        10.0, "--interval", "-i", help="Minimum interval between log entries in seconds"
+    ),
+    patterns: list[str] = typer.Option(
+        DEFAULT_PATTERNS, "--pattern", "-p", help="File patterns to watch (can be specified multiple times)"
+    ),
+    verbose: bool = typer.Option(False, "--verbose", "-v", help="Enable verbose output"),
 ):
     """Watch directory for file changes and log them in JSON format."""
     path = Path(path).absolute()
     if not path.exists():
         logging.error(f"Error: Directory {path} does not exist")
         raise typer.Exit(1)
+
+    if not dry_run and not api_url:
+        logging.error("Error: API URL must be provided when not in dry run mode")
+        raise typer.Exit(1)
+
     logging.info(f"Starting to watch directory: {str(path)} (including subdirectories) for patterns: {patterns}")
 
     observer = Observer()
 
     handler = RateLimitedHandler(patterns, log_interval, verbose)
     handler.set_watch_dir(path)
-    handler.init_datastore()
+    handler.init_datastore(dry_run, api_url)
 
     logging.info("Parsing existing directory contents...")
     # TODO settle a potential race condition if one exists:
@@ -155,7 +155,7 @@ def watch_directory(
 
     # Handle both CTRL+C and Windows signals
     signal.signal(signal.SIGINT, handle_exit)
-    if platform.system() == 'Windows':
+    if platform.system() == "Windows":
         signal.signal(signal.SIGBREAK, handle_exit)
 
     observer.start()

@@ -37,14 +37,14 @@ def setup_postgres_connection():
     engine = create_engine(
         f"postgresql+psycopg2://{env_vars['POSTGRES_USER']}:{env_vars['POSTGRES_PASSWORD']}@"
         f"localhost:{env_vars['POSTGRES_PORT']}/{env_vars['POSTGRES_DB']}",
-        echo=True, # TODO test if possible to feed this output through our logger
+        echo=True,  # TODO test if possible to feed this output through our logger
     )
     return engine
 
 
-def create_rabbitmq_publisher(connection_params: dict | None = None,
-                              exchange: str = "",
-                              queue: str = "smartem_decisions") -> RabbitMQPublisher:
+def create_rabbitmq_publisher(
+    connection_params: dict | None = None, exchange: str = "", queue: str = "smartem_decisions"
+) -> RabbitMQPublisher:
     """
     Create a new RabbitMQ publisher instance
 
@@ -72,7 +72,7 @@ def create_rabbitmq_publisher(connection_params: dict | None = None,
             "credentials": {
                 "username": os.getenv("RABBITMQ_USER", "guest"),
                 "password": os.getenv("RABBITMQ_PASSWORD", "guest"),
-            }
+            },
         }
 
         # Use queue from environment if provided

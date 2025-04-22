@@ -7,12 +7,18 @@ from src.smartem_decisions.utils import setup_postgres_connection
 from src.smartem_decisions.model.http_request import (
     AcquisitionCreateRequest,
     AcquisitionUpdateRequest,
-    AtlasCreateRequest, AtlasUpdateRequest,
-    AtlasTileCreateRequest, AtlasTileUpdateRequest,
-    GridCreateRequest, GridUpdateRequest,
-    GridSquareCreateRequest, GridSquareUpdateRequest,
-    FoilHoleCreateRequest, FoilHoleUpdateRequest,
-    MicrographCreateRequest, MicrographUpdateRequest,
+    AtlasCreateRequest,
+    AtlasUpdateRequest,
+    AtlasTileCreateRequest,
+    AtlasTileUpdateRequest,
+    GridCreateRequest,
+    GridUpdateRequest,
+    GridSquareCreateRequest,
+    GridSquareUpdateRequest,
+    FoilHoleCreateRequest,
+    FoilHoleUpdateRequest,
+    MicrographCreateRequest,
+    MicrographUpdateRequest,
 )
 from src.smartem_decisions.model.http_response import (
     AcquisitionResponse,
@@ -35,13 +41,27 @@ from src.smartem_decisions.model.database import (
 
 # Import event service for publishing to RabbitMQ
 from src.smartem_decisions.mq_publisher import (
-    publish_acquisition_created, publish_acquisition_updated, publish_acquisition_deleted,
-    publish_atlas_created, publish_atlas_updated, publish_atlas_deleted,
-    publish_atlas_tile_created, publish_atlas_tile_updated, publish_atlas_tile_deleted,
-    publish_grid_created, publish_grid_updated, publish_grid_deleted,
-    publish_gridsquare_created, publish_gridsquare_updated, publish_gridsquare_deleted,
-    publish_foilhole_created, publish_foilhole_updated, publish_foilhole_deleted,
-    publish_micrograph_created, publish_micrograph_updated, publish_micrograph_deleted,
+    publish_acquisition_created,
+    publish_acquisition_updated,
+    publish_acquisition_deleted,
+    publish_atlas_created,
+    publish_atlas_updated,
+    publish_atlas_deleted,
+    publish_atlas_tile_created,
+    publish_atlas_tile_updated,
+    publish_atlas_tile_deleted,
+    publish_grid_created,
+    publish_grid_updated,
+    publish_grid_deleted,
+    publish_gridsquare_created,
+    publish_gridsquare_updated,
+    publish_gridsquare_deleted,
+    publish_foilhole_created,
+    publish_foilhole_updated,
+    publish_foilhole_deleted,
+    publish_micrograph_created,
+    publish_micrograph_updated,
+    publish_micrograph_deleted,
 )
 
 db_engine = setup_postgres_connection()
@@ -67,6 +87,7 @@ app = FastAPI(
 
 # ============ Acquisition CRUD Operations ============
 
+
 @app.get("/acquisitions", response_model=list[AcquisitionResponse])
 def get_acquisitions(db: SqlAlchemySession = Depends(get_db)):
     """Get all acquisitions"""
@@ -84,10 +105,7 @@ def create_acquisition(acquisition: AcquisitionCreateRequest, db: SqlAlchemySess
     db.refresh(db_acquisition)
 
     # Prepare data for event publishing
-    acquisition_data = {
-        "id": db_acquisition.id,
-        **acquisition.model_dump()
-    }
+    acquisition_data = {"id": db_acquisition.id, **acquisition.model_dump()}
 
     # Publish the event to RabbitMQ
     success = publish_acquisition_created(acquisition_data)
@@ -109,7 +127,9 @@ def get_acquisition(acquisition_id: int, db: SqlAlchemySession = Depends(get_db)
 
 
 @app.put("/acquisitions/{acquisition_id}", response_model=AcquisitionResponse)
-def update_acquisition(acquisition_id: int, acquisition: AcquisitionUpdateRequest, db: SqlAlchemySession = Depends(get_db)):
+def update_acquisition(
+    acquisition_id: int, acquisition: AcquisitionUpdateRequest, db: SqlAlchemySession = Depends(get_db)
+):
     """Update an acquisition by publishing to RabbitMQ"""
     # Check if acquisition exists
     db_acquisition = db.query(Acquisition).filter(Acquisition.id == acquisition_id).first()
@@ -120,10 +140,7 @@ def update_acquisition(acquisition_id: int, acquisition: AcquisitionUpdateReques
     update_data = acquisition.model_dump(exclude_unset=True)
 
     # Create event payload
-    event_data = {
-        "id": acquisition_id,
-        **update_data
-    }
+    event_data = {"id": acquisition_id, **update_data}
 
     # Publish the event to RabbitMQ
     success = publish_acquisition_updated(event_data)
@@ -162,6 +179,7 @@ def delete_acquisition(acquisition_id: int, db: SqlAlchemySession = Depends(get_
 
 # ============ Atlas CRUD Operations ============
 
+
 @app.get("/atlases", response_model=list[AtlasResponse])
 def get_atlases(db: SqlAlchemySession = Depends(get_db)):
     """Get all atlases"""
@@ -186,10 +204,7 @@ def create_atlas(atlas: AtlasCreateRequest, db: SqlAlchemySession = Depends(get_
     db.refresh(db_atlas)
 
     # Prepare data for event publishing
-    atlas_event_data = {
-        "id": db_atlas.id,
-        **atlas_dict
-    }
+    atlas_event_data = {"id": db_atlas.id, **atlas_dict}
 
     # Publish the atlas created event
     success = publish_atlas_created(atlas_event_data)
@@ -209,10 +224,7 @@ def create_atlas(atlas: AtlasCreateRequest, db: SqlAlchemySession = Depends(get_
             db.refresh(db_tile)
 
             # Publish tile created event
-            tile_event_data = {
-                "id": db_tile.id,
-                **tile_data
-            }
+            tile_event_data = {"id": db_tile.id, **tile_data}
             tile_success = publish_atlas_tile_created(tile_event_data)
             if not tile_success:
                 logger.error(f"Failed to publish atlas tile created event for ID: {db_tile.id}")
@@ -241,10 +253,7 @@ def update_atlas(atlas_id: int, atlas: AtlasUpdateRequest, db: SqlAlchemySession
     update_data = atlas.model_dump(exclude_unset=True)
 
     # Create event payload
-    event_data = {
-        "id": atlas_id,
-        **update_data
-    }
+    event_data = {"id": atlas_id, **update_data}
 
     # Publish the event to RabbitMQ
     success = publish_atlas_updated(event_data)
@@ -315,10 +324,7 @@ def create_grid_atlas(grid_id: int, atlas: AtlasCreateRequest, db: SqlAlchemySes
     db.refresh(db_atlas)
 
     # Prepare data for event publishing
-    atlas_event_data = {
-        "id": db_atlas.id,
-        **atlas_dict
-    }
+    atlas_event_data = {"id": db_atlas.id, **atlas_dict}
 
     # Publish the atlas created event
     success = publish_atlas_created(atlas_event_data)
@@ -338,10 +344,7 @@ def create_grid_atlas(grid_id: int, atlas: AtlasCreateRequest, db: SqlAlchemySes
             db.refresh(db_tile)
 
             # Publish tile created event
-            tile_event_data = {
-                "id": db_tile.id,
-                **tile_data
-            }
+            tile_event_data = {"id": db_tile.id, **tile_data}
             tile_success = publish_atlas_tile_created(tile_event_data)
             if not tile_success:
                 logger.error(f"Failed to publish atlas tile created event for ID: {db_tile.id}")
@@ -350,6 +353,7 @@ def create_grid_atlas(grid_id: int, atlas: AtlasCreateRequest, db: SqlAlchemySes
 
 
 # ============ Atlas Tile CRUD Operations ============
+
 
 @app.get("/atlas-tiles", response_model=list[AtlasTileResponse])
 def get_atlas_tiles(db: SqlAlchemySession = Depends(get_db)):
@@ -367,10 +371,7 @@ def create_atlas_tile(tile: AtlasTileCreateRequest, db: SqlAlchemySession = Depe
     db.refresh(db_tile)
 
     # Prepare data for event publishing
-    tile_event_data = {
-        "id": db_tile.id,
-        **tile.model_dump()
-    }
+    tile_event_data = {"id": db_tile.id, **tile.model_dump()}
 
     # Publish the event to RabbitMQ
     success = publish_atlas_tile_created(tile_event_data)
@@ -401,10 +402,7 @@ def update_atlas_tile(tile_id: int, tile: AtlasTileUpdateRequest, db: SqlAlchemy
     update_data = tile.model_dump(exclude_unset=True)
 
     # Create event payload
-    event_data = {
-        "id": tile_id,
-        **update_data
-    }
+    event_data = {"id": tile_id, **update_data}
 
     # Publish the event to RabbitMQ
     success = publish_atlas_tile_updated(event_data)
@@ -466,10 +464,7 @@ def create_atlas_tile_for_atlas(atlas_id: int, tile: AtlasTileCreateRequest, db:
     db.refresh(db_tile)
 
     # Prepare data for event publishing
-    tile_event_data = {
-        "id": db_tile.id,
-        **tile_data
-    }
+    tile_event_data = {"id": db_tile.id, **tile_data}
 
     # Publish the event to RabbitMQ
     success = publish_atlas_tile_created(tile_event_data)
@@ -480,6 +475,7 @@ def create_atlas_tile_for_atlas(atlas_id: int, tile: AtlasTileCreateRequest, db:
 
 
 # ============ Grid CRUD Operations ============
+
 
 @app.get("/grids", response_model=list[GridResponse])
 def get_grids(db: SqlAlchemySession = Depends(get_db)):
@@ -497,10 +493,7 @@ def create_grid(grid: GridCreateRequest, db: SqlAlchemySession = Depends(get_db)
     db.refresh(db_grid)
 
     # Prepare data for event publishing
-    grid_event_data = {
-        "id": db_grid.id,
-        **grid.model_dump()
-    }
+    grid_event_data = {"id": db_grid.id, **grid.model_dump()}
 
     # Publish the event to RabbitMQ
     success = publish_grid_created(grid_event_data)
@@ -531,10 +524,7 @@ def update_grid(grid_id: int, grid: GridUpdateRequest, db: SqlAlchemySession = D
     update_data = grid.model_dump(exclude_unset=True)
 
     # Create event payload
-    event_data = {
-        "id": grid_id,
-        **update_data
-    }
+    event_data = {"id": grid_id, **update_data}
 
     # Publish the event to RabbitMQ
     success = publish_grid_updated(event_data)
@@ -595,10 +585,7 @@ def create_acquisition_grid(acquisition_id: int, grid: GridCreateRequest, db: Sq
     db.refresh(db_grid)
 
     # Prepare data for event publishing
-    grid_event_data = {
-        "id": db_grid.id,
-        **grid_data
-    }
+    grid_event_data = {"id": db_grid.id, **grid_data}
 
     # Publish the event to RabbitMQ
     success = publish_grid_created(grid_event_data)
@@ -609,6 +596,7 @@ def create_acquisition_grid(acquisition_id: int, grid: GridCreateRequest, db: Sq
 
 
 # ============ GridSquare CRUD Operations ============
+
 
 @app.get("/gridsquares", response_model=list[GridSquareResponse])
 def get_gridsquares(db: SqlAlchemySession = Depends(get_db)):
@@ -626,10 +614,7 @@ def create_gridsquare(gridsquare: GridSquareCreateRequest, db: SqlAlchemySession
     db.refresh(db_gridsquare)
 
     # Prepare data for event publishing
-    gridsquare_event_data = {
-        "id": db_gridsquare.id,
-        **gridsquare.model_dump()
-    }
+    gridsquare_event_data = {"id": db_gridsquare.id, **gridsquare.model_dump()}
 
     # Publish the event to RabbitMQ
     success = publish_gridsquare_created(gridsquare_event_data)
@@ -660,10 +645,7 @@ def update_gridsquare(gridsquare_id: int, gridsquare: GridSquareUpdateRequest, d
     update_data = gridsquare.model_dump(exclude_unset=True)
 
     # Create event payload
-    event_data = {
-        "id": gridsquare_id,
-        **update_data
-    }
+    event_data = {"id": gridsquare_id, **update_data}
 
     # Publish the event to RabbitMQ
     success = publish_gridsquare_updated(event_data)
@@ -724,10 +706,7 @@ def create_grid_gridsquare(grid_id: int, gridsquare: GridSquareCreateRequest, db
     db.refresh(db_gridsquare)
 
     # Prepare data for event publishing
-    gridsquare_event_data = {
-        "id": db_gridsquare.id,
-        **gridsquare_data
-    }
+    gridsquare_event_data = {"id": db_gridsquare.id, **gridsquare_data}
 
     # Publish the event to RabbitMQ
     success = publish_gridsquare_created(gridsquare_event_data)
@@ -738,6 +717,7 @@ def create_grid_gridsquare(grid_id: int, gridsquare: GridSquareCreateRequest, db
 
 
 # ============ FoilHole CRUD Operations ============
+
 
 @app.get("/foilholes", response_model=list[FoilHoleResponse])
 def get_foilholes(db: SqlAlchemySession = Depends(get_db)):
@@ -755,10 +735,7 @@ def create_foilhole(foilhole: FoilHoleCreateRequest, db: SqlAlchemySession = Dep
     db.refresh(db_foilhole)
 
     # Prepare data for event publishing
-    foilhole_event_data = {
-        "id": db_foilhole.id,
-        **foilhole.model_dump()
-    }
+    foilhole_event_data = {"id": db_foilhole.id, **foilhole.model_dump()}
 
     # Publish the event to RabbitMQ
     success = publish_foilhole_created(foilhole_event_data)
@@ -789,10 +766,7 @@ def update_foilhole(foilhole_id: int, foilhole: FoilHoleUpdateRequest, db: SqlAl
     update_data = foilhole.model_dump(exclude_unset=True)
 
     # Create event payload
-    event_data = {
-        "id": foilhole_id,
-        **update_data
-    }
+    event_data = {"id": foilhole_id, **update_data}
 
     # Publish the event to RabbitMQ
     success = publish_foilhole_updated(event_data)
@@ -834,9 +808,12 @@ def get_gridsquare_foilholes(gridsquare_id: int, db: SqlAlchemySession = Depends
     return db.query(FoilHole).filter(FoilHole.gridsquare_id == gridsquare_id).all()
 
 
-@app.post("/gridsquares/{gridsquare_id}/foilholes", response_model=FoilHoleResponse,
-          status_code=status.HTTP_201_CREATED)
-def create_gridsquare_foilhole(gridsquare_id: int, foilhole: FoilHoleCreateRequest, db: SqlAlchemySession = Depends(get_db)):
+@app.post(
+    "/gridsquares/{gridsquare_id}/foilholes", response_model=FoilHoleResponse, status_code=status.HTTP_201_CREATED
+)
+def create_gridsquare_foilhole(
+    gridsquare_id: int, foilhole: FoilHoleCreateRequest, db: SqlAlchemySession = Depends(get_db)
+):
     """Create a new foil hole for a specific grid square by publishing to RabbitMQ"""
     # Check if grid square exists
     gridsquare = db.query(GridSquare).filter(GridSquare.id == gridsquare_id).first()
@@ -854,10 +831,7 @@ def create_gridsquare_foilhole(gridsquare_id: int, foilhole: FoilHoleCreateReque
     db.refresh(db_foilhole)
 
     # Prepare data for event publishing
-    foilhole_event_data = {
-        "id": db_foilhole.id,
-        **foilhole_data
-    }
+    foilhole_event_data = {"id": db_foilhole.id, **foilhole_data}
 
     # Publish the event to RabbitMQ
     success = publish_foilhole_created(foilhole_event_data)
@@ -868,6 +842,7 @@ def create_gridsquare_foilhole(gridsquare_id: int, foilhole: FoilHoleCreateReque
 
 
 # ============ Micrograph CRUD Operations ============
+
 
 @app.get("/micrographs", response_model=list[MicrographResponse])
 def get_micrographs(db: SqlAlchemySession = Depends(get_db)):
@@ -885,10 +860,7 @@ def create_micrograph(micrograph: MicrographCreateRequest, db: SqlAlchemySession
     db.refresh(db_micrograph)
 
     # Prepare data for event publishing
-    micrograph_event_data = {
-        "id": db_micrograph.id,
-        **micrograph.model_dump()
-    }
+    micrograph_event_data = {"id": db_micrograph.id, **micrograph.model_dump()}
 
     # Publish the event to RabbitMQ
     success = publish_micrograph_created(micrograph_event_data)
@@ -919,10 +891,7 @@ def update_micrograph(micrograph_id: int, micrograph: MicrographUpdateRequest, d
     update_data = micrograph.model_dump(exclude_unset=True)
 
     # Create event payload
-    event_data = {
-        "id": micrograph_id,
-        **update_data
-    }
+    event_data = {"id": micrograph_id, **update_data}
 
     # Publish the event to RabbitMQ
     success = publish_micrograph_updated(event_data)
@@ -964,9 +933,12 @@ def get_foilhole_micrographs(foilhole_id: int, db: SqlAlchemySession = Depends(g
     return db.query(Micrograph).filter(Micrograph.foilhole_id == foilhole_id).all()
 
 
-@app.post("/foilholes/{foilhole_id}/micrographs", response_model=MicrographResponse,
-          status_code=status.HTTP_201_CREATED)
-def create_foilhole_micrograph(foilhole_id: int, micrograph: MicrographCreateRequest, db: SqlAlchemySession = Depends(get_db)):
+@app.post(
+    "/foilholes/{foilhole_id}/micrographs", response_model=MicrographResponse, status_code=status.HTTP_201_CREATED
+)
+def create_foilhole_micrograph(
+    foilhole_id: int, micrograph: MicrographCreateRequest, db: SqlAlchemySession = Depends(get_db)
+):
     """Create a new micrograph for a specific foil hole by publishing to RabbitMQ"""
     # Check if foil hole exists
     foilhole = db.query(FoilHole).filter(FoilHole.id == foilhole_id).first()
@@ -984,10 +956,7 @@ def create_foilhole_micrograph(foilhole_id: int, micrograph: MicrographCreateReq
     db.refresh(db_micrograph)
 
     # Prepare data for event publishing
-    micrograph_event_data = {
-        "id": db_micrograph.id,
-        **micrograph_data
-    }
+    micrograph_event_data = {"id": db_micrograph.id, **micrograph_data}
 
     # Publish the event to RabbitMQ
     success = publish_micrograph_created(micrograph_event_data)

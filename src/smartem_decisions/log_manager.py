@@ -10,6 +10,7 @@ from dotenv import load_dotenv
 
 from src.smartem_decisions._version import __version__
 
+
 # TODO: use or loose
 def _monkeypatch_graypy() -> None:
     """
@@ -49,7 +50,7 @@ class FixedGELFHTTPHandler(graypy.handler.BaseGELFHandler):
     the correct HTTP functionality.
     """
 
-    def __init__(self, host, port=12202, compress=False, path='/', ssl=False, timeout=5.0, **kwargs):
+    def __init__(self, host, port=12202, compress=False, path="/", ssl=False, timeout=5.0, **kwargs):
         # Initialize the base handler
         super().__init__(compress=compress, **kwargs)
 
@@ -58,12 +59,12 @@ class FixedGELFHTTPHandler(graypy.handler.BaseGELFHandler):
         self.port = port
         self.path = path
         self.ssl = ssl
-        self.proto = 'https' if ssl else 'http'
-        self.url = f'{self.proto}://{self.host}:{self.port}{self.path}'
+        self.proto = "https" if ssl else "http"
+        self.url = f"{self.proto}://{self.host}:{self.port}{self.path}"
         self.timeout = timeout
 
         # Define HTTP headers
-        self.headers = {'Content-Type': 'application/json'}
+        self.headers = {"Content-Type": "application/json"}
 
     def emit(self, record):
         """
@@ -74,25 +75,27 @@ class FixedGELFHTTPHandler(graypy.handler.BaseGELFHandler):
             message_dict = self._make_gelf_dict(record)
 
             # Convert to JSON
-            message = json.dumps(message_dict).encode('utf-8')
+            message = json.dumps(message_dict).encode("utf-8")
 
             # Send via HTTP or HTTPS
             if self.ssl:
                 import http.client
+
                 connection = http.client.HTTPSConnection(self.host, self.port, timeout=self.timeout)
             else:
                 import http.client
+
                 connection = http.client.HTTPConnection(self.host, self.port, timeout=self.timeout)
 
             # Send the request
-            connection.request('POST', self.path, message, self.headers)
+            connection.request("POST", self.path, message, self.headers)
 
             # Get response and close connection
             response = connection.getresponse()
             connection.close()
 
             if response.status != 202:
-                raise ValueError(f'HTTP error: {response.status} {response.reason}')
+                raise ValueError(f"HTTP error: {response.status} {response.reason}")
 
         except Exception:
             self.handleError(record)
@@ -115,7 +118,7 @@ class LogConfig:
     graylog_debugging: bool = False  # Enable debug output from graypy
     graylog_tls: bool = False  # Enable TLS/SSL for TCP and HTTP
     # Formatting
-    format_string: str = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    format_string: str = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
     handlers: list = field(default_factory=list, init=False)
 
 
@@ -153,9 +156,7 @@ class LogManager:
         # File handler with rotation
         if config.file_path:
             file_handler = logging.handlers.RotatingFileHandler(
-                config.file_path,
-                maxBytes=config.file_max_size,
-                backupCount=config.file_backup_count
+                config.file_path, maxBytes=config.file_max_size, backupCount=config.file_backup_count
             )
             file_handler.setLevel(config.level)
             file_handler.setFormatter(formatter)
@@ -171,21 +172,19 @@ class LogManager:
 
             # Define base parameters for all handlers
             base_kwargs = {
-                'facility': facility,
-                'debugging_fields': config.graylog_debugging,
-                'extra_fields': config.graylog_extra_fields.copy(),  # Make a copy to avoid modifying original
+                "facility": facility,
+                "debugging_fields": config.graylog_debugging,
+                "extra_fields": config.graylog_extra_fields.copy(),  # Make a copy to avoid modifying original
             }
 
             # Add source to extra_fields since it's not directly supported by BaseGELFHandler
             if config.graylog_source:
-                base_kwargs['extra_fields']['source'] = config.graylog_source
+                base_kwargs["extra_fields"]["source"] = config.graylog_source
 
             # Configure protocol-specific handlers
             if config.graylog_protocol.lower() == "tcp":
                 graylog_handler = graypy.GELFTCPHandler(
-                    host=config.graylog_host,
-                    port=config.graylog_port,
-                    **base_kwargs
+                    host=config.graylog_host, port=config.graylog_port, **base_kwargs
                 )
             elif config.graylog_protocol.lower() == "http":
                 graylog_handler = FixedGELFHTTPHandler(
@@ -193,13 +192,12 @@ class LogManager:
                     port=config.graylog_port,
                     ssl=config.graylog_tls,
                     compress=False,
-                    path='/',
-                    **base_kwargs
+                    path="/",
+                    **base_kwargs,
                 )
             elif config.graylog_protocol.lower() == "amqp":
                 raise NotImplementedError(
-                    "AMQP protocol requires additional configuration. "
-                    "Implement with graypy.AMQPHandler if needed."
+                    "AMQP protocol requires additional configuration. Implement with graypy.AMQPHandler if needed."
                 )
             elif config.graylog_protocol.lower() == "redis":
                 raise NotImplementedError(
@@ -208,9 +206,7 @@ class LogManager:
                 )
             else:  # Default to UDP
                 graylog_handler = graypy.GELFUDPHandler(
-                    host=config.graylog_host,
-                    port=config.graylog_port,
-                    **base_kwargs
+                    host=config.graylog_host, port=config.graylog_port, **base_kwargs
                 )
 
             graylog_handler.setLevel(config.level)
@@ -232,16 +228,19 @@ def setup_logger():
             exit(1)
         env_vars[key] = value
 
-    return LogManager.get_instance("smartem_decisions").configure(LogConfig(
-        level=logging.DEBUG,
-        console=True,
-        file_path="smartem_decisions-core.log", # TODO define in app config
-        graylog_host=env_vars['GRAYLOG_HOST'],
-        graylog_port=int(env_vars['GRAYLOG_UDP_PORT']),
-        graylog_protocol="udp",
-        graylog_facility="smartem_decisions-core", # TODO define in app config
-        graylog_extra_fields={"environment": "development", "version": __version__}
-    ))
+    return LogManager.get_instance("smartem_decisions").configure(
+        LogConfig(
+            level=logging.DEBUG,
+            console=True,
+            file_path="smartem_decisions-core.log",  # TODO define in app config
+            graylog_host=env_vars["GRAYLOG_HOST"],
+            graylog_port=int(env_vars["GRAYLOG_UDP_PORT"]),
+            graylog_protocol="udp",
+            graylog_facility="smartem_decisions-core",  # TODO define in app config
+            graylog_extra_fields={"environment": "development", "version": __version__},
+        )
+    )
+
 
 logger = setup_logger()
 
@@ -251,50 +250,45 @@ if __name__ == "__main__":
     log_manager = LogManager.get_instance("smartem_decisions")
 
     # Console only
-    logger = log_manager.configure(LogConfig(
-        level=logging.INFO,
-        console=True
-    ))
+    logger = log_manager.configure(LogConfig(level=logging.INFO, console=True))
     logger.info("Console logging")
 
     # Console + File
-    logger = log_manager.configure(LogConfig(
-        level=logging.DEBUG,
-        console=True,
-        file_path="app.log"
-    ))
+    logger = log_manager.configure(LogConfig(level=logging.DEBUG, console=True, file_path="app.log"))
     logger.debug("Console and file logging")
 
     # All handlers including Graylog with UDP
-    logger = log_manager.configure(LogConfig(
-        level=logging.WARNING,
-        console=True,
-        file_path="app.log",
-        graylog_host="localhost",
-        graylog_port=12201,
-        graylog_protocol="udp",
-        graylog_facility="my_application",
-        graylog_extra_fields={"environment": "development", "version": "1.0.0"}
-    ))
+    logger = log_manager.configure(
+        LogConfig(
+            level=logging.WARNING,
+            console=True,
+            file_path="app.log",
+            graylog_host="localhost",
+            graylog_port=12201,
+            graylog_protocol="udp",
+            graylog_facility="my_application",
+            graylog_extra_fields={"environment": "development", "version": "1.0.0"},
+        )
+    )
     logger.warning("Logging everywhere")
 
     # Example with TCP
-    logger = log_manager.configure(LogConfig(
-        level=logging.ERROR,
-        console=True,
-        graylog_host="localhost",
-        graylog_port=12202,
-        graylog_protocol="tcp"
-    ))
+    logger = log_manager.configure(
+        LogConfig(
+            level=logging.ERROR, console=True, graylog_host="localhost", graylog_port=12202, graylog_protocol="tcp"
+        )
+    )
     logger.error("TCP logging to Graylog")
 
     # Example with HTTP and TLS
-    logger = log_manager.configure(LogConfig(
-        level=logging.ERROR,
-        console=True,
-        graylog_host="localhost",
-        graylog_port=12202,
-        graylog_protocol="http",
-        graylog_tls=True
-    ))
+    logger = log_manager.configure(
+        LogConfig(
+            level=logging.ERROR,
+            console=True,
+            graylog_host="localhost",
+            graylog_port=12202,
+            graylog_protocol="http",
+            graylog_tls=True,
+        )
+    )
     logger.error("Secure HTTP logging to Graylog")

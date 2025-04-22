@@ -35,7 +35,7 @@ def find_foilhole_duplicates(directory: Path, verbose: bool):
             console.print(f"\nFound [bold green]{len(all_files)}[/] XML files")
 
         # Filter for FoilHole files
-        pattern = re.compile(r'.*/FoilHoles/FoilHole_(\d+)_(\d{8}_\d{6})\.xml$')
+        pattern = re.compile(r".*/FoilHoles/FoilHole_(\d+)_(\d{8}_\d{6})\.xml$")
 
         # Group files by their FoilHole number
         grouped_files = defaultdict(list)
@@ -54,7 +54,8 @@ def find_foilhole_duplicates(directory: Path, verbose: bool):
 
         # Filter for only those with different timestamps
         duplicates = {
-            num: entries for num, entries in grouped_files.items()
+            num: entries
+            for num, entries in grouped_files.items()
             if len(entries) > 1 and len(set(timestamp for timestamp, _ in entries)) > 1
         }
 
@@ -74,40 +75,24 @@ def create_summary_table(duplicates):
     table.add_column("Timestamps", style="yellow")
 
     for foilhole_num, entries in sorted(duplicates.items()):
-        timestamps = ", ".join(sorted(ts.split('_')[1] for ts, _ in entries))
-        table.add_row(
-            f"FoilHole_{foilhole_num}",
-            str(len(entries)),
-            timestamps
-        )
+        timestamps = ", ".join(sorted(ts.split("_")[1] for ts, _ in entries))
+        table.add_row(f"FoilHole_{foilhole_num}", str(len(entries)), timestamps)
 
     return table
 
 
 @app.command()
 def main(
-        directory: Path = typer.Argument(
-            Path("."),
-            help="Directory to search",
-            exists=True,
-            dir_okay=True,
-            file_okay=False,
-        ),
-        verbose: bool = typer.Option(
-            False,
-            "--verbose", "-v",
-            help="Show detailed progress and statistics"
-        ),
-        output_format: str = typer.Option(
-            "standard",
-            "--format", "-f",
-            help="Output format (standard, json, or summary)"
-        ),
-        no_color: bool = typer.Option(
-            False,
-            "--no-color",
-            help="Disable colored output"
-        )
+    directory: Path = typer.Argument(
+        Path("."),
+        help="Directory to search",
+        exists=True,
+        dir_okay=True,
+        file_okay=False,
+    ),
+    verbose: bool = typer.Option(False, "--verbose", "-v", help="Show detailed progress and statistics"),
+    output_format: str = typer.Option("standard", "--format", "-f", help="Output format (standard, json, or summary)"),
+    no_color: bool = typer.Option(False, "--no-color", help="Disable colored output"),
 ):
     """
     Find and report FoilHole XML files that have matching numbers but different timestamps
@@ -137,15 +122,12 @@ def main(
                 "summary": {
                     "total_groups": total_groups,
                     "total_files": total_files,
-                    "average_files_per_group": total_files / total_groups
+                    "average_files_per_group": total_files / total_groups,
                 },
                 "duplicates": {
-                    f"FoilHole_{num}": [
-                        {"timestamp": ts, "path": path}
-                        for ts, path in sorted(entries)
-                    ]
+                    f"FoilHole_{num}": [{"timestamp": ts, "path": path} for ts, path in sorted(entries)]
                     for num, entries in duplicates.items()
-                }
+                },
             }
             console.print_json(data=result)
 
@@ -159,11 +141,13 @@ def main(
         else:  # standard output
             for foilhole_num, entries in duplicates.items():
                 panel_content = "\n".join(f"  {path}" for _, path in sorted(entries))
-                console.print(Panel(
-                    panel_content,
-                    title=f"[bold cyan]FoilHole_{foilhole_num}[/]",
-                    subtitle=f"[bold yellow]{len(entries)} files[/]"
-                ))
+                console.print(
+                    Panel(
+                        panel_content,
+                        title=f"[bold cyan]FoilHole_{foilhole_num}[/]",
+                        subtitle=f"[bold yellow]{len(entries)} files[/]",
+                    )
+                )
 
             if verbose:
                 console.print("\n[bold]Statistics:[/]")

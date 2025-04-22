@@ -24,14 +24,13 @@ console = Console() if RICH_AVAILABLE else None
 
 @app.command()
 def simulate(
-        output_dir: Path = typer.Argument(..., help="Directory to write simulated EPU output"),
-        template_dir: Path = typer.Option(..., "--template-dir", help="Path to directory containing template data"),
-        interval: float = typer.Option(0.05, "--interval", "-i", help="Interval between changes in seconds"),
-        verbose: bool = typer.Option(False, "--verbose", "-v", help="Show detailed progress"),
-        clean_output: bool = typer.Option(True, "--clean", help="Clean output directory before starting"),
-        use_progress_bar: bool = typer.Option(False, "--progress", "-p", help="Use progress bars for visualization"),
-        run_smoke_test: bool = typer.Option(True, "--smoke-test/--no-smoke-test",
-                                            help="Run smoke test after simulation"),
+    output_dir: Path = typer.Argument(..., help="Directory to write simulated EPU output"),
+    template_dir: Path = typer.Option(..., "--template-dir", help="Path to directory containing template data"),
+    interval: float = typer.Option(0.05, "--interval", "-i", help="Interval between changes in seconds"),
+    verbose: bool = typer.Option(False, "--verbose", "-v", help="Show detailed progress"),
+    clean_output: bool = typer.Option(True, "--clean", help="Clean output directory before starting"),
+    use_progress_bar: bool = typer.Option(False, "--progress", "-p", help="Use progress bars for visualization"),
+    run_smoke_test: bool = typer.Option(True, "--smoke-test/--no-smoke-test", help="Run smoke test after simulation"),
 ):
     """
     Simulate EPU data output by writing files from a template directory to an output directory.
@@ -65,14 +64,15 @@ def simulate(
     # Write pre-existing data
     if use_progress_bar and RICH_AVAILABLE:
         with Progress(
-                SpinnerColumn(),
-                TextColumn("[bold blue]{task.description}"),
-                BarColumn(),
-                TextColumn("[progress.percentage]{task.percentage:>3.0f}%"),
-                TimeElapsedColumn(),
+            SpinnerColumn(),
+            TextColumn("[bold blue]{task.description}"),
+            BarColumn(),
+            TextColumn("[progress.percentage]{task.percentage:>3.0f}%"),
+            TimeElapsedColumn(),
         ) as progress:
-            pre_task = progress.add_task("[green]Writing pre-existing data...",
-                                         total=len(manifest["preexisting_files"]))
+            pre_task = progress.add_task(
+                "[green]Writing pre-existing data...", total=len(manifest["preexisting_files"])
+            )
             write_preexisting_data(template_dir, output_dir, manifest, verbose, progress, pre_task)
     else:
         if verbose:
@@ -90,11 +90,11 @@ def simulate(
     # Write live data according to manifest
     if use_progress_bar and RICH_AVAILABLE:
         with Progress(
-                SpinnerColumn(),
-                TextColumn("[bold blue]{task.description}"),
-                BarColumn(),
-                TextColumn("[progress.percentage]{task.percentage:>3.0f}%"),
-                TimeElapsedColumn(),
+            SpinnerColumn(),
+            TextColumn("[bold blue]{task.description}"),
+            BarColumn(),
+            TextColumn("[progress.percentage]{task.percentage:>3.0f}%"),
+            TimeElapsedColumn(),
         ) as progress:
             live_task = progress.add_task("[green]Writing live data...", total=len(manifest["live_groups"]))
             write_live_data(template_dir, output_dir, manifest, interval, verbose, progress, live_task)
@@ -176,19 +176,16 @@ def create_manifest(template_dir: Path, verbose: bool) -> dict:
     }
 
     if verbose:
-        typer.echo(f"Created manifest with {len(manifest['preexisting_files'])} pre-existing files "
-                   f"and {len(manifest['live_groups'])} live file groups")
+        typer.echo(
+            f"Created manifest with {len(manifest['preexisting_files'])} pre-existing files "
+            f"and {len(manifest['live_groups'])} live file groups"
+        )
 
     return manifest
 
 
 def write_preexisting_data(
-        template_dir: Path,
-        output_dir: Path,
-        manifest: dict,
-        verbose: bool,
-        progress=None,
-        task_id=None
+    template_dir: Path, output_dir: Path, manifest: dict, verbose: bool, progress=None, task_id=None
 ) -> None:
     """Write pre-existing data files to the output directory."""
     for i, rel_path in enumerate(manifest["preexisting_files"]):
@@ -212,26 +209,24 @@ def write_preexisting_data(
 
         # Update progress bar if available
         if progress and task_id is not None:
-            progress.update(task_id, advance=1,
-                            description=f"[green]Writing pre-existing data... ({i + 1}/{len(manifest['preexisting_files'])})")
+            progress.update(
+                task_id,
+                advance=1,
+                description=f"[green]Writing pre-existing data... ({i + 1}/{len(manifest['preexisting_files'])})",
+            )
 
 
 def write_live_data(
-        template_dir: Path,
-        output_dir: Path,
-        manifest: dict,
-        interval: float,
-        verbose: bool,
-        progress=None,
-        task_id=None
+    template_dir: Path, output_dir: Path, manifest: dict, interval: float, verbose: bool, progress=None, task_id=None
 ) -> None:
     """Write live data files to the output directory according to the manifest."""
     for i, group in enumerate(manifest["live_groups"]):
         if verbose and not progress:
             typer.echo(f"Writing file group {i + 1}/{len(manifest['live_groups'])}")
         elif progress and task_id is not None:
-            progress.update(task_id,
-                            description=f"[green]Writing live data group {i + 1}/{len(manifest['live_groups'])}")
+            progress.update(
+                task_id, description=f"[green]Writing live data group {i + 1}/{len(manifest['live_groups'])}"
+            )
 
         # Write each file in the group
         for rel_path in group:
@@ -332,7 +327,7 @@ def is_important_file(file_path: Path) -> bool:
     """
     # Get lowercase file extension
     suffix = file_path.suffix.lower()
-    return suffix in {'.xml', '.dm'}
+    return suffix in {".xml", ".dm"}
 
 
 def smoke_test(template_dir: Path, output_dir: Path, verbose: bool) -> None:

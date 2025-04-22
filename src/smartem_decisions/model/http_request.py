@@ -9,6 +9,7 @@ from src.smartem_decisions.model.entity_status import (
     MicrographStatus,
 )
 
+
 # Acquisition models
 class AcquisitionBaseRequest(BaseModel):
     name: str

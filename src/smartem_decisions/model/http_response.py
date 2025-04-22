@@ -12,6 +12,7 @@ from src.smartem_decisions.model.entity_status import (
 
 # ========== HTTP Response Models ==========
 
+
 class AtlasTileResponse(BaseModel):
     id: int
     atlas_id: int

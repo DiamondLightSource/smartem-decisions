@@ -1,11 +1,25 @@
 from src.smartem_decisions.model.mq_event import (
-    AcquisitionCreatedEvent, AcquisitionUpdatedEvent, AcquisitionDeletedEvent,
-    AtlasCreatedEvent, AtlasUpdatedEvent, AtlasDeletedEvent,
-    AtlasTileCreatedEvent, AtlasTileUpdatedEvent, AtlasTileDeletedEvent,
-    GridCreatedEvent, GridUpdatedEvent, GridDeletedEvent,
-    GridSquareCreatedEvent, GridSquareUpdatedEvent, GridSquareDeletedEvent,
-    FoilHoleCreatedEvent, FoilHoleUpdatedEvent, FoilHoleDeletedEvent,
-    MicrographCreatedEvent, MicrographUpdatedEvent, MicrographDeletedEvent
+    AcquisitionCreatedEvent,
+    AcquisitionUpdatedEvent,
+    AcquisitionDeletedEvent,
+    AtlasCreatedEvent,
+    AtlasUpdatedEvent,
+    AtlasDeletedEvent,
+    AtlasTileCreatedEvent,
+    AtlasTileUpdatedEvent,
+    AtlasTileDeletedEvent,
+    GridCreatedEvent,
+    GridUpdatedEvent,
+    GridDeletedEvent,
+    GridSquareCreatedEvent,
+    GridSquareUpdatedEvent,
+    GridSquareDeletedEvent,
+    FoilHoleCreatedEvent,
+    FoilHoleUpdatedEvent,
+    FoilHoleDeletedEvent,
+    MicrographCreatedEvent,
+    MicrographUpdatedEvent,
+    MicrographDeletedEvent,
 )
 from src.smartem_decisions.rabbitmq import MessageQueueEventType
 from src.smartem_decisions.utils import rmq_publisher

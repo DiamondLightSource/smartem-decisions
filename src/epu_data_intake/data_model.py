@@ -5,27 +5,37 @@ from datetime import datetime
 from pathlib import Path
 from typing import Generic, TypeVar
 
-# Dependencies only required by `to_db()`, drop when not used
-# from sqlalchemy.engine import Engine
-# from sqlmodel import Session as DBSession
-#
-# from smartem_decisions.model.database import (
-#     Acquisition as DBAcquisition,
-#     FoilHole as DBFoilHole,
-#     Grid as DBGrid,
-#     GridSquare as DBGridSquare,
-#     Micrograph as DBMicrograph,
-# )
-# from smartem_decisions.model.entity_status import AcquisitionStatus
-
 T = TypeVar("T")
+
 
 @dataclass
 class EntityStore(Generic[T]):
     _items: dict[str, T] = field(default_factory=dict)
+    _api_client = None
+    _entity_type: str = None
+    _in_memory_only: bool = True
+    _parent_entity: tuple[str, str] = None  # (entity_type, entity_id) tuple
+
+    def set_api_client(self, api_client, entity_type: str, in_memory_only: bool = True):
+        self._api_client = api_client
+        self._entity_type = entity_type
+        self._in_memory_only = in_memory_only
+
+    def set_parent_entity(self, parent_type: str, parent_id: str):
+        self._parent_entity = (parent_type, parent_id)
 
     def add(self, id: str, item: T) -> None:
+        is_update = id in self._items
         self._items[id] = item
+
+        if not self._in_memory_only and self._api_client:
+            try:
+                if is_update:
+                    self._api_client.update(self._entity_type, id, item, self._parent_entity)
+                else:
+                    self._api_client.create(self._entity_type, id, item, self._parent_entity)
+            except Exception as e:
+                logging.error(f"API sync failed for {self._entity_type}/{id}: {str(e)}")
 
     def get(self, id: str) -> T | None:
         return self._items.get(id)
@@ -103,6 +113,17 @@ class FoilHoleData:
     rotation: float | None = None
     size_width: float | None = None
     size_height: float | None = None
+    micrographs: EntityStore[MicrographData] = field(default_factory=EntityStore)
+
+    def __post_init__(self):
+        self.micrographs = EntityStore()
+
+    def add_micrograph(self, micrograph_id: str, micrograph: MicrographData):
+        """Add a micrograph with proper API configuration"""
+        if hasattr(self.micrographs, '_api_client') and self.micrographs._api_client:
+            # Set foilhole as parent of micrograph
+            self.micrographs.set_parent_entity("foilhole", self.id)
+        self.micrographs.add(micrograph_id, micrograph)
 
 
 @dataclass
@@ -195,6 +216,17 @@ class GridSquareData:
     data_dir: Path | None = None
     metadata: GridSquareMetadata | None = None
     manifest: GridSquareManifest | None = None
+    foilholes: EntityStore[FoilHoleData] = field(default_factory=EntityStore)
+
+    def __post_init__(self):
+        self.foilholes = EntityStore()
+
+    def add_foilhole(self, foilhole_id: str, foilhole: FoilHoleData):
+        """Add a foilhole with proper API configuration"""
+        if hasattr(self.foilholes, '_api_client') and self.foilholes._api_client:
+            # Set gridsquare as parent of foilhole
+            self.foilholes.set_parent_entity("gridsquare", self.id)
+        self.foilholes.add(foilhole_id, foilhole)
 
 
 @dataclass
@@ -268,17 +300,46 @@ class Grid:
         )
 
 
-class EpuSession:
+class EpuAcquisitionSessionStore:
     """Purpose of this class is to hold state of EPU session detection as data parsing is performed.
-    On object of this class will be shared among all fs event handlers and parsers.
+    An object of this class will be shared among all fs event handlers and parsers.
     """
 
     root_dir: Path
+    in_memory_only: bool = False
+    api_client = None
 
-    def __init__(self, root_dir: str):
+    def __init__(self, root_dir: str, dry_run: bool = False, api_url: str = None):
         self.logger = logging.getLogger(__name__)
         self.root_dir = Path(root_dir)
+        self.in_memory_only = dry_run
         self.grids = EntityStore()
+
+        if not dry_run and api_url:
+            from src.epu_data_intake.core_api_client_adapter import ApiClientAdapter
+            self.api_client = ApiClientAdapter(api_url)
+            self.grids.set_api_client(self.api_client, "grid", dry_run)
+
+    def add_grid(self, grid_id: str, grid: Grid):
+        """Add a grid with proper API configuration"""
+
+        # Configure the grid's EntityStores for the hierarchy:
+        # session -> grid -> gridsquare -> foilhole -> micrograph
+        if self.api_client and not self.in_memory_only:
+            # Grid is already set up with parent as acquisition/session
+
+            # GridSquares have Grid as parent
+            grid.gridsquares.set_api_client(self.api_client, "gridsquare", self.in_memory_only)
+            grid.gridsquares.set_parent_entity("grid", grid_id)
+
+            # FoilHoles don't have Grid as direct parent, but we need to configure them
+            # The actual parent relationship is set when the foilhole is added to a GridSquare
+            grid.foilholes.set_api_client(self.api_client, "foilhole", self.in_memory_only)
+
+            # Micrographs similarly don't have Grid as direct parent
+            grid.micrographs.set_api_client(self.api_client, "micrograph", self.in_memory_only)
+
+        self.grids.add(grid_id, grid)
 
     def get_grid_by_path(self, path: str):
         """
@@ -300,14 +361,13 @@ class EpuSession:
             ):
                 return grid_id
 
-        # If no matching grid is found
         self.logger.debug(f"No grid found for path: {path}")
         return None
 
     def __str__(self):
         result = f"\nEPU Acquisition Summary:\n  Root dir: {self.root_dir}\n  Grids: {len(self.grids)}\n"
 
-        # Add each grid's string representation TODO debug this doesn't seem to work
+        # Add each grid's string representation. TODO debug this doesn't seem to work
         for grid_id, grid in self.grids.items():
             result += f"Grid ID: {grid_id}\n{grid}\n"
 
