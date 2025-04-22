@@ -1,47 +1,10 @@
 import json
-
-from enum import Enum
 from typing import Any
-
 import pika
 from pydantic import BaseModel
 
 from src.smartem_decisions.log_manager import logger
-
-class EventType(str, Enum):
-    ACQUISITION_CREATED = "acquisition.created"
-    ACQUISITION_UPDATED = "acquisition.updated"
-    ACQUISITION_DELETED = "acquisition.deleted"
-
-    ATLAS_CREATED = "atlas.created"
-    ATLAS_UPDATED = "atlas.updated"
-    ATLAS_DELETED = "atlas.deleted"
-
-    ATLAS_TILE_CREATED = "atlas_tile.created"
-    ATLAS_TILE_UPDATED = "atlas_tile.updated"
-    ATLAS_TILE_DELETED = "atlas_tile.deleted"
-
-    GRID_CREATED = "grid.created"
-    GRID_UPDATED = "grid.updated"
-    GRID_DELETED = "grid.deleted"
-
-    GRID_SQUARE_CREATED = "grid_square.created"
-    GRID_SQUARE_UPDATED = "grid_square.updated"
-    GRID_SQUARE_DELETED = "grid_square.deleted"
-
-    FOIL_HOLE_CREATED = "foil_hole.created"
-    FOIL_HOLE_UPDATED = "foil_hole.updated"
-    FOIL_HOLE_DELETED = "foil_hole.deleted"
-
-    MICROGRAPH_CREATED = "micrograph.created"
-    MICROGRAPH_UPDATED = "micrograph.updated"
-    MICROGRAPH_DELETED = "micrograph.deleted"
-
-
-class MessagePayload(BaseModel):
-    """Base class for message payloads"""
-    pass
-
+from src.smartem_decisions.model.mq_event import MessageQueueEventType
 
 class RabbitMQPublisher:
     """
@@ -88,7 +51,7 @@ class RabbitMQPublisher:
             self._channel = None
             logger.info("Closed connection to RabbitMQ")
 
-    def publish_event(self, event_type: EventType, payload: BaseModel | dict[str, Any]) -> bool:
+    def publish_event(self, event_type: MessageQueueEventType, payload: BaseModel | dict[str, Any]) -> bool:
         """
         Publish an event to RabbitMQ
 
