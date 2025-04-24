@@ -95,7 +95,7 @@ class RateLimitedHandler(FileSystemEventHandler):
         self.watch_dir = path.absolute()  # TODO this could cause problems in Win
 
     def init_datastore(self, dry_run: bool = False, api_url: str = None):
-        self.verbose and logging.info(f"Instantiated new datastore, dry run: {dry_run}")
+        logging.info(f"Instantiated new datastore, dry run: {dry_run}")
         self.datastore = EpuAcquisitionSessionStore(str(self.watch_dir), dry_run, api_url)
 
     def on_any_event(self, event):
@@ -107,12 +107,12 @@ class RateLimitedHandler(FileSystemEventHandler):
         # Enhancement: record all events to graylog (if reachable) for session debugging and playback
 
         if event.is_directory or not self.matches_pattern(event.src_path):
-            if self.verbose and not event.is_directory:
+            if event.is_directory:
                 logging.info(f"Skipping non-matching path: {event.src_path}")
             return
 
         if event.event_type not in self.watched_event_types:
-            if self.verbose and not event.is_directory:
+            if event.is_directory:
                 logging.info(f"Skipping non-matching event type: {event.event_type}")
             return
 
@@ -172,17 +172,24 @@ class RateLimitedHandler(FileSystemEventHandler):
         logging.info(f"Session manifest {'detected' if is_new_file else 'updated'}: {path}")
         session_data = EpuParser.parse_epu_session_manifest(path)
         gridstore = self.datastore.grids.get(grid_id)
-        if gridstore and session_data != gridstore.session_data:  # Only update if the data is different
+
+        if gridstore and session_data != gridstore.session_data:
+            # Create the acquisition first if we're not in dry run mode
+            if not self.datastore.in_memory_only and self.datastore.api_client:
+                success = self.datastore.api_client.create("acquisition", session_data.id, session_data)
+                if success:
+                    logging.info(f"Created acquisition for session {session_data.name}")
+
             gridstore.session_data = session_data
             logging.info(f"Updated session data for grid {grid_id}")
-            self.verbose and logging.info(gridstore.session_data)
+            logging.info(gridstore.session_data)
 
     def _process_orphaned_files(self, grid_id):
         """Process any orphaned files that belong to this grid"""
         for path, (event, timestamp, file_stat) in self.orphaned_files.items():
             # Check if this orphaned file belongs to the new grid
             if self.datastore.get_grid_by_path(path) == grid_id:
-                self.verbose and logging.info(f"Processing previously orphaned file: {path}")
+                logging.info(f"Processing previously orphaned file: {path}")
                 self.on_any_event(event)  # Process the file as if we just received the event
 
         # Create a new dictionary excluding the processed files
@@ -196,7 +203,7 @@ class RateLimitedHandler(FileSystemEventHandler):
         atlas_data = EpuParser.parse_atlas_manifest(path)
         if atlas_data != gridstore.atlas_data:
             gridstore.atlas_data = atlas_data
-            self.verbose and logging.info(gridstore.atlas_data)
+            logging.info(gridstore.atlas_data)
 
     def _on_gridsquare_metadata_detected(self, path: str, grid_id, is_new_file: bool = True):
         logging.info(f"Gridsquare metadata {'detected' if is_new_file else 'updated'}: {path}")
@@ -217,7 +224,7 @@ class RateLimitedHandler(FileSystemEventHandler):
             gridsquare_data.metadata = gridsquare_metadata
 
         gridstore.gridsquares.add(gridsquare_id, gridsquare_data)
-        self.verbose and logging.info(gridsquare_data)
+        logging.info(gridsquare_data)
 
     def _on_gridsquare_manifest_detected(self, path: str, grid_id, is_new_file: bool = True):
         logging.info(f"Gridsquare manifest {'detected' if is_new_file else 'updated'}: {path}")
@@ -238,7 +245,7 @@ class RateLimitedHandler(FileSystemEventHandler):
             gridsquare_data.manifest = gridsquare_manifest
 
         gridstore.gridsquares.add(gridsquare_id, gridsquare_data)
-        self.verbose and logging.info(gridsquare_data)
+        logging.info(gridsquare_data)
 
     def _on_foilhole_detected(self, path: str, grid_id, is_new_file: bool = True):
         logging.info(f"Foilhole {'detected' if is_new_file else 'updated'}: {path}")
@@ -254,7 +261,7 @@ class RateLimitedHandler(FileSystemEventHandler):
         #  based on timestamp found in filename.
 
         gridstore.foilholes.add(data.id, data)
-        self.verbose and logging.info(data)
+        logging.info(data)
 
     def _on_micrograph_detected(self, path: str, grid_id, is_new_file: bool = True):
         logging.info(f"Micrograph {'detected' if is_new_file else 'updated'}: {path}")
@@ -276,7 +283,7 @@ class RateLimitedHandler(FileSystemEventHandler):
             manifest=manifest,
         )
         gridstore.micrographs.add(data.id, data)
-        self.verbose and logging.info(data)
+        logging.info(data)
 
     def _on_session_complete(self):
         """
