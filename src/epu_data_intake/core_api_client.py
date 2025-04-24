@@ -415,6 +415,19 @@ class SmartEMCoreAPIClient:
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         await self.close()
 
+    # General
+    async def get_status(self) -> dict:
+        """Get API status information"""
+        response = await self.client.get(f"{self.base_url}/status")
+        response.raise_for_status()
+        return response.json()
+
+    async def get_health(self) -> dict:
+        """Get API health check information"""
+        response = await self.client.get(f"{self.base_url}/health")
+        response.raise_for_status()
+        return response.json()
+
     # Acquisitions
     async def get_acquisitions(self) -> list[AcquisitionResponse]:
         response = await self.client.get(f"{self.base_url}/acquisitions")
