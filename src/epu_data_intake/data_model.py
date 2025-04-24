@@ -277,7 +277,6 @@ class Grid:
     micrographs: EntityStore[MicrographData] = field(default_factory=EntityStore)
 
     def __init__(self, data_dir: str):
-        self.logger = logging.getLogger(__name__)
         self.data_dir = Path(data_dir)
         self.gridsquares = EntityStore()
         self.foilholes = EntityStore()
@@ -310,7 +309,6 @@ class EpuAcquisitionSessionStore:
     api_client = None
 
     def __init__(self, root_dir: str, dry_run: bool = False, api_url: str = None):
-        self.logger = logging.getLogger(__name__)
         self.root_dir = Path(root_dir)
         self.in_memory_only = dry_run
         self.grids = EntityStore()
@@ -361,7 +359,7 @@ class EpuAcquisitionSessionStore:
             ):
                 return grid_id
 
-        self.logger.debug(f"No grid found for path: {path}")
+        logging.debug(f"No grid found for path: {path}")
         return None
 
     def __str__(self):

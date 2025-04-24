@@ -717,7 +717,7 @@ class EpuParser:
         # 2. scan all gridsquare IDs from /Metadata directory files - this includes "inactive" and "active" gridsquares
         metadata_dir_path = str(gridstore.data_dir / "Metadata")
         for gridsquare_id, filename in EpuParser.parse_gridsquares_metadata_dir(metadata_dir_path):
-            verbose and logging.info(f"Discovered gridsquare {gridsquare_id} from file {filename}")
+            logging.info(f"Discovered gridsquare {gridsquare_id} from file {filename}")
             gridsquare_metadata = EpuParser.parse_gridsquare_metadata(filename)
 
             # Here we are not worried about overwriting an existing gridsquare
@@ -725,7 +725,7 @@ class EpuParser:
             assert not gridstore.gridsquares.exists(gridsquare_id)
 
             gridstore.gridsquares.add(gridsquare_id, GridSquareData(id=gridsquare_id, metadata=gridsquare_metadata))
-            verbose and logging.info(gridstore.gridsquares.get(gridsquare_id))
+            logging.info(gridstore.gridsquares.get(gridsquare_id))
 
         # 3. scan all image-disc dir sub-dirs to get a list of active gridsquares. for each gridsquare subdir:
         for gridsquare_manifest_path in list(gridstore.data_dir.glob("Images-Disc*/GridSquare_*/GridSquare_*_*.xml")):
@@ -737,7 +737,7 @@ class EpuParser:
             gridsquare_data = gridstore.gridsquares.get(gridsquare_id)
             gridsquare_data.manifest = gridsquare_manifest
             gridstore.gridsquares.add(gridsquare_id, gridsquare_data)
-            verbose and logging.info(gridstore.gridsquares.get(gridsquare_id))
+            logging.info(gridstore.gridsquares.get(gridsquare_id))
 
             # 3.2 scan that gridsquare's Foilholes/ dir to get foilholes
             foilhole_manifest_paths = sorted(
@@ -748,7 +748,7 @@ class EpuParser:
             for foilhole_manifest_path in foilhole_manifest_paths:
                 foilhole_id = re.search(EpuParser.foilhole_xml_file_pattern, str(foilhole_manifest_path)).group(1)
                 gridstore.foilholes.add(foilhole_id, EpuParser.parse_foilhole_manifest(foilhole_manifest_path))
-                verbose and logging.info(gridstore.foilholes.get(foilhole_id))
+                logging.info(gridstore.foilholes.get(foilhole_id))
 
             # 3.3 scan that gridsquare's Foilholes/ dir to get micrographs
             for micrograph_manifest_path in list(
@@ -770,7 +770,7 @@ class EpuParser:
                         manifest=micrograph_manifest,
                     ),
                 )
-                verbose and logging.info(gridstore.micrographs.get(micrograph_manifest.unique_id))
+                logging.info(gridstore.micrographs.get(micrograph_manifest.unique_id))
 
         return gridstore
 

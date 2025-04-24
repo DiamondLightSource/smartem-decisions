@@ -30,8 +30,8 @@ python -m epu_data_intake parse dir \
   ../smartem-decisions-test-datasets/metadata_Supervisor_20241220_140307_72_et2_gangshun
 
 # parse things
-python -m epu_data_intake validate \
-  ../smartem-decisions-test-datasets/Supervisor_20250129_134723_36_bi37708-28_grid7_EPU/EpuSession.dm
+python -m epu_data_intake parse session \
+  ../smartem-decisions-test-datasets/bi37708-28-copy/Supervisor_20250129_134723_36_bi37708-28_grid7_EPU/EpuSession.dm
 
 python -m epu_data_intake parse atlas \
   ../smartem-decisions-test-datasets/bi37708-28-copy/atlas/Supervisor_20250129_111544_bi37708-28_atlas/Atlas/Atlas.dm
@@ -51,39 +51,31 @@ python -m epu_data_intake parse foilhole \
 python -m epu_data_intake parse gridsquare-metadata \
   ../smartem-decisions-test-datasets/epu-Supervisor_20250404_164354_31_EPU_nr27313-442/metadata_Supervisor_20250404_164354_31_EPU_nr27313-442/Images-Disc1/GridSquare_3568837/Data/FoilHole_3595930_Data_3590445_56_20250405_084025.xml
 
-# Validate epu project dirs:
-
-# expect failure:
+# Validate epu project dirs (expect failure):
 python -m epu_data_intake validate \
   ../smartem-decisions-test-datasets/bi37708-28-copy/Supervisor_20250129_114842_73_bi37708-28_grid7_EPU
 
-# expect success:
-python -m epu_data_intake validate \
-  ../smartem-decisions-test-datasets/bi37708-28-copy/Supervisor_20250129_134723_36_bi37708-28_grid7_EPU
-
-# expect failure:
 python -m epu_data_intake validate \
   ../smartem-decisions-test-datasets/bi37708-28-copy/Supervisor_20250130_105058_11
 
-# expect success:
-python -m epu_data_intake validate \
-  ../smartem-decisions-test-datasets/bi37708-28-copy/Supervisor_20250130_133418_68apoferritin
-
-# expect success:
-python -m epu_data_intake validate \
-  ../smartem-decisions-test-datasets/bi37708-28-copy/Supervisor_20250130_143856_44Practice
-
-# expect failure:
 python -m epu_data_intake validate \
   ../smartem-decisions-test-datasets/bi37708-28-copy/Supervisor_20250130_145409_68
 
-# expect success:
-python -m epu_data_intake validate \
-  ../smartem-decisions-test-datasets/bi37708-28-copy/Supervisor_20250130_145409_68practice2
-
-# expect failure:
 python -m epu_data_intake validate \
   ../smartem-decisions-test-datasets/bi37708-28-copy/Supervisor_20250130_150924_1grid3
+
+# Validate epu project dirs (expect success):
+python -m epu_data_intake validate \
+  ../smartem-decisions-test-datasets/bi37708-28-copy/Supervisor_20250129_134723_36_bi37708-28_grid7_EPU
+
+python -m epu_data_intake validate \
+  ../smartem-decisions-test-datasets/bi37708-28-copy/Supervisor_20250130_133418_68apoferritin
+
+python -m epu_data_intake validate \
+  ../smartem-decisions-test-datasets/bi37708-28-copy/Supervisor_20250130_143856_44Practice
+
+python -m epu_data_intake validate \
+  ../smartem-decisions-test-datasets/bi37708-28-copy/Supervisor_20250130_145409_68practice2
 ```
 
 ## Examples of watch operation
