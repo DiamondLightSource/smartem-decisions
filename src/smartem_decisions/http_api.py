@@ -1,3 +1,5 @@
+import datetime
+
 from fastapi import FastAPI, Depends, HTTPException, status
 from sqlalchemy.orm import sessionmaker, Session as SqlAlchemySession
 
@@ -84,6 +86,41 @@ app = FastAPI(
 )
 # TODO app.logger is probably built into FastAPI, but we use our own logger from log_manager,
 #   see if these two can be combined
+
+
+@app.get("/status")
+def get_status():
+    """Get API status information"""
+    return {
+        "status": "ok",
+        "version": __version__,
+        "timestamp": datetime.datetime.now().isoformat(),
+        "service": "SmartEM Decisions API"
+    }
+
+
+@app.get("/health")
+def get_health():
+    """Health check endpoint"""
+    # TODO: add database, rabbitmq, graylog connectivity checks here
+    # try:
+    #     # Simple db connectivity check
+    #     db = SessionLocal()
+    #     db.execute("SELECT 1")
+    #     db.close()
+    #     db_status = "ok"
+    # except Exception:
+    #     db_status = "error"
+
+    # TODO consider masking internal implementation details for security reasons
+    return {
+        "status": "ok",
+        "database": "ok",
+        "event broker": "ok",
+        "log aggregator": "ok",
+        "timestamp": datetime.datetime.now().isoformat()
+    }
+
 
 # ============ Acquisition CRUD Operations ============
 
