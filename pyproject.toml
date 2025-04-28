@@ -70,6 +70,8 @@ all = [
 
 [project.scripts]
 smartem_epu_data_intake_tools = "epu_data_intake.__main__:main"
+"smartem.register-prediction-model" = "smartem_decisions.cli.register_quality_prediction_model:run"
+"smartem.init-model-weight" = "smartem_decisions.cli.initialise_prediction_model_weights:run"
 
 [project.urls]
 GitHub = "https://github.com/DiamondLightSource/smartem-decisions"
