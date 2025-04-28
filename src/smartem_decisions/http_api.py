@@ -1,10 +1,18 @@
 import datetime
+import json
+import logging
 
-from fastapi import FastAPI, Depends, HTTPException, status
+from fastapi import FastAPI, Depends, HTTPException, status, Request
 from sqlalchemy.orm import sessionmaker, Session as SqlAlchemySession
 
+from src.epu_data_intake.core_api_client import (
+    AcquisitionStatus,
+    GridStatus,
+)  # TODO check these definitions for duplicates
+
 from src.smartem_decisions._version import __version__
-from src.smartem_decisions.log_manager import logger
+
+# from src.smartem_decisions.log_manager import logger # TODO integrate with FastAPI logger
 from src.smartem_decisions.utils import setup_postgres_connection
 from src.smartem_decisions.model.http_request import (
     AcquisitionCreateRequest,
@@ -84,8 +92,36 @@ app = FastAPI(
     version=__version__,
     redoc_url=None,
 )
-# TODO app.logger is probably built into FastAPI, but we use our own logger from log_manager,
-#   see if these two can be combined
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger("fastapi")
+
+
+# TODO remove in prod:
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    if request.method in ("POST", "PUT", "PATCH"):
+        body = await request.body()
+        # Store the body content for later use
+        request._body = body
+
+        # Log the request body
+        try:
+            body_str = body.decode()
+            if body_str:
+                # Try to format as JSON if possible
+                try:
+                    pretty_json = json.dumps(json.loads(body_str), indent=2)
+                    logger.info(f"Request {request.method} {request.url.path}:\n{pretty_json}")
+                except:
+                    # If not valid JSON, log as is
+                    logger.info(f"Request {request.method} {request.url.path}:\n{body_str}")
+        except:
+            logger.info(f"Request {request.method} {request.url.path}: [binary data]")
+
+    # Get the response
+    response = await call_next(request)
+    return response
 
 
 @app.get("/status")
@@ -95,7 +131,7 @@ def get_status():
         "status": "ok",
         "version": __version__,
         "timestamp": datetime.datetime.now().isoformat(),
-        "service": "SmartEM Decisions API"
+        "service": "SmartEM Decisions API",
     }
 
 
@@ -118,7 +154,7 @@ def get_health():
         "database": "ok",
         "event broker": "ok",
         "log aggregator": "ok",
-        "timestamp": datetime.datetime.now().isoformat()
+        "timestamp": datetime.datetime.now().isoformat(),
     }
 
 
@@ -132,30 +168,30 @@ def get_acquisitions(db: SqlAlchemySession = Depends(get_db)):
 
 
 @app.post("/acquisitions", response_model=AcquisitionResponse, status_code=status.HTTP_201_CREATED)
-def create_acquisition(acquisition: AcquisitionCreateRequest, db: SqlAlchemySession = Depends(get_db)):
+def create_acquisition(acquisition: AcquisitionCreateRequest):
     """Create a new acquisition by publishing to RabbitMQ"""
-    # Create a temporary entry to get an ID and return to the user
-    # This allows the client to have immediate feedback and an ID to reference
-    db_acquisition = Acquisition(**acquisition.model_dump())
-    db.add(db_acquisition)
-    db.commit()
-    db.refresh(db_acquisition)
 
-    # Prepare data for event publishing
-    acquisition_data = {"id": db_acquisition.id, **acquisition.model_dump()}
+    acquisition_data = {
+        "id": str(acquisition.id),
+        "status": AcquisitionStatus.STARTED,
+        **acquisition.model_dump(exclude={"id"}),
+    }
 
-    # Publish the event to RabbitMQ
     success = publish_acquisition_created(acquisition_data)
     if not success:
-        # If the publishing fails, we might want to roll back or log the issue
-        # For now, we'll just return the entry we created and log the issue
-        logger.error(f"Failed to publish acquisition created event for ID: {db_acquisition.id}")
+        logger.error(f"Failed to publish acquisition created event for ID: {acquisition.id}")
 
-    return db_acquisition
+    response_data = {
+        "id": acquisition.id,
+        "status": AcquisitionStatus.STARTED,
+        **acquisition.model_dump(exclude={"id", "status"}),
+    }
+
+    return AcquisitionResponse(**response_data)
 
 
 @app.get("/acquisitions/{acquisition_id}", response_model=AcquisitionResponse)
-def get_acquisition(acquisition_id: int, db: SqlAlchemySession = Depends(get_db)):
+def get_acquisition(acquisition_id: str, db: SqlAlchemySession = Depends(get_db)):
     """Get a single acquisition by ID"""
     acquisition = db.query(Acquisition).filter(Acquisition.id == acquisition_id).first()
     if not acquisition:
@@ -165,7 +201,7 @@ def get_acquisition(acquisition_id: int, db: SqlAlchemySession = Depends(get_db)
 
 @app.put("/acquisitions/{acquisition_id}", response_model=AcquisitionResponse)
 def update_acquisition(
-    acquisition_id: int, acquisition: AcquisitionUpdateRequest, db: SqlAlchemySession = Depends(get_db)
+    acquisition_id: str, acquisition: AcquisitionUpdateRequest, db: SqlAlchemySession = Depends(get_db)
 ):
     """Update an acquisition by publishing to RabbitMQ"""
     # Check if acquisition exists
@@ -195,7 +231,7 @@ def update_acquisition(
 
 
 @app.delete("/acquisitions/{acquisition_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_acquisition(acquisition_id: int, db: SqlAlchemySession = Depends(get_db)):
+def delete_acquisition(acquisition_id: str, db: SqlAlchemySession = Depends(get_db)):
     """Delete an acquisition by publishing to RabbitMQ"""
     # Check if acquisition exists
     db_acquisition = db.query(Acquisition).filter(Acquisition.id == acquisition_id).first()
@@ -270,7 +306,7 @@ def create_atlas(atlas: AtlasCreateRequest, db: SqlAlchemySession = Depends(get_
 
 
 @app.get("/atlases/{atlas_id}", response_model=AtlasResponse)
-def get_atlas(atlas_id: int, db: SqlAlchemySession = Depends(get_db)):
+def get_atlas(atlas_id: str, db: SqlAlchemySession = Depends(get_db)):
     """Get a single atlas by ID"""
     atlas = db.query(Atlas).filter(Atlas.id == atlas_id).first()
     if not atlas:
@@ -279,7 +315,7 @@ def get_atlas(atlas_id: int, db: SqlAlchemySession = Depends(get_db)):
 
 
 @app.put("/atlases/{atlas_id}", response_model=AtlasResponse)
-def update_atlas(atlas_id: int, atlas: AtlasUpdateRequest, db: SqlAlchemySession = Depends(get_db)):
+def update_atlas(atlas_id: str, atlas: AtlasUpdateRequest, db: SqlAlchemySession = Depends(get_db)):
     """Update an atlas by publishing to RabbitMQ"""
     # Check if atlas exists
     db_atlas = db.query(Atlas).filter(Atlas.id == atlas_id).first()
@@ -307,7 +343,7 @@ def update_atlas(atlas_id: int, atlas: AtlasUpdateRequest, db: SqlAlchemySession
 
 
 @app.delete("/atlases/{atlas_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_atlas(atlas_id: int, db: SqlAlchemySession = Depends(get_db)):
+def delete_atlas(atlas_id: str, db: SqlAlchemySession = Depends(get_db)):
     """Delete an atlas by publishing to RabbitMQ"""
     # Check if atlas exists
     db_atlas = db.query(Atlas).filter(Atlas.id == atlas_id).first()
@@ -327,7 +363,7 @@ def delete_atlas(atlas_id: int, db: SqlAlchemySession = Depends(get_db)):
 
 
 @app.get("/grids/{grid_id}/atlas", response_model=AtlasResponse)
-def get_grid_atlas(grid_id: int, db: SqlAlchemySession = Depends(get_db)):
+def get_grid_atlas(grid_id: str, db: SqlAlchemySession = Depends(get_db)):
     """Get the atlas for a specific grid"""
     atlas = db.query(Atlas).filter(Atlas.grid_id == grid_id).first()
     if not atlas:
@@ -336,7 +372,7 @@ def get_grid_atlas(grid_id: int, db: SqlAlchemySession = Depends(get_db)):
 
 
 @app.post("/grids/{grid_id}/atlas", response_model=AtlasResponse, status_code=status.HTTP_201_CREATED)
-def create_grid_atlas(grid_id: int, atlas: AtlasCreateRequest, db: SqlAlchemySession = Depends(get_db)):
+def create_grid_atlas(grid_id: str, atlas: AtlasCreateRequest, db: SqlAlchemySession = Depends(get_db)):
     """Create a new atlas for a grid by publishing to RabbitMQ"""
     # Check if grid exists
     grid = db.query(Grid).filter(Grid.id == grid_id).first()
@@ -419,7 +455,7 @@ def create_atlas_tile(tile: AtlasTileCreateRequest, db: SqlAlchemySession = Depe
 
 
 @app.get("/atlas-tiles/{tile_id}", response_model=AtlasTileResponse)
-def get_atlas_tile(tile_id: int, db: SqlAlchemySession = Depends(get_db)):
+def get_atlas_tile(tile_id: str, db: SqlAlchemySession = Depends(get_db)):
     """Get a single atlas tile by ID"""
     tile = db.query(AtlasTile).filter(AtlasTile.id == tile_id).first()
     if not tile:
@@ -428,7 +464,7 @@ def get_atlas_tile(tile_id: int, db: SqlAlchemySession = Depends(get_db)):
 
 
 @app.put("/atlas-tiles/{tile_id}", response_model=AtlasTileResponse)
-def update_atlas_tile(tile_id: int, tile: AtlasTileUpdateRequest, db: SqlAlchemySession = Depends(get_db)):
+def update_atlas_tile(tile_id: str, tile: AtlasTileUpdateRequest, db: SqlAlchemySession = Depends(get_db)):
     """Update an atlas tile by publishing to RabbitMQ"""
     # Check if tile exists
     db_tile = db.query(AtlasTile).filter(AtlasTile.id == tile_id).first()
@@ -456,7 +492,7 @@ def update_atlas_tile(tile_id: int, tile: AtlasTileUpdateRequest, db: SqlAlchemy
 
 
 @app.delete("/atlas-tiles/{tile_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_atlas_tile(tile_id: int, db: SqlAlchemySession = Depends(get_db)):
+def delete_atlas_tile(tile_id: str, db: SqlAlchemySession = Depends(get_db)):
     """Delete an atlas tile by publishing to RabbitMQ"""
     # Check if tile exists
     db_tile = db.query(AtlasTile).filter(AtlasTile.id == tile_id).first()
@@ -476,14 +512,14 @@ def delete_atlas_tile(tile_id: int, db: SqlAlchemySession = Depends(get_db)):
 
 
 @app.get("/atlases/{atlas_id}/tiles", response_model=list[AtlasTileResponse])
-def get_atlas_tiles_by_atlas(atlas_id: int, db: SqlAlchemySession = Depends(get_db)):
+def get_atlas_tiles_by_atlas(atlas_id: str, db: SqlAlchemySession = Depends(get_db)):
     """Get all tiles for a specific atlas"""
     tiles = db.query(AtlasTile).filter(AtlasTile.atlas_id == atlas_id).all()
     return tiles
 
 
 @app.post("/atlases/{atlas_id}/tiles", response_model=AtlasTileResponse, status_code=status.HTTP_201_CREATED)
-def create_atlas_tile_for_atlas(atlas_id: int, tile: AtlasTileCreateRequest, db: SqlAlchemySession = Depends(get_db)):
+def create_atlas_tile_for_atlas(atlas_id: str, tile: AtlasTileCreateRequest, db: SqlAlchemySession = Depends(get_db)):
     """Create a new tile for a specific atlas by publishing to RabbitMQ"""
     # Verify atlas exists
     atlas = db.query(Atlas).filter(Atlas.id == atlas_id).first()
@@ -541,7 +577,7 @@ def create_grid(grid: GridCreateRequest, db: SqlAlchemySession = Depends(get_db)
 
 
 @app.get("/grids/{grid_id}", response_model=GridResponse)
-def get_grid(grid_id: int, db: SqlAlchemySession = Depends(get_db)):
+def get_grid(grid_id: str, db: SqlAlchemySession = Depends(get_db)):
     """Get a single grid by ID"""
     grid = db.query(Grid).filter(Grid.id == grid_id).first()
     if not grid:
@@ -550,7 +586,7 @@ def get_grid(grid_id: int, db: SqlAlchemySession = Depends(get_db)):
 
 
 @app.put("/grids/{grid_id}", response_model=GridResponse)
-def update_grid(grid_id: int, grid: GridUpdateRequest, db: SqlAlchemySession = Depends(get_db)):
+def update_grid(grid_id: str, grid: GridUpdateRequest, db: SqlAlchemySession = Depends(get_db)):
     """Update a grid by publishing to RabbitMQ"""
     # Check if grid exists
     db_grid = db.query(Grid).filter(Grid.id == grid_id).first()
@@ -578,7 +614,7 @@ def update_grid(grid_id: int, grid: GridUpdateRequest, db: SqlAlchemySession = D
 
 
 @app.delete("/grids/{grid_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_grid(grid_id: int, db: SqlAlchemySession = Depends(get_db)):
+def delete_grid(grid_id: str, db: SqlAlchemySession = Depends(get_db)):
     """Delete a grid by publishing to RabbitMQ"""
     # Check if grid exists
     db_grid = db.query(Grid).filter(Grid.id == grid_id).first()
@@ -598,38 +634,35 @@ def delete_grid(grid_id: int, db: SqlAlchemySession = Depends(get_db)):
 
 
 @app.get("/acquisitions/{acquisition_id}/grids", response_model=list[GridResponse])
-def get_acquisition_grids(acquisition_id: int, db: SqlAlchemySession = Depends(get_db)):
+def get_acquisition_grids(acquisition_id: str, db: SqlAlchemySession = Depends(get_db)):
     """Get all grids for a specific acquisition"""
     return db.query(Grid).filter(Grid.acquisition_id == acquisition_id).all()
 
 
 @app.post("/acquisitions/{acquisition_id}/grids", response_model=GridResponse, status_code=status.HTTP_201_CREATED)
-def create_acquisition_grid(acquisition_id: int, grid: GridCreateRequest, db: SqlAlchemySession = Depends(get_db)):
+def create_acquisition_grid(acquisition_id: str, grid: GridCreateRequest, db: SqlAlchemySession = Depends(get_db)):
     """Create a new grid for a specific acquisition by publishing to RabbitMQ"""
-    # Check if acquisition exists
     acquisition = db.query(Acquisition).filter(Acquisition.id == acquisition_id).first()
     if not acquisition:
         raise HTTPException(status_code=404, detail="Acquisition not found")
 
     # Create grid data with acquisition_id
-    grid_data = grid.model_dump()
-    grid_data["acquisition_id"] = acquisition_id
-
-    # Create grid in DB to get an ID
-    db_grid = Grid(**grid_data)
-    db.add(db_grid)
-    db.commit()
-    db.refresh(db_grid)
-
-    # Prepare data for event publishing
-    grid_event_data = {"id": db_grid.id, **grid_data}
+    grid_data = {"id": grid.id, "acquisition_id": acquisition_id, **grid.model_dump()}
 
     # Publish the event to RabbitMQ
-    success = publish_grid_created(grid_event_data)
+    success = publish_grid_created(grid_data)
     if not success:
-        logger.error(f"Failed to publish grid created event for ID: {db_grid.id}")
+        logger.error(f"Failed to publish grid created event for ID: {grid.id}")
 
-    return db_grid
+    # Create response data without needing to access the database
+    response_data = {
+        "id": grid.id,
+        "acquisition_id": acquisition_id,
+        "status": GridStatus.NONE,  # Set default status
+        **grid.model_dump(),
+    }
+
+    return GridResponse(**response_data)
 
 
 # ============ GridSquare CRUD Operations ============
@@ -662,7 +695,7 @@ def create_gridsquare(gridsquare: GridSquareCreateRequest, db: SqlAlchemySession
 
 
 @app.get("/gridsquares/{gridsquare_id}", response_model=GridSquareResponse)
-def get_gridsquare(gridsquare_id: int, db: SqlAlchemySession = Depends(get_db)):
+def get_gridsquare(gridsquare_id: str, db: SqlAlchemySession = Depends(get_db)):
     """Get a single grid square by ID"""
     gridsquare = db.query(GridSquare).filter(GridSquare.id == gridsquare_id).first()
     if not gridsquare:
@@ -671,7 +704,7 @@ def get_gridsquare(gridsquare_id: int, db: SqlAlchemySession = Depends(get_db)):
 
 
 @app.put("/gridsquares/{gridsquare_id}", response_model=GridSquareResponse)
-def update_gridsquare(gridsquare_id: int, gridsquare: GridSquareUpdateRequest, db: SqlAlchemySession = Depends(get_db)):
+def update_gridsquare(gridsquare_id: str, gridsquare: GridSquareUpdateRequest, db: SqlAlchemySession = Depends(get_db)):
     """Update a grid square by publishing to RabbitMQ"""
     # Check if grid square exists
     db_gridsquare = db.query(GridSquare).filter(GridSquare.id == gridsquare_id).first()
@@ -699,7 +732,7 @@ def update_gridsquare(gridsquare_id: int, gridsquare: GridSquareUpdateRequest, d
 
 
 @app.delete("/gridsquares/{gridsquare_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_gridsquare(gridsquare_id: int, db: SqlAlchemySession = Depends(get_db)):
+def delete_gridsquare(gridsquare_id: str, db: SqlAlchemySession = Depends(get_db)):
     """Delete a grid square by publishing to RabbitMQ"""
     # Check if grid square exists
     db_gridsquare = db.query(GridSquare).filter(GridSquare.id == gridsquare_id).first()
@@ -719,13 +752,13 @@ def delete_gridsquare(gridsquare_id: int, db: SqlAlchemySession = Depends(get_db
 
 
 @app.get("/grids/{grid_id}/gridsquares", response_model=list[GridSquareResponse])
-def get_grid_gridsquares(grid_id: int, db: SqlAlchemySession = Depends(get_db)):
+def get_grid_gridsquares(grid_id: str, db: SqlAlchemySession = Depends(get_db)):
     """Get all grid squares for a specific grid"""
     return db.query(GridSquare).filter(GridSquare.grid_id == grid_id).all()
 
 
 @app.post("/grids/{grid_id}/gridsquares", response_model=GridSquareResponse, status_code=status.HTTP_201_CREATED)
-def create_grid_gridsquare(grid_id: int, gridsquare: GridSquareCreateRequest, db: SqlAlchemySession = Depends(get_db)):
+def create_grid_gridsquare(grid_id: str, gridsquare: GridSquareCreateRequest, db: SqlAlchemySession = Depends(get_db)):
     """Create a new grid square for a specific grid by publishing to RabbitMQ"""
     # Check if grid exists
     grid = db.query(Grid).filter(Grid.id == grid_id).first()
@@ -783,7 +816,7 @@ def create_foilhole(foilhole: FoilHoleCreateRequest, db: SqlAlchemySession = Dep
 
 
 @app.get("/foilholes/{foilhole_id}", response_model=FoilHoleResponse)
-def get_foilhole(foilhole_id: int, db: SqlAlchemySession = Depends(get_db)):
+def get_foilhole(foilhole_id: str, db: SqlAlchemySession = Depends(get_db)):
     """Get a single foil hole by ID"""
     foilhole = db.query(FoilHole).filter(FoilHole.id == foilhole_id).first()
     if not foilhole:
@@ -792,7 +825,7 @@ def get_foilhole(foilhole_id: int, db: SqlAlchemySession = Depends(get_db)):
 
 
 @app.put("/foilholes/{foilhole_id}", response_model=FoilHoleResponse)
-def update_foilhole(foilhole_id: int, foilhole: FoilHoleUpdateRequest, db: SqlAlchemySession = Depends(get_db)):
+def update_foilhole(foilhole_id: str, foilhole: FoilHoleUpdateRequest, db: SqlAlchemySession = Depends(get_db)):
     """Update a foil hole by publishing to RabbitMQ"""
     # Check if foil hole exists
     db_foilhole = db.query(FoilHole).filter(FoilHole.id == foilhole_id).first()
@@ -820,7 +853,7 @@ def update_foilhole(foilhole_id: int, foilhole: FoilHoleUpdateRequest, db: SqlAl
 
 
 @app.delete("/foilholes/{foilhole_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_foilhole(foilhole_id: int, db: SqlAlchemySession = Depends(get_db)):
+def delete_foilhole(foilhole_id: str, db: SqlAlchemySession = Depends(get_db)):
     """Delete a foil hole by publishing to RabbitMQ"""
     # Check if foil hole exists
     db_foilhole = db.query(FoilHole).filter(FoilHole.id == foilhole_id).first()
@@ -840,7 +873,7 @@ def delete_foilhole(foilhole_id: int, db: SqlAlchemySession = Depends(get_db)):
 
 
 @app.get("/gridsquares/{gridsquare_id}/foilholes", response_model=list[FoilHoleResponse])
-def get_gridsquare_foilholes(gridsquare_id: int, db: SqlAlchemySession = Depends(get_db)):
+def get_gridsquare_foilholes(gridsquare_id: str, db: SqlAlchemySession = Depends(get_db)):
     """Get all foil holes for a specific grid square"""
     return db.query(FoilHole).filter(FoilHole.gridsquare_id == gridsquare_id).all()
 
@@ -849,7 +882,7 @@ def get_gridsquare_foilholes(gridsquare_id: int, db: SqlAlchemySession = Depends
     "/gridsquares/{gridsquare_id}/foilholes", response_model=FoilHoleResponse, status_code=status.HTTP_201_CREATED
 )
 def create_gridsquare_foilhole(
-    gridsquare_id: int, foilhole: FoilHoleCreateRequest, db: SqlAlchemySession = Depends(get_db)
+    gridsquare_id: str, foilhole: FoilHoleCreateRequest, db: SqlAlchemySession = Depends(get_db)
 ):
     """Create a new foil hole for a specific grid square by publishing to RabbitMQ"""
     # Check if grid square exists
@@ -908,7 +941,7 @@ def create_micrograph(micrograph: MicrographCreateRequest, db: SqlAlchemySession
 
 
 @app.get("/micrographs/{micrograph_id}", response_model=MicrographResponse)
-def get_micrograph(micrograph_id: int, db: SqlAlchemySession = Depends(get_db)):
+def get_micrograph(micrograph_id: str, db: SqlAlchemySession = Depends(get_db)):
     """Get a single micrograph by ID"""
     micrograph = db.query(Micrograph).filter(Micrograph.id == micrograph_id).first()
     if not micrograph:
@@ -917,7 +950,7 @@ def get_micrograph(micrograph_id: int, db: SqlAlchemySession = Depends(get_db)):
 
 
 @app.put("/micrographs/{micrograph_id}", response_model=MicrographResponse)
-def update_micrograph(micrograph_id: int, micrograph: MicrographUpdateRequest, db: SqlAlchemySession = Depends(get_db)):
+def update_micrograph(micrograph_id: str, micrograph: MicrographUpdateRequest, db: SqlAlchemySession = Depends(get_db)):
     """Update a micrograph by publishing to RabbitMQ"""
     # Check if micrograph exists
     db_micrograph = db.query(Micrograph).filter(Micrograph.id == micrograph_id).first()
@@ -945,7 +978,7 @@ def update_micrograph(micrograph_id: int, micrograph: MicrographUpdateRequest, d
 
 
 @app.delete("/micrographs/{micrograph_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_micrograph(micrograph_id: int, db: SqlAlchemySession = Depends(get_db)):
+def delete_micrograph(micrograph_id: str, db: SqlAlchemySession = Depends(get_db)):
     """Delete a micrograph by publishing to RabbitMQ"""
     # Check if micrograph exists
     db_micrograph = db.query(Micrograph).filter(Micrograph.id == micrograph_id).first()
@@ -965,7 +998,7 @@ def delete_micrograph(micrograph_id: int, db: SqlAlchemySession = Depends(get_db
 
 
 @app.get("/foilholes/{foilhole_id}/micrographs", response_model=list[MicrographResponse])
-def get_foilhole_micrographs(foilhole_id: int, db: SqlAlchemySession = Depends(get_db)):
+def get_foilhole_micrographs(foilhole_id: str, db: SqlAlchemySession = Depends(get_db)):
     """Get all micrographs for a specific foil hole"""
     return db.query(Micrograph).filter(Micrograph.foilhole_id == foilhole_id).all()
 
@@ -974,7 +1007,7 @@ def get_foilhole_micrographs(foilhole_id: int, db: SqlAlchemySession = Depends(g
     "/foilholes/{foilhole_id}/micrographs", response_model=MicrographResponse, status_code=status.HTTP_201_CREATED
 )
 def create_foilhole_micrograph(
-    foilhole_id: int, micrograph: MicrographCreateRequest, db: SqlAlchemySession = Depends(get_db)
+    foilhole_id: str, micrograph: MicrographCreateRequest, db: SqlAlchemySession = Depends(get_db)
 ):
     """Create a new micrograph for a specific foil hole by publishing to RabbitMQ"""
     # Check if foil hole exists

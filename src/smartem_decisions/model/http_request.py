@@ -12,8 +12,8 @@ from src.smartem_decisions.model.entity_status import (
 
 # Acquisition models
 class AcquisitionBaseRequest(BaseModel):
-    name: str
-    epu_id: str | None = None
+    name: str | None = None
+    id: str | None = None
     status: AcquisitionStatus | None = None
     start_time: datetime | None = None
     end_time: datetime | None = None
@@ -29,16 +29,7 @@ class AcquisitionCreateRequest(AcquisitionBaseRequest):
 
 
 class AcquisitionUpdateRequest(BaseModel):
-    name: str | None = None
-    epu_id: str | None = None
-    status: AcquisitionStatus | None = None
-    start_time: datetime | None = None
-    end_time: datetime | None = None
-    paused_time: datetime | None = None
-    storage_path: str | None = None
-    atlas_path: str | None = None
-    clustering_mode: str | None = None
-    clustering_radius: str | None = None
+    pass
 
 
 # Atlas models
@@ -53,7 +44,7 @@ class AtlasTileBaseRequest(BaseModel):
 
 
 class AtlasTileCreateRequest(AtlasTileBaseRequest):
-    atlas_id: int
+    atlas_id: str
 
 
 class AtlasTileUpdateRequest(BaseModel):
@@ -68,7 +59,7 @@ class AtlasTileUpdateRequest(BaseModel):
 
 class AtlasBaseRequest(BaseModel):
     atlas_id: str
-    grid_id: int
+    grid_id: str
     acquisition_date: datetime | None = None
     storage_folder: str | None = None
     description: str | None = None
@@ -89,8 +80,9 @@ class AtlasUpdateRequest(BaseModel):
 
 # Grid models
 class GridBaseRequest(BaseModel):
+    id: str
     name: str
-    acquisition_id: int  # Changed from session_id to acquisition_id
+    acquisition_id: str
     status: GridStatus | None = None
     data_dir: str | None = None
     atlas_dir: str | None = None
@@ -104,7 +96,7 @@ class GridCreateRequest(GridBaseRequest):
 
 class GridUpdateRequest(BaseModel):
     name: str | None = None
-    acquisition_id: int | None = None  # Changed from session_id to acquisition_id
+    acquisition_id: str | None = None
     status: GridStatus | None = None
     data_dir: str | None = None
     atlas_dir: str | None = None
@@ -114,12 +106,12 @@ class GridUpdateRequest(BaseModel):
 
 # GridSquare models
 class GridSquareBaseRequest(BaseModel):
-    grid_id: int
-    gridsquare_id: str  # Original string ID from data model
+    grid_id: str
+    gridsquare_id: str
     data_dir: str | None = None
 
     # From GridSquareMetadata
-    atlas_node_id: int | None = None
+    atlas_node_id: int | None = None  # This remains int as it's not an ID reference
     state: str | None = None
     rotation: float | None = None
     image_path: str | None = None
@@ -188,13 +180,13 @@ class GridSquareUpdateRequest(BaseModel):
     applied_defocus: float | None = None
 
     status: GridSquareStatus | None = None
-    grid_id: int | None = None
+    grid_id: str | None = None
 
 
 # FoilHole models
 class FoilHoleBaseRequest(BaseModel):
-    gridsquare_id: int
-    foilhole_id: str  # Original string ID from data model
+    gridsquare_id: str
+    foilhole_id: str
 
     # From FoilHoleData
     center_x: float | None = None
@@ -239,13 +231,13 @@ class FoilHoleUpdateRequest(BaseModel):
     is_near_grid_bar: bool | None = None
 
     status: FoilHoleStatus | None = None
-    gridsquare_id: int | None = None
+    gridsquare_id: str | None = None
 
 
 # Micrograph models
 class MicrographBaseRequest(BaseModel):
-    foilhole_id: int
-    micrograph_id: str  # Original string ID from data model
+    foilhole_id: str
+    micrograph_id: str
     location_id: str | None = None
     high_res_path: str | None = None
     manifest_file: str | None = None
@@ -306,4 +298,4 @@ class MicrographUpdateRequest(BaseModel):
     pick_distribution: str | None = None
 
     status: MicrographStatus | None = None
-    foilhole_id: int | None = None
+    foilhole_id: str | None = None

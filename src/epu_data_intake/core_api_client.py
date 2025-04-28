@@ -1,7 +1,33 @@
-from datetime import datetime
+# from datetime import datetime
 import httpx
 from enum import Enum
-from pydantic import BaseModel
+# from pydantic import BaseModel
+
+from src.smartem_decisions.model.http_request import (
+    AcquisitionCreateRequest,
+    AcquisitionUpdateRequest,
+    AtlasCreateRequest,
+    AtlasUpdateRequest,
+    AtlasTileCreateRequest,
+    AtlasTileUpdateRequest,
+    GridCreateRequest,
+    GridUpdateRequest,
+    GridSquareCreateRequest,
+    GridSquareUpdateRequest,
+    FoilHoleCreateRequest,
+    FoilHoleUpdateRequest,
+    MicrographCreateRequest,
+    MicrographUpdateRequest,
+)
+from src.smartem_decisions.model.http_response import (
+    AcquisitionResponse,
+    AtlasResponse,
+    AtlasTileResponse,
+    GridResponse,
+    GridSquareResponse,
+    FoilHoleResponse,
+    MicrographResponse,
+)
 
 
 # TODO refactor shared definitions out into `shared` module and import from there
@@ -43,360 +69,6 @@ class MicrographStatus(str, Enum):
     PARTICLE_PICKING_COMPLETED = "particle picking completed"
     PARTICLE_SELECTION_STARTED = "particle selection started"
     PARTICLE_SELECTION_COMPLETED = "particle selection completed"
-
-
-# Request Models
-class AcquisitionCreateRequest(BaseModel):
-    name: str
-    epu_id: str | None = None
-    status: AcquisitionStatus | None = None
-    start_time: datetime | None = None
-    end_time: datetime | None = None
-    paused_time: datetime | None = None
-    storage_path: str | None = None
-    atlas_path: str | None = None
-    clustering_mode: str | None = None
-    clustering_radius: str | None = None
-
-
-class AcquisitionUpdateRequest(BaseModel):
-    name: str | None = None
-    epu_id: str | None = None
-    status: AcquisitionStatus | None = None
-    start_time: datetime | None = None
-    end_time: datetime | None = None
-    paused_time: datetime | None = None
-    storage_path: str | None = None
-    atlas_path: str | None = None
-    clustering_mode: str | None = None
-    clustering_radius: str | None = None
-
-
-class AtlasTileCreateRequest(BaseModel):
-    tile_id: str
-    position_x: int | None = None
-    position_y: int | None = None
-    size_x: int | None = None
-    size_y: int | None = None
-    file_format: str | None = None
-    base_filename: str | None = None
-    atlas_id: int
-
-
-class AtlasCreateRequest(BaseModel):
-    atlas_id: str
-    grid_id: int
-    acquisition_date: datetime | None = None
-    storage_folder: str | None = None
-    description: str | None = None
-    name: str
-    tiles: list[AtlasTileCreateRequest] | None = None
-
-
-class AtlasUpdateRequest(BaseModel):
-    atlas_id: str | None = None
-    acquisition_date: datetime | None = None
-    storage_folder: str | None = None
-    description: str | None = None
-    name: str | None = None
-
-
-class AtlasTileUpdateRequest(BaseModel):
-    tile_id: str | None = None
-    position_x: int | None = None
-    position_y: int | None = None
-    size_x: int | None = None
-    size_y: int | None = None
-    file_format: str | None = None
-    base_filename: str | None = None
-
-
-class GridCreateRequest(BaseModel):
-    name: str
-    acquisition_id: int
-    status: GridStatus | None = None
-    data_dir: str | None = None
-    atlas_dir: str | None = None
-    scan_start_time: datetime | None = None
-    scan_end_time: datetime | None = None
-
-
-class GridUpdateRequest(BaseModel):
-    name: str | None = None
-    acquisition_id: int | None = None
-    status: GridStatus | None = None
-    data_dir: str | None = None
-    atlas_dir: str | None = None
-    scan_start_time: datetime | None = None
-    scan_end_time: datetime | None = None
-
-
-class GridSquareCreateRequest(BaseModel):
-    grid_id: int
-    gridsquare_id: str
-    data_dir: str | None = None
-    atlas_node_id: int | None = None
-    state: str | None = None
-    rotation: float | None = None
-    image_path: str | None = None
-    selected: bool | None = None
-    unusable: bool | None = None
-    stage_position_x: float | None = None
-    stage_position_y: float | None = None
-    stage_position_z: float | None = None
-    center_x: int | None = None
-    center_y: int | None = None
-    physical_x: float | None = None
-    physical_y: float | None = None
-    size_width: int | None = None
-    size_height: int | None = None
-    acquisition_datetime: datetime | None = None
-    defocus: float | None = None
-    magnification: float | None = None
-    pixel_size: float | None = None
-    detector_name: str | None = None
-    applied_defocus: float | None = None
-    status: GridSquareStatus | None = None
-
-
-class GridSquareUpdateRequest(BaseModel):
-    gridsquare_id: str | None = None
-    data_dir: str | None = None
-    atlas_node_id: int | None = None
-    state: str | None = None
-    rotation: float | None = None
-    image_path: str | None = None
-    selected: bool | None = None
-    unusable: bool | None = None
-    stage_position_x: float | None = None
-    stage_position_y: float | None = None
-    stage_position_z: float | None = None
-    center_x: int | None = None
-    center_y: int | None = None
-    physical_x: float | None = None
-    physical_y: float | None = None
-    size_width: int | None = None
-    size_height: int | None = None
-    acquisition_datetime: datetime | None = None
-    defocus: float | None = None
-    magnification: float | None = None
-    pixel_size: float | None = None
-    detector_name: str | None = None
-    applied_defocus: float | None = None
-    status: GridSquareStatus | None = None
-    grid_id: int | None = None
-
-
-class FoilHoleCreateRequest(BaseModel):
-    gridsquare_id: int
-    foilhole_id: str
-    center_x: float | None = None
-    center_y: float | None = None
-    quality: float | None = None
-    rotation: float | None = None
-    size_width: float | None = None
-    size_height: float | None = None
-    x_location: int | None = None
-    y_location: int | None = None
-    x_stage_position: float | None = None
-    y_stage_position: float | None = None
-    diameter: int | None = None
-    is_near_grid_bar: bool = False
-    status: FoilHoleStatus | None = None
-
-
-class FoilHoleUpdateRequest(BaseModel):
-    foilhole_id: str | None = None
-    center_x: float | None = None
-    center_y: float | None = None
-    quality: float | None = None
-    rotation: float | None = None
-    size_width: float | None = None
-    size_height: float | None = None
-    x_location: int | None = None
-    y_location: int | None = None
-    x_stage_position: float | None = None
-    y_stage_position: float | None = None
-    diameter: int | None = None
-    is_near_grid_bar: bool | None = None
-    status: FoilHoleStatus | None = None
-    gridsquare_id: int | None = None
-
-
-class MicrographCreateRequest(BaseModel):
-    foilhole_id: int
-    micrograph_id: str
-    location_id: str | None = None
-    high_res_path: str | None = None
-    manifest_file: str | None = None
-    acquisition_datetime: datetime | None = None
-    defocus: float | None = None
-    detector_name: str | None = None
-    energy_filter: bool | None = None
-    phase_plate: bool | None = None
-    image_size_x: int | None = None
-    image_size_y: int | None = None
-    binning_x: int | None = None
-    binning_y: int | None = None
-    total_motion: float | None = None
-    average_motion: float | None = None
-    ctf_max_resolution_estimate: float | None = None
-    number_of_particles_selected: int | None = None
-    number_of_particles_rejected: int | None = None
-    selection_distribution: str | None = None
-    number_of_particles_picked: int | None = None
-    pick_distribution: str | None = None
-    status: MicrographStatus | None = None
-
-
-class MicrographUpdateRequest(BaseModel):
-    micrograph_id: str | None = None
-    location_id: str | None = None
-    high_res_path: str | None = None
-    manifest_file: str | None = None
-    acquisition_datetime: datetime | None = None
-    defocus: float | None = None
-    detector_name: str | None = None
-    energy_filter: bool | None = None
-    phase_plate: bool | None = None
-    image_size_x: int | None = None
-    image_size_y: int | None = None
-    binning_x: int | None = None
-    binning_y: int | None = None
-    total_motion: float | None = None
-    average_motion: float | None = None
-    ctf_max_resolution_estimate: float | None = None
-    number_of_particles_selected: int | None = None
-    number_of_particles_rejected: int | None = None
-    selection_distribution: str | None = None
-    number_of_particles_picked: int | None = None
-    pick_distribution: str | None = None
-    status: MicrographStatus | None = None
-    foilhole_id: int | None = None
-
-
-# Response Models
-class AcquisitionResponse(BaseModel):
-    id: int
-    epu_id: str | None
-    name: str
-    status: AcquisitionStatus
-    start_time: datetime | None
-    end_time: datetime | None
-    paused_time: datetime | None
-    storage_path: str | None
-    atlas_path: str | None
-    clustering_mode: str | None
-    clustering_radius: str | None
-
-
-class AtlasTileResponse(BaseModel):
-    id: int
-    atlas_id: int
-    tile_id: str
-    position_x: int | None
-    position_y: int | None
-    size_x: int | None
-    size_y: int | None
-    file_format: str | None
-    base_filename: str | None
-
-
-class AtlasResponse(BaseModel):
-    id: int
-    grid_id: int
-    atlas_id: str
-    acquisition_date: datetime | None
-    storage_folder: str | None
-    description: str | None
-    name: str
-    tiles: list[AtlasTileResponse] = []
-
-
-class GridResponse(BaseModel):
-    id: int
-    acquisition_id: int | None
-    status: GridStatus
-    name: str
-    data_dir: str | None
-    atlas_dir: str | None
-    scan_start_time: datetime | None
-    scan_end_time: datetime | None
-
-
-class GridSquareResponse(BaseModel):
-    id: int
-    grid_id: int | None
-    gridsquare_id: str
-    status: GridSquareStatus
-    data_dir: str | None
-    atlas_node_id: int | None
-    state: str | None
-    rotation: float | None
-    image_path: str | None
-    selected: bool | None
-    unusable: bool | None
-    stage_position_x: float | None
-    stage_position_y: float | None
-    stage_position_z: float | None
-    center_x: int | None
-    center_y: int | None
-    physical_x: float | None
-    physical_y: float | None
-    size_width: int | None
-    size_height: int | None
-    acquisition_datetime: datetime | None
-    defocus: float | None
-    magnification: float | None
-    pixel_size: float | None
-    detector_name: str | None
-    applied_defocus: float | None
-
-
-class FoilHoleResponse(BaseModel):
-    id: int
-    gridsquare_id: int | None
-    foilhole_id: str
-    status: FoilHoleStatus
-    center_x: float | None
-    center_y: float | None
-    quality: float | None
-    rotation: float | None
-    size_width: float | None
-    size_height: float | None
-    x_location: int | None
-    y_location: int | None
-    x_stage_position: float | None
-    y_stage_position: float | None
-    diameter: int | None
-    is_near_grid_bar: bool
-
-
-class MicrographResponse(BaseModel):
-    id: int
-    foilhole_id: int | None
-    micrograph_id: str
-    location_id: str | None
-    high_res_path: str | None
-    manifest_file: str | None
-    status: MicrographStatus
-    acquisition_datetime: datetime | None
-    defocus: float | None
-    detector_name: str | None
-    energy_filter: bool | None
-    phase_plate: bool | None
-    image_size_x: int | None
-    image_size_y: int | None
-    binning_x: int | None
-    binning_y: int | None
-    total_motion: float | None
-    average_motion: float | None
-    ctf_max_resolution_estimate: float | None
-    number_of_particles_selected: int | None
-    number_of_particles_rejected: int | None
-    selection_distribution: str | None
-    number_of_particles_picked: int | None
-    pick_distribution: str | None
 
 
 # TODO move this to shared module as it may be useful for core module not just in agent

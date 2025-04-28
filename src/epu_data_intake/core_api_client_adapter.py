@@ -22,7 +22,7 @@ from src.epu_data_intake.data_model import (
     AtlasTileData,
 )
 
-T = TypeVar('T')
+T = TypeVar("T")
 
 
 class ApiClientAdapter:
@@ -70,8 +70,7 @@ class ApiClientAdapter:
             # Otherwise, run the coroutine to completion
             return loop.run_until_complete(coro)
 
-    def create(self, entity_type: str, entity_id: str, entity: T,
-               parent: tuple[str, str] | None = None) -> bool:
+    def create(self, entity_type: str, entity_id: str, entity: T, parent: tuple[str, str] | None = None) -> bool:
         """Create a new entity via API"""
         try:
             client = self._get_or_create_client()
@@ -80,7 +79,7 @@ class ApiClientAdapter:
                 # Handle acquisition creation - no parent
                 request = AcquisitionCreateRequest(
                     name=entity.name,
-                    epu_id=entity.id,
+                    id=entity.id,
                     start_time=entity.start_time,
                     storage_path=entity.storage_path,
                     atlas_path=entity.atlas_path,
@@ -99,6 +98,7 @@ class ApiClientAdapter:
                         return False
 
                     request = GridCreateRequest(
+                        id=entity.id,
                         name=entity.session_data.name if entity.session_data else "Unknown",
                         acquisition_id=acquisition_db_id,
                         data_dir=str(entity.data_dir) if entity.data_dir else None,
@@ -173,7 +173,6 @@ class ApiClientAdapter:
                     self.logger.error("Cannot create foilhole: No valid gridsquare parent")
                     return False
 
-
             elif entity_type == "micrograph" and isinstance(entity, MicrographData):
                 if parent and parent[0] == "foilhole":
                     foilhole_db_id = self._id_map["foilhole"].get(parent[1])
@@ -214,8 +213,7 @@ class ApiClientAdapter:
             self.logger.error(f"Failed to create {entity_type}/{entity_id}: {str(e)}")
             return False
 
-    def update(self, entity_type: str, entity_id: str, entity: T,
-               parent: tuple[str, str] | None = None) -> bool:
+    def update(self, entity_type: str, entity_id: str, entity: T, parent: tuple[str, str] | None = None) -> bool:
         """Update an existing entity via API"""
         # TODO Similar implementation to create but using update methods
         #   You would use the ID mapping to get the database ID for the update

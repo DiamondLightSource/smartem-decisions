@@ -7,13 +7,13 @@ from dotenv import load_dotenv
 from sqlalchemy.orm import Session as SqlAlchemySession
 from pydantic import ValidationError
 
-from src.smartem_decisions.utils import logger
+from src.smartem_decisions.log_manager import logger
 from src.smartem_decisions.utils import (
     load_conf,
     setup_postgres_connection,
-    rmq_publisher,
+    rmq_consumer,
 )
-from src.smartem_decisions.rabbitmq import MessageQueueEventType
+from src.smartem_decisions.model.mq_event import MessageQueueEventType, GridCreatedEvent
 from src.smartem_decisions.model.mq_event import (
     AcquisitionCreatedEvent,
     AcquisitionUpdatedEvent,
@@ -25,6 +25,7 @@ from src.smartem_decisions.model.mq_event import (
 from src.smartem_decisions.model.database import (
     Acquisition,
     Atlas,
+    Grid,
 )
 
 
@@ -91,7 +92,7 @@ def handle_acquisition_updated(event_data: dict[str, Any], session: SqlAlchemySe
         if event.status is not None:
             acquisition.status = event.status
         if event.epu_id is not None:
-            acquisition.epu_id = event.epu_id
+            acquisition.id = event.epu_id
         if event.start_time is not None:
             acquisition.start_time = event.start_time
         if event.end_time is not None:
@@ -223,13 +224,51 @@ def handle_atlas_deleted(event_data: dict[str, Any], session: SqlAlchemySession)
 
         session.delete(atlas)
         session.commit()
-        logger.info(f"Deleted atlas with ID {event.id}")
+        logger.info(f"Deleted atlas with ID {atlas.id}")
 
     except ValidationError as e:
         logger.error(f"Validation error processing atlas deleted event: {e}")
     except Exception as e:
         session.rollback()
         logger.error(f"Error processing atlas deleted event: {e}")
+        raise
+
+
+def handle_grid_created(event_data: dict[str, Any], session: SqlAlchemySession) -> None:
+    """
+    Handle grid created event by creating a grid in the database
+
+    Args:
+        event_data: Event data for grid created
+        session: Database session
+    """
+    try:
+        event = GridCreatedEvent(**event_data)
+
+        existing = session.query(Grid).filter(Grid.id == event.id).first()
+        if existing:
+            logger.warning(f"Grid with ID {event.id} already exists, skipping creation")
+            return
+
+        grid = Grid(
+            id=event.id,
+            acquisition_id=event.acquisition_id,
+            name=event.name,
+            status=event.status,
+            data_dir=event.data_dir,
+            atlas_dir=event.atlas_dir,
+            scan_start_time=event.scan_start_time,
+            scan_end_time=event.scan_end_time,
+        )
+        session.add(grid)
+        session.commit()
+        logger.info(f"Created grid with ID {grid.id}")
+
+    except ValidationError as e:
+        logger.error(f"Validation error processing grid created event: {e}")
+    except Exception as e:
+        session.rollback()
+        logger.error(f"Error processing grid created event: {e}")
         raise
 
 
@@ -248,6 +287,7 @@ def get_event_handlers() -> dict[str, Callable]:
         MessageQueueEventType.ATLAS_CREATED.value: handle_atlas_created,
         MessageQueueEventType.ATLAS_UPDATED.value: handle_atlas_updated,
         MessageQueueEventType.ATLAS_DELETED.value: handle_atlas_deleted,
+        MessageQueueEventType.GRID_CREATED.value: handle_grid_created,
         # TODO: Add handlers for all other event types
     }
 
@@ -297,17 +337,8 @@ def on_message(ch, method, properties, body):
 def main():
     """Main function to run the consumer"""
     try:
-        channel = rmq_publisher.channel()
-
-        queue_name = conf["rabbitmq"]["queue_name"]
-        channel.queue_declare(queue=queue_name, durable=True)
-
-        channel.basic_qos(prefetch_count=1)
-        channel.basic_consume(queue=queue_name, on_message_callback=on_message)
-
-        logger.info(f"Consumer started, listening on queue '{queue_name}'")
-        channel.start_consuming()
-
+        # Start consuming messages with the on_message callback
+        rmq_consumer.consume(on_message, prefetch_count=1)
     except KeyboardInterrupt:
         logger.info("Consumer stopped by user")
     except Exception as e:

@@ -4,6 +4,8 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
 from typing import Generic, TypeVar
+from uuid import uuid4
+from base64 import urlsafe_b64encode
 
 T = TypeVar("T")
 
@@ -16,6 +18,10 @@ class EntityStore(Generic[T]):
     _in_memory_only: bool = True
     _parent_entity: tuple[str, str] = None  # (entity_type, entity_id) tuple
 
+    @staticmethod
+    def generate_uuid():
+        return urlsafe_b64encode(uuid4().bytes).decode("ascii").rstrip("=")
+
     def set_api_client(self, api_client, entity_type: str, in_memory_only: bool = True):
         self._api_client = api_client
         self._entity_type = entity_type
@@ -24,24 +30,171 @@ class EntityStore(Generic[T]):
     def set_parent_entity(self, parent_type: str, parent_id: str):
         self._parent_entity = (parent_type, parent_id)
 
-    def add(self, id: str, item: T) -> None:
-        is_update = id in self._items
-        self._items[id] = item
+    # TODO review and refactor
+    def add(self, uuid: str | None, item: T) -> None:
+        if not uuid:
+            uuid = EntityStore.generate_uuid()
 
-        if not self._in_memory_only and self._api_client:
-            try:
-                if is_update:
-                    self._api_client.update(self._entity_type, id, item, self._parent_entity)
+        is_new = uuid not in self._items
+
+        entity_type = getattr(self, "_entity_type", "unknown")
+
+        logging.info(f"EntityStore.add({entity_type}/{uuid})")
+
+        has_api_client = hasattr(self, "_api_client") and self._api_client is not None
+        if has_api_client:
+            logging.info(f"EntityStore for {entity_type} has API client")
+        else:
+            logging.info(f"EntityStore for {entity_type} has NO API client")
+
+        # Add the item to _items first
+        self._items[uuid] = item
+
+        # For Grid entities, we need special handling to ensure dependencies are created in order
+        if entity_type == "grid" and has_api_client:
+            in_memory_only = getattr(self, "_in_memory_only", False)
+            if not in_memory_only:
+                # Create the grid first
+                parent_entity = getattr(self, "_parent_entity", None)
+                logging.info(f"Creating {entity_type}/{uuid} via API (parent={parent_entity})")
+                grid_success = self._api_client.create(entity_type, uuid, item, parent_entity)
+
+                if grid_success:
+                    logging.info(f"Successfully created {entity_type}/{uuid} via API")
+
+                    # Now handle nested entities in order
+                    self._sync_hierarchical_entities(item, uuid)
                 else:
-                    self._api_client.create(self._entity_type, id, item, self._parent_entity)
+                    logging.error(f"Failed to create {entity_type}/{uuid} via API")
+        elif has_api_client:
+            # For non-grid entities, proceed with normal creation
+            in_memory_only = getattr(self, "_in_memory_only", False)
+            if not in_memory_only:
+                try:
+                    parent_entity = getattr(self, "_parent_entity", None)
+                    if is_new:
+                        logging.info(f"Creating {entity_type}/{uuid} via API (parent={parent_entity})")
+                        success = self._api_client.create(entity_type, uuid, item, parent_entity)
+                        if success:
+                            logging.info(f"Successfully created {entity_type}/{uuid} via API")
+                        else:
+                            logging.error(f"Failed to create {entity_type}/{uuid} via API")
+                    else:
+                        logging.info(f"Updating {entity_type}/{uuid} via API (parent={parent_entity})")
+                        success = self._api_client.update(entity_type, uuid, item, parent_entity)
+                        if success:
+                            logging.info(f"Successfully updated {entity_type}/{uuid} via API")
+                        else:
+                            logging.error(f"Failed to update {entity_type}/{uuid} via API")
+                except Exception as e:
+                    logging.error(f"API sync failed for {entity_type}/{uuid}: {str(e)}")
+            else:
+                logging.info(f"Skipping API call for {entity_type}/{uuid} (in_memory_only={in_memory_only})")
+        else:
+            logging.info(f"Skipping API call for {entity_type}/{uuid} (no API client)")
+
+        # Configure nested EntityStores in the added item
+        if hasattr(item, "__dict__"):
+            for field_name, field_value in item.__dict__.items():
+                if isinstance(field_value, EntityStore):
+                    # Determine entity type from field name (handle plurals)
+                    nested_entity_type = field_name
+                    if nested_entity_type.endswith("s"):
+                        nested_entity_type = nested_entity_type[:-1]
+
+                    logging.info(f"Found nested EntityStore for {nested_entity_type} in {entity_type}/{uuid}")
+
+                    # If we have an API client, configure the nested EntityStore
+                    if has_api_client:
+                        in_memory_only = getattr(self, "_in_memory_only", False)
+                        logging.info(
+                            f"Configuring nested EntityStore {nested_entity_type} with API client (in_memory_only={in_memory_only})"
+                        )
+
+                        # Configure the nested EntityStore
+                        field_value.set_api_client(self._api_client, nested_entity_type, in_memory_only)
+
+                        # Set parent entity relationship
+                        field_value.set_parent_entity(entity_type, uuid)
+                        logging.info(f"Set parent entity for {nested_entity_type} to {entity_type}/{uuid}")
+
+    # TODO review and refactor
+    def _sync_hierarchical_entities(self, grid_entity, grid_uuid):
+        """
+        Sync hierarchical entities in the correct order to satisfy dependencies.
+        This method assumes the grid entity has already been created.
+        """
+        # First, find all gridsquares
+        if not hasattr(grid_entity, "gridsquares") or not isinstance(grid_entity.gridsquares, EntityStore):
+            logging.warning("Grid entity does not have gridsquares attribute or it's not an EntityStore")
+            return
+
+        # Map to collect created entity IDs for dependency tracking
+        created_entities = {
+            "gridsquare": set(),
+            "foilhole": set(),
+        }
+
+        # First pass: Create all gridsquares
+        logging.info(f"Creating gridsquares for grid/{grid_uuid}")
+        for gs_uuid, gs in grid_entity.gridsquares._items.items():
+            try:
+                logging.info(f"Creating gridsquare/{gs_uuid} via API (parent=('grid', '{grid_uuid}'))")
+                success = self._api_client.create("gridsquare", gs_uuid, gs, ("grid", grid_uuid))
+                if success:
+                    logging.info(f"Successfully created gridsquare/{gs_uuid} via API")
+                    created_entities["gridsquare"].add(gs_uuid)
+                else:
+                    logging.error(f"Failed to create gridsquare/{gs_uuid} via API")
             except Exception as e:
-                logging.error(f"API sync failed for {self._entity_type}/{id}: {str(e)}")
+                logging.error(f"API sync failed for gridsquare/{gs_uuid}: {str(e)}")
 
-    def get(self, id: str) -> T | None:
-        return self._items.get(id)
+        # Second pass: Create all foilholes with valid gridsquare parents
+        if hasattr(grid_entity, "foilholes") and isinstance(grid_entity.foilholes, EntityStore):
+            logging.info(f"Creating foilholes for grid/{grid_uuid}")
+            for fh_uuid, fh in grid_entity.foilholes._items.items():
+                # Check if this foilhole has a valid gridsquare parent
+                if hasattr(fh, "gridsquare_id") and fh.gridsquare_id in created_entities["gridsquare"]:
+                    try:
+                        logging.info(
+                            f"Creating foilhole/{fh_uuid} via API (parent=('gridsquare', '{fh.gridsquare_id}'))"
+                        )
+                        success = self._api_client.create("foilhole", fh_uuid, fh, ("gridsquare", fh.gridsquare_id))
+                        if success:
+                            logging.info(f"Successfully created foilhole/{fh_uuid} via API")
+                            created_entities["foilhole"].add(fh_uuid)
+                        else:
+                            logging.error(f"Failed to create foilhole/{fh_uuid} via API")
+                    except Exception as e:
+                        logging.error(f"API sync failed for foilhole/{fh_uuid}: {str(e)}")
+                else:
+                    logging.warning(f"Skipping foilhole/{fh_uuid} - missing valid gridsquare parent")
 
-    def exists(self, id: str) -> bool:
-        return id in self._items
+        # Third pass: Create all micrographs with valid foilhole parents
+        if hasattr(grid_entity, "micrographs") and isinstance(grid_entity.micrographs, EntityStore):
+            logging.info(f"Creating micrographs for grid/{grid_uuid}")
+            for mic_uuid, mic in grid_entity.micrographs._items.items():
+                # Check if this micrograph has a valid foilhole parent
+                if hasattr(mic, "foilhole_id") and mic.foilhole_id in created_entities["foilhole"]:
+                    try:
+                        logging.info(
+                            f"Creating micrograph/{mic_uuid} via API (parent=('foilhole', '{mic.foilhole_id}'))"
+                        )
+                        success = self._api_client.create("micrograph", mic_uuid, mic, ("foilhole", mic.foilhole_id))
+                        if success:
+                            logging.info(f"Successfully created micrograph/{mic_uuid} via API")
+                        else:
+                            logging.error(f"Failed to create micrograph/{mic_uuid} via API")
+                    except Exception as e:
+                        logging.error(f"API sync failed for micrograph/{mic_uuid}: {str(e)}")
+                else:
+                    logging.warning(f"Skipping micrograph/{mic_uuid} - missing valid foilhole parent")
+
+    def get(self, uuid: str) -> T | None:
+        return self._items.get(uuid)
+
+    def exists(self, uuid: str) -> bool:
+        return uuid in self._items
 
     def ids(self) -> set[str]:
         return set(self._items.keys())
@@ -120,7 +273,7 @@ class FoilHoleData:
 
     def add_micrograph(self, micrograph_id: str, micrograph: MicrographData):
         """Add a micrograph with proper API configuration"""
-        if hasattr(self.micrographs, '_api_client') and self.micrographs._api_client:
+        if hasattr(self.micrographs, "_api_client") and self.micrographs._api_client:
             # Set foilhole as parent of micrograph
             self.micrographs.set_parent_entity("foilhole", self.id)
         self.micrographs.add(micrograph_id, micrograph)
@@ -223,7 +376,7 @@ class GridSquareData:
 
     def add_foilhole(self, foilhole_id: str, foilhole: FoilHoleData):
         """Add a foilhole with proper API configuration"""
-        if hasattr(self.foilholes, '_api_client') and self.foilholes._api_client:
+        if hasattr(self.foilholes, "_api_client") and self.foilholes._api_client:
             # Set gridsquare as parent of foilhole
             self.foilholes.set_parent_entity("gridsquare", self.id)
         self.foilholes.add(foilhole_id, foilhole)
@@ -256,18 +409,24 @@ class AtlasData:
 
 @dataclass
 class EpuSessionData:
-    name: str
-    id: str
-    start_time: datetime
+    name: str = "Unknown"  # TODO more informative default value?
+    id: str = field(default_factory=EntityStore.generate_uuid)
+    start_time: datetime | None = None
     atlas_path: str | None = None
     storage_path: str | None = None  # Path of parent directory containing the epu session dir
     clustering_mode: str | None = None
     clustering_radius: str | None = None
+    # TODO should we generate UUID in constructor? Syntax `id: str = field(default_factory=EntityStore.generate_uuid)`
+    #  is only evaluated at class definition time so would always be the same value -
+    #  which is a problem if we had multiple instances od EpuSessionData
+    # def __init__(self):
+    #     self.id = EntityStore.generate_uuid()
 
 
 @dataclass
 class Grid:
-    data_dir: Path | None
+    id: str = field(default_factory=EntityStore.generate_uuid)
+    data_dir: Path | None = None
     atlas_dir: Path | None = None
 
     session_data: EpuSessionData | None = None
@@ -277,6 +436,7 @@ class Grid:
     micrographs: EntityStore[MicrographData] = field(default_factory=EntityStore)
 
     def __init__(self, data_dir: str):
+        self.id = EntityStore.generate_uuid()
         self.data_dir = Path(data_dir)
         self.gridsquares = EntityStore()
         self.foilholes = EntityStore()
@@ -307,24 +467,31 @@ class EpuAcquisitionSessionStore:
     root_dir: Path
     in_memory_only: bool = False
     api_client = None
+    uuid: str | None = None
 
-    def __init__(self, root_dir: str, dry_run: bool = False, api_url: str = None):
+    def __init__(self, root_dir: str, in_memory_only: bool = False, api_url: str = None):
         self.root_dir = Path(root_dir)
-        self.in_memory_only = dry_run
+        self.in_memory_only = in_memory_only
+        self.acquisition = EpuSessionData()
         self.grids = EntityStore()
 
-        if not dry_run and api_url:
+        if not self.in_memory_only:
             from src.epu_data_intake.core_api_client_adapter import ApiClientAdapter
-            self.api_client = ApiClientAdapter(api_url)
-            self.grids.set_api_client(self.api_client, "grid", dry_run)
 
-    def add_grid(self, grid_id: str, grid: Grid):
-        """Add a grid with proper API configuration"""
+            self.api_client = ApiClientAdapter(api_url)
+            response = self.api_client.create("acquisition", self.acquisition.id, self.acquisition, None)
+            if not response:
+                logging.error(f"Failed to create acquisition {self.acquisition.id}")
+            self.grids.set_api_client(self.api_client, "grid", in_memory_only)
+            self.grids.set_parent_entity("acquisition", self.acquisition.id)
+
+    def add_grid(self, grid: Grid):
+        grid_id = EntityStore.generate_uuid()
 
         # Configure the grid's EntityStores for the hierarchy:
-        # session -> grid -> gridsquare -> foilhole -> micrograph
+        # acquisition -> grid -> gridsquare -> foilhole -> micrograph
         if self.api_client and not self.in_memory_only:
-            # Grid is already set up with parent as acquisition/session
+            # Grid is already set up with parent as acquisition/session in `self.__init__`
 
             # GridSquares have Grid as parent
             grid.gridsquares.set_api_client(self.api_client, "gridsquare", self.in_memory_only)
@@ -363,7 +530,9 @@ class EpuAcquisitionSessionStore:
         return None
 
     def __str__(self):
-        result = f"\nEPU Acquisition Summary:\n  Root dir: {self.root_dir}\n  Grids: {len(self.grids)}\n"
+        result = (
+            f"\nEPU Acquisition Summary:\n  UUID: {self.uuid}\n Root dir: {self.root_dir}\n  Grids: {len(self.grids)}\n"
+        )
 
         # Add each grid's string representation. TODO debug this doesn't seem to work
         for grid_id, grid in self.grids.items():
