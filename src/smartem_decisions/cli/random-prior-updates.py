@@ -9,7 +9,6 @@ from smartem_decisions.utils import setup_postgres_connection
 
 
 def perform_random_updates(
-    model_name: str,
     grid_id: int | None = None,
     random_range: tuple[float, float] = (0, 1),
     origin: str = "motion_correction",
@@ -27,7 +26,7 @@ def perform_random_updates(
         ).all()
         scores = [random.uniform(random_range[0], random_range[1]) < 0.5 for _ in mics]
         for s, m in zip(scores, mics, strict=True):
-            prior_update(s, m.id, sess, origin="motion_correction")
+            prior_update(s, m.id, sess, origin=origin)
     return None
 
 
