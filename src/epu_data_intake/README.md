@@ -98,6 +98,7 @@ python tests/epu_data_intake/epu_output_simulator.py ../test-dir \
 > for instantiating a new grid entity in the internal datastore.
 
 A `watch` operation is designed to gracefully handle one of the following invocation scenarios:
+
 1. watcher launched _before_ EPU starts writing to filesystem - only watcher is necessary
 2. watcher launched _after_ EPU starts writing to filesystem - both parser and watcher are
    necessary to pickup pre-existing and new writes

@@ -1,4 +1,5 @@
 from enum import Enum
+from datetime import datetime
 from typing import Any
 from pydantic import (
     BaseModel,
@@ -49,20 +50,20 @@ class MessageQueueEventType(str, Enum):
     # ACQUISITION_END = "acquisition ended"
     # GRID_SCAN_START = "grid scan started"
     # GRID_SCAN_COMPLETE = "grid scan completed"
-    # GRID_SQUARES_DECISION_START = "grid squares decision started"
-    # GRID_SQUARES_DECISION_COMPLETE = "grid squares decision completed"
-    # FOIL_HOLES_DETECTED = "foil holes detected"
-    # FOIL_HOLES_DECISION_START = "foil holes decision started"
-    # FOIL_HOLES_DECISION_COMPLETE = "foil holes decision completed"
-    # MICROGRAPHS_DETECTED = "micrographs detected"
-    # MOTION_CORRECTION_START = "motion correction started"
-    # MOTION_CORRECTION_COMPLETE = "motion correction completed"
-    # CTF_START = "ctf started"
-    # CTF_COMPLETE = "ctf completed"
-    # PARTICLE_PICKING_START = "particle picking started"
-    # PARTICLE_PICKING_COMPLETE = "particle picking completed"
-    # PARTICLE_SELECTION_START = "particle selection started"
-    # PARTICLE_SELECTION_COMPLETE = "particle selection completed"
+    GRID_SQUARES_DECISION_START = "grid_squares.decision_started"
+    GRID_SQUARES_DECISION_COMPLETE = "grid_squares.decision_completed"
+    FOIL_HOLES_DETECTED = "foil_holes.detected"  # TODO is this redundant?
+    FOIL_HOLES_DECISION_START = "foil_holes.decision_started"
+    FOIL_HOLES_DECISION_COMPLETE = "foil_holes.decision_completed"
+    MICROGRAPHS_DETECTED = "micrographs.detected"  # TODO is this redundant?
+    MOTION_CORRECTION_START = "motion_correction.started"
+    MOTION_CORRECTION_COMPLETE = "motion_{correction.completed"
+    CTF_START = "ctf.started"
+    CTF_COMPLETE = "ctf.completed"
+    PARTICLE_PICKING_START = "particle_picking.started"
+    PARTICLE_PICKING_COMPLETE = "particle_picking.completed"
+    PARTICLE_SELECTION_START = "particle_selection.started"
+    PARTICLE_SELECTION_COMPLETE = "particle_selection.completed"
 
 
 class GenericEventMessageBody(BaseModel):
@@ -83,8 +84,8 @@ class AcquisitionEventBase(GenericEventMessageBody):
 class AcquisitionCreatedEvent(AcquisitionEventBase):
     """Event emitted when an acquisition is created"""
 
-    id: int
-    name: str
+    id: str
+    name: str | None = None
     status: str | None = None
     epu_id: str | None = None
     start_time: str | None = None
@@ -95,7 +96,7 @@ class AcquisitionCreatedEvent(AcquisitionEventBase):
 class AcquisitionUpdatedEvent(AcquisitionEventBase):
     """Event emitted when an acquisition is updated"""
 
-    id: int
+    id: str
     name: str | None = None
     status: str | None = None
     epu_id: str | None = None
@@ -107,7 +108,7 @@ class AcquisitionUpdatedEvent(AcquisitionEventBase):
 class AcquisitionDeletedEvent(AcquisitionEventBase):
     """Event emitted when an acquisition is deleted"""
 
-    id: int
+    id: str
 
 
 # ============ Atlas Events ============
@@ -120,9 +121,9 @@ class AtlasEventBase(GenericEventMessageBody):
 class AtlasCreatedEvent(AtlasEventBase):
     """Event emitted when an atlas is created"""
 
-    id: int
+    id: str
     name: str
-    grid_id: int
+    grid_id: str
     pixel_size: float | None = None
     metadata: dict[str, Any] | None = None
 
@@ -130,9 +131,9 @@ class AtlasCreatedEvent(AtlasEventBase):
 class AtlasUpdatedEvent(AtlasEventBase):
     """Event emitted when an atlas is updated"""
 
-    id: int
+    id: str
     name: str | None = None
-    grid_id: int | None = None
+    grid_id: str | None = None
     pixel_size: float | None = None
     metadata: dict[str, Any] | None = None
 
@@ -140,7 +141,7 @@ class AtlasUpdatedEvent(AtlasEventBase):
 class AtlasDeletedEvent(AtlasEventBase):
     """Event emitted when an atlas is deleted"""
 
-    id: int
+    id: str
 
 
 # ============ Atlas Tile Events ============
@@ -153,9 +154,9 @@ class AtlasTileEventBase(GenericEventMessageBody):
 class AtlasTileCreatedEvent(AtlasTileEventBase):
     """Event emitted when an atlas tile is created"""
 
-    id: int
+    id: str
     name: str
-    atlas_id: int
+    atlas_id: str
     position_x: float | None = None
     position_y: float | None = None
     metadata: dict[str, Any] | None = None
@@ -164,9 +165,9 @@ class AtlasTileCreatedEvent(AtlasTileEventBase):
 class AtlasTileUpdatedEvent(AtlasTileEventBase):
     """Event emitted when an atlas tile is updated"""
 
-    id: int
+    id: str
     name: str | None = None
-    atlas_id: int | None = None
+    atlas_id: str | None = None
     position_x: float | None = None
     position_y: float | None = None
     metadata: dict[str, Any] | None = None
@@ -175,10 +176,16 @@ class AtlasTileUpdatedEvent(AtlasTileEventBase):
 class AtlasTileDeletedEvent(AtlasTileEventBase):
     """Event emitted when an atlas tile is deleted"""
 
-    id: int
+    id: str
 
 
 # ============ Grid Events ============
+
+# TODO could definitely be refactored to reduce duplication.
+#  Since GridCreatedEvent and GridUpdatedEvent share the same fields, with the only difference being
+#  that the fields are optional in the updated event.
+
+
 class GridEventBase(GenericEventMessageBody):
     """Base model for grid events"""
 
@@ -188,27 +195,35 @@ class GridEventBase(GenericEventMessageBody):
 class GridCreatedEvent(GridEventBase):
     """Event emitted when a grid is created"""
 
-    id: int
+    id: str
     name: str
-    acquisition_id: int
+    acquisition_id: str
     status: str | None = None
+    data_dir: str | None = None  # Add this field
+    atlas_dir: str | None = None  # Add this field
+    scan_start_time: datetime | None = None  # Add if needed
+    scan_end_time: datetime | None = None  # Add if needed
     metadata: dict[str, Any] | None = None
 
 
 class GridUpdatedEvent(GridEventBase):
     """Event emitted when a grid is updated"""
 
-    id: int
-    name: str | None = None
-    acquisition_id: int | None = None
+    id: str
+    name: str
+    acquisition_id: str
     status: str | None = None
+    data_dir: str | None = None  # Add this field
+    atlas_dir: str | None = None  # Add this field
+    scan_start_time: datetime | None = None  # Add if needed
+    scan_end_time: datetime | None = None  # Add if needed
     metadata: dict[str, Any] | None = None
 
 
 class GridDeletedEvent(GridEventBase):
     """Event emitted when a grid is deleted"""
 
-    id: int
+    id: str
 
 
 # ============ Grid Square Events ============
@@ -221,9 +236,9 @@ class GridSquareEventBase(GenericEventMessageBody):
 class GridSquareCreatedEvent(GridSquareEventBase):
     """Event emitted when a grid square is created"""
 
-    id: int
+    id: str
     name: str
-    grid_id: int
+    grid_id: str
     status: str | None = None
     metadata: dict[str, Any] | None = None
 
@@ -231,9 +246,9 @@ class GridSquareCreatedEvent(GridSquareEventBase):
 class GridSquareUpdatedEvent(GridSquareEventBase):
     """Event emitted when a grid square is updated"""
 
-    id: int
+    id: str
     name: str | None = None
-    grid_id: int | None = None
+    grid_id: str | None = None
     status: str | None = None
     metadata: dict[str, Any] | None = None
 
@@ -241,11 +256,11 @@ class GridSquareUpdatedEvent(GridSquareEventBase):
 class GridSquareDeletedEvent(GridSquareEventBase):
     """Event emitted when a grid square is deleted"""
 
-    id: int
+    id: str
 
 
 # ============ Foil Hole Events ============
-class FoilHoleEventBase(BaseModel):
+class FoilHoleEventBase(GenericEventMessageBody):
     """Base model for foil hole events"""
 
     pass
@@ -254,9 +269,9 @@ class FoilHoleEventBase(BaseModel):
 class FoilHoleCreatedEvent(FoilHoleEventBase):
     """Event emitted when a foil hole is created"""
 
-    id: int
+    id: str
     name: str
-    gridsquare_id: int
+    gridsquare_id: str
     position_x: float | None = None
     position_y: float | None = None
     diameter: float | None = None
@@ -267,9 +282,9 @@ class FoilHoleCreatedEvent(FoilHoleEventBase):
 class FoilHoleUpdatedEvent(FoilHoleEventBase):
     """Event emitted when a foil hole is updated"""
 
-    id: int
+    id: str
     name: str | None = None
-    gridsquare_id: int | None = None
+    gridsquare_id: str | None = None
     position_x: float | None = None
     position_y: float | None = None
     diameter: float | None = None
@@ -280,7 +295,7 @@ class FoilHoleUpdatedEvent(FoilHoleEventBase):
 class FoilHoleDeletedEvent(FoilHoleEventBase):
     """Event emitted when a foil hole is deleted"""
 
-    id: int
+    id: str
 
 
 # ============ Micrograph Events ============
@@ -293,9 +308,9 @@ class MicrographEventBase(GenericEventMessageBody):
 class MicrographCreatedEvent(MicrographEventBase):
     """Event emitted when a micrograph is created"""
 
-    id: int
+    id: str
     name: str
-    foilhole_id: int
+    foilhole_id: str
     pixel_size: float | None = None
     defocus: float | None = None
     total_motion: float | None = None
@@ -311,9 +326,9 @@ class MicrographCreatedEvent(MicrographEventBase):
 class MicrographUpdatedEvent(MicrographEventBase):
     """Event emitted when a micrograph is updated"""
 
-    id: int
+    id: str
     name: str | None = None
-    foilhole_id: int | None = None
+    foilhole_id: str | None = None
     pixel_size: float | None = None
     defocus: float | None = None
     total_motion: float | None = None
@@ -329,16 +344,16 @@ class MicrographUpdatedEvent(MicrographEventBase):
 class MicrographDeletedEvent(MicrographEventBase):
     """Event emitted when a micrograph is deleted"""
 
-    id: int
+    id: str
 
 
 # ============ Data Processing and ML Events ============
 class MotionCorrectionStartBody(GenericEventMessageBody):
-    micrograph_id: int
+    micrograph_id: str
 
 
 class MotionCorrectionCompleteBody(GenericEventMessageBody):
-    micrograph_id: int
+    micrograph_id: str
     total_motion: float
     average_motion: float
     ctf_max_resolution_estimate: float
@@ -355,11 +370,11 @@ class MotionCorrectionCompleteBody(GenericEventMessageBody):
 
 
 class CtfStartBody(GenericEventMessageBody):
-    micrograph_id: int
+    micrograph_id: str
 
 
 class CtfCompleteBody(BaseModel):
-    micrograph_id: int
+    micrograph_id: str
     total_motion: float
     average_motion: float
     ctf_max_resolution_estimate: float
@@ -376,11 +391,11 @@ class CtfCompleteBody(BaseModel):
 
 
 class ParticlePickingStartBody(GenericEventMessageBody):
-    micrograph_id: int
+    micrograph_id: str
 
 
-class ParticlePickingCompleteBody(BaseModel):
-    micrograph_id: int
+class ParticlePickingCompleteBody(GenericEventMessageBody):
+    micrograph_id: str
     number_of_particles_picked: int
     pick_distribution: dict
 
@@ -403,11 +418,11 @@ class ParticleSelectionStartBody(GenericEventMessageBody):
         relion_options: RelionServiceOptions
     """
 
-    micrograph_id: int
+    micrograph_id: str
 
 
-class ParticleSelectionCompleteBody(BaseModel):
-    micrograph_id: int
+class ParticleSelectionCompleteBody(GenericEventMessageBody):
+    micrograph_id: str
     number_of_particles_selected: int
     number_of_particles_rejected: int
     selection_distribution: dict

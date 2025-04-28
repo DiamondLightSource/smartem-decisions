@@ -695,7 +695,7 @@ class EpuParser:
         # Start with locating all EpuSession.dm files - init a grid for each found
         for epu_session_manifest in list(datastore.root_dir.glob("**/*EpuSession.dm")):
             grid = EpuParser.parse_grid_dir(str(Path(epu_session_manifest).parent), verbose)
-            datastore.grids.add(grid.session_data.name, grid)
+            datastore.add_grid(grid)
 
         return datastore
 

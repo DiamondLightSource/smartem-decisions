@@ -8,11 +8,9 @@ import json
 
 """Usage: `./tests/check_smartem_core_http_api.py http://localhost:8000 -v`"""
 
+
 def check_api_status(base_url, timeout=5, verbose=False):
-    endpoints = [
-        f"{base_url.rstrip('/')}/status",
-        f"{base_url.rstrip('/')}/health"
-    ]
+    endpoints = [f"{base_url.rstrip('/')}/status", f"{base_url.rstrip('/')}/health"]
 
     for endpoint in endpoints:
         try:
@@ -50,9 +48,7 @@ def main():
     args = parser.parse_args()
 
     is_up, endpoint, status_code, response_time, response_data = check_api_status(
-        args.url,
-        timeout=args.timeout,
-        verbose=args.verbose
+        args.url, timeout=args.timeout, verbose=args.verbose
     )
 
     if is_up:

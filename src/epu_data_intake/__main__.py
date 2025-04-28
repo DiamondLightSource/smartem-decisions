@@ -8,31 +8,34 @@ import typer
 from pathlib import Path
 from watchdog.observers import Observer
 
+from src.epu_data_intake.core_api_client import SmartEMCoreAPIClient
 from src.epu_data_intake.data_model import EpuAcquisitionSessionStore
 from src.epu_data_intake.fs_parser import EpuParser
 from src.epu_data_intake.fs_watcher import (
     DEFAULT_PATTERNS,
-    RateLimitedHandler,
+    RateLimitedFilesystemEventHandler,
 )
+
 
 # Create a callback to handle the verbose flag at the root level
 def verbose_callback(ctx: typer.Context, param: typer.CallbackParam, value: bool):
     if value:
         logging.basicConfig(
             level=logging.INFO,
-            format='%(asctime)s - %(levelname)s - %(message)s',
+            format="%(asctime)s - %(levelname)s - %(message)s",
             force=True,
         )
     else:
         logging.basicConfig(
             level=logging.WARNING,
-            format='%(asctime)s - %(levelname)s - %(message)s',
+            format="%(asctime)s - %(levelname)s - %(message)s",
             force=True,
         )
     # Store verbose setting in context for child commands to access
     ctx.ensure_object(dict)
     ctx.obj["verbose"] = value
     return value
+
 
 epu_data_intake_cli = typer.Typer(help="EPU Data Intake Tools")
 parse_cli = typer.Typer(help="Commands for parsing EPU data")
@@ -48,6 +51,7 @@ shared_verbose_option = typer.Option(
     is_eager=True,  # Process this flag before other parameters
 )
 
+
 # Add callbacks to all command groups to support -v flag
 # The callback functions themselves don't need to do anything special since our `verbose_callback` function
 # does the actual work of configuring the logging.
@@ -57,15 +61,17 @@ def main_callback(verbose: bool = shared_verbose_option):
     """Main callback to enable verbose flag on root command"""
     pass
 
+
 @parse_cli.callback()
 def parse_callback(verbose: bool = shared_verbose_option):
     """Parse group callback to enable verbose flag on parse command"""
     pass
 
+
 @parse_cli.command("dir")
 def parse_epu_output_dir(
     epu_output_dir: str,
-    verbose: bool = shared_verbose_option, # Used by Typer for CLI context, do not remove
+    verbose: bool = shared_verbose_option,  # Used by Typer for CLI context, do not remove
 ):
     """Parse an entire EPU output directory structure. May contain multiple grids"""
     datastore = EpuAcquisitionSessionStore(epu_output_dir)
@@ -76,7 +82,7 @@ def parse_epu_output_dir(
 @parse_cli.command("grid")
 def parse_grid(
     grid_data_dir: str,
-    verbose: bool = shared_verbose_option, # Used by Typer for CLI context, do not remove
+    verbose: bool = shared_verbose_option,  # Used by Typer for CLI context, do not remove
 ):
     is_valid, errors = EpuParser.validate_project_dir(Path(grid_data_dir))
 
@@ -92,7 +98,7 @@ def parse_grid(
 @parse_cli.command("session")
 def parse_epu_session(
     path: str,
-    verbose: bool = shared_verbose_option, # Used by Typer for CLI context, do not remove
+    verbose: bool = shared_verbose_option,  # Used by Typer for CLI context, do not remove
 ):
     """Parse an EPU session manifest file."""
     epu_session_data = EpuParser.parse_epu_session_manifest(path)
@@ -102,7 +108,7 @@ def parse_epu_session(
 @parse_cli.command("atlas")
 def parse_atlas(
     path: str,
-    verbose: bool = shared_verbose_option, # Used by Typer for CLI context, do not remove
+    verbose: bool = shared_verbose_option,  # Used by Typer for CLI context, do not remove
 ):
     """Parse an atlas manifest file."""
     atlas_data = EpuParser.parse_atlas_manifest(path)
@@ -112,7 +118,7 @@ def parse_atlas(
 @parse_cli.command("gridsquare-metadata")
 def parse_gridsquare_metadata(
     path: str,
-    verbose: bool = shared_verbose_option, # Used by Typer for CLI context, do not remove
+    verbose: bool = shared_verbose_option,  # Used by Typer for CLI context, do not remove
 ):
     """Parse grid square metadata."""
     metadata = EpuParser.parse_gridsquare_metadata(path)
@@ -122,7 +128,7 @@ def parse_gridsquare_metadata(
 @parse_cli.command("gridsquare")
 def parse_gridsquare(
     path: str,
-    verbose: bool = shared_verbose_option, # Used by Typer for CLI context, do not remove
+    verbose: bool = shared_verbose_option,  # Used by Typer for CLI context, do not remove
 ):
     """Parse a grid square manifest file."""
     gridsquare_manifest_data = EpuParser.parse_gridsquare_manifest(path)
@@ -132,7 +138,7 @@ def parse_gridsquare(
 @parse_cli.command("foilhole")
 def parse_foilhole(
     path: str,
-    verbose: bool = shared_verbose_option, # Used by Typer for CLI context, do not remove
+    verbose: bool = shared_verbose_option,  # Used by Typer for CLI context, do not remove
 ):
     """Parse a foil hole manifest file."""
     foilhole_data = EpuParser.parse_foilhole_manifest(path)
@@ -142,7 +148,7 @@ def parse_foilhole(
 @parse_cli.command("micrograph")
 def parse_micrograph(
     path: str,
-    verbose: bool = shared_verbose_option, # Used by Typer for CLI context, do not remove
+    verbose: bool = shared_verbose_option,  # Used by Typer for CLI context, do not remove
 ):
     """Parse a micrograph manifest file."""
     micrograph_data = EpuParser.parse_micrograph_manifest(path)
@@ -152,7 +158,7 @@ def parse_micrograph(
 @epu_data_intake_cli.command("validate")
 def validate_epu_dir(
     path: str,
-    verbose: bool = shared_verbose_option, # Used by Typer for CLI context, do not remove
+    verbose: bool = shared_verbose_option,  # Used by Typer for CLI context, do not remove
 ):
     """Validate the structure of an EPU project directory. Note - this only asserts
     that the structure is valid, does not validate content of files within."""
@@ -174,7 +180,10 @@ def watch_directory(
     dry_run: bool = typer.Option(
         False, "--dry_run", "-n", help="Enables dry run mode, writing data in-memory and not posting to Core's HTTP API"
     ),
-    # TODO consider providing via env but allowing override via CLI. Investigate how Win env vars work or if they do even
+    # TODO
+    #  - consider providing via env but allowing override via CLI.
+    #  - Investigate how Win env vars work.
+    #  - Accept a hard-coded value at build time
     api_url: str = typer.Option(
         "http://127.0.0.1:8000", "--api-url", "-a", help="URL for the Core API (required unless in dry run mode)"
     ),
@@ -196,26 +205,35 @@ def watch_directory(
         logging.error(f"Error: Directory {path} does not exist")
         raise typer.Exit(1)
 
-    if not dry_run and not api_url:
-        logging.error("Error: API URL must be provided when not in dry run mode")
-        raise typer.Exit(1)
+    if not dry_run:
+        try:
+            import asyncio
+
+            async def check_api():
+                async with SmartEMCoreAPIClient(api_url) as client:
+                    status_data = await client.get_status()
+                    return status_data
+
+            status_result = asyncio.run(check_api())
+            logging.info(f"API is reachable at {api_url} - Status: {status_result.get('status', 'unknown')}")
+        except Exception as e:
+            logging.error(f"Error: API at {api_url} is not reachable: {str(e)}")
+            raise typer.Exit(1)
 
     logging.info(f"Starting to watch directory: {str(path)} (including subdirectories) for patterns: {patterns}")
 
-    observer = Observer()
-
     # TODO verify verbose parameter is still needed If it's *only* used for logging verbosity - check if logging
     #   that's already set up here is being used, making this param redundant
-    handler = RateLimitedHandler(patterns, log_interval, verbose)
-    handler.set_watch_dir(path)
-    handler.init_datastore(dry_run, api_url)
+    handler = RateLimitedFilesystemEventHandler(path, dry_run, api_url, verbose, log_interval, patterns)
 
     logging.info("Parsing existing directory contents...")
-    # TODO settle a potential race condition if one exists:
+    # TODO settle a potential race condition between parser and watcher if one exists:
     handler.datastore = EpuParser.parse_epu_output_dir(handler.datastore, verbose)
     # TODO ^ verify verbose parameter is still needed If it's *only* used for logging verbosity - check if logging
     #   that's already set up here is being used, making this param redundant
+
     logging.info("..done! Now listening for new filesystem events")
+    observer = Observer()
     observer.schedule(handler, str(path), recursive=True)
 
     def handle_exit(signum, frame):

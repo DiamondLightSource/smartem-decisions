@@ -41,7 +41,7 @@ DEFAULT_PATTERNS = [  # TODO consider merging with props in EpuParser
 ]
 
 
-class RateLimitedHandler(FileSystemEventHandler):
+class RateLimitedFilesystemEventHandler(FileSystemEventHandler):
     """File system event handler with rate limiting capabilities.
 
     This handler processes file system events from watchdog, specifically watching
@@ -70,7 +70,16 @@ class RateLimitedHandler(FileSystemEventHandler):
     datastore: EpuAcquisitionSessionStore | None = None
     watch_dir: Path | None = None
 
-    def __init__(self, patterns: list[str], log_interval: float = 10.0, verbose: bool = False):
+    # TODO test with a lower log_interval value, set lowest possible default, better naming
+    def __init__(
+        self,
+        watch_dir,
+        dry_run: bool = False,
+        api_url: str | None = None,
+        verbose: bool = False,
+        log_interval: float = 10.0,
+        patterns: list[str] = DEFAULT_PATTERNS,
+    ):
         self.last_log_time = time.time()
         self.log_interval = log_interval
         self.patterns = patterns
@@ -82,7 +91,10 @@ class RateLimitedHandler(FileSystemEventHandler):
         # Maintain a buffer of "orphaned" files - files that appear to belong to a grid that doesn't exist yet
         self.orphaned_files = {}  # path -> (event, timestamp, file_stat)
 
-    # TODO unit test thi method
+        self._set_watch_dir(watch_dir)
+        self._init_datastore(dry_run, api_url)
+
+    # TODO unit test this method
     def matches_pattern(self, path: str) -> bool:
         try:
             rel_path = str(Path(path).relative_to(self.watch_dir))
@@ -91,29 +103,31 @@ class RateLimitedHandler(FileSystemEventHandler):
         except ValueError:
             return False
 
-    def set_watch_dir(self, path: Path):
-        self.watch_dir = path.absolute()  # TODO this could cause problems in Win
+    # TODO on Win there's primary and secondary output dirs - work directly with primary if possible otherwise
+    #  operate across both. Note: data is first written to primary output dir then later maybe partially copied
+    #  to secondary dir.
+    def _set_watch_dir(self, path: Path):
+        self.watch_dir = path.absolute()  # TODO this could cause problems in Win - test!
 
-    def init_datastore(self, dry_run: bool = False, api_url: str = None):
-        logging.info(f"Instantiated new datastore, dry run: {dry_run}")
+    def _init_datastore(self, dry_run: bool = False, api_url: str = None):
         self.datastore = EpuAcquisitionSessionStore(str(self.watch_dir), dry_run, api_url)
+        logging.debug(
+            f"Instantiated new datastore, "
+            + ("in-memory only" if self.datastore.in_memory_only else "data will be permanently saved on the backend")
+        )
+        if self.datastore.in_memory_only:
+            logging.info(f"Acquisition session uuid assigned: {self.datastore.uuid}")
 
+    # TODO Enhancement: log all events to graylog (if reachable) for session debugging and playback
     def on_any_event(self, event):
-        if self.watch_dir is None:
-            raise RuntimeError("watch_dir not initialized - call set_watch_dir() first")
-        if self.datastore is None:
-            raise RuntimeError("datastore not initialized - call init_datastore() first")
-
-        # Enhancement: record all events to graylog (if reachable) for session debugging and playback
-
         if event.is_directory or not self.matches_pattern(event.src_path):
             if event.is_directory:
-                logging.info(f"Skipping non-matching path: {event.src_path}")
+                logging.debug(f"Skipping non-matching path: {event.src_path}")
             return
 
         if event.event_type not in self.watched_event_types:
             if event.is_directory:
-                logging.info(f"Skipping non-matching event type: {event.event_type}")
+                logging.debug(f"Skipping non-matching event type: {event.event_type}")
             return
 
         current_time = time.time()
@@ -135,10 +149,7 @@ class RateLimitedHandler(FileSystemEventHandler):
         if new_file_detected and re.search(EpuParser.session_dm_pattern, event.src_path):
             assert self.datastore.get_grid_by_path(event.src_path) is None  # guaranteed because is a new file
             grid = Grid(str(Path(event.src_path).parent.resolve()))
-            session_data = EpuParser.parse_epu_session_manifest(
-                str(Path(event.src_path).resolve())
-            )  # just to get the name really, techdebt
-            self.datastore.grids.add(session_data.name, grid)
+            self.datastore.add_grid(grid)
 
         # try to work out which grid the touched file relates to
         grid_id = self.datastore.get_grid_by_path(event.src_path)
@@ -146,7 +157,7 @@ class RateLimitedHandler(FileSystemEventHandler):
             # This must be an orphaned file since it matched one of patterns for files we are interested in,
             #   but a containing grid doesn't exist yet - store it for when we have the grid.
             if self.verbose:
-                logging.info(
+                logging.debug(
                     f"Could not determine which grid this data belongs to: {event.src_path}, adding to orphans"
                 )
             self.orphaned_files[event.src_path] = (event, current_time, file_stat)
@@ -169,19 +180,19 @@ class RateLimitedHandler(FileSystemEventHandler):
                 self._on_micrograph_detected(path, grid_id, new_file_detected)
 
     def _on_session_detected(self, path: str, grid_id, is_new_file: bool = True):
-        logging.info(f"Session manifest {'detected' if is_new_file else 'updated'}: {path}")
+        logging.debug(f"Session manifest {'detected' if is_new_file else 'updated'}: {path}")
         session_data = EpuParser.parse_epu_session_manifest(path)
         gridstore = self.datastore.grids.get(grid_id)
 
         if gridstore and session_data != gridstore.session_data:
             # Create the acquisition first if we're not in dry run mode
             if not self.datastore.in_memory_only and self.datastore.api_client:
-                success = self.datastore.api_client.create("acquisition", session_data.id, session_data)
+                success = self.datastore.api_client.create("acquisition", self.datastore.uuid, session_data)
                 if success:
-                    logging.info(f"Created acquisition for session {session_data.name}")
+                    logging.info(f"Created acquisition for session #{self.datastore.uuid} {session_data.name}")
 
             gridstore.session_data = session_data
-            logging.info(f"Updated session data for grid {grid_id}")
+            logging.debug(f"Updated session data for grid {grid_id}")
             logging.info(gridstore.session_data)
 
     def _process_orphaned_files(self, grid_id):
@@ -189,7 +200,7 @@ class RateLimitedHandler(FileSystemEventHandler):
         for path, (event, timestamp, file_stat) in self.orphaned_files.items():
             # Check if this orphaned file belongs to the new grid
             if self.datastore.get_grid_by_path(path) == grid_id:
-                logging.info(f"Processing previously orphaned file: {path}")
+                logging.debug(f"Processing previously orphaned file: {path}")
                 self.on_any_event(event)  # Process the file as if we just received the event
 
         # Create a new dictionary excluding the processed files
@@ -198,7 +209,7 @@ class RateLimitedHandler(FileSystemEventHandler):
         }
 
     def _on_atlas_detected(self, path: str, grid_id, is_new_file: bool = True):
-        logging.info(f"Atlas {'detected' if is_new_file else 'updated'}: {path}")
+        logging.debug(f"Atlas {'detected' if is_new_file else 'updated'}: {path}")
         gridstore = self.datastore.grids.get(grid_id)
         atlas_data = EpuParser.parse_atlas_manifest(path)
         if atlas_data != gridstore.atlas_data:
@@ -214,16 +225,28 @@ class RateLimitedHandler(FileSystemEventHandler):
         gridstore = self.datastore.grids.get(grid_id)
         gridsquare_metadata = EpuParser.parse_gridsquare_metadata(path)
 
+        # Check if the gridsquares EntityStore has an API client configured
+        if hasattr(gridstore.gridsquares, "_api_client") and gridstore.gridsquares._api_client:
+            logging.info(f"Grid's gridsquares EntityStore has API client configured")
+        else:
+            logging.info(f"Grid's gridsquares EntityStore does NOT have API client configured")
+
+        # Check if this is a new gridsquare or an update to an existing one
         if not gridstore.gridsquares.exists(gridsquare_id):
+            logging.info(f"Creating new GridSquare: {gridsquare_id}")
             gridsquare_data = GridSquareData(
                 id=gridsquare_id,
                 metadata=gridsquare_metadata,
             )
         else:
+            logging.info(f"Updating existing GridSquare: {gridsquare_id}")
             gridsquare_data = gridstore.gridsquares.get(gridsquare_id)
             gridsquare_data.metadata = gridsquare_metadata
 
+        # Add the gridsquare to the grid's gridsquares EntityStore
+        logging.info(f"Adding GridSquare {gridsquare_id} to Grid {grid_id}")
         gridstore.gridsquares.add(gridsquare_id, gridsquare_data)
+        logging.info(f"Added GridSquare {gridsquare_id} to Grid {grid_id}")
         logging.info(gridsquare_data)
 
     def _on_gridsquare_manifest_detected(self, path: str, grid_id, is_new_file: bool = True):

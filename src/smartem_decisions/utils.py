@@ -4,7 +4,7 @@ from sqlmodel import create_engine
 from dotenv import load_dotenv
 
 from src.smartem_decisions.log_manager import logger
-from src.smartem_decisions.rabbitmq import RabbitMQPublisher
+from src.smartem_decisions.rabbitmq import RabbitMQPublisher, RabbitMQConsumer
 
 
 def load_conf():
@@ -42,47 +42,42 @@ def setup_postgres_connection():
     return engine
 
 
-def create_rabbitmq_publisher(
-    connection_params: dict | None = None, exchange: str = "", queue: str = "smartem_decisions"
-) -> RabbitMQPublisher:
+def setup_rabbitmq(queue_name=None, exchange=None):
     """
-    Create a new RabbitMQ publisher instance
+    Create RabbitMQ publisher and consumer instances using configuration settings
 
     Args:
-        connection_params: Connection parameters for RabbitMQ. If None, load from environment variables
-        exchange: Exchange name (default is direct exchange "")
-        queue: Queue name (default is "smartem_decisions")
+        queue_name: Optional queue name override (if None, load from config)
+        exchange: Optional exchange name override (if None, use default "")
 
     Returns:
-        RabbitMQPublisher: A new publisher instance
+        tuple: (RabbitMQPublisher instance, RabbitMQConsumer instance)
     """
-    if connection_params is None:
-        load_dotenv()
+    # Load config to get queue_name and routing_key
+    config = load_conf()
 
-        required_env_vars = ["RABBITMQ_HOST", "RABBITMQ_PORT", "RABBITMQ_USER", "RABBITMQ_PASSWORD"]
-        for key in required_env_vars:
-            if os.getenv(key) is None:
-                logger.error(f"Error: Required environment variable '{key}' is not set")
-                exit(1)
+    if not queue_name and config and "rabbitmq" in config:
+        queue_name = config["rabbitmq"]["queue_name"]
+        routing_key = config["rabbitmq"]["routing_key"]
+    else:
+        # Default to "smartem_decisions" if config not available
+        queue_name = queue_name or "smartem_decisions"
+        routing_key = queue_name  # Use queue_name as routing_key by default
 
-        connection_params = {
-            "host": os.getenv("RABBITMQ_HOST", "localhost"),
-            "port": int(os.getenv("RABBITMQ_PORT", "5672")),
-            "virtual_host": os.getenv("RABBITMQ_VHOST", "/"),
-            "credentials": {
-                "username": os.getenv("RABBITMQ_USER", "guest"),
-                "password": os.getenv("RABBITMQ_PASSWORD", "guest"),
-            },
-        }
+    exchange = exchange or ""  # Default to direct exchange if not specified
 
-        # Use queue from environment if provided
-        queue_from_env = os.getenv("RABBITMQ_QUEUE")
-        if queue_from_env:
-            queue = queue_from_env
+    # Create publisher and consumer with the same connection settings
+    publisher = RabbitMQPublisher(connection_params=None, exchange=exchange, queue=routing_key)
+    consumer = RabbitMQConsumer(connection_params=None, exchange=exchange, queue=queue_name)
 
-    publisher = RabbitMQPublisher(connection_params, exchange, queue)
-    return publisher
+    return publisher, consumer
 
 
-# Singleton instance that can be imported and used throughout the application
-rmq_publisher = create_rabbitmq_publisher()
+# Load application configuration. TODO do once and share the singleton conf with rest of codebase
+app_config = load_conf()
+
+# Create RabbitMQ connections (available as singletons throughout the application)
+rmq_publisher, rmq_consumer = setup_rabbitmq(
+    queue_name=app_config["rabbitmq"]["queue_name"] if app_config and "rabbitmq" in app_config else None,
+    exchange="",  # Using default direct exchange
+)
