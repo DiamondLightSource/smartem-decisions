@@ -24,9 +24,8 @@ def perform_random_updates(
             .where(FoilHole.gridsquare_id == GridSquare.id)
             .where(GridSquare.grid_id == grid_id)
         ).all()
-        scores = [random.uniform(random_range[0], random_range[1]) < 0.5 for _ in mics]
-        for s, m in zip(scores, mics, strict=True):
-            prior_update(s, m.id, sess, origin=origin)
+        for m in mics:
+            prior_update(random.uniform(random_range[0], random_range[1]) < 0.5, m.id, sess, origin=origin)
     return None
 
 
