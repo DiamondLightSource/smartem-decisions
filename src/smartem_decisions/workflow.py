@@ -1,43 +1,43 @@
 import random
-from datetime import datetime, timezone
-from sqlmodel import select
+from datetime import UTC, datetime
+
 from sqlalchemy.exc import SQLAlchemyError
+from sqlmodel import select
 
-from src.smartem_decisions.utils import logger
-
-from src.smartem_decisions.model.mq_event import (
-    AcquisitionStartBody,
-    GridScanStartBody,
-    GridScanCompleteBody,
-    GridSquaresDecisionStartBody,
-    GridSquaresDecisionCompleteBody,
-    FoilHolesDetectedBody,
-    FoilHolesDecisionStartBody,
-    FoilHolesDecisionCompleteBody,
-    MicrographsDetectedBody,
-    MotionCorrectionStartBody,
-    MotionCorrectionCompleteBody,
-    CtfStartBody,
-    CtfCompleteBody,
-    ParticlePickingStartBody,
-    ParticlePickingCompleteBody,
-    ParticleSelectionStartBody,
-    ParticleSelectionCompleteBody,
-    AcquisitionEndBody,
-)
-
+from smartem_decisions.predictions.update import prior_update
 from src.smartem_decisions.model.database import (
     Acquisition,
+    AcquisitionStatus,
+    FoilHole,
+    FoilHoleStatus,
     Grid,
     GridSquare,
-    FoilHole,
-    Micrograph,
-    AcquisitionStatus,
-    GridStatus,
     GridSquareStatus,
-    FoilHoleStatus,
+    GridStatus,
+    Micrograph,
     MicrographStatus,
 )
+from src.smartem_decisions.model.mq_event import (
+    AcquisitionEndBody,
+    AcquisitionStartBody,
+    CtfCompleteBody,
+    CtfStartBody,
+    FoilHolesDecisionCompleteBody,
+    FoilHolesDecisionStartBody,
+    FoilHolesDetectedBody,
+    GridScanCompleteBody,
+    GridScanStartBody,
+    GridSquaresDecisionCompleteBody,
+    GridSquaresDecisionStartBody,
+    MicrographsDetectedBody,
+    MotionCorrectionCompleteBody,
+    MotionCorrectionStartBody,
+    ParticlePickingCompleteBody,
+    ParticlePickingStartBody,
+    ParticleSelectionCompleteBody,
+    ParticleSelectionStartBody,
+)
+from src.smartem_decisions.utils import logger
 
 """
 The number of micrographs in a single foil hole will be typically between 4 and 10.
@@ -67,13 +67,14 @@ def acquisition_start(msg: AcquisitionStartBody, sess) -> Acquisition | None:
         new_acquisition = Acquisition(
             name=msg.name,
             status=AcquisitionStatus.STARTED,
-            start_time=datetime.now(timezone.utc),
+            start_time=datetime.now(UTC),
             **({"epu_id": msg.epu_id} if msg.epu_id is not None else {}),
         )
         sess.add(new_acquisition)
         sess.flush()
         grids = [
-            Grid(name=f"Grid {i:02}", acquisition_id=new_acquisition.id) for i in range(1, num_of_grids_in_sample_container + 1)
+            Grid(name=f"Grid {i:02}", acquisition_id=new_acquisition.id)
+            for i in range(1, num_of_grids_in_sample_container + 1)
         ]
         sess.add_all(grids)
         sess.commit()
@@ -402,7 +403,8 @@ def micrographs_detected(msg: MicrographsDetectedBody, sess) -> list[Micrograph]
         sess: The database session.
 
     Returns:
-        Optional[List[Micrograph]]: A list of newly created Micrograph objects with database IDs if successful, None otherwise.
+        Optional[List[Micrograph]]: A list of newly created Micrograph objects with database IDs if successful,
+        None otherwise.
 
     Raises:
         SQLAlchemyError: If there's a database-related error.
@@ -505,6 +507,8 @@ def motion_correction_complete(msg: MotionCorrectionCompleteBody, sess) -> Micro
         sess.commit()
         sess.refresh(micrograph)
 
+        prior_update(msg.total_motion < msg.total_motion_threshold, msg.micrograph_id, sess, origin="motion_correction")
+
         return micrograph
 
     except SQLAlchemyError as e:
@@ -585,6 +589,13 @@ def ctf_complete(msg: CtfCompleteBody, sess) -> Micrograph | None:
         sess.add(micrograph)
         sess.commit()
         sess.refresh(micrograph)
+
+        prior_update(
+            msg.ctf_max_resolution_estimate < msg.ctf_max_resolution_estimate_threshold,
+            msg.micrograph_id,
+            sess,
+            origin="ctf_estimation",
+        )
 
         return micrograph
 
@@ -776,7 +787,7 @@ def acquisition_end(msg: AcquisitionEndBody, sess) -> Acquisition | None:
             return None
 
         existing_acquisition.status = AcquisitionStatus.COMPLETED
-        existing_acquisition.end_time = datetime.now(timezone.utc)
+        existing_acquisition.end_time = datetime.now(UTC)
         sess.add(existing_acquisition)
         sess.commit()
         sess.refresh(existing_acquisition)

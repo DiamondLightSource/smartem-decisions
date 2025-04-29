@@ -92,6 +92,7 @@ class MotionCorrectionCompleteBody(GenericEventMessageBody):
     total_motion: float
     average_motion: float
     ctf_max_resolution_estimate: float
+    total_motion_threshold: float = 22  # determined from the 75% percentile of 4 months of data
 
     @model_validator(mode="after")
     def check_model(self):
@@ -113,6 +114,7 @@ class CtfCompleteBody(BaseModel):
     total_motion: float
     average_motion: float
     ctf_max_resolution_estimate: float
+    ctf_max_resolution_estimate_threshold: float = 5  # determined from the 75% percentile of 4 months of data
 
     @model_validator(mode="after")
     def check_model(self):
