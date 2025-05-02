@@ -11,7 +11,7 @@ from sqlmodel import (
     Session as SQLModelSession,
 )
 
-from src.smartem_decisions.model.entity_status import (
+from smartem_decisions.model.entity_status import (
     AcquisitionStatus,
     AcquisitionStatusType,
     FoilHoleStatus,
@@ -23,8 +23,7 @@ from src.smartem_decisions.model.entity_status import (
     MicrographStatus,
     MicrographStatusType,
 )
-from src.smartem_decisions.utils import (
-    logger,
+from smartem_decisions.utils import (
     setup_postgres_connection,
 )
 
