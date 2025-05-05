@@ -42,14 +42,14 @@ common = [
     "python-dotenv==1.1.0",
     "pyyaml",
     "rich",
-    "typer==0.15.2",
+    "typer==0.15.3",
 ]
 
 # Core system component dependencies
 core = [
     "smartem-decisions[common]",
     "pika==1.3.2",
-    "pydantic==2.11.3",
+    "pydantic==2.11.4",
     "fastapi==0.115.12",
     "graypy==2.1.0",
     "psycopg2-binary==2.9.10",
