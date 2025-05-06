@@ -5,7 +5,7 @@ import logging
 from fastapi import FastAPI, Depends, HTTPException, status, Request
 from sqlalchemy.orm import sessionmaker, Session as SqlAlchemySession
 
-from src.epu_data_intake.core_api_client import (
+from src.epu_data_intake.core_http_api_client import (
     AcquisitionStatus,
     GridStatus,
 )  # TODO check these definitions for duplicates

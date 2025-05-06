@@ -1,6 +1,7 @@
 import unittest
 from pathlib import Path
 from unittest.mock import MagicMock, patch
+import logging
 
 from src.epu_data_intake.data_model import EpuAcquisitionSessionStore
 
@@ -10,9 +11,11 @@ class TestEpuSessionGetGridByPath(unittest.TestCase):
         # Set up a mock EntityStore for our tests
         self.mock_store = {}
 
-        # Patch the EntityStore class
-        self.patcher = patch("epu_data_intake.data_model.EntityStore", return_value=self.mock_store)
-        self.mock_entity_store = self.patcher.start()
+        # Patch the APIClient class to avoid the None api_url issue
+        self.api_client_patcher = patch("src.epu_data_intake.core_http_api_client.SmartEMAPIClient")
+        self.mock_api_client = self.api_client_patcher.start()
+        # Make the mock return itself when instantiated
+        self.mock_api_client.return_value.create.return_value = True
 
         # Create the EpuSession with a temp root dir
         self.session = EpuAcquisitionSessionStore(root_dir="/temp/epu_root")
@@ -35,7 +38,7 @@ class TestEpuSessionGetGridByPath(unittest.TestCase):
 
     def tearDown(self):
         # Stop the patcher
-        self.patcher.stop()
+        self.api_client_patcher.stop()
 
     def test_get_grid_by_path_finds_grid_in_data_dir(self):
         # Test a path in grid1's data_dir

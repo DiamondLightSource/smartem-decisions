@@ -76,15 +76,13 @@ class RateLimitedFilesystemEventHandler(FileSystemEventHandler):
         watch_dir,
         dry_run: bool = False,
         api_url: str | None = None,
-        verbose: bool = False,
         log_interval: float = 10.0,
         patterns: list[str] = DEFAULT_PATTERNS,
     ):
         self.last_log_time = time.time()
         self.log_interval = log_interval
         self.patterns = patterns
-        self.verbose = verbose
-
+        self.verbose = logging.getLogger().level <= logging.INFO
         # Distinguish between new and previously seen files.
         self.changed_files = {}
 

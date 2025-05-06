@@ -687,20 +687,20 @@ class EpuParser:
             return None
 
     @staticmethod
-    def parse_epu_output_dir(datastore: EpuAcquisitionSessionStore, verbose: bool = False):
+    def parse_epu_output_dir(datastore: EpuAcquisitionSessionStore):
         """Parse the entire EPU output directory, containing one or more grids/samples
         collected over the duration of a given microscopy session.
         """
 
         # Start with locating all EpuSession.dm files - init a grid for each found
         for epu_session_manifest in list(datastore.root_dir.glob("**/*EpuSession.dm")):
-            grid = EpuParser.parse_grid_dir(str(Path(epu_session_manifest).parent), verbose)
+            grid = EpuParser.parse_grid_dir(str(Path(epu_session_manifest).parent))
             datastore.add_grid(grid)
 
         return datastore
 
     @staticmethod
-    def parse_grid_dir(grid_data_dir: str, verbose: bool = False) -> Grid:
+    def parse_grid_dir(grid_data_dir: str) -> Grid:
         gridstore = Grid(str(Path(grid_data_dir).resolve()))
 
         # 1. parse EpuSession.dm
