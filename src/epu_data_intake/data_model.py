@@ -476,9 +476,10 @@ class EpuAcquisitionSessionStore:
         self.grids = EntityStore()
 
         if not self.in_memory_only:
-            from src.epu_data_intake.core_api_client_adapter import ApiClientAdapter
+            # from src.epu_data_intake.core_api_client_adapter import ApiClientAdapter as ApiClient
+            from src.epu_data_intake.core_http_api_client import SmartEMAPIClient as APIClient
 
-            self.api_client = ApiClientAdapter(api_url)
+            self.api_client = APIClient(api_url)
             response = self.api_client.create("acquisition", self.acquisition.id, self.acquisition, None)
             if not response:
                 logging.error(f"Failed to create acquisition {self.acquisition.id}")
