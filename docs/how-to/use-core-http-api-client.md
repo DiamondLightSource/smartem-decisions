@@ -68,7 +68,7 @@ acquisitions = await client.aget_acquisitions()
 ### Creating an Acquisition
 
 ```python
-from src.epu_data_intake.data_model import EpuSessionData
+from src.epu_data_intake.model.schemas import EpuSessionData
 from datetime import datetime
 
 # Create an acquisition from EPU session data
@@ -139,22 +139,26 @@ Here's an example of creating entities at each level:
 acquisition = client.create_acquisition(EpuSessionData(id="acq-1", name="Test Acquisition"))
 
 # Create a grid for the acquisition
-from src.epu_data_intake.data_model import Grid
-grid = Grid(data_dir="/path/to/grid")
+from src.epu_data_intake.model.schemas import GridData
+
+grid = GridData(data_dir="/path/to/grid")
 grid_response = client.create_acquisition_grid(acquisition.id, grid)
 
 # Create a grid square for the grid
-from src.epu_data_intake.data_model import GridSquareData
+from src.epu_data_intake.model.schemas import GridSquareData
+
 gridsquare = GridSquareData(id="gs-1", data_dir="/path/to/gridsquare")
 gridsquare_response = client.create_grid_gridsquare(grid_response.id, gridsquare)
 
 # Create a foil hole for the grid square
-from src.epu_data_intake.data_model import FoilHoleData
+from src.epu_data_intake.model.schemas import FoilHoleData
+
 foilhole = FoilHoleData(id="fh-1", gridsquare_id=gridsquare.id)
 foilhole_response = client.create_gridsquare_foilhole(gridsquare_response.id, foilhole)
 
 # Create a micrograph for the foil hole
-from src.epu_data_intake.data_model import MicrographData, MicrographManifest
+from src.epu_data_intake.model.schemas import MicrographData, MicrographManifest
+
 manifest = MicrographManifest(
     unique_id="mic-1",
     acquisition_datetime=datetime.now(),

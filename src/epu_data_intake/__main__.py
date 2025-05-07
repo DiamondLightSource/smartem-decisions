@@ -9,7 +9,7 @@ from pathlib import Path
 from watchdog.observers import Observer
 
 from src.epu_data_intake.core_http_api_client import SmartEMAPIClient as APIClient
-from src.epu_data_intake.data_model import EpuAcquisitionSessionStore
+from src.epu_data_intake.model.store import InMemoryDataStore, PersistentDataStore
 from src.epu_data_intake.fs_parser import EpuParser
 from src.epu_data_intake.fs_watcher import (
     DEFAULT_PATTERNS,
@@ -72,15 +72,22 @@ def parse_callback(verbose: int = shared_verbosity_option):
     """Parse group callback to enable verbose flag on parse command"""
     pass
 
+
 @parse_cli.command("dir")
 def parse_epu_output_dir(
-    epu_output_dir: str,
-    verbose: int = shared_verbosity_option,
+        epu_output_dir: str,
+        verbose: int = shared_verbosity_option,
 ):
     """Parse an entire EPU output directory structure. May contain multiple grids"""
-    datastore = EpuAcquisitionSessionStore(epu_output_dir)
+    # Rationale here is that parsers don't persist data to API by design - only watch command does that
+    datastore = InMemoryDataStore(epu_output_dir)
+
+    # Initialize the acquisition_rels dict with a set for the acquisition
+    datastore.acquisition_rels[datastore.acquisition.uuid] = set()
+
+    # The EpuParser.parse_epu_output_dir would need to be updated to work with the new store
     datastore = EpuParser.parse_epu_output_dir(datastore)
-    logging.info(datastore)
+    False and logging.debug(datastore)
 
 
 @parse_cli.command("grid")
@@ -91,12 +98,14 @@ def parse_grid(
     is_valid, errors = EpuParser.validate_project_dir(Path(grid_data_dir))
 
     if not is_valid:
-        logging.info("Grid data dir dir is structurally invalid. Found the following issues:\n")
+        logging.warning("Grid data dir dir is structurally invalid. Found the following issues:\n")
         for error in errors:
-            logging.info(f"- {error}")
+            logging.warning(f"- {error}")
     else:
-        gridstore = EpuParser.parse_grid_dir(grid_data_dir)
-        logging.info(gridstore)
+        # Rationale here is that parsers don't persist data to API by design - only watch command does that
+        datastore = InMemoryDataStore(grid_data_dir) # TODO confirm this is the dir expected here - top-level watch dir or grid root dir?
+        grid_uuid = EpuParser.parse_grid_dir(grid_data_dir, datastore)
+        False and logging.debug(datastore)
 
 
 @parse_cli.command("session")

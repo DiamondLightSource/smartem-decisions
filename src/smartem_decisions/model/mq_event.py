@@ -84,10 +84,10 @@ class AcquisitionEventBase(GenericEventMessageBody):
 class AcquisitionCreatedEvent(AcquisitionEventBase):
     """Event emitted when an acquisition is created"""
 
-    id: str
+    uuid: str
+    id: str | None = None
     name: str | None = None
     status: str | None = None
-    epu_id: str | None = None
     start_time: str | None = None
     end_time: str | None = None
     metadata: dict[str, Any] | None = None
@@ -195,35 +195,35 @@ class GridEventBase(GenericEventMessageBody):
 class GridCreatedEvent(GridEventBase):
     """Event emitted when a grid is created"""
 
-    id: str
+    uuid: str
     name: str
-    acquisition_id: str
+    acquisition_uuid: str
     status: str | None = None
-    data_dir: str | None = None  # Add this field
-    atlas_dir: str | None = None  # Add this field
-    scan_start_time: datetime | None = None  # Add if needed
-    scan_end_time: datetime | None = None  # Add if needed
+    data_dir: str | None = None
+    atlas_dir: str | None = None
+    scan_start_time: datetime | None = None
+    scan_end_time: datetime | None = None
     metadata: dict[str, Any] | None = None
 
 
 class GridUpdatedEvent(GridEventBase):
     """Event emitted when a grid is updated"""
 
-    id: str
+    uuid: str
     name: str
-    acquisition_id: str
+    acquisition_uuid: str
     status: str | None = None
-    data_dir: str | None = None  # Add this field
-    atlas_dir: str | None = None  # Add this field
-    scan_start_time: datetime | None = None  # Add if needed
-    scan_end_time: datetime | None = None  # Add if needed
+    data_dir: str | None = None
+    atlas_dir: str | None = None
+    scan_start_time: datetime | None = None
+    scan_end_time: datetime | None = None
     metadata: dict[str, Any] | None = None
 
 
 class GridDeletedEvent(GridEventBase):
     """Event emitted when a grid is deleted"""
 
-    id: str
+    uuid: str
 
 
 # ============ Grid Square Events ============

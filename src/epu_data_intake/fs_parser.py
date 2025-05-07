@@ -7,10 +7,9 @@ from pathlib import Path
 from datetime import datetime
 from lxml import etree
 
-from src.epu_data_intake.data_model import (
-    EpuAcquisitionSessionStore,
-    EpuSessionData,
-    Grid,
+from src.epu_data_intake.model.schemas import (
+    AcquisitionData,
+    GridData,
     AtlasData,
     AtlasTilePosition,
     AtlasTileData,
@@ -24,6 +23,7 @@ from src.epu_data_intake.data_model import (
     MicrographManifest,
     MicrographData,
 )
+from src.epu_data_intake.model.store import InMemoryDataStore, PersistentDataStore
 
 
 class EpuParser:
@@ -109,7 +109,7 @@ class EpuParser:
         return len(errors) == 0, errors
 
     @staticmethod
-    def parse_epu_session_manifest(manifest_path: str) -> EpuSessionData | None:
+    def parse_epu_session_manifest(manifest_path: str) -> AcquisitionData | None:
         try:
             namespaces = {
                 "ns": "http://schemas.datacontract.org/2004/07/Applications.Epu.Persistence",
@@ -135,7 +135,7 @@ class EpuParser:
 
             start_time_str = get_element_text("./ns:StartDateTime")
 
-            return EpuSessionData(
+            return AcquisitionData(
                 name=get_element_text("./ns:Name"),
                 id=get_element_text("./common:Id"),
                 start_time=datetime.fromisoformat(start_time_str.rstrip("Z")) if start_time_str else None,
@@ -687,80 +687,113 @@ class EpuParser:
             return None
 
     @staticmethod
-    def parse_epu_output_dir(datastore: EpuAcquisitionSessionStore):
+    def parse_epu_output_dir(datastore: InMemoryDataStore):
         """Parse the entire EPU output directory, containing one or more grids/samples
         collected over the duration of a given microscopy session.
+
+        When you have a parent-child relationship between classes where one class inherits from another,
+        you can use the parent class type for the parameter annotation.
+        This is more concise and leverages the Liskov Substitution Principle, making:
+        `datastore: InMemoryDataStore` equivalent to but preferred over:
+        `datastore: InMemoryDataStore | PersistentDataStore`
         """
 
         # Start with locating all EpuSession.dm files - init a grid for each found
         for epu_session_manifest in list(datastore.root_dir.glob("**/*EpuSession.dm")):
-            grid = EpuParser.parse_grid_dir(str(Path(epu_session_manifest).parent))
-            datastore.add_grid(grid)
+            grid_uuid = EpuParser.parse_grid_dir(str(Path(epu_session_manifest).parent), datastore)
 
         return datastore
 
     @staticmethod
-    def parse_grid_dir(grid_data_dir: str) -> Grid:
-        gridstore = Grid(str(Path(grid_data_dir).resolve()))
+    def parse_grid_dir(grid_data_dir: str, datastore: InMemoryDataStore) -> str:
+        """
+        Parse an EPU grid directory and populate the provided datastore.
 
-        # 1. parse EpuSession.dm
-        epu_manifest_path = str(gridstore.data_dir / "EpuSession.dm")
-        gridstore.session_data = EpuParser.parse_epu_session_manifest(epu_manifest_path)
+        Args:
+            grid_data_dir: Path to the grid data directory
+            datastore: The datastore to populate
+
+        Returns:
+            str: The UUID of the created grid
+        """
+        # 1. Create the grid
+        grid = GridData(Path(grid_data_dir).resolve())
+
+        # 1.1 Parse EpuSession.dm
+        epu_manifest_path = str(grid.data_dir / "EpuSession.dm")
+        grid.acquisition_data = EpuParser.parse_epu_session_manifest(epu_manifest_path)
+
+        # TODO This is hacky and non-obvious - address as techdebt sometime
+        #  Overwrite `uuid` generated within `parse_epu_session_manifest` method when `new AcquisitionData()` is
+        #  instantiated with the actual acquisition uuid.
+        grid.acquisition_data.uuid = datastore.acquisition.uuid
+
         # Build out the absolute atlas_dir path
-        gridstore.atlas_dir = Path(Path(grid_data_dir) / Path("..") / Path(gridstore.session_data.atlas_path)).resolve()
-        gridstore.name = ""  # TODO
+        if grid.acquisition_data.atlas_path:
+            grid.atlas_dir = Path(Path(grid_data_dir) / Path("..") / Path(grid.acquisition_data.atlas_path)).resolve()
 
-        # 1.1 parse Atlas.dm. Path to `Atlas.dm` specified in `EpuSession.dm`
-        if gridstore.session_data.atlas_path:
-            gridstore.atlas_data = EpuParser.parse_atlas_manifest(str(gridstore.atlas_dir))
+        # 1.2 Parse Atlas.dm
+        if grid.atlas_dir and grid.acquisition_data.atlas_path:
+            grid.atlas_data = EpuParser.parse_atlas_manifest(str(grid.atlas_dir))
 
-        # 2. scan all gridsquare IDs from /Metadata directory files - this includes "inactive" and "active" gridsquares
-        metadata_dir_path = str(gridstore.data_dir / "Metadata")
+        # Add grid to datastore
+        datastore.create_grid(grid)
+
+        # 2. Parse all gridsquare metadata from /Metadata directory
+        metadata_dir_path = str(grid.data_dir / "Metadata")
         for gridsquare_id, filename in EpuParser.parse_gridsquares_metadata_dir(metadata_dir_path):
-            logging.info(f"Discovered gridsquare {gridsquare_id} from file {filename}")
+            logging.debug(f"Discovered gridsquare {gridsquare_id} from file {filename}")
             gridsquare_metadata = EpuParser.parse_gridsquare_metadata(filename)
 
-            # Here we are not worried about overwriting an existing gridsquare
-            #   because this is where they are first discovered and added to collection
-            assert not gridstore.gridsquares.exists(gridsquare_id)
+            # Create GridSquareData with ID and metadata
+            gridsquare = GridSquareData(
+                id=gridsquare_id,
+                metadata=gridsquare_metadata,
+                grid_uuid=grid.uuid, # Set reference to parent grid
+            )
 
-            gridstore.gridsquares.add(gridsquare_id, GridSquareData(id=gridsquare_id, metadata=gridsquare_metadata))
-            logging.info(gridstore.gridsquares.get(gridsquare_id))
+            datastore.create_gridsquare(gridsquare)
+            logging.debug(f"Added gridsquare: {gridsquare_id} (uuid: {gridsquare.uuid})")
 
-        # 3. scan all image-disc dir sub-dirs to get a list of active gridsquares. for each gridsquare subdir:
-        for gridsquare_manifest_path in list(gridstore.data_dir.glob("Images-Disc*/GridSquare_*/GridSquare_*_*.xml")):
-            # 3.1 scan gridsquare manifest (take care to check for existing gridsquare record and not overwrite it)
+        # 3. Parse gridsquare manifests and associated data
+        for gridsquare_manifest_path in list(grid.data_dir.glob("Images-Disc*/GridSquare_*/GridSquare_*_*.xml")):
             gridsquare_manifest = EpuParser.parse_gridsquare_manifest(gridsquare_manifest_path)
             gridsquare_id = re.search(EpuParser.gridsquare_dir_pattern, str(gridsquare_manifest_path)).group(1)
+            gridsquare = datastore.find_gridsquare_by_natural_id(gridsquare_id)
 
-            assert gridstore.gridsquares.exists(gridsquare_id)
-            gridsquare_data = gridstore.gridsquares.get(gridsquare_id)
-            gridsquare_data.manifest = gridsquare_manifest
-            gridstore.gridsquares.add(gridsquare_id, gridsquare_data)
-            logging.info(gridstore.gridsquares.get(gridsquare_id))
+            if gridsquare:
+                gridsquare.manifest = gridsquare_manifest
+                datastore.update_gridsquare(gridsquare.uuid, gridsquare)
+                logging.debug(f"Updated gridsquare manifest: {gridsquare_id} (uuid: {gridsquare.uuid})")
 
-            # 3.2 scan that gridsquare's Foilholes/ dir to get foilholes
-            foilhole_manifest_paths = sorted(
-                gridstore.data_dir.glob(f"Images-Disc*/GridSquare_{gridsquare_id}/FoilHoles/FoilHole_*_*_*.xml"),
-                key=lambda p: p.name,  # sorts based on just the filename part. This is important because it's possible
-                # to sometimes have multiple foilhole manifests side-by-side and only the latest one is relevant.
-            )
-            for foilhole_manifest_path in foilhole_manifest_paths:
-                foilhole_id = re.search(EpuParser.foilhole_xml_file_pattern, str(foilhole_manifest_path)).group(1)
-                gridstore.foilholes.add(foilhole_id, EpuParser.parse_foilhole_manifest(foilhole_manifest_path))
-                logging.info(gridstore.foilholes.get(foilhole_id))
+                # 3.1 Parse foilholes for this gridsquare
+                foilhole_manifest_paths = sorted(
+                    grid.data_dir.glob(f"Images-Disc*/GridSquare_{gridsquare_id}/FoilHoles/FoilHole_*_*_*.xml"),
+                    key=lambda p: p.name,  # Sort by filename to get the latest version
+                )
 
-            # 3.3 scan that gridsquare's Foilholes/ dir to get micrographs
-            for micrograph_manifest_path in list(
-                gridstore.data_dir.glob(f"Images-Disc*/GridSquare_{gridsquare_id}/Data/FoilHole_*_Data_*_*_*_*.xml")
-            ):
-                micrograph_manifest = EpuParser.parse_micrograph_manifest(micrograph_manifest_path)
-                match = re.search(EpuParser.micrograph_xml_file_pattern, str(micrograph_manifest_path))
-                foilhole_id = match.group(1)
-                location_id = match.group(2)
-                gridstore.micrographs.add(
-                    micrograph_manifest.unique_id,
-                    MicrographData(
+                for foilhole_manifest_path in foilhole_manifest_paths:
+                    foilhole_id_match = re.search(EpuParser.foilhole_xml_file_pattern, str(foilhole_manifest_path))
+                    foilhole_id = foilhole_id_match.group(1)
+
+                    foilhole = EpuParser.parse_foilhole_manifest(foilhole_manifest_path)
+                    foilhole.gridsquare_id = gridsquare_id
+                    foilhole.gridsquare_uuid = gridsquare.uuid
+
+                    # Add to datastore
+                    datastore.create_foilhole(foilhole)
+                    logging.debug(f"Added foilhole: {foilhole_id} (uuid: {foilhole.uuid})")
+
+                # 3.2 Parse micrographs for this gridsquare
+                for micrograph_manifest_path in list(
+                        grid.data_dir.glob(f"Images-Disc*/GridSquare_{gridsquare_id}/Data/FoilHole_*_Data_*_*_*_*.xml")
+                ):
+                    micrograph_manifest = EpuParser.parse_micrograph_manifest(micrograph_manifest_path)
+                    match = re.search(EpuParser.micrograph_xml_file_pattern, str(micrograph_manifest_path))
+                    foilhole_id = match.group(1)
+                    location_id = match.group(2)
+
+                    micrograph = MicrographData(
                         id=micrograph_manifest.unique_id,
                         gridsquare_id=gridsquare_id,
                         foilhole_id=foilhole_id,
@@ -768,11 +801,14 @@ class EpuParser:
                         high_res_path=Path(""),
                         manifest_file=micrograph_manifest_path,
                         manifest=micrograph_manifest,
-                    ),
-                )
-                logging.info(gridstore.micrographs.get(micrograph_manifest.unique_id))
+                    )
 
-        return gridstore
+                    datastore.create_micrograph(micrograph)
+                    logging.debug(f"Added micrograph: {micrograph_manifest.unique_id} (uuid: {micrograph.uuid})")
+            else:
+                logging.warning(f"Found gridsquare manifest for {gridsquare_id} but no matching gridsquare metadata")
+
+        return grid.uuid
 
 
 if __name__ == "__main__":
