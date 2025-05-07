@@ -1,5 +1,5 @@
 import random
-from typing import Literal
+from typing import Annotated
 
 import typer
 from sqlmodel import Session, select
@@ -12,8 +12,12 @@ def generate_random_predictions(
     model_name: str,
     grid_id: int | None = None,
     random_range: tuple[float, float] = (0, 1),
-    level: Literal["hole", "square"] = "hole",
+    level: Annotated[
+        str, typer.Option(help="Magnification level at which to generate predictions. Options are 'hole' or 'square'")
+    ] = "hole",
 ) -> None:
+    if level not in ("hole", "square"):
+        raise ValueError(f"Level must be set to either 'hole' or 'square' not {level}")
     engine = setup_postgres_connection()
     with Session(engine) as sess:
         if grid_id is None:
@@ -23,7 +27,7 @@ def generate_random_predictions(
             holes = sess.exec(
                 select(FoilHole, GridSquare)
                 .where(FoilHole.gridsquare_id == GridSquare.id)
-                .where(GridSquare, grid_id == grid_id)
+                .where(GridSquare.grid_id == grid_id)
             ).all()
             preds = [
                 QualityPrediction(
