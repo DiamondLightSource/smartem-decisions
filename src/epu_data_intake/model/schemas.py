@@ -1,0 +1,214 @@
+from dataclasses import dataclass, field
+from datetime import datetime
+from pathlib import Path
+
+from src.epu_data_intake.utils import generate_uuid
+
+# TODO these schemas are lacking entity status fields, which are required by database schema
+#  Temporarily fixed in EntityConverter, but needs to be addressed properly, techdebt
+
+@dataclass
+class MicrographManifest:
+    unique_id: str
+    acquisition_datetime: datetime
+    defocus: float | None
+    detector_name: str
+    energy_filter: bool
+    phase_plate: bool
+    image_size_x: int | None
+    image_size_y: int | None
+    binning_x: int
+    binning_y: int
+
+    def __post_init__(self):
+        """Validate that size and binning values are positive."""
+        for natural_num in ["image_size_x", "image_size_y", "binning_x", "binning_y"]:
+            value = getattr(self, natural_num)
+            if natural_num is not None and value <= 0:
+                raise ValueError(f"{natural_num} must be positive, got {value}")
+
+
+# TODO:
+#   - Record Path to high-res micrograph image (same name as jpeg, but tiff or mrc)
+@dataclass
+class MicrographData:
+    """Represents metadata for a micrograph image.
+
+    :param id: Unique identifier for the micrograph
+    :param gridsquare_id: Identifier for the grid square
+    :param foilhole_id: Identifier for the foil hole
+    :param location_id: The location ID (positioning) of where micrograph was taken within foilhole.
+                       These IDs repeat for every foilhole.
+    :param high_res_path: Path to the high resolution image
+    :param manifest_file: Path to the manifest file
+    :param manifest: Associated manifest data
+    :type manifest: MicrographManifest
+    """
+    id: str
+    gridsquare_id: str
+    foilhole_uuid: str
+    foilhole_id: str
+    location_id: str
+    high_res_path: Path
+    manifest_file: Path
+    manifest: MicrographManifest
+    uuid: str = field(default_factory=generate_uuid)
+
+@dataclass
+class FoilHoleData:
+    id: str
+    gridsquare_id: str
+    gridsquare_uuid: str
+    center_x: float | None = None
+    center_y: float | None = None
+    quality: float | None = None
+    rotation: float | None = None
+    size_width: float | None = None
+    size_height: float | None = None
+    uuid: str = field(default_factory=generate_uuid)
+
+
+@dataclass
+class GridSquareManifest:
+    acquisition_datetime: datetime
+    defocus: float | None  # in meters
+    magnification: float | None
+    pixel_size: float | None  # in meters
+    detector_name: str
+    applied_defocus: float | None
+    data_dir: Path | None = None
+
+
+@dataclass
+class GridSquareStagePosition:
+    """Represents a 3D position in stage coordinates.
+
+    Attributes:
+        x: X-coordinate in stage position
+        y: Y-coordinate in stage position
+        z: Z-coordinate in stage position
+    """
+
+    x: float | None
+    y: float | None
+    z: float | None
+
+
+@dataclass
+class FoilHolePosition:
+    """Contains position and dimensional data for a foil hole.
+
+    Attributes:
+        x_location: Pixel X-coordinate of the foil hole center
+        y_location: Pixel Y-coordinate of the foil hole center
+        x_stage_position: Stage X-coordinate of the foil hole
+        y_stage_position: Stage Y-coordinate of the foil hole
+        diameter: Diameter of the foil hole in pixels
+    """
+
+    x_location: int
+    y_location: int
+    x_stage_position: float | None
+    y_stage_position: float | None
+    diameter: int
+    is_near_grid_bar: bool = False
+
+
+@dataclass
+class GridSquarePosition:
+    center: tuple[int, int] | None  # pixel centre coordinates on Atlas
+    physical: tuple[float, float] | None  # estimated stage position (m scaled to nm)
+    size: tuple[int, int] | None  # pixel size on Atlas
+    rotation: float | None
+
+
+@dataclass
+class GridSquareMetadata:
+    """Contains metadata about a grid square's position and properties.
+
+    Attributes:
+        atlas_node_id: Related atlas node identifier
+        stage_position: GridSquareStagePosition containing x, y, z stage coordinates
+        state: Current state of the grid square (e.g., 'Defined')
+        rotation: float
+        image_path: Path to the grid square MRC image file
+        selected: Whether this grid square is selected for acquisition
+        unusable: Whether this grid square has been marked as unusable
+        foilhole_positions: Positions of foilholes on gridsquare
+    """
+
+    atlas_node_id: int
+    stage_position: GridSquareStagePosition | None
+    state: str | None
+    rotation: float | None
+    image_path: Path | None
+    selected: bool
+    unusable: bool
+    foilhole_positions: dict[int, FoilHolePosition] | None
+
+    def __post_init__(self):
+        """Ensures the foilhole_positions dictionary is initialized if None is provided."""
+        if self.foilhole_positions is None:
+            self.foilhole_positions = {}
+
+
+@dataclass
+class GridSquareData:
+    id: str
+    grid_uuid: str
+    data_dir: Path | None = None
+    metadata: GridSquareMetadata | None = None
+    manifest: GridSquareManifest | None = None
+    uuid: str = field(default_factory=generate_uuid)
+
+
+@dataclass
+class AtlasTilePosition:
+    position: tuple[int, int] | None
+    size: tuple[int, int] | None
+
+
+@dataclass
+class AtlasTileData:
+    id: str
+    tile_position: AtlasTilePosition
+    file_format: str | None
+    base_filename: str | None
+    uuid: str = field(default_factory=generate_uuid)
+
+
+@dataclass
+class AtlasData:
+    id: str
+    acquisition_date: datetime
+    storage_folder: str
+    description: str
+    name: str
+    tiles: list[AtlasTileData]
+    gridsquare_positions: dict[int, GridSquarePosition] | None
+    uuid: str = field(default_factory=generate_uuid)
+
+
+@dataclass
+class AcquisitionData:
+    id: str | None = None # TODO this used to be epu_id - populate
+    name: str = "Unknown"  # TODO more informative default value?
+    start_time: datetime | None = None
+    atlas_path: str | None = None
+    storage_path: str | None = None  # Path of parent directory containing the epu session dir
+    clustering_mode: str | None = None
+    clustering_radius: str | None = None
+    uuid: str = field(default_factory=generate_uuid)
+
+
+@dataclass
+class GridData:
+    data_dir: Path
+    atlas_dir: Path | None = None
+    acquisition_data: AcquisitionData | None = None
+    atlas_data: AtlasData | None = None
+    uuid: str = field(default_factory=generate_uuid)
+
+    def __post_init__(self):
+        if isinstance(self.data_dir, str):
+            self.data_dir = Path(self.data_dir)

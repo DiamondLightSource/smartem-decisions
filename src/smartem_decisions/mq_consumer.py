@@ -2,8 +2,9 @@
 
 import json
 from typing import Any, Callable
-
+from datetime import datetime
 from dotenv import load_dotenv
+from sqlalchemy import select
 from sqlalchemy.orm import Session as SqlAlchemySession
 from pydantic import ValidationError
 
@@ -42,7 +43,13 @@ from src.smartem_decisions.model.database import (
     FoilHole,
     Micrograph,
 )
-
+from src.smartem_decisions.model.entity_status import (
+    AcquisitionStatus,
+    GridStatus,
+    GridSquareStatus,
+    FoilHoleStatus,
+    MicrographStatus,
+)
 
 load_dotenv()
 conf = load_conf()
@@ -60,23 +67,24 @@ def handle_acquisition_created(event_data: dict[str, Any], session: SqlAlchemySe
     try:
         event = AcquisitionCreatedEvent(**event_data)
 
-        existing = session.query(Acquisition).filter(Acquisition.id == event.id).first()
+        # noinspection PyTypeChecker
+        existing = session.execute(select(Acquisition).where(Acquisition.uuid == event.uuid)).scalar_one_or_none()
         if existing:
-            logger.warning(f"Acquisition with ID {event.id} already exists, skipping creation")
+            logger.warning(f"Acquisition with UUID {event.uuid} already exists, skipping creation")
             return
 
         acquisition = Acquisition(
+            uuid=event.uuid,
             id=event.id,
             name=event.name,
-            status=event.status,
-            epu_id=event.epu_id,
+            status=AcquisitionStatus(event.status),
             start_time=event.start_time,
             end_time=event.end_time,
             metadata=event.metadata,
         )
         session.add(acquisition)
         session.commit()
-        logger.info(f"Created acquisition with ID {acquisition.id}")
+        logger.info(f"Created acquisition with UUID {acquisition.uuid}")
 
     except ValidationError as e:
         logger.error(f"Validation error processing acquisition created event: {e}")
@@ -84,7 +92,6 @@ def handle_acquisition_created(event_data: dict[str, Any], session: SqlAlchemySe
         session.rollback()
         logger.error(f"Error processing acquisition created event: {e}")
         raise
-
 
 def handle_acquisition_updated(event_data: dict[str, Any], session: SqlAlchemySession) -> None:
     """
@@ -97,26 +104,29 @@ def handle_acquisition_updated(event_data: dict[str, Any], session: SqlAlchemySe
     try:
         event = AcquisitionUpdatedEvent(**event_data)
 
-        acquisition = session.query(Acquisition).filter(Acquisition.id == event.id).first()
+        acquisition = session.execute(select(Acquisition).where(Acquisition.uuid == event.uuid)).scalar_one_or_none()
         if not acquisition:
-            logger.warning(f"Acquisition with ID {event.id} not found, cannot update")
+            logger.warning(f"Acquisition with UUID {event.uuid} not found, cannot update")
             return
 
         if event.name is not None:
             acquisition.name = event.name
         if event.status is not None:
-            acquisition.status = event.status
+            acquisition.status = AcquisitionStatus(event.status)
         if event.epu_id is not None:
             acquisition.id = event.epu_id
         if event.start_time is not None:
-            acquisition.start_time = event.start_time
+            acquisition.start_time = datetime.fromisoformat(event.start_time)
         if event.end_time is not None:
-            acquisition.end_time = event.end_time
+            acquisition.end_time = datetime.fromisoformat(event.end_time)
         if event.metadata is not None:
-            acquisition.metadata = event.metadata
+            # TODO change data model to avoid use of "metadata"
+            #  Use setattr to avoid conflicts with the class-level metadata attribute, which is
+            #  a special class-level attribute used to configure tables.
+            setattr(acquisition, "metadata", event.metadata)
 
         session.commit()
-        logger.info(f"Updated acquisition with ID {acquisition.id}")
+        logger.info(f"Updated acquisition with UUID {acquisition.uuid}")
 
     except ValidationError as e:
         logger.error(f"Validation error processing acquisition updated event: {e}")
@@ -137,14 +147,14 @@ def handle_acquisition_deleted(event_data: dict[str, Any], session: SqlAlchemySe
     try:
         event = AcquisitionDeletedEvent(**event_data)
 
-        acquisition = session.query(Acquisition).filter(Acquisition.id == event.id).first()
+        acquisition = session.execute(select(Acquisition).where(Acquisition.uuid == event.uuid)).scalar_one_or_none()
         if not acquisition:
-            logger.warning(f"Acquisition with ID {event.id} not found, cannot delete")
+            logger.warning(f"Acquisition with UUID {event.uuid} not found, cannot delete")
             return
 
         session.delete(acquisition)
         session.commit()
-        logger.info(f"Deleted acquisition with ID {event.id}")
+        logger.info(f"Deleted acquisition with UUID {event.uuid}")
 
     except ValidationError as e:
         logger.error(f"Validation error processing acquisition deleted event: {e}")
@@ -165,9 +175,9 @@ def handle_atlas_created(event_data: dict[str, Any], session: SqlAlchemySession)
     try:
         event = AtlasCreatedEvent(**event_data)
 
-        existing = session.query(Atlas).filter(Atlas.id == event.id).first()
+        existing = session.execute(select(Atlas).where(Atlas.uuid == event.uuid)).scalar_one_or_none()
         if existing:
-            logger.warning(f"Atlas with ID {event.id} already exists, skipping creation")
+            logger.warning(f"Atlas with UUID {event.uuid} already exists, skipping creation")
             return
 
         atlas = Atlas(
@@ -175,7 +185,7 @@ def handle_atlas_created(event_data: dict[str, Any], session: SqlAlchemySession)
         )
         session.add(atlas)
         session.commit()
-        logger.info(f"Created atlas with ID {atlas.id}")
+        logger.info(f"Created atlas with UUID {atlas.uuid}")
 
     except ValidationError as e:
         logger.error(f"Validation error processing atlas created event: {e}")
@@ -196,22 +206,25 @@ def handle_atlas_updated(event_data: dict[str, Any], session: SqlAlchemySession)
     try:
         event = AtlasUpdatedEvent(**event_data)
 
-        atlas = session.query(Atlas).filter(Atlas.id == event.id).first()
+        atlas = session.execute(select(Atlas).where(Atlas.uuid == event.uuid)).scalar_one_or_none()
         if not atlas:
-            logger.warning(f"Atlas with ID {event.id} not found, cannot update")
+            logger.warning(f"Atlas with UUID {event.uuid} not found, cannot update")
             return
 
         if event.name is not None:
             atlas.name = event.name
         if event.grid_id is not None:
-            atlas.grid_id = event.grid_id
+            atlas.grid_id = event.grid_id # TODO debug
         if event.pixel_size is not None:
             atlas.pixel_size = event.pixel_size
         if event.metadata is not None:
-            atlas.metadata = event.metadata
+            # TODO change data model to avoid use of "metadata"
+            #  Use setattr to avoid conflicts with the class-level metadata attribute, which is
+            #  a special class-level attribute used to configure tables.
+            setattr(atlas, "metadata", event.metadata)
 
         session.commit()
-        logger.info(f"Updated atlas with ID {atlas.id}")
+        logger.info(f"Updated atlas with UUID {atlas.uuid}")
 
     except ValidationError as e:
         logger.error(f"Validation error processing atlas updated event: {e}")
@@ -232,14 +245,14 @@ def handle_atlas_deleted(event_data: dict[str, Any], session: SqlAlchemySession)
     try:
         event = AtlasDeletedEvent(**event_data)
 
-        atlas = session.query(Atlas).filter(Atlas.id == event.id).first()
+        atlas = session.execute(select(Atlas).where(Atlas.uuid == event.uuid)).scalar_one_or_none()
         if not atlas:
-            logger.warning(f"Atlas with ID {event.id} not found, cannot delete")
+            logger.warning(f"Atlas with UUID {event.uuid} not found, cannot delete")
             return
 
         session.delete(atlas)
         session.commit()
-        logger.info(f"Deleted atlas with ID {atlas.id}")
+        logger.info(f"Deleted atlas with UUID {atlas.uuid}")
 
     except ValidationError as e:
         logger.error(f"Validation error processing atlas deleted event: {e}")
@@ -260,16 +273,18 @@ def handle_grid_created(event_data: dict[str, Any], session: SqlAlchemySession) 
     try:
         event = GridCreatedEvent(**event_data)
 
-        existing = session.query(Grid).filter(Grid.id == event.id).first()
+        # noinspection PyTypeChecker
+        existing = session.execute(select(Grid).where(Grid.uuid == event.uuid)).scalar_one_or_none()
         if existing:
-            logger.warning(f"Grid with ID {event.id} already exists, skipping creation")
+            logger.warning(f"Grid with UUID {event.uuid} already exists, skipping creation")
             return
 
         grid = Grid(
-            id=event.id,
-            acquisition_id=event.acquisition_id,
+            uuid=event.uuid,
+            # id=event.id, TODO add organic ID at data intake parsing level
+            acquisition_uuid=event.acquisition_uuid,
             name=event.name,
-            status=event.status,
+            status=GridStatus(event.status),
             data_dir=event.data_dir,
             atlas_dir=event.atlas_dir,
             scan_start_time=event.scan_start_time,
@@ -277,7 +292,7 @@ def handle_grid_created(event_data: dict[str, Any], session: SqlAlchemySession) 
         )
         session.add(grid)
         session.commit()
-        logger.info(f"Created grid with ID {grid.id}")
+        logger.info(f"Created grid with UUID {grid.uuid}")
 
     except ValidationError as e:
         logger.error(f"Validation error processing grid created event: {e}")
@@ -291,22 +306,25 @@ def handle_grid_updated(event_data: dict[str, Any], session: SqlAlchemySession) 
     try:
         event = GridUpdatedEvent(**event_data)
 
-        grid = session.query(Grid).filter(Grid.id == event.id).first()
+        grid = session.execute(select(Grid).where(Grid.uuid == event.uuid)).scalar_one_or_none()
         if not grid:
-            logger.warning(f"Grid with ID {event.id} not found, cannot update")
+            logger.warning(f"Grid with UUID {event.uuid} not found, cannot update")
             return
 
         if event.name is not None:
             grid.name = event.name
         if event.status is not None:
-            grid.status = event.status
+            grid.status = GridStatus(event.status)
         if event.grid_id is not None:
             grid.grid_id = event.grid_id
         if event.metadata is not None:
-            grid.metadata = event.metadata
+            # TODO change data model to avoid use of "metadata"
+            #  Use setattr to avoid conflicts with the class-level metadata attribute, which is
+            #  a special class-level attribute used to configure tables.
+            setattr(grid, "metadata", event.metadata)
 
         session.commit()
-        logger.info(f"Updated grid with ID {grid.id}")
+        logger.info(f"Updated grid with UUID {grid.uuid}")
 
     except ValidationError as e:
         logger.error(f"Validation error processing grid updated event: {e}")
@@ -320,14 +338,14 @@ def handle_grid_deleted(event_data: dict[str, Any], session: SqlAlchemySession) 
     try:
         event = GridDeletedEvent(**event_data)
 
-        grid = session.query(Grid).filter(Grid.id == event.id).first()
+        grid = session.execute(select(Grid).where(Grid.uuid == event.uuid)).scalar_one_or_none()
         if not grid:
-            logger.warning(f"Grid with ID {event.id} not found, cannot delete")
+            logger.warning(f"Grid with UUID {event.uuid} not found, cannot delete")
             return
 
         session.delete(grid)
         session.commit()
-        logger.info(f"Deleted grid with ID {event.id}")
+        logger.info(f"Deleted grid with UUID {event.uuid}")
 
     except ValidationError as e:
         logger.error(f"Validation error processing grid deleted event: {e}")
@@ -341,22 +359,22 @@ def handle_gridsquare_created(event_data: dict[str, Any], session: SqlAlchemySes
     try:
         event = GridSquareCreatedEvent(**event_data)
 
-        existing = session.query(GridSquare).filter(GridSquare.id == event.id).first()
+        existing = session.execute(select(GridSquare).where(GridSquare.uuid == event.uuid)).scalar_one_or_none()
         if existing:
-            logger.warning(f"GridSquare with ID {event.id} already exists, skipping creation")
+            logger.warning(f"GridSquare with UUID {event.uuid} already exists, skipping creation")
             return
 
         gridsquare = GridSquare(
             id=event.id,
             grid_id=event.grid_id,
             name=event.name,
-            status=event.status,
+            status=GridSquareStatus(event.status),
             gridsquare_id=event.id,
             metadata=event.metadata,
         )
         session.add(gridsquare)
         session.commit()
-        logger.info(f"Created gridsquare with ID {gridsquare.id}")
+        logger.info(f"Created gridsquare with UUID {gridsquare.uuid}")
 
     except ValidationError as e:
         logger.error(f"Validation error processing gridsquare created event: {e}")
@@ -370,24 +388,27 @@ def handle_gridsquare_updated(event_data: dict[str, Any], session: SqlAlchemySes
     try:
         event = GridSquareUpdatedEvent(**event_data)
 
-        gridsquare = session.query(GridSquare).filter(GridSquare.id == event.id).first()
+        gridsquare = session.execute(select(GridSquare).where(GridSquare.uuid == event.uuid)).scalar_one_or_none()
         if not gridsquare:
-            logger.warning(f"GridSquare with ID {event.id} not found, cannot update")
+            logger.warning(f"GridSquare with UUID {event.uuid} not found, cannot update")
             return
 
         if event.name is not None:
             gridsquare.name = event.name
         if event.status is not None:
-            gridsquare.status = event.status
+            gridsquare.status = GridSquareStatus(event.status)
         if event.grid_id is not None:
             gridsquare.grid_id = event.grid_id
         if event.gridsquare_id is not None:
             gridsquare.gridsquare_id = event.gridsquare_id
         if event.metadata is not None:
-            gridsquare.metadata = event.metadata
+            # TODO change data model to avoid use of "metadata"
+            #  Use setattr to avoid conflicts with the class-level metadata attribute, which is
+            #  a special class-level attribute used to configure tables.
+            setattr(gridsquare, "metadata", event.metadata)
 
         session.commit()
-        logger.info(f"Updated gridsquare with ID {gridsquare.id}")
+        logger.info(f"Updated gridsquare with UUID {gridsquare.uuid}")
 
     except ValidationError as e:
         logger.error(f"Validation error processing gridsquare updated event: {e}")
@@ -401,14 +422,14 @@ def handle_gridsquare_deleted(event_data: dict[str, Any], session: SqlAlchemySes
     try:
         event = GridSquareDeletedEvent(**event_data)
 
-        gridsquare = session.query(GridSquare).filter(GridSquare.id == event.id).first()
+        gridsquare = session.execute(select(GridSquare).where(GridSquare.uuid == event.uuid)).scalar_one_or_none()
         if not gridsquare:
-            logger.warning(f"GridSquare with ID {event.id} not found, cannot delete")
+            logger.warning(f"GridSquare with UUID {event.uuid} not found, cannot delete")
             return
 
         session.delete(gridsquare)
         session.commit()
-        logger.info(f"Deleted gridsquare with ID {event.id}")
+        logger.info(f"Deleted gridsquare with UUID {event.uuid}")
 
     except ValidationError as e:
         logger.error(f"Validation error processing gridsquare deleted event: {e}")
@@ -422,15 +443,15 @@ def handle_foilhole_created(event_data: dict[str, Any], session: SqlAlchemySessi
     try:
         event = FoilHoleCreatedEvent(**event_data)
 
-        existing = session.query(FoilHole).filter(FoilHole.id == event.id).first()
+        existing = session.execute(select(FoilHole).where(FoilHole.uuid == event.uuid)).scalar_one_or_none()
         if existing:
-            logger.warning(f"FoilHole with ID {event.id} already exists, skipping creation")
+            logger.warning(f"FoilHole with UUID {event.uuid} already exists, skipping creation")
             return
 
         foilhole = FoilHole(
             id=event.id,
             gridsquare_id=event.gridsquare_id,
-            status=event.status,
+            status=FoilHoleStatus(event.status),
             foilhole_id=event.id,
             center_x=event.center_x,
             center_y=event.center_y,
@@ -447,7 +468,7 @@ def handle_foilhole_created(event_data: dict[str, Any], session: SqlAlchemySessi
         )
         session.add(foilhole)
         session.commit()
-        logger.info(f"Created foilhole with ID {foilhole.id}")
+        logger.info(f"Created foilhole with UUID {foilhole.uuid}")
 
     except ValidationError as e:
         logger.error(f"Validation error processing foilhole created event: {e}")
@@ -461,13 +482,13 @@ def handle_foilhole_updated(event_data: dict[str, Any], session: SqlAlchemySessi
     try:
         event = FoilHoleUpdatedEvent(**event_data)
 
-        foilhole = session.query(FoilHole).filter(FoilHole.id == event.id).first()
+        foilhole = session.execute(select(FoilHole).where(FoilHole.uuid == event.uuid)).scalar_one_or_none()
         if not foilhole:
-            logger.warning(f"FoilHole with ID {event.id} not found, cannot update")
+            logger.warning(f"FoilHole with UUID {event.uuid} not found, cannot update")
             return
 
         if event.status is not None:
-            foilhole.status = event.status
+            foilhole.status = FoilHoleStatus(event.status)
         if event.gridsquare_id is not None:
             foilhole.gridsquare_id = event.gridsquare_id
         if event.foilhole_id is not None:
@@ -493,12 +514,12 @@ def handle_foilhole_updated(event_data: dict[str, Any], session: SqlAlchemySessi
         if event.y_stage_position is not None:
             foilhole.y_stage_position = event.y_stage_position
         if event.diameter is not None:
-            foilhole.diameter = event.diameter
+            foilhole.diameter = event.diameter # TODO
         if hasattr(event, "is_near_grid_bar") and event.is_near_grid_bar is not None:
             foilhole.is_near_grid_bar = event.is_near_grid_bar
 
         session.commit()
-        logger.info(f"Updated foilhole with ID {foilhole.id}")
+        logger.info(f"Updated foilhole with UUID {foilhole.uuid}")
 
     except ValidationError as e:
         logger.error(f"Validation error processing foilhole updated event: {e}")
@@ -512,14 +533,14 @@ def handle_foilhole_deleted(event_data: dict[str, Any], session: SqlAlchemySessi
     try:
         event = FoilHoleDeletedEvent(**event_data)
 
-        foilhole = session.query(FoilHole).filter(FoilHole.id == event.id).first()
+        foilhole = session.execute(select(FoilHole).where(FoilHole.uuid == event.uuid)).scalar_one_or_none()
         if not foilhole:
-            logger.warning(f"FoilHole with ID {event.id} not found, cannot delete")
+            logger.warning(f"FoilHole with UUID {event.id} not found, cannot delete")
             return
 
         session.delete(foilhole)
         session.commit()
-        logger.info(f"Deleted foilhole with ID {event.id}")
+        logger.info(f"Deleted foilhole with UUID {event.id}")
 
     except ValidationError as e:
         logger.error(f"Validation error processing foilhole deleted event: {e}")
@@ -533,15 +554,15 @@ def handle_micrograph_created(event_data: dict[str, Any], session: SqlAlchemySes
     try:
         event = MicrographCreatedEvent(**event_data)
 
-        existing = session.query(Micrograph).filter(Micrograph.id == event.id).first()
+        existing = session.execute(select(Micrograph).where(Micrograph.uuid == event.uuid)).scalar_one_or_none()
         if existing:
-            logger.warning(f"Micrograph with ID {event.id} already exists, skipping creation")
+            logger.warning(f"Micrograph with UUID {event.uuid} already exists, skipping creation")
             return
 
         micrograph = Micrograph(
             id=event.id,
             foilhole_id=event.foilhole_id,
-            status=event.status,
+            status=MicrographStatus(event.status),
             micrograph_id=event.id,
             location_id=event.location_id if hasattr(event, "location_id") else None,
             high_res_path=event.high_res_path if hasattr(event, "high_res_path") else None,
@@ -561,7 +582,7 @@ def handle_micrograph_created(event_data: dict[str, Any], session: SqlAlchemySes
         )
         session.add(micrograph)
         session.commit()
-        logger.info(f"Created micrograph with ID {micrograph.id}")
+        logger.info(f"Created micrograph with UUID {micrograph.uuid}")
 
     except ValidationError as e:
         logger.error(f"Validation error processing micrograph created event: {e}")
@@ -575,13 +596,13 @@ def handle_micrograph_updated(event_data: dict[str, Any], session: SqlAlchemySes
     try:
         event = MicrographUpdatedEvent(**event_data)
 
-        micrograph = session.query(Micrograph).filter(Micrograph.id == event.id).first()
+        micrograph = session.execute(select(Micrograph).where(Micrograph.uuid == event.uuid)).scalar_one_or_none()
         if not micrograph:
-            logger.warning(f"Micrograph with ID {event.id} not found, cannot update")
+            logger.warning(f"Micrograph with UUID {event.uuid} not found, cannot update")
             return
 
         if event.status is not None:
-            micrograph.status = event.status
+            micrograph.status = MicrographStatus(event.status)
         if event.foilhole_id is not None:
             micrograph.foilhole_id = event.foilhole_id
         if event.micrograph_id is not None:
@@ -618,7 +639,7 @@ def handle_micrograph_updated(event_data: dict[str, Any], session: SqlAlchemySes
             micrograph.ctf_max_resolution_estimate = event.ctf_max_resolution_estimate
 
         session.commit()
-        logger.info(f"Updated micrograph with ID {micrograph.id}")
+        logger.info(f"Updated micrograph with UUID {micrograph.uuid}")
 
     except ValidationError as e:
         logger.error(f"Validation error processing micrograph updated event: {e}")
@@ -632,14 +653,14 @@ def handle_micrograph_deleted(event_data: dict[str, Any], session: SqlAlchemySes
     try:
         event = MicrographDeletedEvent(**event_data)
 
-        micrograph = session.query(Micrograph).filter(Micrograph.id == event.id).first()
+        micrograph = session.execute(select(Micrograph).where(Micrograph.uuid == event.uuid)).scalar_one_or_none()
         if not micrograph:
-            logger.warning(f"Micrograph with ID {event.id} not found, cannot delete")
+            logger.warning(f"Micrograph with UUID {event.uuid} not found, cannot delete")
             return
 
         session.delete(micrograph)
         session.commit()
-        logger.info(f"Deleted micrograph with ID {event.id}")
+        logger.info(f"Deleted micrograph with UUID {event.uuid}")
 
     except ValidationError as e:
         logger.error(f"Validation error processing micrograph deleted event: {e}")

@@ -20,5 +20,3 @@ source .env && uvicorn src.smartem_decisions.http_api:app --host 0.0.0.0 --port 
 
 python -m smartem_decisions --version
 ```
-
-> Note: when debugging Graylog traffic: `nc -klu 12209`
