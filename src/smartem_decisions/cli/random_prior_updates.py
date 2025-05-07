@@ -25,7 +25,7 @@ def perform_random_updates(
             .where(GridSquare.grid_id == grid_id)
         ).all()
         for m in mics:
-            prior_update(random.uniform(random_range[0], random_range[1]) < 0.5, m.id, sess, origin=origin)
+            prior_update(random.uniform(random_range[0], random_range[1]) < 0.5, m[0].id, sess, origin=origin)
     return None
 
 

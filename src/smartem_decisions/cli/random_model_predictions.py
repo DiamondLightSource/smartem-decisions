@@ -40,12 +40,12 @@ def generate_random_predictions(
             sess.add_all(preds)
             sess.commit()
         else:
-            squares = sess.exec(select(GridSquare).where(GridSquare, grid_id == grid_id)).all()
+            squares = sess.exec(select(GridSquare).where(GridSquare.grid_id == grid_id)).all()
             preds = [
                 QualityPrediction(
                     value=random.uniform(random_range[0], random_range[1]),
                     prediction_model_name=model_name,
-                    foilhole_id=s.id,
+                    gridsquare_id=s.id,
                 )
                 for s in squares
             ]
