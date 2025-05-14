@@ -1,7 +1,6 @@
-from collections.abc import Callable
-import functools
-from uuid import uuid4
 from base64 import urlsafe_b64encode
+from uuid import uuid4
+
 
 def generate_uuid():
     """Generate a URL-safe UUID string"""

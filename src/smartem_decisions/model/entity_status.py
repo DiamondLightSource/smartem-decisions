@@ -1,6 +1,7 @@
 from enum import Enum
+
 from sqlalchemy import Enum as SQLAlchemyEnum
-from sqlalchemy.types import TypeDecorator, VARCHAR
+from sqlalchemy.types import VARCHAR, TypeDecorator
 
 
 class AcquisitionStatus(str, Enum):

@@ -1,16 +1,17 @@
 import os
+
 import yaml
-from sqlmodel import create_engine
 from dotenv import load_dotenv
+from sqlmodel import create_engine
 
 from src.smartem_decisions.log_manager import logger
-from src.smartem_decisions.rabbitmq import RabbitMQPublisher, RabbitMQConsumer
+from src.smartem_decisions.rabbitmq import RabbitMQConsumer, RabbitMQPublisher
 
 
 def load_conf():
     config_path = os.path.join(os.path.dirname(__file__), "config.yaml")
     try:
-        with open(config_path, "r") as f:
+        with open(config_path) as f:
             conf = yaml.safe_load(f)
         return conf
     except FileNotFoundError:

@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 
-import httpx
-import sys
 import argparse
-from datetime import datetime
 import json
+import sys
+from datetime import datetime
+
+import httpx
 
 """Usage: `./tests/check_smartem_core_http_api.py http://localhost:8000 -v`"""
 

@@ -1,9 +1,12 @@
 import json
 import os
-from typing import Any, Callable, Optional
+from collections.abc import Callable
+from datetime import datetime
+from typing import Any
+
 import pika
-from pydantic import BaseModel
 from dotenv import load_dotenv
+from pydantic import BaseModel
 
 from src.smartem_decisions.log_manager import logger
 from src.smartem_decisions.model.mq_event import MessageQueueEventType
@@ -15,7 +18,7 @@ class RabbitMQConnection:
     """
 
     def __init__(
-        self, connection_params: Optional[dict[str, Any]] = None, exchange: str = "", queue: str = "smartem_decisions"
+        self, connection_params: dict[str, Any] | None = None, exchange: str = "", queue: str = "smartem_decisions"
     ):
         """
         Initialize RabbitMQ connection
@@ -138,8 +141,15 @@ class RabbitMQPublisher(RabbitMQConnection):
             # Create message with event_type and payload
             message = {"event_type": event_type.value, **payload_dict}
 
-            # Convert message to JSON
-            message_json = json.dumps(message)
+            # Use a custom encoder for json.dumps that handles datetime objects
+            class DateTimeEncoder(json.JSONEncoder):
+                def default(self, obj):
+                    if isinstance(obj, datetime):
+                        return obj.isoformat()
+                    return super().default(obj)
+
+            # Convert message to JSON using the custom encoder
+            message_json = json.dumps(message, cls=DateTimeEncoder)
 
             # Publish message with delivery_mode=2 (persistent)
             self._channel.basic_publish(

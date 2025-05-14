@@ -1,35 +1,41 @@
-from datetime import datetime
 import json
 import logging
+from datetime import datetime
 
-from fastapi import FastAPI, Depends, HTTPException, status, Request
-from sqlalchemy.orm import sessionmaker, Session as SqlAlchemySession
-
-from src.smartem_decisions.model.entity_status import (
-    AcquisitionStatus,
-    GridStatus,
-    GridSquareStatus,
-    FoilHoleStatus,
-    MicrographStatus,
-)
+from fastapi import Depends, FastAPI, HTTPException, Request, status
+from sqlalchemy.orm import Session as SqlAlchemySession
+from sqlalchemy.orm import sessionmaker
 
 from src.smartem_decisions._version import __version__
-
-# from src.smartem_decisions.log_manager import logger # TODO integrate with FastAPI logger
-from src.smartem_decisions.utils import setup_postgres_connection
+from src.smartem_decisions.model.database import (
+    Acquisition,
+    Atlas,
+    AtlasTile,
+    FoilHole,
+    Grid,
+    GridSquare,
+    Micrograph,
+)
+from src.smartem_decisions.model.entity_status import (
+    AcquisitionStatus,
+    FoilHoleStatus,
+    GridSquareStatus,
+    GridStatus,
+    MicrographStatus,
+)
 from src.smartem_decisions.model.http_request import (
     AcquisitionCreateRequest,
     AcquisitionUpdateRequest,
     AtlasCreateRequest,
-    AtlasUpdateRequest,
     AtlasTileCreateRequest,
     AtlasTileUpdateRequest,
-    GridCreateRequest,
-    GridUpdateRequest,
-    GridSquareCreateRequest,
-    GridSquareUpdateRequest,
+    AtlasUpdateRequest,
     FoilHoleCreateRequest,
     FoilHoleUpdateRequest,
+    GridCreateRequest,
+    GridSquareCreateRequest,
+    GridSquareUpdateRequest,
+    GridUpdateRequest,
     MicrographCreateRequest,
     MicrographUpdateRequest,
 )
@@ -37,45 +43,39 @@ from src.smartem_decisions.model.http_response import (
     AcquisitionResponse,
     AtlasResponse,
     AtlasTileResponse,
+    FoilHoleResponse,
     GridResponse,
     GridSquareResponse,
-    FoilHoleResponse,
     MicrographResponse,
-)
-from src.smartem_decisions.model.database import (
-    Acquisition,
-    Atlas,
-    AtlasTile,
-    Grid,
-    GridSquare,
-    FoilHole,
-    Micrograph,
 )
 
 # Import event service for publishing to RabbitMQ
 from src.smartem_decisions.mq_publisher import (
     publish_acquisition_created,
-    publish_acquisition_updated,
     publish_acquisition_deleted,
+    publish_acquisition_updated,
     publish_atlas_created,
-    publish_atlas_updated,
     publish_atlas_deleted,
     publish_atlas_tile_created,
-    publish_atlas_tile_updated,
     publish_atlas_tile_deleted,
-    publish_grid_created,
-    publish_grid_updated,
-    publish_grid_deleted,
-    publish_gridsquare_created,
-    publish_gridsquare_updated,
-    publish_gridsquare_deleted,
+    publish_atlas_tile_updated,
+    publish_atlas_updated,
     publish_foilhole_created,
-    publish_foilhole_updated,
     publish_foilhole_deleted,
+    publish_foilhole_updated,
+    publish_grid_created,
+    publish_grid_deleted,
+    publish_grid_updated,
+    publish_gridsquare_created,
+    publish_gridsquare_deleted,
+    publish_gridsquare_updated,
     publish_micrograph_created,
-    publish_micrograph_updated,
     publish_micrograph_deleted,
+    publish_micrograph_updated,
 )
+
+# from src.smartem_decisions.log_manager import logger # TODO integrate with FastAPI logger
+from src.smartem_decisions.utils import setup_postgres_connection
 
 db_engine = setup_postgres_connection()
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=db_engine)
@@ -236,7 +236,6 @@ def delete_acquisition(acquisition_uuid: str, db: SqlAlchemySession = Depends(ge
     if not db_acquisition:
         raise HTTPException(status_code=404, detail="Acquisition not found")
 
-    
     success = publish_acquisition_deleted(acquisition_uuid)
     if not success:
         logger.error(f"Failed to publish acquisition deleted event for ID: {acquisition_uuid}")
@@ -298,7 +297,6 @@ def delete_grid(grid_uuid: str, db: SqlAlchemySession = Depends(get_db)):
     if not db_grid:
         raise HTTPException(status_code=404, detail="Grid not found")
 
-    
     success = publish_grid_deleted(grid_uuid)
     if not success:
         logger.error(f"Failed to publish grid deleted event for ID: {grid_uuid}")
@@ -392,7 +390,6 @@ def delete_atlas(atlas_uuid: str, db: SqlAlchemySession = Depends(get_db)):
     if not db_atlas:
         raise HTTPException(status_code=404, detail="Atlas not found")
 
-    
     success = publish_atlas_deleted(atlas_uuid)
     if not success:
         logger.error(f"Failed to publish atlas deleted event for ID: {atlas_uuid}")
@@ -517,7 +514,6 @@ def delete_atlas_tile(tile_uuid: str, db: SqlAlchemySession = Depends(get_db)):
     if not db_tile:
         raise HTTPException(status_code=404, detail="Atlas tile not found")
 
-    
     success = publish_atlas_tile_deleted(tile_uuid)
     if not success:
         logger.error(f"Failed to publish atlas tile deleted event for ID: {tile_uuid}")
@@ -580,7 +576,9 @@ def get_gridsquare(gridsquare_uuid: str, db: SqlAlchemySession = Depends(get_db)
 
 
 @app.put("/gridsquares/{gridsquare_uuid}", response_model=GridSquareResponse)
-def update_gridsquare(gridsquare_uuid: str, gridsquare: GridSquareUpdateRequest, db: SqlAlchemySession = Depends(get_db)):
+def update_gridsquare(
+    gridsquare_uuid: str, gridsquare: GridSquareUpdateRequest, db: SqlAlchemySession = Depends(get_db)
+):
     """Update a grid square by publishing to RabbitMQ"""
     # Check if grid square exists
     db_gridsquare = db.query(GridSquare).filter(GridSquare.uuid == gridsquare_uuid).first()
@@ -615,7 +613,6 @@ def delete_gridsquare(gridsquare_uuid: str, db: SqlAlchemySession = Depends(get_
     if not db_gridsquare:
         raise HTTPException(status_code=404, detail="Grid Square not found")
 
-    
     success = publish_gridsquare_deleted(gridsquare_uuid)
     if not success:
         logger.error(f"Failed to publish grid square deleted event for ID: {gridsquare_uuid}")
@@ -630,26 +627,25 @@ def get_grid_gridsquares(grid_uuid: str, db: SqlAlchemySession = Depends(get_db)
 
 
 @app.post("/grids/{grid_uuid}/gridsquares", response_model=GridSquareResponse, status_code=status.HTTP_201_CREATED)
-def create_grid_gridsquare(grid_uuid: str, gridsquare: GridSquareCreateRequest, db: SqlAlchemySession = Depends(get_db)):
+def create_grid_gridsquare(
+    grid_uuid: str, gridsquare: GridSquareCreateRequest, db: SqlAlchemySession = Depends(get_db)
+):
     """Create a new grid square for a specific grid by publishing to RabbitMQ"""
-    # Check if grid exists
     grid = db.query(Grid).filter(Grid.uuid == grid_uuid).first()
     if not grid:
         raise HTTPException(status_code=404, detail="Grid not found")
 
-    # Create grid square data with grid_id
     gridsquare_data = {"uuid": gridsquare.uuid, "grid_id": grid_uuid, **gridsquare.model_dump()}
 
-    # Publish the event to RabbitMQ
     success = publish_gridsquare_created(gridsquare_data)
     if not success:
         logger.error(f"Failed to publish grid square created event for ID: {gridsquare.uuid}")
 
     # Create response data without needing to access the database
     response_data = {
-        "id": gridsquare.uuid,
-        "grid_id": grid_uuid,
-        "status": GridSquareStatus.NONE,  # Set default status
+        "uuid": gridsquare.uuid,  # TODO test if needed, is it not set anyway by `**gridsquare.model_dump()`?
+        "grid_uuid": grid_uuid,
+        "status": GridSquareStatus.NONE,  # TODO techdebt, should be setting default status on edge when instantiating data entity and certainly NOT HERE!!
         **gridsquare.model_dump(),
     }
 
@@ -677,6 +673,8 @@ def get_foilhole(foilhole_uuid: str, db: SqlAlchemySession = Depends(get_db)):
 @app.put("/foilholes/{foilhole_uuid}", response_model=FoilHoleResponse)
 def update_foilhole(foilhole_uuid: str, foilhole: FoilHoleUpdateRequest, db: SqlAlchemySession = Depends(get_db)):
     """Update a foil hole by publishing to RabbitMQ"""
+    # TODO this isn't tested
+
     # Check if foil hole exists
     db_foilhole = db.query(FoilHole).filter(FoilHole.uuid == foilhole_uuid).first()
     if not db_foilhole:
@@ -705,12 +703,10 @@ def update_foilhole(foilhole_uuid: str, foilhole: FoilHoleUpdateRequest, db: Sql
 @app.delete("/foilholes/{foilhole_uuid}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_foilhole(foilhole_uuid: str, db: SqlAlchemySession = Depends(get_db)):
     """Delete a foil hole by publishing to RabbitMQ"""
-    # Check if foil hole exists
     db_foilhole = db.query(FoilHole).filter(FoilHole.uuid == foilhole_uuid).first()
     if not db_foilhole:
         raise HTTPException(status_code=404, detail="Foil Hole not found")
 
-    
     success = publish_foilhole_deleted(foilhole_uuid)
     if not success:
         logger.error(f"Failed to publish foil hole deleted event for ID: {foilhole_uuid}")
@@ -731,28 +727,33 @@ def create_gridsquare_foilhole(
     gridsquare_uuid: str, foilhole: FoilHoleCreateRequest, db: SqlAlchemySession = Depends(get_db)
 ):
     """Create a new foil hole for a specific grid square by publishing to RabbitMQ"""
-    # Check if grid square exists
     gridsquare = db.query(GridSquare).filter(GridSquare.uuid == gridsquare_uuid).first()
     if not gridsquare:
         raise HTTPException(status_code=404, detail="Grid Square not found")
 
-    # Create foil hole data with grid square ID
-    foilhole_data = {"uuid": foilhole.uuid, "gridsquare_uuid": gridsquare_uuid, **foilhole.model_dump()}
-
-    # Publish the event to RabbitMQ
-    success = publish_foilhole_created(foilhole_data)
-    if not success:
-        logger.error(f"Failed to publish foil hole created event for ID: {foilhole.id}")
-
-    # Create response data without needing to access the database
-    response_data = {
-        "uuid": foilhole.id,
-        "gridsquare_uuid": gridsquare_uuid,
-        "status": FoilHoleStatus.NONE,  # Set default status
+    foilhole_data = {
+        "gridsquare_uuid": gridsquare_uuid,  # The synthetic UUID for relationship
         **foilhole.model_dump(),
     }
 
+    success = publish_foilhole_created(foilhole_data)
+    if not success:
+        logger.error(f"Failed to publish foil hole created event for foilhole: {foilhole.uuid}")
+
+    # Create response data without needing to access the database
+    response_data = {
+        "gridsquare_uuid": gridsquare_uuid,
+        "status": FoilHoleStatus.NONE.value,  # TODO techdebt, should be setting default status on edge when instantiating data entity and certainly NOT HERE!!
+        **foilhole.model_dump(),
+    }
+
+    # Make sure status is set correctly (the above might get overridden by model_dump)
+    # TODO: remove hacky-hacky when techdebt above addressed
+    if "status" not in response_data or response_data["status"] is None:
+        response_data["status"] = FoilHoleStatus.NONE.value
+
     return FoilHoleResponse(**response_data)
+
 
 # ============ Micrograph CRUD Operations ============
 
@@ -773,7 +774,9 @@ def get_micrograph(micrograph_uuid: str, db: SqlAlchemySession = Depends(get_db)
 
 
 @app.put("/micrographs/{micrograph_uuid}", response_model=MicrographResponse)
-def update_micrograph(micrograph_uuid: str, micrograph: MicrographUpdateRequest, db: SqlAlchemySession = Depends(get_db)):
+def update_micrograph(
+    micrograph_uuid: str, micrograph: MicrographUpdateRequest, db: SqlAlchemySession = Depends(get_db)
+):
     """Update a micrograph by publishing to RabbitMQ"""
     # Check if micrograph exists
     db_micrograph = db.query(Micrograph).filter(Micrograph.uuid == micrograph_uuid).first()
@@ -808,7 +811,6 @@ def delete_micrograph(micrograph_uuid: str, db: SqlAlchemySession = Depends(get_
     if not db_micrograph:
         raise HTTPException(status_code=404, detail="Micrograph not found")
 
-    
     success = publish_micrograph_deleted(micrograph_uuid)
     if not success:
         logger.error(f"Failed to publish micrograph deleted event for ID: {micrograph_uuid}")
@@ -835,19 +837,26 @@ def create_foilhole_micrograph(
         raise HTTPException(status_code=404, detail="Foil Hole not found")
 
     # Create micrograph data with foil hole ID
-    micrograph_data = {"id": micrograph.id, "foilhole_id": foilhole_uuid, **micrograph.model_dump()}
+    micrograph_data = {
+        "uuid": micrograph.uuid,
+        "foilhole_uuid": foilhole_uuid,
+        "status": MicrographStatus.NONE,
+        **micrograph.model_dump()
+    }
 
     # Publish the event to RabbitMQ
     success = publish_micrograph_created(micrograph_data)
     if not success:
-        logger.error(f"Failed to publish micrograph created event for ID: {micrograph.id}")
+        logger.error(f"Failed to publish micrograph created event for natural ID: {micrograph.uuid}") # TODO respond with 500?
 
     # Create response data without needing to access the database
     response_data = {
-        "uuid": micrograph.id,
+        "uuid": micrograph.uuid,
         "foilhole_uuid": foilhole_uuid,
-        "status": MicrographStatus.NONE,  # Set default status TODO surely set whatever status was provided by client?
-        **micrograph.model_dump(),
+        "foilhole_id": micrograph.foilhole_id,
+        "micrograph_id": micrograph.uuid,
+        "status": MicrographStatus.NONE,  # Always provide a valid enum value
+        **micrograph.model_dump(exclude={"status", "foilhole_uuid"})  # Avoid duplicates
     }
 
     return MicrographResponse(**response_data)

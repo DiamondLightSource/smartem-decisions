@@ -1,20 +1,12 @@
 import json
-import sys
 from pathlib import Path
 
 from src.epu_data_intake.core_http_api_client import SmartEMAPIClient
+from src.epu_data_intake.model.schemas import AcquisitionData, FoilHoleData, GridData, GridSquareData, MicrographData
 from src.smartem_decisions.utils import logger
 
-from src.epu_data_intake.model.schemas import (
-    AcquisitionData,
-    GridData,
-    GridSquareData,
-    FoilHoleData,
-    MicrographData
-)
 
 class InMemoryDataStore:
-
     def __init__(self, root_dir: str):
         self.root_dir = Path(root_dir)
         self.acquisition = AcquisitionData()
@@ -74,7 +66,7 @@ class InMemoryDataStore:
             del self.grids[uuid]
 
         # Remove the relationship from acquisition_rels
-        for acquisition_uuid, children in self.acquisition_rels.items():
+        for _acquisition_uuid, children in self.acquisition_rels.items():
             if uuid in children:
                 children.remove(uuid)
                 break  # Assuming a grid belongs to only one acquisition
@@ -86,7 +78,7 @@ class InMemoryDataStore:
         self.gridsquares[gridsquare.uuid] = gridsquare
         if gridsquare.grid_uuid not in self.grid_rels:
             self.grid_rels[gridsquare.grid_uuid] = set()
-        self.grid_rels[gridsquare.grid_uuid].add(gridsquare.uuid) # TODO make sure we have grid_uuid to link from
+        self.grid_rels[gridsquare.grid_uuid].add(gridsquare.uuid)
         self.gridsquare_rels[gridsquare.uuid] = set()
 
     def update_gridsquare(self, gridsquare: GridSquareData):
@@ -98,7 +90,7 @@ class InMemoryDataStore:
             del self.gridsquares[uuid]
 
         # Remove the relationship from grid_rels
-        for grid_uuid, children in self.grid_rels.items():
+        for _grid_uuid, children in self.grid_rels.items():
             if uuid in children:
                 children.remove(uuid)
                 break  # Assuming a gridsquare belongs to only one grid
@@ -106,19 +98,27 @@ class InMemoryDataStore:
     def get_gridsquare(self, uuid: str):
         return self.gridsquares.get(uuid)
 
-    def find_gridsquare_by_natural_id(self, gridsquare_id: str) -> GridSquareData | None:
+    def find_gridsquare_by_natural_id(self, gridsquare_natural_id: str) -> GridSquareData | None:
         """Find a gridsquare by its id attribute (not uuid)
         Helper function to find a gridsquare by its "natural" `id` (as opposed to synthetic `uuid`)"""
-        for uuid, gridsquare in self.gridsquares.items():
-            if gridsquare.id == gridsquare_id:
+        for _uuid, gridsquare in self.gridsquares.items():
+            if gridsquare.gridsquare_id == gridsquare_natural_id:
                 return gridsquare
+        return None
+
+    def find_foilhole_by_natural_id(self, foilhole_natural_id: str):
+        """Find a foilhole by its id attribute (not uuid)
+        Helper function to find a foilhole by its "natural" `id` (as opposed to synthetic `uuid`)"""
+        for _uuid, foilhole in self.foilholes.items():
+            if foilhole.id == foilhole_natural_id:
+                return foilhole
         return None
 
     def create_foilhole(self, foilhole: FoilHoleData):
         self.foilholes[foilhole.uuid] = foilhole
         if foilhole.gridsquare_uuid not in self.gridsquare_rels:
             self.gridsquare_rels[foilhole.gridsquare_uuid] = set()
-        self.gridsquare_rels[foilhole.gridsquare_id].add(foilhole.uuid) # TODO
+        self.gridsquare_rels[foilhole.gridsquare_uuid].add(foilhole.uuid)
         self.foilhole_rels[foilhole.uuid] = set()
 
     def update_foilhole(self, foilhole: FoilHoleData):
@@ -130,7 +130,7 @@ class InMemoryDataStore:
             del self.foilholes[uuid]
 
         # Remove the relationship from grid_rels
-        for gridsquare_uuid, children in self.gridsquare_rels.items():
+        for _gridsquare_uuid, children in self.gridsquare_rels.items():
             if uuid in children:
                 children.remove(uuid)
                 break  # Assuming a foilhole belongs to only one gridsquare
@@ -142,7 +142,7 @@ class InMemoryDataStore:
         self.micrographs[micrograph.uuid] = micrograph
         if micrograph.foilhole_uuid not in self.foilhole_rels:
             self.foilhole_rels[micrograph.foilhole_uuid] = set()
-        self.foilhole_rels[micrograph.foilhole_uuid].add(micrograph.uuid) # TODO
+        self.foilhole_rels[micrograph.foilhole_uuid].add(micrograph.uuid)  # TODO
 
     def update_micrograph(self, micrograph: MicrographData):
         if micrograph.uuid in self.micrographs:
@@ -153,7 +153,7 @@ class InMemoryDataStore:
             del self.micrographs[uuid]
 
         # Remove the relationship from grid_rels
-        for foilhole_uuid, children in self.foilhole_rels.items():
+        for _foilhole_uuid, children in self.foilhole_rels.items():
             if uuid in children:
                 children.remove(uuid)
                 break  # Assuming a micrograph belongs to only one foilhole
@@ -168,14 +168,14 @@ class InMemoryDataStore:
             "acquisition": {
                 "uuid": self.acquisition.uuid,
                 "name": self.acquisition.name,
-                "start_time": str(self.acquisition.start_time) if self.acquisition.start_time else None
+                "start_time": str(self.acquisition.start_time) if self.acquisition.start_time else None,
             },
             "entities": {
                 "grids": len(self.grids),
                 "gridsquares": len(self.gridsquares),
                 "foilholes": len(self.foilholes),
-                "micrographs": len(self.micrographs)
-            }
+                "micrographs": len(self.micrographs),
+            },
         }
 
         if hasattr(self, "api_client"):
@@ -185,7 +185,6 @@ class InMemoryDataStore:
 
 
 class PersistentDataStore(InMemoryDataStore):
-
     def __init__(self, root_dir: str, api_url: str):
         """
         Initialize with root directory and API URL.
@@ -203,6 +202,7 @@ class PersistentDataStore(InMemoryDataStore):
             logger.critical(error_msg)
             logger.debug("Stack trace:", exc_info=True)
             import sys
+
             sys.exit(1)
 
     def create_grid(self, grid):
@@ -210,138 +210,123 @@ class PersistentDataStore(InMemoryDataStore):
             super().create_grid(grid)
             result = self.api_client.create_acquisition_grid(grid)
             if not result:
-                logger.error(f"API call to create grid {grid.uuid} failed, local store changes rolled back")
-            sys.exit()
+                logger.error(f"API call to create grid UUID {grid.uuid} failed, local store changes rolled back")
         except Exception as e:
             logger.error(f"Error creating grid {grid.uuid}: {e}")
-            # Roll back the local store change if the API call fails
+            # Roll back the local store change if the API call fails:
             del self.grids[grid.uuid]
             self.acquisition_rels[self.acquisition.uuid].remove(grid.uuid)
-            raise
 
     def update_grid(self, grid: GridData):
         try:
             super().update_grid(grid)
-            result = self.api_client.update_grid(grid.uuid, grid)
+            result = self.api_client.update_grid(grid)  # TODO not tested
             if not result:
-                logger.error(f"API call to update grid {grid.uuid} failed, but grid was updated in local store")
+                logger.error(f"API call to update grid UUID {grid.uuid} failed, but grid was updated in local store")
         except Exception as e:
             logger.error(f"Error updating grid {grid.uuid}: {e}")
-            raise
 
     def remove_grid(self, uuid: str):
         try:
             super().remove_grid(uuid)
-            # TODO For deletes, we could call a delete method on the API client if available
-            #  This would require implementing a generic delete method in the API client
-            # result = self.api_client.delete()
+            self.api_client.delete_grid(uuid)  # TODO not tested
         except Exception as e:
-            logger.error(f"Error removing grid {uuid}: {e}")
+            logger.error(f"Error removing grid UUID {uuid}: {e}")
             # TODO rollback localstore mutations on API failure
-            raise
 
     def create_gridsquare(self, gridsquare: GridSquareData):
         try:
             super().create_gridsquare(gridsquare)
-            # Then persist to API - need to determine the parent grid's UUID
-            # Assuming gridsquare has a grid_uuid attribute to identify its parent
-            if hasattr(gridsquare, 'grid_uuid'):
-                parent_id = gridsquare.grid_uuid
-            else:
-                for grid_id, grid in self.grids.items():
-                    if gridsquare.uuid in getattr(grid, 'gridsquares', []):
-                        parent_id = grid_id
-                        break
-
-            if parent_id:
-                self.api_client.create_grid_gridsquare(parent_id, gridsquare)
+            result = self.api_client.create_grid_gridsquare(gridsquare)
+            if not result:
+                logger.error(f"API call to create gridsquare {gridsquare.uuid} failed, local store changes rolled back")
         except Exception as e:
-            logger.error(f"Error creating gridsquare {gridsquare.uuid}: {e}")
+            logger.error(f"Error creating gridsquare UUID {gridsquare.uuid}: {e}")
             # Roll back the local store change if the API call fails
             del self.gridsquares[gridsquare.uuid]
-            self.acquisition_rels[self.acquisition.uuid].remove(gridsquare.uuid)
-            raise
+            self.grid_rels[gridsquare.grid_uuid].remove(gridsquare.uuid)
 
     def update_gridsquare(self, gridsquare: GridSquareData):
         try:
             super().update_gridsquare(gridsquare)
-            parent_id = None
-            for grid_id, grid in self.grids.items():
-                if gridsquare.uuid in getattr(grid, 'gridsquares', []):
-                    parent_id = grid_id
-                    break
-
-            if parent_id:
-                self.api_client.update_gridsquare(gridsquare.uuid, gridsquare)
+            self.api_client.update_gridsquare(gridsquare)
         except Exception as e:
-            logger.error(f"Error updating gridsquare {gridsquare.uuid}: {e}")
+            logger.error(f"Error updating gridsquare UUID {gridsquare.uuid}: {e}")
             # TODO rollback localstore mutations on API failure
-            raise
 
     def remove_gridsquare(self, uuid: str):
         try:
             super().remove_gridsquare(uuid)
-            # TODO For deletes, we would call a delete method on the API client if available
+            self.api_client.delete_gridsquare(uuid)  # TODO not tested
         except Exception as e:
-            logger.error(f"Error  gridsquare {uuid}: {e}")
-            raise
+            logger.error(f"Error removing gridsquare UUID {uuid}: {e}")
 
     def create_foilhole(self, foilhole: FoilHoleData):
         try:
             super().create_foilhole(foilhole)
-            if hasattr(foilhole, 'gridsquare_id'):
-                parent_id = foilhole.gridsquare_id
-                self.api_client.create_gridsquare_foilhole(parent_id, foilhole)
+            self.api_client.create_gridsquare_foilhole(foilhole)
         except Exception as e:
-            logger.error(f"Error creating foilhole {foilhole.uuid}: {e}")
-            raise
+            logger.error(f"Error creating foilhole UUID {foilhole.uuid}: {e}")
 
     def update_foilhole(self, foilhole: FoilHoleData):
         try:
             super().update_foilhole(foilhole)
-            if hasattr(foilhole, 'gridsquare_id'):
-                parent_id = foilhole.gridsquare_id
-                self.api_client.update_foilhole(foilhole)
+            self.api_client.update_foilhole(foilhole)
         except Exception as e:
-            logger.error(f"Error  gridsquare {foilhole.uuid}: {e}")
-            raise
+            logger.error(f"Error updating foilhole UUID {foilhole.uuid}: {e}")
 
     def remove_foilhole(self, uuid: str):
         try:
             super().remove_foilhole(uuid)
-            # TODO For deletes, we would call a delete method on the API client if available
+            self.api_client.delete_foilhole(uuid)  # TODO not tested
         except Exception as e:
-            logger.error(f"Error  gridsquare {uuid}: {e}")
-            raise
+            logger.error(f"Error removing foilhole UUID {uuid}: {e}")
 
+    # def create_micrograph(self, micrograph: MicrographData):
+    #     try:
+    #         super().create_micrograph(micrograph)
+    #         self.api_client.create_foilhole_micrograph(micrograph)
+    #     except Exception as e:
+    #         logger.error(f"Error creating micrograph UUID {micrograph.uuid}: {e}")
+
+    # TODO rollback retries in no race condition, otherwise implement throttling universally
     def create_micrograph(self, micrograph: MicrographData):
-        try:
-            super().create_micrograph(micrograph)
-            if hasattr(micrograph, 'foilhole_id'):
-                parent_id = micrograph.foilhole_id
-                self.api_client.create_foilhole_micrograph(parent_id, micrograph)
-        except Exception as e:
-            logger.error(f"Error  gridsquare {micrograph.uuid}: {e}")
-            raise
+        import time
+        max_retries = 3
+        retry_delay = 1.0  # seconds
+
+        for attempt in range(max_retries):
+            try:
+                super().create_micrograph(micrograph)
+                result = self.api_client.create_foilhole_micrograph(micrograph)
+                if result:
+                    return
+                raise Exception("API call failed with no success response")
+            except Exception as e:
+                if attempt < max_retries - 1:
+                    logger.warning(f"Retry {attempt + 1}/{max_retries} creating micrograph {micrograph.uuid}: {e}")
+                    # Roll back the local store change before retrying
+                    if micrograph.uuid in self.micrographs:
+                        del self.micrographs[micrograph.uuid]
+                    if micrograph.uuid in self.foilhole_rels.get(micrograph.foilhole_uuid, []):
+                        self.foilhole_rels[micrograph.foilhole_uuid].remove(micrograph.uuid)
+                    time.sleep(retry_delay)
+                else:
+                    logger.error(f"Error creating micrograph UUID {micrograph.uuid} after {max_retries} attempts: {e}")
 
     def update_micrograph(self, micrograph: MicrographData):
         try:
             super().update_micrograph(micrograph)
-            if hasattr(micrograph, 'foilhole_id'):
-                parent_id = micrograph.foilhole_id
-                self.api_client.update_micrograph(parent_id, micrograph)
+            self.api_client.update_micrograph(micrograph)
         except Exception as e:
-            logger.error(f"Error  gridsquare {micrograph.uuid}: {e}")
-            raise
+            logger.error(f"Error updating micrograph UUID {micrograph.uuid}: {e}")
 
     def remove_micrograph(self, uuid: str):
         try:
             super().remove_micrograph(uuid)
-            # TODO For deletes, we would call a delete method on the API client if available
-            self.api_client.delete_micrograph()
+            self.api_client.delete_micrograph(uuid)  # TODO not tested
         except Exception as e:
-            logger.error(f"Error  gridsquare {uuid}: {e}")
-            raise
+            logger.error(f"Error removing micrograph UUID {uuid}: {e}")
 
     def close(self):
         if self.api_client:

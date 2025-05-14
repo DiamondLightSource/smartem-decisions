@@ -1,48 +1,32 @@
 import unittest
 from pathlib import Path
 from unittest.mock import MagicMock, patch
-import logging
 
-from src.epu_data_intake.model.schemas import (
-    GridData,
-    AcquisitionData
-)
+from src.epu_data_intake.model.schemas import GridData
 from src.epu_data_intake.model.store import InMemoryDataStore
 
 
 class TestInMemoryDataStore(unittest.TestCase):
     def setUp(self):
         # Set up a mock logger
-        self.logger_patcher = patch('src.epu_data_intake.model.store.logger')
+        self.logger_patcher = patch("src.epu_data_intake.model.store.logger")
         self.mock_logger = self.logger_patcher.start()
 
         # Create the InMemoryDataStore with a temp root dir
         self.store = InMemoryDataStore(root_dir="/temp/epu_root")
 
         # Create actual grid objects with data_dir and atlas_dir attributes
-        self.grid1 = GridData(
-            data_dir=Path("/temp/epu_root/grid1/data"),
-            atlas_dir=Path("/temp/epu_root/grid1/atlas")
-        )
+        self.grid1 = GridData(data_dir=Path("/temp/epu_root/grid1/data"), atlas_dir=Path("/temp/epu_root/grid1/atlas"))
         self.grid1.uuid = "grid1-uuid"
 
-        self.grid2 = GridData(
-            data_dir=Path("/temp/epu_root/grid2/data"),
-            atlas_dir=Path("/temp/epu_root/grid2/atlas")
-        )
+        self.grid2 = GridData(data_dir=Path("/temp/epu_root/grid2/data"), atlas_dir=Path("/temp/epu_root/grid2/atlas"))
         self.grid2.uuid = "grid2-uuid"
 
         # Add grids to the store
-        self.store.grids = {
-            "grid1-uuid": self.grid1,
-            "grid2-uuid": self.grid2
-        }
+        self.store.grids = {"grid1-uuid": self.grid1, "grid2-uuid": self.grid2}
 
         # Set up acquisition relationship
-        self.store.acquisition_rels[self.store.acquisition.uuid] = {
-            "grid1-uuid",
-            "grid2-uuid"
-        }
+        self.store.acquisition_rels[self.store.acquisition.uuid] = {"grid1-uuid", "grid2-uuid"}
 
     def tearDown(self):
         # Stop all patchers
@@ -120,10 +104,7 @@ class TestInMemoryDataStore(unittest.TestCase):
         gs2 = GridSquareData(id="GS2", grid_uuid="grid1-uuid")
         gs2.uuid = "gs2-uuid"
 
-        self.store.gridsquares = {
-            "gs1-uuid": gs1,
-            "gs2-uuid": gs2
-        }
+        self.store.gridsquares = {"gs1-uuid": gs1, "gs2-uuid": gs2}
 
         # Test finding by ID
         result = self.store.find_gridsquare_by_natural_id("GS1")
@@ -146,7 +127,7 @@ class TestInMemoryDataStore(unittest.TestCase):
 
 
 class TestPersistentDataStore(unittest.TestCase):
-    @patch('src.epu_data_intake.core_http_api_client.SmartEMAPIClient')
+    @patch("src.epu_data_intake.core_http_api_client.SmartEMAPIClient")
     def setUp(self, mock_api_client):
         from src.epu_data_intake.model.store import PersistentDataStore
 
@@ -170,10 +151,7 @@ class TestPersistentDataStore(unittest.TestCase):
 
         # Verify that the API client was called
         self.mock_api_client_instance.create.assert_called_once_with(
-            "grid",
-            "grid1-uuid",
-            self.grid,
-            parent=("acquisition", self.store.acquisition.uuid)
+            "grid", "grid1-uuid", self.grid, parent=("acquisition", self.store.acquisition.uuid)
         )
 
     def test_update_grid_calls_api(self):
@@ -188,10 +166,7 @@ class TestPersistentDataStore(unittest.TestCase):
 
         # Verify that the API client was called
         self.mock_api_client_instance.update.assert_called_once_with(
-            "grid",
-            "grid1-uuid",
-            self.grid,
-            parent=("acquisition", self.store.acquisition.uuid)
+            "grid", "grid1-uuid", self.grid, parent=("acquisition", self.store.acquisition.uuid)
         )
 
     def test_close_calls_api_client_close(self):

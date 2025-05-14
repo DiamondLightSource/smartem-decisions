@@ -4,14 +4,15 @@
 # TODO: this is redundant, better done with ripgrep + xq
 #  - https://github.com/sibprogrammer/xq
 
-import xml.dom.minidom
 import pathlib
+import shutil
+import xml.dom.minidom
+from datetime import datetime
+
 import typer
 from rich import print
-from rich.progress import track
 from rich.console import Console
-import shutil
-from datetime import datetime
+from rich.progress import track
 
 XML_EXTENSIONS = {".dm", ".xml"}
 console = Console()

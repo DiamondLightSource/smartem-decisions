@@ -2,28 +2,28 @@ import logging
 import os
 import re
 import sys
-
-from pathlib import Path
 from datetime import datetime
+from pathlib import Path
+
 from lxml import etree
 
 from src.epu_data_intake.model.schemas import (
     AcquisitionData,
-    GridData,
     AtlasData,
-    AtlasTilePosition,
     AtlasTileData,
+    AtlasTilePosition,
+    FoilHoleData,
+    FoilHolePosition,
+    GridData,
+    GridSquareData,
+    GridSquareManifest,
+    GridSquareMetadata,
     GridSquarePosition,
     GridSquareStagePosition,
-    FoilHolePosition,
-    GridSquareMetadata,
-    GridSquareManifest,
-    GridSquareData,
-    FoilHoleData,
-    MicrographManifest,
     MicrographData,
+    MicrographManifest,
 )
-from src.epu_data_intake.model.store import InMemoryDataStore, PersistentDataStore
+from src.epu_data_intake.model.store import InMemoryDataStore
 
 
 class EpuParser:
@@ -700,7 +700,7 @@ class EpuParser:
 
         # Start with locating all EpuSession.dm files - init a grid for each found
         for epu_session_manifest in list(datastore.root_dir.glob("**/*EpuSession.dm")):
-            grid_uuid = EpuParser.parse_grid_dir(str(Path(epu_session_manifest).parent), datastore)
+            EpuParser.parse_grid_dir(str(Path(epu_session_manifest).parent), datastore)
 
         return datastore
 
@@ -717,7 +717,7 @@ class EpuParser:
             str: The UUID of the created grid
         """
         # 1. Create the grid
-        grid = GridData(Path(grid_data_dir).resolve())
+        grid = GridData(data_dir=Path(grid_data_dir).resolve())
 
         # 1.1 Parse EpuSession.dm
         epu_manifest_path = str(grid.data_dir / "EpuSession.dm")
@@ -742,14 +742,14 @@ class EpuParser:
         # 2. Parse all gridsquare metadata from /Metadata directory
         metadata_dir_path = str(grid.data_dir / "Metadata")
         for gridsquare_id, filename in EpuParser.parse_gridsquares_metadata_dir(metadata_dir_path):
-            logging.debug(f"Discovered gridsquare {gridsquare_id} from file {filename}")
+            logging.debug(f"Discovered gridsquare ID: {gridsquare_id} from file {filename}")
             gridsquare_metadata = EpuParser.parse_gridsquare_metadata(filename)
 
             # Create GridSquareData with ID and metadata
             gridsquare = GridSquareData(
-                id=gridsquare_id,
+                gridsquare_id=gridsquare_id,
                 metadata=gridsquare_metadata,
-                grid_uuid=grid.uuid, # Set reference to parent grid
+                grid_uuid=grid.uuid,  # Set reference to parent grid
             )
 
             datastore.create_gridsquare(gridsquare)
@@ -757,14 +757,14 @@ class EpuParser:
 
         # 3. Parse gridsquare manifests and associated data
         for gridsquare_manifest_path in list(grid.data_dir.glob("Images-Disc*/GridSquare_*/GridSquare_*_*.xml")):
-            gridsquare_manifest = EpuParser.parse_gridsquare_manifest(gridsquare_manifest_path)
+            gridsquare_manifest = EpuParser.parse_gridsquare_manifest(str(gridsquare_manifest_path))
             gridsquare_id = re.search(EpuParser.gridsquare_dir_pattern, str(gridsquare_manifest_path)).group(1)
             gridsquare = datastore.find_gridsquare_by_natural_id(gridsquare_id)
 
             if gridsquare:
                 gridsquare.manifest = gridsquare_manifest
-                datastore.update_gridsquare(gridsquare.uuid, gridsquare)
-                logging.debug(f"Updated gridsquare manifest: {gridsquare_id} (uuid: {gridsquare.uuid})")
+                datastore.update_gridsquare(gridsquare)
+                logging.debug(f"Updated gridsquare manifest: ID: {gridsquare_id} (UUID: {gridsquare.uuid})")
 
                 # 3.1 Parse foilholes for this gridsquare
                 foilhole_manifest_paths = sorted(
@@ -776,7 +776,7 @@ class EpuParser:
                     foilhole_id_match = re.search(EpuParser.foilhole_xml_file_pattern, str(foilhole_manifest_path))
                     foilhole_id = foilhole_id_match.group(1)
 
-                    foilhole = EpuParser.parse_foilhole_manifest(foilhole_manifest_path)
+                    foilhole = EpuParser.parse_foilhole_manifest(str(foilhole_manifest_path))
                     foilhole.gridsquare_id = gridsquare_id
                     foilhole.gridsquare_uuid = gridsquare.uuid
 
@@ -786,17 +786,25 @@ class EpuParser:
 
                 # 3.2 Parse micrographs for this gridsquare
                 for micrograph_manifest_path in list(
-                        grid.data_dir.glob(f"Images-Disc*/GridSquare_{gridsquare_id}/Data/FoilHole_*_Data_*_*_*_*.xml")
+                    grid.data_dir.glob(f"Images-Disc*/GridSquare_{gridsquare_id}/Data/FoilHole_*_Data_*_*_*_*.xml")
                 ):
-                    micrograph_manifest = EpuParser.parse_micrograph_manifest(micrograph_manifest_path)
+                    micrograph_manifest = EpuParser.parse_micrograph_manifest(str(micrograph_manifest_path))
                     match = re.search(EpuParser.micrograph_xml_file_pattern, str(micrograph_manifest_path))
                     foilhole_id = match.group(1)
                     location_id = match.group(2)
+                    foilhole = datastore.find_foilhole_by_natural_id(foilhole_id)
+                    if not foilhole:
+                        logging.warning(
+                            f"Could not find foilhole by natural ID {foilhole_id}, "
+                            f"skipping micrograph creation for micrograph {micrograph_manifest.unique_id}"
+                        )
+                        continue
 
                     micrograph = MicrographData(
                         id=micrograph_manifest.unique_id,
                         gridsquare_id=gridsquare_id,
                         foilhole_id=foilhole_id,
+                        foilhole_uuid=foilhole.uuid,
                         location_id=location_id,
                         high_res_path=Path(""),
                         manifest_file=micrograph_manifest_path,
