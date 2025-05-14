@@ -1,6 +1,7 @@
-from enum import Enum
 from datetime import datetime
+from enum import Enum
 from typing import Any
+
 from pydantic import (
     BaseModel,
     computed_field,
@@ -73,6 +74,11 @@ class GenericEventMessageBody(BaseModel):
     def serialize_event_type(self, event_type: MessageQueueEventType, _info):
         return str(event_type.value)
 
+    @field_serializer('*', when_used='json')
+    def serialize_datetime_fields(self, v, _info):
+        if isinstance(v, datetime):
+            return v.isoformat()
+        return v
 
 # ============ Acquisition Events ============
 class AcquisitionEventBase(GenericEventMessageBody):
@@ -236,9 +242,9 @@ class GridSquareEventBase(GenericEventMessageBody):
 class GridSquareCreatedEvent(GridSquareEventBase):
     """Event emitted when a grid square is created"""
 
-    id: str
-    name: str
-    grid_id: str
+    uuid: str
+    name: str | None = None
+    grid_uuid: str
     status: str | None = None
     metadata: dict[str, Any] | None = None
 
@@ -246,9 +252,9 @@ class GridSquareCreatedEvent(GridSquareEventBase):
 class GridSquareUpdatedEvent(GridSquareEventBase):
     """Event emitted when a grid square is updated"""
 
-    id: str
+    uuid: str
     name: str | None = None
-    grid_id: str | None = None
+    grid_uuid: str | None = None
     status: str | None = None
     metadata: dict[str, Any] | None = None
 
@@ -256,7 +262,7 @@ class GridSquareUpdatedEvent(GridSquareEventBase):
 class GridSquareDeletedEvent(GridSquareEventBase):
     """Event emitted when a grid square is deleted"""
 
-    id: str
+    uuid: str
 
 
 # ============ Foil Hole Events ============
@@ -269,12 +275,22 @@ class FoilHoleEventBase(GenericEventMessageBody):
 class FoilHoleCreatedEvent(FoilHoleEventBase):
     """Event emitted when a foil hole is created"""
 
-    id: str
-    name: str
+    uuid: str
+    foilhole_id: str
     gridsquare_id: str
-    position_x: float | None = None
-    position_y: float | None = None
-    diameter: float | None = None
+    gridsquare_uuid: str
+    center_x: float | None = None
+    center_y: float | None = None
+    quality: float | None = None
+    rotation: float | None = None
+    size_width: float | None = None
+    size_height: float | None = None
+    x_location: int | None = None
+    y_location: int | None = None
+    x_stage_position: float | None = None
+    y_stage_position: float | None = None
+    diameter: int | None = None
+    is_near_grid_bar: bool = False
     status: str | None = None
     metadata: dict[str, Any] | None = None
 
@@ -282,12 +298,22 @@ class FoilHoleCreatedEvent(FoilHoleEventBase):
 class FoilHoleUpdatedEvent(FoilHoleEventBase):
     """Event emitted when a foil hole is updated"""
 
-    id: str
-    name: str | None = None
+    uuid: str
+    foilhole_id: str | None = None
     gridsquare_id: str | None = None
-    position_x: float | None = None
-    position_y: float | None = None
-    diameter: float | None = None
+    gridsquare_uuid: str | None = None
+    center_x: float | None = None
+    center_y: float | None = None
+    quality: float | None = None
+    rotation: float | None = None
+    size_width: float | None = None
+    size_height: float | None = None
+    x_location: int | None = None
+    y_location: int | None = None
+    x_stage_position: float | None = None
+    y_stage_position: float | None = None
+    diameter: int | None = None
+    is_near_grid_bar: bool | None = None
     status: str | None = None
     metadata: dict[str, Any] | None = None
 
@@ -295,7 +321,7 @@ class FoilHoleUpdatedEvent(FoilHoleEventBase):
 class FoilHoleDeletedEvent(FoilHoleEventBase):
     """Event emitted when a foil hole is deleted"""
 
-    id: str
+    uuid: str
 
 
 # ============ Micrograph Events ============
@@ -307,53 +333,72 @@ class MicrographEventBase(GenericEventMessageBody):
 
 class MicrographCreatedEvent(MicrographEventBase):
     """Event emitted when a micrograph is created"""
-
-    id: str
-    name: str
+    uuid: str
+    foilhole_uuid: str
     foilhole_id: str
-    pixel_size: float | None = None
+    location_id: str | None = None
+    status: str
+    high_res_path: str | None = None
+    manifest_file: str | None = None
+    acquisition_datetime: datetime | None = None
     defocus: float | None = None
+    detector_name: str | None = None
+    energy_filter: bool | None = None
+    phase_plate: bool | None = None
+    image_size_x: int | None = None
+    image_size_y: int | None = None
+    binning_x: int | None = None
+    binning_y: int | None = None
     total_motion: float | None = None
     average_motion: float | None = None
     ctf_max_resolution_estimate: float | None = None
     number_of_particles_picked: int | None = None
     number_of_particles_selected: int | None = None
     number_of_particles_rejected: int | None = None
-    status: str | None = None
     metadata: dict[str, Any] | None = None
 
 
 class MicrographUpdatedEvent(MicrographEventBase):
     """Event emitted when a micrograph is updated"""
-
-    id: str
-    name: str | None = None
+    uuid: str  # Required
+    foilhole_uuid: str | None = None
     foilhole_id: str | None = None
-    pixel_size: float | None = None
+    location_id: str | None = None
+    status: str | None = None
+    high_res_path: str | None = None
+    manifest_file: str | None = None
+    acquisition_datetime: datetime | None = None
     defocus: float | None = None
+    detector_name: str | None = None
+    energy_filter: bool | None = None
+    phase_plate: bool | None = None
+    image_size_x: int | None = None
+    image_size_y: int | None = None
+    binning_x: int | None = None
+    binning_y: int | None = None
     total_motion: float | None = None
     average_motion: float | None = None
     ctf_max_resolution_estimate: float | None = None
     number_of_particles_picked: int | None = None
     number_of_particles_selected: int | None = None
     number_of_particles_rejected: int | None = None
-    status: str | None = None
+    selection_distribution: str | None = None
+    pick_distribution: str | None = None
     metadata: dict[str, Any] | None = None
-
 
 class MicrographDeletedEvent(MicrographEventBase):
     """Event emitted when a micrograph is deleted"""
 
-    id: str
+    uuid: str
 
 
 # ============ Data Processing and ML Events ============
 class MotionCorrectionStartBody(GenericEventMessageBody):
-    micrograph_id: str
+    micrograph_uuid: str
 
 
 class MotionCorrectionCompleteBody(GenericEventMessageBody):
-    micrograph_id: str
+    micrograph_uuid: str
     total_motion: float
     average_motion: float
     ctf_max_resolution_estimate: float
@@ -370,11 +415,11 @@ class MotionCorrectionCompleteBody(GenericEventMessageBody):
 
 
 class CtfStartBody(GenericEventMessageBody):
-    micrograph_id: str
+    micrograph_uuid: str
 
 
 class CtfCompleteBody(BaseModel):
-    micrograph_id: str
+    micrograph_uuid: str
     total_motion: float
     average_motion: float
     ctf_max_resolution_estimate: float
@@ -391,11 +436,11 @@ class CtfCompleteBody(BaseModel):
 
 
 class ParticlePickingStartBody(GenericEventMessageBody):
-    micrograph_id: str
+    micrograph_uuid: str
 
 
 class ParticlePickingCompleteBody(GenericEventMessageBody):
-    micrograph_id: str
+    micrograph_uuid: str
     number_of_particles_picked: int
     pick_distribution: dict
 
@@ -418,11 +463,11 @@ class ParticleSelectionStartBody(GenericEventMessageBody):
         relion_options: RelionServiceOptions
     """
 
-    micrograph_id: str
+    micrograph_uuid: str
 
 
 class ParticleSelectionCompleteBody(GenericEventMessageBody):
-    micrograph_id: str
+    micrograph_uuid: str
     number_of_particles_selected: int
     number_of_particles_rejected: int
     selection_distribution: dict

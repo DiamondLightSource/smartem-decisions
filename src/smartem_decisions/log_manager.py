@@ -1,9 +1,9 @@
-import os
+import json
 import logging
 import logging.handlers
+import os
 import sys
 from dataclasses import dataclass, field
-import json
 
 import graypy
 from dotenv import load_dotenv
@@ -230,7 +230,7 @@ def setup_logger():
 
     return LogManager.get_instance("smartem_decisions").configure(
         LogConfig(
-            level=logging.DEBUG,
+            level=logging.INFO,
             console=True,
             file_path="smartem_decisions-core.log",  # TODO define in app config
             graylog_host=env_vars["GRAYLOG_HOST"],

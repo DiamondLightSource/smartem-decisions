@@ -1,6 +1,7 @@
 # This is the simplest possible test to verify Graylog UDP is receiving (don't forget to set up an input node!)
 
 import logging
+
 import graypy
 
 # Configure the logger

@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 """Setup script to handle version file copying and dotenv instantiation."""
 
-import os
 import shutil
 from pathlib import Path
+
 from setuptools import setup
 from setuptools.command.develop import develop
-from setuptools.command.install import install
 from setuptools.command.egg_info import egg_info
+from setuptools.command.install import install
 
 
 def copy_version_files():

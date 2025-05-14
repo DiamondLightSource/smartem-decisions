@@ -4,17 +4,18 @@ import logging
 import platform
 import signal
 import time
-import typer
 from pathlib import Path
+
+import typer
 from watchdog.observers import Observer
 
 from src.epu_data_intake.core_http_api_client import SmartEMAPIClient as APIClient
-from src.epu_data_intake.model.store import InMemoryDataStore, PersistentDataStore
 from src.epu_data_intake.fs_parser import EpuParser
 from src.epu_data_intake.fs_watcher import (
     DEFAULT_PATTERNS,
     RateLimitedFilesystemEventHandler,
 )
+from src.epu_data_intake.model.store import InMemoryDataStore
 
 
 # Create a callback to handle the verbose flag at the root level
@@ -50,7 +51,8 @@ epu_data_intake_cli.add_typer(parse_cli, name="parse")
 # Add verbose flag to root command
 shared_verbosity_option = typer.Option(
     0,
-    "--verbose", "-v",
+    "--verbose",
+    "-v",
     count=True,
     help="Verbosity level: -v for INFO, -vv for DEBUG",
     callback=logging_callback,
@@ -67,6 +69,7 @@ def main_callback(verbose: int = shared_verbosity_option):
     """Main callback to enable verbose flag on root command"""
     pass
 
+
 @parse_cli.callback()
 def parse_callback(verbose: int = shared_verbosity_option):
     """Parse group callback to enable verbose flag on parse command"""
@@ -75,8 +78,8 @@ def parse_callback(verbose: int = shared_verbosity_option):
 
 @parse_cli.command("dir")
 def parse_epu_output_dir(
-        epu_output_dir: str,
-        verbose: int = shared_verbosity_option,
+    epu_output_dir: str,
+    verbose: int = shared_verbosity_option,
 ):
     """Parse an entire EPU output directory structure. May contain multiple grids"""
     # Rationale here is that parsers don't persist data to API by design - only watch command does that
@@ -103,8 +106,10 @@ def parse_grid(
             logging.warning(f"- {error}")
     else:
         # Rationale here is that parsers don't persist data to API by design - only watch command does that
-        datastore = InMemoryDataStore(grid_data_dir) # TODO confirm this is the dir expected here - top-level watch dir or grid root dir?
-        grid_uuid = EpuParser.parse_grid_dir(grid_data_dir, datastore)
+        datastore = InMemoryDataStore(
+            grid_data_dir
+        )  # TODO confirm this is the dir expected here - top-level watch dir or grid root dir?
+        EpuParser.parse_grid_dir(grid_data_dir, datastore)
         False and logging.debug(datastore)
 
 

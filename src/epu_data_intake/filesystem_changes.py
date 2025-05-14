@@ -2,11 +2,11 @@
 
 import os
 import random
-import time
 import string
-from pathlib import Path
-from typing import Union, Optional
+import time
 import xml.etree.ElementTree as ET
+from pathlib import Path
+
 import typer
 from rich.console import Console
 
@@ -58,7 +58,7 @@ class EPUTemplates:
         return random.choice(list(self._cache["xml"].values()))
 
 
-def create_epu_structure(base_dir: Path, templates: Optional[EPUTemplates], verbose: bool = False):
+def create_epu_structure(base_dir: Path, templates: EPUTemplates | None, verbose: bool = False):
     if verbose:
         console.print(f"[blue]Creating EPU structure in {base_dir}[/blue]")
 
@@ -73,7 +73,7 @@ def create_epu_structure(base_dir: Path, templates: Optional[EPUTemplates], verb
         disc_dir = base_dir / f"Images-Disc{i + 1}"
         disc_dir.mkdir(exist_ok=True)
 
-        for j in range(random.randint(1, 3)):
+        for _j in range(random.randint(1, 3)):
             grid_dir = disc_dir / f"GridSquare_{random.randint(8999000, 8999999)}"
             grid_dir.mkdir(exist_ok=True)
 
@@ -125,11 +125,11 @@ def create_random_structure(directory: Path, verbose: bool = False):
 
 
 def run_filesystem_changes(
-    directory: Union[Path, str],
-    template_dir: Optional[Union[Path, str]] = None,
+    directory: Path | str,
+    template_dir: Path | str | None = None,
     duration: int = 60,
     interval: float = 0.1,
-    seed: Optional[Union[int, str]] = None,
+    seed: int | str | None = None,
     verbose: bool = False,
     dry_run: bool = False,
 ) -> None:
@@ -163,7 +163,7 @@ def run_filesystem_changes(
 
     actions = ["modify_epu", "modify_random", "create_epu", "create_random", "delete_random"]
 
-    with console.status("[bold green]Running file system changes...") as status:
+    with console.status("[bold green]Running file system changes..."):
         end_time = time.time() + duration
         while time.time() < end_time:
             action = random.choice(actions)
@@ -203,12 +203,10 @@ def run_filesystem_changes(
 
 def filesystem_changes(
     directory: Path = typer.Argument(..., help="Test directory to create and modify files in"),
-    template_dir: Optional[Path] = typer.Option(
-        None, "--template-dir", "-t", help="Directory containing template files"
-    ),
+    template_dir: Path | None = typer.Option(None, "--template-dir", "-t", help="Directory containing template files"),
     duration: int = typer.Option(60, "--duration", "-d", help="Test duration in seconds"),
     interval: float = typer.Option(0.1, "--interval", "-i", help="Interval between changes in seconds"),
-    seed: Optional[int] = typer.Option(None, "--seed", "-s", help="Random seed for reproducible tests"),
+    seed: int | None = typer.Option(None, "--seed", "-s", help="Random seed for reproducible tests"),
     verbose: bool = typer.Option(False, "--verbose", "-v", help="Show detailed progress"),
     dry_run: bool = typer.Option(False, "--dry-run", help="Show what would be done without making changes"),
 ) -> None:

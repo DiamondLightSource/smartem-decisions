@@ -1,49 +1,48 @@
 import asyncio
+import json
 import logging
 import traceback
-import json
-import httpx
+from datetime import datetime
 
+import httpx
 from pydantic import BaseModel
 
+from src.epu_data_intake.model.schemas import (
+    AcquisitionData,
+    AtlasData,
+    AtlasTileData,
+    FoilHoleData,
+    GridData,
+    GridSquareData,
+    MicrographData,
+)
+from src.smartem_decisions.model.entity_status import (
+    AcquisitionStatus,
+    GridSquareStatus,
+    GridStatus,
+)
 from src.smartem_decisions.model.http_request import (
     AcquisitionCreateRequest,
     AtlasCreateRequest,
     AtlasTileCreateRequest,
+    FoilHoleCreateRequest,
     GridCreateRequest,
     GridSquareCreateRequest,
-    FoilHoleCreateRequest,
     MicrographCreateRequest,
 )
 from src.smartem_decisions.model.http_response import (
     AcquisitionResponse,
     AtlasResponse,
     AtlasTileResponse,
+    FoilHoleResponse,
     GridResponse,
     GridSquareResponse,
-    FoilHoleResponse,
     MicrographResponse,
-)
-from src.epu_data_intake.model.schemas import (
-    AcquisitionData,
-    GridData,
-    GridSquareData,
-    FoilHoleData,
-    MicrographData,
-    AtlasData,
-    AtlasTileData,
-)
-
-from src.smartem_decisions.model.entity_status import (
-    AcquisitionStatus,
-    GridStatus,
-    GridSquareStatus,
-    FoilHoleStatus,
-    MicrographStatus,
 )
 
 # TODO look for a way to remove the extra bloat - conversion from EntityData type to EntityCreateRequest type
 #  if at all possible
+
 
 class EntityConverter:
     """
@@ -85,7 +84,9 @@ class EntityConverter:
         manifest = entity.manifest
         return GridSquareCreateRequest(
             grid_uuid=entity.grid_uuid,
+            gridsquare_id=entity.gridsquare_id,
             uuid=entity.uuid,
+            status=GridSquareStatus.NONE,
             data_dir=str(entity.data_dir) if entity.data_dir else None,
             atlas_node_id=metadata.atlas_node_id if metadata else None,
             state=metadata.state if metadata else None,
@@ -109,7 +110,8 @@ class EntityConverter:
         """Convert FoilHoleData to foil hole request model"""
         return FoilHoleCreateRequest(
             uuid=entity.uuid,
-            id=entity.id,
+            foilhole_id=entity.id,  # Changed from id=entity.id to foilhole_id=entity.id
+            gridsquare_id=entity.gridsquare_id,
             gridsquare_uuid=entity.gridsquare_uuid,
             center_x=entity.center_x,
             center_y=entity.center_y,
@@ -117,11 +119,11 @@ class EntityConverter:
             rotation=entity.rotation,
             size_width=entity.size_width,
             size_height=entity.size_height,
-            x_location=None,  # Map from metadata if available
-            y_location=None,  # Map from metadata if available
-            x_stage_position=None,  # Map from metadata if available
-            y_stage_position=None,  # Map from metadata if available
-            diameter=None,  # Map from metadata if available
+            x_location=None,
+            y_location=None,
+            x_stage_position=None,
+            y_stage_position=None,
+            diameter=None,
         )
 
     @staticmethod
@@ -131,7 +133,7 @@ class EntityConverter:
         return MicrographCreateRequest(
             uuid=entity.uuid,
             foilhole_uuid=entity.foilhole_uuid,
-            # micrograph_id=entity.id, TODO
+            foilhole_id=entity.foilhole_id,
             location_id=entity.location_id,
             high_res_path=str(entity.high_res_path) if entity.high_res_path else None,
             manifest_file=str(entity.manifest_file) if entity.manifest_file else None,
@@ -202,7 +204,7 @@ class SmartEMAPIClient:
         # Configure logger if it's the default one
         if not logger:
             handler = logging.StreamHandler()
-            formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+            formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
             handler.setFormatter(formatter)
             self._logger.addHandler(handler)
             self._logger.setLevel(logging.INFO)
@@ -255,11 +257,11 @@ class SmartEMAPIClient:
 
     # Generic API request methods
     async def _request(
-            self,
-            method: str,
-            endpoint: str,
-            request_model: BaseModel | None = None,
-            response_cls= None,
+        self,
+        method: str,
+        endpoint: str,
+        request_model: BaseModel | None = None,
+        response_cls=None,
     ):
         """
         Make a generic API request
@@ -283,16 +285,17 @@ class SmartEMAPIClient:
         json_data = None
 
         if request_model:
-            json_data = request_model.model_dump(exclude_none=True)
+            if hasattr(request_model, "model_dump"):
+                # It's a Pydantic model
+                json_data = request_model.model_dump(mode="json", exclude_none=True)
+            else:
+                # It's already a dict, but might contain datetime objects
+                json_data = {k: v.isoformat() if isinstance(v, datetime) else v for k, v in request_model.items()}
             self._logger.debug(f"Request data for {method} {url}: {json_data}")
 
         try:
             self._logger.debug(f"Making {method.upper()} request to {url}")
-            response = await self._async_client.request(
-                method,
-                url,
-                json=json_data
-            )
+            response = await self._async_client.request(method, url, json=json_data)
             response.raise_for_status()
 
             # For delete operations, return None
@@ -374,15 +377,13 @@ class SmartEMAPIClient:
         """Get all acquisitions (sync)"""
         return self._run_async(self.aget_acquisitions())
 
-    async def acreate_acquisition(self,
-                                  acquisition: AcquisitionData) -> AcquisitionResponse:
+    async def acreate_acquisition(self, acquisition: AcquisitionData) -> AcquisitionResponse:
         """Create a new acquisition (async)"""
         acquisition = EntityConverter.acquisition_to_request(acquisition)
         response = await self._request("post", "acquisitions", acquisition, AcquisitionResponse)
         return response
 
-    def create_acquisition(self,
-                           acquisition: AcquisitionData) -> AcquisitionResponse:
+    def create_acquisition(self, acquisition: AcquisitionData) -> AcquisitionResponse:
         """Create a new acquisition (sync)"""
         return self._run_async(self.acreate_acquisition(acquisition))
 
@@ -453,25 +454,14 @@ class SmartEMAPIClient:
         """Get all grids for a specific acquisition (sync)"""
         return self._run_async(self.aget_acquisition_grids(acquisition_uuid))
 
-    async def acreate_acquisition_grid(
-            self,
-            grid: GridData
-    ) -> GridResponse:
+    async def acreate_acquisition_grid(self, grid: GridData) -> GridResponse:
         """Create a new grid for a specific acquisition (async)"""
         grid = EntityConverter.grid_to_request(grid)
 
-        response = await self._request(
-            "post",
-            f"acquisitions/{grid.acquisition_uuid}/grids",
-            grid,
-            GridResponse
-        )
+        response = await self._request("post", f"acquisitions/{grid.acquisition_uuid}/grids", grid, GridResponse)
         return response
 
-    def create_acquisition_grid(
-            self,
-            grid: GridData
-    ) -> GridResponse:
+    def create_acquisition_grid(self, grid: GridData) -> GridResponse:
         """Create a new grid for a specific acquisition (sync)"""
         return self._run_async(self.acreate_acquisition_grid(grid))
 
@@ -517,26 +507,15 @@ class SmartEMAPIClient:
         """Get the atlas for a specific grid (sync)"""
         return self._run_async(self.aget_grid_atlas(grid_uuid))
 
-    async def acreate_grid_atlas(
-            self,
-            atlas: AtlasData
-    ) -> AtlasResponse:
+    async def acreate_grid_atlas(self, atlas: AtlasData) -> AtlasResponse:
         """Create a new atlas for a grid (async)"""
         # Convert AtlasData to AtlasCreateRequest if needed
         atlas = EntityConverter.atlas_to_request(atlas)
 
-        response = await self._request(
-            "post",
-            f"grids/{atlas.grid_uuid}/atlas",
-            atlas,
-            AtlasResponse
-        )
+        response = await self._request("post", f"grids/{atlas.grid_uuid}/atlas", atlas, AtlasResponse)
         return response
 
-    def create_grid_atlas(
-            self,
-            atlas: AtlasData
-    ) -> AtlasResponse:
+    def create_grid_atlas(self, atlas: AtlasData) -> AtlasResponse:
         """Create a new atlas for a grid (sync)"""
         return self._run_async(self.acreate_grid_atlas(atlas))
 
@@ -582,24 +561,13 @@ class SmartEMAPIClient:
         """Get all tiles for a specific atlas (sync)"""
         return self._run_async(self.aget_atlas_tiles_by_atlas(atlas_uuid))
 
-    async def acreate_atlas_tile_for_atlas(
-            self,
-            tile: AtlasTileData
-    ) -> AtlasTileResponse:
+    async def acreate_atlas_tile_for_atlas(self, tile: AtlasTileData) -> AtlasTileResponse:
         """Create a new tile for a specific atlas (async)"""
         tile = EntityConverter.atlas_tile_to_request(tile)
-        response = await self._request(
-            "post",
-            f"atlases/{tile.atlas_uuid}/tiles",
-            tile,
-            AtlasTileResponse
-        )
+        response = await self._request("post", f"atlases/{tile.atlas_uuid}/tiles", tile, AtlasTileResponse)
         return response
 
-    def create_atlas_tile_for_atlas(
-            self,
-            tile: AtlasTileData
-    ) -> AtlasTileResponse:
+    def create_atlas_tile_for_atlas(self, tile: AtlasTileData) -> AtlasTileResponse:
         """Create a new tile for a specific atlas (sync)"""
         return self._run_async(self.acreate_atlas_tile_for_atlas(tile))
 
@@ -622,8 +590,8 @@ class SmartEMAPIClient:
 
     async def aupdate_gridsquare(self, gridsquare: GridSquareData) -> GridSquareResponse:
         """Update a grid square (async)"""
-        gridsquare = EntityConverter.gridsquare_to_request(gridsquare)
-        return await self._request("put", f"gridsquares/{gridsquare.uuid}", gridsquare, GridSquareResponse)
+        request_model = EntityConverter.gridsquare_to_request(gridsquare)
+        return await self._request("put", f"gridsquares/{gridsquare.uuid}", request_model, GridSquareResponse)
 
     def update_gridsquare(self, gridsquare: GridSquareData) -> GridSquareResponse:
         """Update a grid square (sync)"""
@@ -645,26 +613,17 @@ class SmartEMAPIClient:
         """Get all grid squares for a specific grid (sync)"""
         return self._run_async(self.aget_grid_gridsquares(grid_uuid))
 
-    async def acreate_grid_gridsquare(
-            self,
-            gridsquare: GridSquareData
-    ) -> GridSquareResponse:
+    async def acreate_grid_gridsquare(self, gridsquare: GridSquareData) -> GridSquareResponse:
         """Create a new grid square for a specific grid (async)"""
         # Convert GridSquareData to GridSquareCreateRequest if needed
         gridsquare = EntityConverter.gridsquare_to_request(gridsquare)
 
         response = await self._request(
-            "post",
-            f"grids/{gridsquare.grid_uuid}/gridsquares",
-            gridsquare,
-            GridSquareResponse
+            "post", f"grids/{gridsquare.grid_uuid}/gridsquares", gridsquare, GridSquareResponse
         )
         return response
 
-    def create_grid_gridsquare(
-            self,
-            gridsquare: GridSquareData
-    ) -> GridSquareResponse:
+    def create_grid_gridsquare(self, gridsquare: GridSquareData) -> GridSquareResponse:
         """Create a new grid square for a specific grid (sync)"""
         return self._run_async(self.acreate_grid_gridsquare(gridsquare))
 
@@ -710,24 +669,15 @@ class SmartEMAPIClient:
         """Get all foil holes for a specific grid square (sync)"""
         return self._run_async(self.aget_gridsquare_foilholes(gridsquare_uuid))
 
-    async def acreate_gridsquare_foilhole(
-            self,
-            foilhole: FoilHoleData
-    ) -> FoilHoleResponse:
+    async def acreate_gridsquare_foilhole(self, foilhole: FoilHoleData) -> FoilHoleResponse:
         """Create a new foil hole for a specific grid square (async)"""
         foilhole = EntityConverter.foilhole_to_request(foilhole)
         response = await self._request(
-            "post",
-            f"gridsquares/{foilhole.gridsquare_uuid}/foilholes",
-            foilhole,
-            FoilHoleResponse
+            "post", f"gridsquares/{foilhole.gridsquare_uuid}/foilholes", foilhole, FoilHoleResponse
         )
         return response
 
-    def create_gridsquare_foilhole(
-            self,
-            foilhole: FoilHoleData
-    ) -> FoilHoleResponse:
+    def create_gridsquare_foilhole(self, foilhole: FoilHoleData) -> FoilHoleResponse:
         """Create a new foil hole for a specific grid square (sync)"""
         return self._run_async(self.acreate_gridsquare_foilhole(foilhole))
 
@@ -773,23 +723,14 @@ class SmartEMAPIClient:
         """Get all micrographs for a specific foil hole (sync)"""
         return self._run_async(self.aget_foilhole_micrographs(foilhole_id))
 
-    async def acreate_foilhole_micrograph(
-            self,
-            micrograph: MicrographData
-    ) -> MicrographResponse:
+    async def acreate_foilhole_micrograph(self, micrograph: MicrographData) -> MicrographResponse:
         """Create a new micrograph for a specific foil hole (async)"""
         micrograph = EntityConverter.micrograph_to_request(micrograph)
         response = await self._request(
-            "post",
-            f"foilholes/{micrograph.foilhole_uuid}/micrographs",
-            micrograph,
-            MicrographResponse
+            "post", f"foilholes/{micrograph.foilhole_uuid}/micrographs", micrograph, MicrographResponse
         )
         return response
 
-    def create_foilhole_micrograph(
-            self,
-            micrograph: MicrographData
-    ) -> MicrographResponse:
+    def create_foilhole_micrograph(self, micrograph: MicrographData) -> MicrographResponse:
         """Create a new micrograph for a specific foil hole (sync)"""
         return self._run_async(self.acreate_foilhole_micrograph(micrograph))

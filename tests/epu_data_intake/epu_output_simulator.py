@@ -1,18 +1,18 @@
 # !/usr/bin/env python
 
-import sys
 import os
-import time
 import random
 import shutil
+import sys
+import time
 from pathlib import Path
 
 import typer
 
 # Import rich conditionally
 try:
-    from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TimeElapsedColumn
     from rich.console import Console
+    from rich.progress import BarColumn, Progress, SpinnerColumn, TextColumn, TimeElapsedColumn
 
     RICH_AVAILABLE = True
 except ImportError:

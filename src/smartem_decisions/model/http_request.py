@@ -1,11 +1,12 @@
-from pydantic import BaseModel
 from datetime import datetime
+
+from pydantic import BaseModel, ConfigDict
 
 from src.smartem_decisions.model.entity_status import (
     AcquisitionStatus,
-    GridStatus,
-    GridSquareStatus,
     FoilHoleStatus,
+    GridSquareStatus,
+    GridStatus,
     MicrographStatus,
 )
 
@@ -23,9 +24,16 @@ class AcquisitionBaseFields(BaseModel):
     clustering_mode: str | None = None
     clustering_radius: str | None = None
 
+    model_config = {
+        "use_enum_values": True,
+        "json_encoders": {
+            datetime: lambda v: v.isoformat(),
+        },
+    }
+
 
 class AcquisitionBaseRequest(AcquisitionBaseFields):
-    uuid: str  # Override with required
+    uuid: str
 
 
 class AcquisitionCreateRequest(AcquisitionBaseRequest):
@@ -37,6 +45,21 @@ class AcquisitionUpdateRequest(AcquisitionBaseFields):
 
 
 # Atlas models
+class AtlasBaseFields(BaseModel):
+    atlas_id: str | None = None
+    grid_id: str | None = None
+    acquisition_date: datetime | None = None
+    storage_folder: str | None = None
+    description: str | None = None
+    name: str | None = None
+
+    model_config = {
+        "json_encoders": {
+            datetime: lambda v: v.isoformat(),
+        }
+    }
+
+
 class AtlasTileBaseFields(BaseModel):
     uuid: str | None = None
     position_x: int | None = None
@@ -49,30 +72,21 @@ class AtlasTileBaseFields(BaseModel):
 
 
 class AtlasTileBaseRequest(AtlasTileBaseFields):
-    uuid: str  # Override with required
+    uuid: str
 
 
 class AtlasTileCreateRequest(AtlasTileBaseRequest):
-    atlas_id: str  # Override with required
+    atlas_id: str
 
 
 class AtlasTileUpdateRequest(AtlasTileBaseFields):
     pass
 
 
-class AtlasBaseFields(BaseModel):
-    atlas_id: str | None = None
-    grid_id: str | None = None
-    acquisition_date: datetime | None = None
-    storage_folder: str | None = None
-    description: str | None = None
-    name: str | None = None
-
-
 class AtlasBaseRequest(AtlasBaseFields):
-    atlas_id: str  # Override with required
-    grid_id: str   # Override with required
-    name: str      # Override with required
+    atlas_id: str
+    grid_id: str
+    name: str
 
 
 class AtlasCreateRequest(AtlasBaseRequest):
@@ -80,7 +94,6 @@ class AtlasCreateRequest(AtlasBaseRequest):
 
 
 class AtlasUpdateRequest(AtlasBaseFields):
-    # All fields already optional in the parent
     pass
 
 
@@ -95,11 +108,18 @@ class GridBaseFields(BaseModel):
     scan_start_time: datetime | None = None
     scan_end_time: datetime | None = None
 
+    model_config = {
+        "use_enum_values": True,
+        "json_encoders": {
+            datetime: lambda v: v.isoformat(),
+        },
+    }
+
 
 class GridBaseRequest(GridBaseFields):
-    uuid: str  # Override with required
-    name: str  # Override with required
-    acquisition_uuid: str  # Override with required
+    uuid: str
+    name: str
+    acquisition_uuid: str
 
 
 class GridCreateRequest(GridBaseRequest):
@@ -113,44 +133,41 @@ class GridUpdateRequest(GridBaseFields):
 # GridSquare models
 class GridSquareBaseFields(BaseModel):
     uuid: str | None = None
-    grid_id: str | None = None
+    gridsquare_id: str | None = None
+    grid_uuid: str | None = None
     data_dir: str | None = None
-
-    # From GridSquareMetadata
-    atlas_node_id: int | None = None  # This remains int as it's not an ID reference
+    atlas_node_id: int | None = None
     state: str | None = None
     rotation: float | None = None
     image_path: str | None = None
     selected: bool | None = None
     unusable: bool | None = None
-
-    # From GridSquareStagePosition
     stage_position_x: float | None = None
     stage_position_y: float | None = None
     stage_position_z: float | None = None
-
-    # From GridSquarePosition
     center_x: int | None = None
     center_y: int | None = None
     physical_x: float | None = None
     physical_y: float | None = None
     size_width: int | None = None
     size_height: int | None = None
-
-    # From GridSquareManifest
     acquisition_datetime: datetime | None = None
     defocus: float | None = None
     magnification: float | None = None
     pixel_size: float | None = None
     detector_name: str | None = None
     applied_defocus: float | None = None
-
     status: GridSquareStatus | None = None
+
+    model_config = ConfigDict(
+        use_enum_values=True, json_encoders={datetime: lambda v: v.isoformat() if v else None}, from_attributes=True
+    )
 
 
 class GridSquareBaseRequest(GridSquareBaseFields):
-    uuid: str  # Override with required
-    grid_id: str  # Override with required
+    uuid: str
+    gridsquare_id: str
+    grid_uuid: str
 
 
 class GridSquareCreateRequest(GridSquareBaseRequest):
@@ -164,32 +181,31 @@ class GridSquareUpdateRequest(GridSquareBaseFields):
 # FoilHole models
 class FoilHoleBaseFields(BaseModel):
     uuid: str | None = None
-    gridsquare_id: str | None = None
     foilhole_id: str | None = None
-
-    # From FoilHoleData
+    gridsquare_id: str | None = None
+    gridsquare_uuid: str | None = None
     center_x: float | None = None
     center_y: float | None = None
     quality: float | None = None
     rotation: float | None = None
     size_width: float | None = None
     size_height: float | None = None
-
-    # From FoilHolePosition
     x_location: int | None = None
     y_location: int | None = None
     x_stage_position: float | None = None
     y_stage_position: float | None = None
     diameter: int | None = None
     is_near_grid_bar: bool = False
-
     status: FoilHoleStatus | None = None
+
+    model_config = {"use_enum_values": True}
 
 
 class FoilHoleBaseRequest(FoilHoleBaseFields):
-    uuid: str  # Override with required
-    id: str  # Override with required
-    gridsquare_id: str  # Override with required
+    uuid: str
+    foilhole_id: str
+    gridsquare_id: str
+    gridsquare_uuid: str
 
 
 class FoilHoleCreateRequest(FoilHoleBaseRequest):
@@ -203,12 +219,11 @@ class FoilHoleUpdateRequest(FoilHoleBaseFields):
 # Micrograph models
 class MicrographBaseFields(BaseModel):
     uuid: str | None = None
+    foilhole_uuid: str | None = None
     foilhole_id: str | None = None
     location_id: str | None = None
     high_res_path: str | None = None
     manifest_file: str | None = None
-
-    # From MicrographManifest
     acquisition_datetime: datetime | None = None
     defocus: float | None = None
     detector_name: str | None = None
@@ -218,8 +233,6 @@ class MicrographBaseFields(BaseModel):
     image_size_y: int | None = None
     binning_x: int | None = None
     binning_y: int | None = None
-
-    # Processing fields
     total_motion: float | None = None
     average_motion: float | None = None
     ctf_max_resolution_estimate: float | None = None
@@ -228,13 +241,20 @@ class MicrographBaseFields(BaseModel):
     selection_distribution: str | None = None
     number_of_particles_picked: int | None = None
     pick_distribution: str | None = None
+    status: MicrographStatus = MicrographStatus.NONE  # Default to NONE
 
-    status: MicrographStatus | None = None
+    model_config = {
+        "use_enum_values": True,
+        "json_encoders": {
+            datetime: lambda v: v.isoformat() if v else None,
+        },
+    }
 
 
 class MicrographBaseRequest(MicrographBaseFields):
-    uuid: str  # Override with required
-    foilhole_id: str  # Override with required
+    uuid: str
+    foilhole_id: str
+    # foilhole_uuid is not required here since it comes from the path parameter
 
 
 class MicrographCreateRequest(MicrographBaseRequest):

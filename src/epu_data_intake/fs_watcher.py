@@ -6,16 +6,16 @@ import time
 from datetime import datetime
 from fnmatch import fnmatch
 from pathlib import Path
+
 from watchdog.events import FileSystemEventHandler
 
+from src.epu_data_intake.fs_parser import EpuParser
 from src.epu_data_intake.model.schemas import (
-    AcquisitionData,
     GridData,
     GridSquareData,
     MicrographData,
 )
 from src.epu_data_intake.model.store import InMemoryDataStore, PersistentDataStore
-from src.epu_data_intake.fs_parser import EpuParser
 
 """Default glob patterns for EPU data files.
 
@@ -100,7 +100,7 @@ class RateLimitedFilesystemEventHandler(FileSystemEventHandler):
         else:
             self.datastore = PersistentDataStore(str(self.watch_dir), api_url)
         logging.debug(
-            f"Instantiated new datastore, "
+            "Instantiated new datastore, "
             + ("in-memory only" if dry_run else f"data will be permanently saved to backend: {api_url}")
         )
 
@@ -184,7 +184,7 @@ class RateLimitedFilesystemEventHandler(FileSystemEventHandler):
 
     def _process_orphaned_files(self, grid_uuid: str):
         """Process any orphaned files that belong to this grid"""
-        for path, (event, timestamp, file_stat) in self.orphaned_files.items():
+        for path, (event, _timestamp, _file_stat) in self.orphaned_files.items():
             # Check if this orphaned file belongs to the new grid
             if self.datastore.get_grid_by_path(path) == grid_uuid:
                 logging.debug(f"Processing previously orphaned file: {path}")
@@ -192,7 +192,8 @@ class RateLimitedFilesystemEventHandler(FileSystemEventHandler):
 
         # Create a new dictionary excluding the processed files
         self.orphaned_files = {
-            path: data for path, data in self.orphaned_files.items()
+            path: data
+            for path, data in self.orphaned_files.items()
             if self.datastore.get_grid_by_path(path) != grid_uuid
         }
 
@@ -292,7 +293,7 @@ class RateLimitedFilesystemEventHandler(FileSystemEventHandler):
             manifest_file=Path(path),
             manifest=micrograph_manifest,
         )
-        self.datastore.create_micrograph(micrograph) # TODO create and update?
+        self.datastore.create_micrograph(micrograph)  # TODO create and update?
         False and logging.debug(micrograph)
 
     def _on_session_complete(self):

@@ -1,54 +1,57 @@
 #!/usr/bin/env python
 
 import json
-from typing import Any, Callable
+import pika
+from collections.abc import Callable
 from datetime import datetime
+from typing import Any
+
 from dotenv import load_dotenv
+from pydantic import ValidationError
 from sqlalchemy import select
 from sqlalchemy.orm import Session as SqlAlchemySession
-from pydantic import ValidationError
 
 from src.smartem_decisions.log_manager import logger
-from src.smartem_decisions.utils import (
-    load_conf,
-    setup_postgres_connection,
-    rmq_consumer,
-)
-from src.smartem_decisions.model.mq_event import (
-    MessageQueueEventType,
-    AcquisitionCreatedEvent,
-    AcquisitionUpdatedEvent,
-    AcquisitionDeletedEvent,
-    AtlasCreatedEvent,
-    AtlasUpdatedEvent,
-    AtlasDeletedEvent,
-    GridCreatedEvent,
-    GridUpdatedEvent,
-    GridDeletedEvent,
-    GridSquareCreatedEvent,
-    GridSquareUpdatedEvent,
-    GridSquareDeletedEvent,
-    FoilHoleCreatedEvent,
-    FoilHoleUpdatedEvent,
-    FoilHoleDeletedEvent,
-    MicrographCreatedEvent,
-    MicrographUpdatedEvent,
-    MicrographDeletedEvent,
-)
 from src.smartem_decisions.model.database import (
     Acquisition,
     Atlas,
+    FoilHole,
     Grid,
     GridSquare,
-    FoilHole,
     Micrograph,
 )
 from src.smartem_decisions.model.entity_status import (
     AcquisitionStatus,
-    GridStatus,
-    GridSquareStatus,
     FoilHoleStatus,
+    GridSquareStatus,
+    GridStatus,
     MicrographStatus,
+)
+from src.smartem_decisions.model.mq_event import (
+    AcquisitionCreatedEvent,
+    AcquisitionDeletedEvent,
+    AcquisitionUpdatedEvent,
+    AtlasCreatedEvent,
+    AtlasDeletedEvent,
+    AtlasUpdatedEvent,
+    FoilHoleCreatedEvent,
+    FoilHoleDeletedEvent,
+    FoilHoleUpdatedEvent,
+    GridCreatedEvent,
+    GridDeletedEvent,
+    GridSquareCreatedEvent,
+    GridSquareDeletedEvent,
+    GridSquareUpdatedEvent,
+    GridUpdatedEvent,
+    MessageQueueEventType,
+    MicrographCreatedEvent,
+    MicrographDeletedEvent,
+    MicrographUpdatedEvent,
+)
+from src.smartem_decisions.utils import (
+    load_conf,
+    rmq_consumer,
+    setup_postgres_connection,
 )
 
 load_dotenv()
@@ -91,7 +94,7 @@ def handle_acquisition_created(event_data: dict[str, Any], session: SqlAlchemySe
     except Exception as e:
         session.rollback()
         logger.error(f"Error processing acquisition created event: {e}")
-        raise
+
 
 def handle_acquisition_updated(event_data: dict[str, Any], session: SqlAlchemySession) -> None:
     """
@@ -123,7 +126,7 @@ def handle_acquisition_updated(event_data: dict[str, Any], session: SqlAlchemySe
             # TODO change data model to avoid use of "metadata"
             #  Use setattr to avoid conflicts with the class-level metadata attribute, which is
             #  a special class-level attribute used to configure tables.
-            setattr(acquisition, "metadata", event.metadata)
+            acquisition.metadata = event.metadata
 
         session.commit()
         logger.info(f"Updated acquisition with UUID {acquisition.uuid}")
@@ -133,7 +136,6 @@ def handle_acquisition_updated(event_data: dict[str, Any], session: SqlAlchemySe
     except Exception as e:
         session.rollback()
         logger.error(f"Error processing acquisition updated event: {e}")
-        raise
 
 
 def handle_acquisition_deleted(event_data: dict[str, Any], session: SqlAlchemySession) -> None:
@@ -161,7 +163,6 @@ def handle_acquisition_deleted(event_data: dict[str, Any], session: SqlAlchemySe
     except Exception as e:
         session.rollback()
         logger.error(f"Error processing acquisition deleted event: {e}")
-        raise
 
 
 def handle_atlas_created(event_data: dict[str, Any], session: SqlAlchemySession) -> None:
@@ -192,7 +193,6 @@ def handle_atlas_created(event_data: dict[str, Any], session: SqlAlchemySession)
     except Exception as e:
         session.rollback()
         logger.error(f"Error processing atlas created event: {e}")
-        raise
 
 
 def handle_atlas_updated(event_data: dict[str, Any], session: SqlAlchemySession) -> None:
@@ -214,14 +214,14 @@ def handle_atlas_updated(event_data: dict[str, Any], session: SqlAlchemySession)
         if event.name is not None:
             atlas.name = event.name
         if event.grid_id is not None:
-            atlas.grid_id = event.grid_id # TODO debug
+            atlas.grid_id = event.grid_id  # TODO debug
         if event.pixel_size is not None:
             atlas.pixel_size = event.pixel_size
         if event.metadata is not None:
             # TODO change data model to avoid use of "metadata"
             #  Use setattr to avoid conflicts with the class-level metadata attribute, which is
             #  a special class-level attribute used to configure tables.
-            setattr(atlas, "metadata", event.metadata)
+            atlas.metadata = event.metadata
 
         session.commit()
         logger.info(f"Updated atlas with UUID {atlas.uuid}")
@@ -231,7 +231,6 @@ def handle_atlas_updated(event_data: dict[str, Any], session: SqlAlchemySession)
     except Exception as e:
         session.rollback()
         logger.error(f"Error processing atlas updated event: {e}")
-        raise
 
 
 def handle_atlas_deleted(event_data: dict[str, Any], session: SqlAlchemySession) -> None:
@@ -259,7 +258,6 @@ def handle_atlas_deleted(event_data: dict[str, Any], session: SqlAlchemySession)
     except Exception as e:
         session.rollback()
         logger.error(f"Error processing atlas deleted event: {e}")
-        raise
 
 
 def handle_grid_created(event_data: dict[str, Any], session: SqlAlchemySession) -> None:
@@ -299,7 +297,6 @@ def handle_grid_created(event_data: dict[str, Any], session: SqlAlchemySession) 
     except Exception as e:
         session.rollback()
         logger.error(f"Error processing grid created event: {e}")
-        raise
 
 
 def handle_grid_updated(event_data: dict[str, Any], session: SqlAlchemySession) -> None:
@@ -321,7 +318,7 @@ def handle_grid_updated(event_data: dict[str, Any], session: SqlAlchemySession) 
             # TODO change data model to avoid use of "metadata"
             #  Use setattr to avoid conflicts with the class-level metadata attribute, which is
             #  a special class-level attribute used to configure tables.
-            setattr(grid, "metadata", event.metadata)
+            grid.metadata = event.metadata
 
         session.commit()
         logger.info(f"Updated grid with UUID {grid.uuid}")
@@ -331,7 +328,6 @@ def handle_grid_updated(event_data: dict[str, Any], session: SqlAlchemySession) 
     except Exception as e:
         session.rollback()
         logger.error(f"Error processing grid updated event: {e}")
-        raise
 
 
 def handle_grid_deleted(event_data: dict[str, Any], session: SqlAlchemySession) -> None:
@@ -352,7 +348,6 @@ def handle_grid_deleted(event_data: dict[str, Any], session: SqlAlchemySession) 
     except Exception as e:
         session.rollback()
         logger.error(f"Error processing grid deleted event: {e}")
-        raise
 
 
 def handle_gridsquare_created(event_data: dict[str, Any], session: SqlAlchemySession) -> None:
@@ -365,11 +360,11 @@ def handle_gridsquare_created(event_data: dict[str, Any], session: SqlAlchemySes
             return
 
         gridsquare = GridSquare(
-            id=event.id,
-            grid_id=event.grid_id,
+            uuid=event.uuid,
+            grid_id=event.grid_uuid,
             name=event.name,
             status=GridSquareStatus(event.status),
-            gridsquare_id=event.id,
+            id="",  # TODO natural ID if present
             metadata=event.metadata,
         )
         session.add(gridsquare)
@@ -381,7 +376,6 @@ def handle_gridsquare_created(event_data: dict[str, Any], session: SqlAlchemySes
     except Exception as e:
         session.rollback()
         logger.error(f"Error processing gridsquare created event: {e}")
-        raise
 
 
 def handle_gridsquare_updated(event_data: dict[str, Any], session: SqlAlchemySession) -> None:
@@ -405,7 +399,7 @@ def handle_gridsquare_updated(event_data: dict[str, Any], session: SqlAlchemySes
             # TODO change data model to avoid use of "metadata"
             #  Use setattr to avoid conflicts with the class-level metadata attribute, which is
             #  a special class-level attribute used to configure tables.
-            setattr(gridsquare, "metadata", event.metadata)
+            gridsquare.metadata = event.metadata
 
         session.commit()
         logger.info(f"Updated gridsquare with UUID {gridsquare.uuid}")
@@ -415,7 +409,6 @@ def handle_gridsquare_updated(event_data: dict[str, Any], session: SqlAlchemySes
     except Exception as e:
         session.rollback()
         logger.error(f"Error processing gridsquare updated event: {e}")
-        raise
 
 
 def handle_gridsquare_deleted(event_data: dict[str, Any], session: SqlAlchemySession) -> None:
@@ -436,7 +429,6 @@ def handle_gridsquare_deleted(event_data: dict[str, Any], session: SqlAlchemySes
     except Exception as e:
         session.rollback()
         logger.error(f"Error processing gridsquare deleted event: {e}")
-        raise
 
 
 def handle_foilhole_created(event_data: dict[str, Any], session: SqlAlchemySession) -> None:
@@ -449,10 +441,11 @@ def handle_foilhole_created(event_data: dict[str, Any], session: SqlAlchemySessi
             return
 
         foilhole = FoilHole(
-            id=event.id,
+            uuid=event.uuid,
+            gridsquare_uuid=event.gridsquare_uuid,
             gridsquare_id=event.gridsquare_id,
-            status=FoilHoleStatus(event.status),
-            foilhole_id=event.id,
+            foilhole_id=event.foilhole_id,
+            status=FoilHoleStatus(event.status) if event.status else FoilHoleStatus.NONE,
             center_x=event.center_x,
             center_y=event.center_y,
             quality=event.quality,
@@ -475,7 +468,6 @@ def handle_foilhole_created(event_data: dict[str, Any], session: SqlAlchemySessi
     except Exception as e:
         session.rollback()
         logger.error(f"Error processing foilhole created event: {e}")
-        raise
 
 
 def handle_foilhole_updated(event_data: dict[str, Any], session: SqlAlchemySession) -> None:
@@ -514,7 +506,7 @@ def handle_foilhole_updated(event_data: dict[str, Any], session: SqlAlchemySessi
         if event.y_stage_position is not None:
             foilhole.y_stage_position = event.y_stage_position
         if event.diameter is not None:
-            foilhole.diameter = event.diameter # TODO
+            foilhole.diameter = event.diameter  # TODO
         if hasattr(event, "is_near_grid_bar") and event.is_near_grid_bar is not None:
             foilhole.is_near_grid_bar = event.is_near_grid_bar
 
@@ -526,7 +518,6 @@ def handle_foilhole_updated(event_data: dict[str, Any], session: SqlAlchemySessi
     except Exception as e:
         session.rollback()
         logger.error(f"Error processing foilhole updated event: {e}")
-        raise
 
 
 def handle_foilhole_deleted(event_data: dict[str, Any], session: SqlAlchemySession) -> None:
@@ -547,7 +538,6 @@ def handle_foilhole_deleted(event_data: dict[str, Any], session: SqlAlchemySessi
     except Exception as e:
         session.rollback()
         logger.error(f"Error processing foilhole deleted event: {e}")
-        raise
 
 
 def handle_micrograph_created(event_data: dict[str, Any], session: SqlAlchemySession) -> None:
@@ -560,11 +550,13 @@ def handle_micrograph_created(event_data: dict[str, Any], session: SqlAlchemySes
             return
 
         micrograph = Micrograph(
-            id=event.id,
+            uuid=event.uuid,
+            micrograph_id=event.uuid,  # TODO
+            foilhole_uuid=event.foilhole_uuid,
             foilhole_id=event.foilhole_id,
-            status=MicrographStatus(event.status),
-            micrograph_id=event.id,
             location_id=event.location_id if hasattr(event, "location_id") else None,
+            status=MicrographStatus(event.status) if hasattr(event,
+                                                             "status") and event.status is not None else MicrographStatus.NONE,
             high_res_path=event.high_res_path if hasattr(event, "high_res_path") else None,
             manifest_file=event.manifest_file if hasattr(event, "manifest_file") else None,
             acquisition_datetime=event.acquisition_datetime if hasattr(event, "acquisition_datetime") else None,
@@ -578,7 +570,9 @@ def handle_micrograph_created(event_data: dict[str, Any], session: SqlAlchemySes
             binning_y=event.binning_y if hasattr(event, "binning_y") else None,
             total_motion=event.total_motion if hasattr(event, "total_motion") else None,
             average_motion=event.average_motion if hasattr(event, "average_motion") else None,
-            ctf_max_resolution_estimate=event.ctf_max_resolution_estimate if hasattr(event, "ctf_max_resolution_estimate") else None,
+            ctf_max_resolution_estimate=event.ctf_max_resolution_estimate
+            if hasattr(event, "ctf_max_resolution_estimate")
+            else None,
         )
         session.add(micrograph)
         session.commit()
@@ -589,7 +583,6 @@ def handle_micrograph_created(event_data: dict[str, Any], session: SqlAlchemySes
     except Exception as e:
         session.rollback()
         logger.error(f"Error processing micrograph created event: {e}")
-        raise
 
 
 def handle_micrograph_updated(event_data: dict[str, Any], session: SqlAlchemySession) -> None:
@@ -603,6 +596,8 @@ def handle_micrograph_updated(event_data: dict[str, Any], session: SqlAlchemySes
 
         if event.status is not None:
             micrograph.status = MicrographStatus(event.status)
+        if hasattr(event, "foilhole_uuid") and event.foilhole_uuid is not None:
+            micrograph.foilhole_uuid = event.foilhole_uuid
         if event.foilhole_id is not None:
             micrograph.foilhole_id = event.foilhole_id
         if event.micrograph_id is not None:
@@ -637,6 +632,16 @@ def handle_micrograph_updated(event_data: dict[str, Any], session: SqlAlchemySes
             micrograph.average_motion = event.average_motion
         if event.ctf_max_resolution_estimate is not None:
             micrograph.ctf_max_resolution_estimate = event.ctf_max_resolution_estimate
+        if hasattr(event, "number_of_particles_picked") and event.number_of_particles_picked is not None:
+            micrograph.number_of_particles_picked = event.number_of_particles_picked
+        if hasattr(event, "number_of_particles_selected") and event.number_of_particles_selected is not None:
+            micrograph.number_of_particles_selected = event.number_of_particles_selected
+        if hasattr(event, "number_of_particles_rejected") and event.number_of_particles_rejected is not None:
+            micrograph.number_of_particles_rejected = event.number_of_particles_rejected
+        if hasattr(event, "selection_distribution") and event.selection_distribution is not None:
+            micrograph.selection_distribution = event.selection_distribution
+        if hasattr(event, "pick_distribution") and event.pick_distribution is not None:
+            micrograph.pick_distribution = event.pick_distribution
 
         session.commit()
         logger.info(f"Updated micrograph with UUID {micrograph.uuid}")
@@ -646,7 +651,6 @@ def handle_micrograph_updated(event_data: dict[str, Any], session: SqlAlchemySes
     except Exception as e:
         session.rollback()
         logger.error(f"Error processing micrograph updated event: {e}")
-        raise
 
 
 def handle_micrograph_deleted(event_data: dict[str, Any], session: SqlAlchemySession) -> None:
@@ -667,7 +671,6 @@ def handle_micrograph_deleted(event_data: dict[str, Any], session: SqlAlchemySes
     except Exception as e:
         session.rollback()
         logger.error(f"Error processing micrograph deleted event: {e}")
-        raise
 
 
 # Create a mapping from event types to their handler functions
@@ -703,6 +706,14 @@ def on_message(ch, method, properties, body):
         properties: Properties object
         body: Message body
     """
+    # Get retry count from message headers only once
+    retry_count = 0
+    if properties.headers and 'x-retry-count' in properties.headers:
+        retry_count = properties.headers['x-retry-count']
+
+    # Default event_type
+    event_type = "unknown"
+
     try:
         message = json.loads(body.decode())
         logger.info(f"Received message: {message}")
@@ -725,14 +736,36 @@ def on_message(ch, method, properties, body):
             handler(message, session)
 
         ch.basic_ack(delivery_tag=method.delivery_tag)
-        logger.info(f"Successfully processed {event_type} event")
+        logger.debug(f"Successfully processed {event_type} event")
 
     except json.JSONDecodeError:
         logger.error(f"Failed to decode JSON message: {body.decode()}")
         ch.basic_nack(delivery_tag=method.delivery_tag, requeue=False)
+
     except Exception as e:
         logger.error(f"Error processing message: {e}")
-        ch.basic_nack(delivery_tag=method.delivery_tag, requeue=True)
+
+        if retry_count >= 3:
+            logger.warning(f"Message failed after {retry_count} retries, dropping message")
+            ch.basic_nack(delivery_tag=method.delivery_tag, requeue=False)
+        else:
+            # Republish with incremented retry count
+            headers = properties.headers or {}
+            headers['x-retry-count'] = retry_count + 1
+
+            logger.debug(f"Republishing message with retry count {retry_count + 1}, event_type: {event_type}")
+
+            try:
+                ch.basic_publish(
+                    exchange='',
+                    routing_key=method.routing_key,
+                    body=body,
+                    properties=pika.BasicProperties(headers=headers)
+                )
+                ch.basic_ack(delivery_tag=method.delivery_tag)
+            except Exception as republish_error:
+                logger.error(f"Failed to republish message: {republish_error}")
+                ch.basic_nack(delivery_tag=method.delivery_tag, requeue=True)
 
 
 def main():

@@ -1,17 +1,16 @@
 #!/usr/bin/env python3
 
-import subprocess
 import re
+import subprocess
 import sys
-from pathlib import Path
 from collections import defaultdict
+from pathlib import Path
 
 import typer
 from rich.console import Console
-from rich.table import Table
-from rich.progress import track
 from rich.panel import Panel
-import json
+from rich.progress import track
+from rich.table import Table
 
 # Initialize rich console
 console = Console()
@@ -56,7 +55,7 @@ def find_foilhole_duplicates(directory: Path, verbose: bool):
         duplicates = {
             num: entries
             for num, entries in grouped_files.items()
-            if len(entries) > 1 and len(set(timestamp for timestamp, _ in entries)) > 1
+            if len(entries) > 1 and len({timestamp for timestamp, _ in entries}) > 1
         }
 
         return duplicates
@@ -107,7 +106,7 @@ def main(
         console.no_color = True
 
     try:
-        with console.status("[bold green]Searching for duplicate files...") as status:
+        with console.status("[bold green]Searching for duplicate files..."):
             duplicates = find_foilhole_duplicates(directory, verbose)
 
         if not duplicates:

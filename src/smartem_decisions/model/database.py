@@ -1,11 +1,13 @@
 from datetime import datetime
-from typing import Optional, List
+from typing import Optional
 
 from sqlalchemy import Column, text
 from sqlmodel import (
     Field,
     Relationship,
     SQLModel,
+)
+from sqlmodel import (
     Session as SQLModelSession,
 )
 
@@ -22,8 +24,8 @@ from src.smartem_decisions.model.entity_status import (
     MicrographStatusType,
 )
 from src.smartem_decisions.utils import (
-    setup_postgres_connection,
     logger,
+    setup_postgres_connection,
 )
 
 
@@ -40,7 +42,7 @@ class Acquisition(SQLModel, table=True, table_name="acquisition"):
     atlas_path: str | None = Field(default=None)
     clustering_mode: str | None = Field(default=None)
     clustering_radius: str | None = Field(default=None)
-    grids: List["Grid"] = Relationship(sa_relationship_kwargs={"back_populates": "acquisition"}, cascade_delete=True)
+    grids: list["Grid"] = Relationship(sa_relationship_kwargs={"back_populates": "acquisition"}, cascade_delete=True)
 
 
 class Atlas(SQLModel, table=True, table_name="atlas"):
@@ -53,7 +55,7 @@ class Atlas(SQLModel, table=True, table_name="atlas"):
     description: str | None = Field(default=None)
     name: str = Field(default="")
     grid: Optional["Grid"] = Relationship(sa_relationship_kwargs={"back_populates": "atlas"})
-    atlastiles: List["AtlasTile"] = Relationship(
+    atlastiles: list["AtlasTile"] = Relationship(
         sa_relationship_kwargs={"back_populates": "atlas"}, cascade_delete=True
     )
 
@@ -69,14 +71,14 @@ class Grid(SQLModel, table=True, table_name="grid"):
     scan_start_time: datetime | None = Field(default=None)
     scan_end_time: datetime | None = Field(default=None)
     acquisition: Acquisition = Relationship(sa_relationship_kwargs={"back_populates": "grids"})
-    gridsquares: List["GridSquare"] = Relationship(
+    gridsquares: list["GridSquare"] = Relationship(
         sa_relationship_kwargs={"back_populates": "grid"}, cascade_delete=True
     )
     atlas: Optional["Atlas"] = Relationship(sa_relationship_kwargs={"back_populates": "grid"})
-    quality_model_parameters: List["QualityPredictionModelParameter"] = Relationship(
+    quality_model_parameters: list["QualityPredictionModelParameter"] = Relationship(
         back_populates="grid", cascade_delete=True
     )
-    quality_model_weights: List["QualityPredictionModelWeight"] = Relationship(
+    quality_model_weights: list["QualityPredictionModelWeight"] = Relationship(
         back_populates="grid", cascade_delete=True
     )
 
@@ -98,7 +100,7 @@ class AtlasTile(SQLModel, table=True, table_name="atlastile"):
 class GridSquare(SQLModel, table=True, table_name="gridsquare"):
     __table_args__ = {"extend_existing": True}
     uuid: str = Field(primary_key=True)
-    grid_id: str | None = Field(default=None, foreign_key="grid.uuid")
+    grid_uuid: str | None = Field(default=None, foreign_key="grid.uuid")
     status: GridSquareStatus = Field(default=GridSquareStatus.NONE, sa_column=Column(GridSquareStatusType()))
     gridsquare_id: str = Field(default="")
     data_dir: str | None = Field(default=None)
@@ -124,18 +126,19 @@ class GridSquare(SQLModel, table=True, table_name="gridsquare"):
     detector_name: str | None = Field(default=None)
     applied_defocus: float | None = Field(default=None)
     grid: Grid = Relationship(sa_relationship_kwargs={"back_populates": "gridsquares"})
-    foilholes: List["FoilHole"] = Relationship(
+    foilholes: list["FoilHole"] = Relationship(
         sa_relationship_kwargs={"back_populates": "gridsquare"}, cascade_delete=True
     )
-    prediction: List["QualityPrediction"] = Relationship(back_populates="gridsquare", cascade_delete=True)
+    prediction: list["QualityPrediction"] = Relationship(back_populates="gridsquare", cascade_delete=True)
 
 
 class FoilHole(SQLModel, table=True, table_name="foilhole"):
     __table_args__ = {"extend_existing": True}
     uuid: str = Field(primary_key=True)
-    gridsquare_id: str | None = Field(default=None, foreign_key="gridsquare.uuid")
+    foilhole_id: str = Field(default="")  # Natural ID of the foilhole set at data source
+    gridsquare_uuid: str | None = Field(default=None, foreign_key="gridsquare.uuid")
+    gridsquare_id: str | None = Field(default=None)  # Natural parent ID set at data source
     status: FoilHoleStatus = Field(default=FoilHoleStatus.NONE, sa_column=Column(FoilHoleStatusType()))
-    foilhole_id: str = Field(default="")
     center_x: float | None = Field(default=None)
     center_y: float | None = Field(default=None)
     quality: float | None = Field(default=None)
@@ -149,19 +152,20 @@ class FoilHole(SQLModel, table=True, table_name="foilhole"):
     diameter: int | None = Field(default=None)
     is_near_grid_bar: bool = Field(default=False)
     gridsquare: GridSquare = Relationship(sa_relationship_kwargs={"back_populates": "foilholes"})
-    micrographs: List["Micrograph"] = Relationship(
+    micrographs: list["Micrograph"] = Relationship(
         sa_relationship_kwargs={"back_populates": "foilhole"}, cascade_delete=True
     )
-    prediction: List["QualityPrediction"] = Relationship(back_populates="foilhole", cascade_delete=True)
+    prediction: list["QualityPrediction"] = Relationship(back_populates="foilhole", cascade_delete=True)
 
 
 class Micrograph(SQLModel, table=True, table_name="micrograph"):
     __table_args__ = {"extend_existing": True}
     uuid: str = Field(primary_key=True)
-    foilhole_id: str | None = Field(default=None, foreign_key="foilhole.uuid")
-    status: MicrographStatus = Field(default=MicrographStatus.NONE, sa_column=Column(MicrographStatusType()))
     micrograph_id: str = Field(default="")
+    foilhole_uuid: str | None = Field(default=None, foreign_key="foilhole.uuid")
+    foilhole_id: str = Field(default="")
     location_id: str | None = Field(default=None)
+    status: MicrographStatus = Field(default=MicrographStatus.NONE, sa_column=Column(MicrographStatusType()))
     high_res_path: str | None = Field(default=None)
     manifest_file: str | None = Field(default=None)
     acquisition_datetime: datetime | None = Field(default=None)
@@ -182,7 +186,7 @@ class Micrograph(SQLModel, table=True, table_name="micrograph"):
     number_of_particles_picked: int | None = Field(default=None)
     pick_distribution: str | None = Field(default=None)
     foilhole: FoilHole = Relationship(sa_relationship_kwargs={"back_populates": "micrographs"})
-    quality_model_weights: List["QualityPredictionModelWeight"] = Relationship(
+    quality_model_weights: list["QualityPredictionModelWeight"] = Relationship(
         back_populates="micrograph", cascade_delete=True
     )
 
@@ -191,9 +195,9 @@ class QualityPredictionModel(SQLModel, table=True):
     __table_args__ = {"extend_existing": True}
     name: str = Field(primary_key=True)
     description: str = ""
-    parameters: List["QualityPredictionModelParameter"] = Relationship(back_populates="model", cascade_delete=True)
-    weights: List["QualityPredictionModelWeight"] = Relationship(back_populates="model", cascade_delete=True)
-    predictions: List["QualityPrediction"] = Relationship(back_populates="model", cascade_delete=True)
+    parameters: list["QualityPredictionModelParameter"] = Relationship(back_populates="model", cascade_delete=True)
+    weights: list["QualityPredictionModelWeight"] = Relationship(back_populates="model", cascade_delete=True)
+    predictions: list["QualityPrediction"] = Relationship(back_populates="model", cascade_delete=True)
 
 
 class QualityPredictionModelParameter(SQLModel, table=True):
@@ -293,7 +297,9 @@ def _create_db_and_tables(engine):
             sess.execute(text("CREATE INDEX IF NOT EXISTS idx_gridsquare_grid_id ON gridsquare (grid_id);"))
 
             # foilhole indexes
-            sess.execute(text("CREATE INDEX IF NOT EXISTS idx_foilhole_id_pattern ON foilhole (uuid text_pattern_ops);"))
+            sess.execute(
+                text("CREATE INDEX IF NOT EXISTS idx_foilhole_id_pattern ON foilhole (uuid text_pattern_ops);")
+            )
             sess.execute(text("CREATE INDEX IF NOT EXISTS idx_foilhole_id_hash ON foilhole USING hash (uuid);"))
             sess.execute(text("CREATE INDEX IF NOT EXISTS idx_foilhole_gridsquare_id ON foilhole (gridsquare_id);"))
             sess.execute(text("CREATE INDEX IF NOT EXISTS idx_foilhole_quality ON foilhole (quality);"))
