@@ -42,7 +42,7 @@ common = [
     "python-dotenv==1.1.0",
     "pyyaml",
     "rich",
-    "typer==0.15.3",
+    "typer==0.15.4",
 ]
 
 # Core system component dependencies
