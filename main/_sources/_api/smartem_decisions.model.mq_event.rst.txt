@@ -21,6 +21,24 @@
         
         
         
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
 
 .. automodule:: smartem_decisions.model.mq_event
     :members:
@@ -36,20 +54,38 @@
     .. autosummary::
         :nosignatures:
     
-        AcquisitionEndBody
-        AcquisitionStartBody
+        AcquisitionCreatedEvent
+        AcquisitionDeletedEvent
+        AcquisitionEventBase
+        AcquisitionUpdatedEvent
+        AtlasCreatedEvent
+        AtlasDeletedEvent
+        AtlasEventBase
+        AtlasTileCreatedEvent
+        AtlasTileDeletedEvent
+        AtlasTileEventBase
+        AtlasTileUpdatedEvent
+        AtlasUpdatedEvent
         CtfCompleteBody
         CtfStartBody
-        FoilHolesDecisionCompleteBody
-        FoilHolesDecisionStartBody
-        FoilHolesDetectedBody
+        FoilHoleCreatedEvent
+        FoilHoleDeletedEvent
+        FoilHoleEventBase
+        FoilHoleUpdatedEvent
         GenericEventMessageBody
-        GridScanCompleteBody
-        GridScanStartBody
-        GridSquaresDecisionCompleteBody
-        GridSquaresDecisionStartBody
+        GridCreatedEvent
+        GridDeletedEvent
+        GridEventBase
+        GridSquareCreatedEvent
+        GridSquareDeletedEvent
+        GridSquareEventBase
+        GridSquareUpdatedEvent
+        GridUpdatedEvent
         MessageQueueEventType
-        MicrographsDetectedBody
+        MicrographCreatedEvent
+        MicrographDeletedEvent
+        MicrographEventBase
+        MicrographUpdatedEvent
         MotionCorrectionCompleteBody
         MotionCorrectionStartBody
         ParticlePickingCompleteBody

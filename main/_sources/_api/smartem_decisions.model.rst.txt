@@ -15,6 +15,7 @@
     
         database
         entity_status
+        http_request
         http_response
         mq_event
     

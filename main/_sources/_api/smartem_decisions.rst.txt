@@ -13,13 +13,13 @@
         :template: custom-module-template.rst
         :recursive:
     
-        consumer
         http_api
         log_manager
         model
-        simulate_msg
+        mq_consumer
+        mq_publisher
+        rabbitmq
         utils
-        workflow
     
     
 

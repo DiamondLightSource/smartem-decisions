@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>smartem_decisions &#8212; smartem-decisions 0.1.dev123+g7a10cc9 documentation</title>
+    <title>smartem_decisions &#8212; smartem-decisions 0.1.dev138+g82d72db documentation</title>
   
   
   
@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="_static/documentation_options.js?v=a4eba44f"></script>
+    <script src="_static/documentation_options.js?v=caf888bd"></script>
     <script src="_static/doctools.js?v=9bcbadda"></script>
     <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/clipboard.min.js?v=a7894cd8"></script>
@@ -421,7 +421,10 @@
 <p><a class="reference external" href="https://opensource.org/licenses/Apache-2.0"><img alt="License" src="https://img.shields.io/badge/License-Apache%202.0-blue.svg" /></a></p>
 <section id="smartem-decisions">
 <h1>smartem_decisions<a class="headerlink" href="#smartem-decisions" title="Link to this heading">#</a></h1>
-<p>Project board: <a class="github reference external" href="https://github.com/orgs/DiamondLightSource/projects/33/views/1">DiamondLightSource/projects#33</a></p>
+<ul class="simple">
+<li><p>Project board: <a class="github reference external" href="https://github.com/orgs/DiamondLightSource/projects/33/views/1">DiamondLightSource/projects#33</a></p></li>
+<li><p>Test Datasets: https://gitlab.diamond.ac.uk/scisoft/cryoem/smartem-decisions-test-datasets</p></li>
+</ul>
 <p>This is where you should write a short paragraph that describes what your module does,
 how it does it, and why people should use it.</p>
 <div class="pst-scrollable-table-container"><table class="table">
@@ -539,7 +542,14 @@ podman<span class="w"> </span>push<span class="w"> </span>gcr.io/diamond-pubreg/
 </section>
 <section id="notes">
 <h2>Notes<a class="headerlink" href="#notes" title="Link to this heading">#</a></h2>
+<blockquote>
+<div><p>TODO recycle these to <code class="docutils literal notranslate"><span class="pre">docs/</span></code></p>
+</div></blockquote>
 <ul class="simple">
+<li><p>The number of micrographs in a single foil hole will be typically between 4 and 10.</p></li>
+<li><p>The total number of micrographs collected from a grid is normally 10-50k.</p></li>
+<li><p>The number of particles picked is about 300 per micrograph.</p></li>
+<li><p>About half of those are selected and half rejected</p></li>
 <li><p>mock the decision-making stuff</p>
 <ul>
 <li><p>to be tackled separately</p></li>
@@ -603,6 +613,7 @@ https://github.com/DiamondLightSource/cryoem-services/blob/main/src/cryoemservic
 <li class="toctree-l1"><a class="reference internal" href="how-to.html">How-to Guides</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="how-to/contribute.html">Contribute to the project</a></li>
 <li class="toctree-l2"><a class="reference internal" href="how-to/run-container.html">Run in a container</a></li>
+<li class="toctree-l2"><a class="reference internal" href="how-to/use-core-http-api-client.html">How to Use the SmartEM API Client</a></li>
 </ul>
 </li>
 </ul>

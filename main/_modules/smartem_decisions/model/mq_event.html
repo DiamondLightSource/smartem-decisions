@@ -7,7 +7,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>smartem_decisions.model.mq_event &#8212; smartem-decisions 0.1.dev123+g7a10cc9 documentation</title>
+    <title>smartem_decisions.model.mq_event &#8212; smartem-decisions 0.1.dev138+g82d72db documentation</title>
   
   
   
@@ -40,7 +40,7 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../../../_static/documentation_options.js?v=a4eba44f"></script>
+    <script src="../../../_static/documentation_options.js?v=caf888bd"></script>
     <script src="../../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -442,7 +442,9 @@
                 <article class="bd-article">
                   
   <h1>Source code for smartem_decisions.model.mq_event</h1><div class="highlight"><pre>
-<span></span><span class="kn">from</span><span class="w"> </span><span class="nn">enum</span><span class="w"> </span><span class="kn">import</span> <span class="n">Enum</span>
+<span></span><span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">datetime</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">enum</span><span class="w"> </span><span class="kn">import</span> <span class="n">Enum</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">pydantic</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">BaseModel</span><span class="p">,</span>
@@ -452,36 +454,64 @@
 <span class="p">)</span>
 
 
+<span class="k">def</span><span class="w"> </span><span class="nf">non_negative_float</span><span class="p">(</span><span class="n">v</span><span class="p">:</span> <span class="nb">float</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">v</span> <span class="o">&gt;=</span> <span class="mi">0</span>
+
+
 <div class="viewcode-block" id="MessageQueueEventType">
 <a class="viewcode-back" href="../../../_api/smartem_decisions.model.mq_event.html#smartem_decisions.model.mq_event.MessageQueueEventType">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">MessageQueueEventType</span><span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="n">Enum</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Enum listing various system events that are mapped to messages in RabbitMQ&quot;&quot;&quot;</span>
 
-    <span class="n">ACQUISITION_START</span> <span class="o">=</span> <span class="s2">&quot;acquisition started&quot;</span>
-    <span class="n">ACQUISITION_PAUSE</span> <span class="o">=</span> <span class="s2">&quot;acquisition paused&quot;</span>
-    <span class="n">ACQUISITION_RESUME</span> <span class="o">=</span> <span class="s2">&quot;acquisition resumed&quot;</span>
-    <span class="n">ACQUISITION_END</span> <span class="o">=</span> <span class="s2">&quot;acquisition ended&quot;</span>
-    <span class="n">GRID_SCAN_START</span> <span class="o">=</span> <span class="s2">&quot;grid scan started&quot;</span>
-    <span class="n">GRID_SCAN_COMPLETE</span> <span class="o">=</span> <span class="s2">&quot;grid scan completed&quot;</span>
-    <span class="n">GRID_SQUARES_DECISION_START</span> <span class="o">=</span> <span class="s2">&quot;grid squares decision started&quot;</span>
-    <span class="n">GRID_SQUARES_DECISION_COMPLETE</span> <span class="o">=</span> <span class="s2">&quot;grid squares decision completed&quot;</span>
-    <span class="n">FOIL_HOLES_DETECTED</span> <span class="o">=</span> <span class="s2">&quot;foil holes detected&quot;</span>
-    <span class="n">FOIL_HOLES_DECISION_START</span> <span class="o">=</span> <span class="s2">&quot;foil holes decision started&quot;</span>
-    <span class="n">FOIL_HOLES_DECISION_COMPLETE</span> <span class="o">=</span> <span class="s2">&quot;foil holes decision completed&quot;</span>
-    <span class="n">MICROGRAPHS_DETECTED</span> <span class="o">=</span> <span class="s2">&quot;micrographs detected&quot;</span>
-    <span class="n">MOTION_CORRECTION_START</span> <span class="o">=</span> <span class="s2">&quot;motion correction started&quot;</span>
-    <span class="n">MOTION_CORRECTION_COMPLETE</span> <span class="o">=</span> <span class="s2">&quot;motion correction completed&quot;</span>
-    <span class="n">CTF_START</span> <span class="o">=</span> <span class="s2">&quot;ctf started&quot;</span>
-    <span class="n">CTF_COMPLETE</span> <span class="o">=</span> <span class="s2">&quot;ctf completed&quot;</span>
-    <span class="n">PARTICLE_PICKING_START</span> <span class="o">=</span> <span class="s2">&quot;particle picking started&quot;</span>
-    <span class="n">PARTICLE_PICKING_COMPLETE</span> <span class="o">=</span> <span class="s2">&quot;particle picking completed&quot;</span>
-    <span class="n">PARTICLE_SELECTION_START</span> <span class="o">=</span> <span class="s2">&quot;particle selection started&quot;</span>
-    <span class="n">PARTICLE_SELECTION_COMPLETE</span> <span class="o">=</span> <span class="s2">&quot;particle selection completed&quot;</span></div>
+    <span class="n">ACQUISITION_CREATED</span> <span class="o">=</span> <span class="s2">&quot;acquisition.created&quot;</span>
+    <span class="n">ACQUISITION_UPDATED</span> <span class="o">=</span> <span class="s2">&quot;acquisition.updated&quot;</span>
+    <span class="n">ACQUISITION_DELETED</span> <span class="o">=</span> <span class="s2">&quot;acquisition.deleted&quot;</span>
 
+    <span class="n">ATLAS_CREATED</span> <span class="o">=</span> <span class="s2">&quot;atlas.created&quot;</span>
+    <span class="n">ATLAS_UPDATED</span> <span class="o">=</span> <span class="s2">&quot;atlas.updated&quot;</span>
+    <span class="n">ATLAS_DELETED</span> <span class="o">=</span> <span class="s2">&quot;atlas.deleted&quot;</span>
 
+    <span class="n">ATLAS_TILE_CREATED</span> <span class="o">=</span> <span class="s2">&quot;atlas_tile.created&quot;</span>
+    <span class="n">ATLAS_TILE_UPDATED</span> <span class="o">=</span> <span class="s2">&quot;atlas_tile.updated&quot;</span>
+    <span class="n">ATLAS_TILE_DELETED</span> <span class="o">=</span> <span class="s2">&quot;atlas_tile.deleted&quot;</span>
 
-<span class="k">def</span><span class="w"> </span><span class="nf">non_negative_float</span><span class="p">(</span><span class="n">v</span><span class="p">:</span> <span class="nb">float</span><span class="p">):</span>
-    <span class="k">return</span> <span class="n">v</span> <span class="o">&gt;=</span> <span class="mi">0</span>
+    <span class="n">GRID_CREATED</span> <span class="o">=</span> <span class="s2">&quot;grid.created&quot;</span>
+    <span class="n">GRID_UPDATED</span> <span class="o">=</span> <span class="s2">&quot;grid.updated&quot;</span>
+    <span class="n">GRID_DELETED</span> <span class="o">=</span> <span class="s2">&quot;grid.deleted&quot;</span>
+
+    <span class="n">GRIDSQUARE_CREATED</span> <span class="o">=</span> <span class="s2">&quot;gridsquare.created&quot;</span>
+    <span class="n">GRIDSQUARE_UPDATED</span> <span class="o">=</span> <span class="s2">&quot;gridsquare.updated&quot;</span>
+    <span class="n">GRIDSQUARE_DELETED</span> <span class="o">=</span> <span class="s2">&quot;gridsquare.deleted&quot;</span>
+
+    <span class="n">FOILHOLE_CREATED</span> <span class="o">=</span> <span class="s2">&quot;foilhole.created&quot;</span>
+    <span class="n">FOILHOLE_UPDATED</span> <span class="o">=</span> <span class="s2">&quot;foilhole.updated&quot;</span>
+    <span class="n">FOILHOLE_DELETED</span> <span class="o">=</span> <span class="s2">&quot;foilhole.deleted&quot;</span>
+
+    <span class="n">MICROGRAPH_CREATED</span> <span class="o">=</span> <span class="s2">&quot;micrograph.created&quot;</span>
+    <span class="n">MICROGRAPH_UPDATED</span> <span class="o">=</span> <span class="s2">&quot;micrograph.updated&quot;</span>
+    <span class="n">MICROGRAPH_DELETED</span> <span class="o">=</span> <span class="s2">&quot;micrograph.deleted&quot;</span>
+
+    <span class="c1"># ACQUISITION_SESSION_START = &quot;acquisition.session_started&quot;</span>
+    <span class="c1"># ACQUISITION_SESSION_PAUSE = &quot;acquisition.session_paused&quot;</span>
+    <span class="c1"># ACQUISITION_SESSION_RESUME = &quot;acquisition.session_resumed&quot;</span>
+    <span class="c1"># ACQUISITION_SESSION_END = &quot;acquisition.session_ended&quot;</span>
+    <span class="c1"># GRID_SCAN_SESSION_START = &quot;grid.scan_started&quot;</span>
+    <span class="c1"># GRID_SCAN_SESSION_COMPLETE = &quot;grid.scan_completed&quot;</span>
+    <span class="n">GRIDSQUARES_DECISION_START</span> <span class="o">=</span> <span class="s2">&quot;gridsquares.decision_started&quot;</span>
+    <span class="n">GRIDSQUARES_DECISION_COMPLETE</span> <span class="o">=</span> <span class="s2">&quot;gridsquares.decision_completed&quot;</span>
+    <span class="n">FOILHOLES_DETECTED</span> <span class="o">=</span> <span class="s2">&quot;foilholes.detected&quot;</span>  <span class="c1"># TODO is this redundant?</span>
+    <span class="n">FOILHOLES_DECISION_START</span> <span class="o">=</span> <span class="s2">&quot;foilholes.decision_started&quot;</span>
+    <span class="n">FOILHOLES_DECISION_COMPLETE</span> <span class="o">=</span> <span class="s2">&quot;foilholes.decision_completed&quot;</span>
+    <span class="n">MICROGRAPHS_DETECTED</span> <span class="o">=</span> <span class="s2">&quot;micrographs.detected&quot;</span>  <span class="c1"># TODO is this redundant?</span>
+    <span class="n">MOTION_CORRECTION_START</span> <span class="o">=</span> <span class="s2">&quot;motion_correction.started&quot;</span>
+    <span class="n">MOTION_CORRECTION_COMPLETE</span> <span class="o">=</span> <span class="s2">&quot;motion_{correction.completed&quot;</span>
+    <span class="n">CTF_START</span> <span class="o">=</span> <span class="s2">&quot;ctf.started&quot;</span>
+    <span class="n">CTF_COMPLETE</span> <span class="o">=</span> <span class="s2">&quot;ctf.completed&quot;</span>
+    <span class="n">PARTICLE_PICKING_START</span> <span class="o">=</span> <span class="s2">&quot;particle_picking.started&quot;</span>
+    <span class="n">PARTICLE_PICKING_COMPLETE</span> <span class="o">=</span> <span class="s2">&quot;particle_picking.completed&quot;</span>
+    <span class="n">PARTICLE_SELECTION_START</span> <span class="o">=</span> <span class="s2">&quot;particle_selection.started&quot;</span>
+    <span class="n">PARTICLE_SELECTION_COMPLETE</span> <span class="o">=</span> <span class="s2">&quot;particle_selection.completed&quot;</span></div>
+
 
 
 <span class="k">class</span><span class="w"> </span><span class="nc">GenericEventMessageBody</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
@@ -491,51 +521,415 @@
     <span class="k">def</span><span class="w"> </span><span class="nf">serialize_event_type</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event_type</span><span class="p">:</span> <span class="n">MessageQueueEventType</span><span class="p">,</span> <span class="n">_info</span><span class="p">):</span>
         <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">event_type</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
 
+    <span class="nd">@field_serializer</span><span class="p">(</span><span class="s1">&#39;*&#39;</span><span class="p">,</span> <span class="n">when_used</span><span class="o">=</span><span class="s1">&#39;json&#39;</span><span class="p">)</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">serialize_datetime_fields</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">v</span><span class="p">,</span> <span class="n">_info</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">datetime</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">v</span><span class="o">.</span><span class="n">isoformat</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">v</span>
 
-<span class="k">class</span><span class="w"> </span><span class="nc">AcquisitionStartBody</span><span class="p">(</span><span class="n">GenericEventMessageBody</span><span class="p">):</span>
-    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
+<span class="c1"># ============ Acquisition Events ============</span>
+<div class="viewcode-block" id="AcquisitionEventBase">
+<a class="viewcode-back" href="../../../_api/smartem_decisions.model.mq_event.html#smartem_decisions.model.mq_event.AcquisitionEventBase">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">AcquisitionEventBase</span><span class="p">(</span><span class="n">GenericEventMessageBody</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Base model for acquisition events&quot;&quot;&quot;</span>
+
+    <span class="k">pass</span></div>
+
+
+
+<div class="viewcode-block" id="AcquisitionCreatedEvent">
+<a class="viewcode-back" href="../../../_api/smartem_decisions.model.mq_event.html#smartem_decisions.model.mq_event.AcquisitionCreatedEvent">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">AcquisitionCreatedEvent</span><span class="p">(</span><span class="n">AcquisitionEventBase</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Event emitted when an acquisition is created&quot;&quot;&quot;</span>
+
+    <span class="n">uuid</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="nb">id</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">status</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">start_time</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">end_time</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">metadata</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span></div>
+
+
+
+<div class="viewcode-block" id="AcquisitionUpdatedEvent">
+<a class="viewcode-back" href="../../../_api/smartem_decisions.model.mq_event.html#smartem_decisions.model.mq_event.AcquisitionUpdatedEvent">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">AcquisitionUpdatedEvent</span><span class="p">(</span><span class="n">AcquisitionEventBase</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Event emitted when an acquisition is updated&quot;&quot;&quot;</span>
+
+    <span class="nb">id</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">status</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="n">epu_id</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">start_time</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">end_time</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">metadata</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span></div>
 
 
-<span class="k">class</span><span class="w"> </span><span class="nc">GridScanStartBody</span><span class="p">(</span><span class="n">GenericEventMessageBody</span><span class="p">):</span>
-    <span class="n">grid_id</span><span class="p">:</span> <span class="nb">int</span>
+
+<div class="viewcode-block" id="AcquisitionDeletedEvent">
+<a class="viewcode-back" href="../../../_api/smartem_decisions.model.mq_event.html#smartem_decisions.model.mq_event.AcquisitionDeletedEvent">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">AcquisitionDeletedEvent</span><span class="p">(</span><span class="n">AcquisitionEventBase</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Event emitted when an acquisition is deleted&quot;&quot;&quot;</span>
+
+    <span class="nb">id</span><span class="p">:</span> <span class="nb">str</span></div>
 
 
-<span class="k">class</span><span class="w"> </span><span class="nc">GridScanCompleteBody</span><span class="p">(</span><span class="n">GenericEventMessageBody</span><span class="p">):</span>
-    <span class="n">grid_id</span><span class="p">:</span> <span class="nb">int</span>
+
+<span class="c1"># ============ Atlas Events ============</span>
+<div class="viewcode-block" id="AtlasEventBase">
+<a class="viewcode-back" href="../../../_api/smartem_decisions.model.mq_event.html#smartem_decisions.model.mq_event.AtlasEventBase">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">AtlasEventBase</span><span class="p">(</span><span class="n">GenericEventMessageBody</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Base model for atlas events&quot;&quot;&quot;</span>
+
+    <span class="k">pass</span></div>
 
 
-<span class="k">class</span><span class="w"> </span><span class="nc">GridSquaresDecisionStartBody</span><span class="p">(</span><span class="n">GenericEventMessageBody</span><span class="p">):</span>
-    <span class="n">grid_id</span><span class="p">:</span> <span class="nb">int</span>
+
+<div class="viewcode-block" id="AtlasCreatedEvent">
+<a class="viewcode-back" href="../../../_api/smartem_decisions.model.mq_event.html#smartem_decisions.model.mq_event.AtlasCreatedEvent">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">AtlasCreatedEvent</span><span class="p">(</span><span class="n">AtlasEventBase</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Event emitted when an atlas is created&quot;&quot;&quot;</span>
+
+    <span class="nb">id</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">grid_id</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">pixel_size</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">metadata</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span></div>
 
 
-<span class="k">class</span><span class="w"> </span><span class="nc">GridSquaresDecisionCompleteBody</span><span class="p">(</span><span class="n">GenericEventMessageBody</span><span class="p">):</span>
-    <span class="n">grid_id</span><span class="p">:</span> <span class="nb">int</span>
+
+<div class="viewcode-block" id="AtlasUpdatedEvent">
+<a class="viewcode-back" href="../../../_api/smartem_decisions.model.mq_event.html#smartem_decisions.model.mq_event.AtlasUpdatedEvent">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">AtlasUpdatedEvent</span><span class="p">(</span><span class="n">AtlasEventBase</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Event emitted when an atlas is updated&quot;&quot;&quot;</span>
+
+    <span class="nb">id</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">grid_id</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">pixel_size</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">metadata</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span></div>
 
 
-<span class="k">class</span><span class="w"> </span><span class="nc">FoilHolesDetectedBody</span><span class="p">(</span><span class="n">GenericEventMessageBody</span><span class="p">):</span>
-    <span class="n">grid_id</span><span class="p">:</span> <span class="nb">int</span>
+
+<div class="viewcode-block" id="AtlasDeletedEvent">
+<a class="viewcode-back" href="../../../_api/smartem_decisions.model.mq_event.html#smartem_decisions.model.mq_event.AtlasDeletedEvent">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">AtlasDeletedEvent</span><span class="p">(</span><span class="n">AtlasEventBase</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Event emitted when an atlas is deleted&quot;&quot;&quot;</span>
+
+    <span class="nb">id</span><span class="p">:</span> <span class="nb">str</span></div>
 
 
-<span class="k">class</span><span class="w"> </span><span class="nc">FoilHolesDecisionStartBody</span><span class="p">(</span><span class="n">GenericEventMessageBody</span><span class="p">):</span>
-    <span class="n">gridsquare_id</span><span class="p">:</span> <span class="nb">int</span>
+
+<span class="c1"># ============ Atlas Tile Events ============</span>
+<div class="viewcode-block" id="AtlasTileEventBase">
+<a class="viewcode-back" href="../../../_api/smartem_decisions.model.mq_event.html#smartem_decisions.model.mq_event.AtlasTileEventBase">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">AtlasTileEventBase</span><span class="p">(</span><span class="n">GenericEventMessageBody</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Base model for atlas tile events&quot;&quot;&quot;</span>
+
+    <span class="k">pass</span></div>
 
 
-<span class="k">class</span><span class="w"> </span><span class="nc">FoilHolesDecisionCompleteBody</span><span class="p">(</span><span class="n">GenericEventMessageBody</span><span class="p">):</span>
-    <span class="n">gridsquare_id</span><span class="p">:</span> <span class="nb">int</span>
+
+<div class="viewcode-block" id="AtlasTileCreatedEvent">
+<a class="viewcode-back" href="../../../_api/smartem_decisions.model.mq_event.html#smartem_decisions.model.mq_event.AtlasTileCreatedEvent">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">AtlasTileCreatedEvent</span><span class="p">(</span><span class="n">AtlasTileEventBase</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Event emitted when an atlas tile is created&quot;&quot;&quot;</span>
+
+    <span class="nb">id</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">atlas_id</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">position_x</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">position_y</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">metadata</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span></div>
 
 
-<span class="k">class</span><span class="w"> </span><span class="nc">MicrographsDetectedBody</span><span class="p">(</span><span class="n">GenericEventMessageBody</span><span class="p">):</span>
-    <span class="n">foilhole_id</span><span class="p">:</span> <span class="nb">int</span>
-    <span class="c1"># micrographs: dict TODO</span>
+
+<div class="viewcode-block" id="AtlasTileUpdatedEvent">
+<a class="viewcode-back" href="../../../_api/smartem_decisions.model.mq_event.html#smartem_decisions.model.mq_event.AtlasTileUpdatedEvent">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">AtlasTileUpdatedEvent</span><span class="p">(</span><span class="n">AtlasTileEventBase</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Event emitted when an atlas tile is updated&quot;&quot;&quot;</span>
+
+    <span class="nb">id</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">atlas_id</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">position_x</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">position_y</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">metadata</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span></div>
 
 
+
+<div class="viewcode-block" id="AtlasTileDeletedEvent">
+<a class="viewcode-back" href="../../../_api/smartem_decisions.model.mq_event.html#smartem_decisions.model.mq_event.AtlasTileDeletedEvent">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">AtlasTileDeletedEvent</span><span class="p">(</span><span class="n">AtlasTileEventBase</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Event emitted when an atlas tile is deleted&quot;&quot;&quot;</span>
+
+    <span class="nb">id</span><span class="p">:</span> <span class="nb">str</span></div>
+
+
+
+<span class="c1"># ============ Grid Events ============</span>
+
+<span class="c1"># TODO could definitely be refactored to reduce duplication.</span>
+<span class="c1">#  Since GridCreatedEvent and GridUpdatedEvent share the same fields, with the only difference being</span>
+<span class="c1">#  that the fields are optional in the updated event.</span>
+
+
+<div class="viewcode-block" id="GridEventBase">
+<a class="viewcode-back" href="../../../_api/smartem_decisions.model.mq_event.html#smartem_decisions.model.mq_event.GridEventBase">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">GridEventBase</span><span class="p">(</span><span class="n">GenericEventMessageBody</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Base model for grid events&quot;&quot;&quot;</span>
+
+    <span class="k">pass</span></div>
+
+
+
+<div class="viewcode-block" id="GridCreatedEvent">
+<a class="viewcode-back" href="../../../_api/smartem_decisions.model.mq_event.html#smartem_decisions.model.mq_event.GridCreatedEvent">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">GridCreatedEvent</span><span class="p">(</span><span class="n">GridEventBase</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Event emitted when a grid is created&quot;&quot;&quot;</span>
+
+    <span class="n">uuid</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">acquisition_uuid</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">status</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">data_dir</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">atlas_dir</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">scan_start_time</span><span class="p">:</span> <span class="n">datetime</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">scan_end_time</span><span class="p">:</span> <span class="n">datetime</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">metadata</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span></div>
+
+
+
+<div class="viewcode-block" id="GridUpdatedEvent">
+<a class="viewcode-back" href="../../../_api/smartem_decisions.model.mq_event.html#smartem_decisions.model.mq_event.GridUpdatedEvent">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">GridUpdatedEvent</span><span class="p">(</span><span class="n">GridEventBase</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Event emitted when a grid is updated&quot;&quot;&quot;</span>
+
+    <span class="n">uuid</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">acquisition_uuid</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">status</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">data_dir</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">atlas_dir</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">scan_start_time</span><span class="p">:</span> <span class="n">datetime</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">scan_end_time</span><span class="p">:</span> <span class="n">datetime</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">metadata</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span></div>
+
+
+
+<div class="viewcode-block" id="GridDeletedEvent">
+<a class="viewcode-back" href="../../../_api/smartem_decisions.model.mq_event.html#smartem_decisions.model.mq_event.GridDeletedEvent">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">GridDeletedEvent</span><span class="p">(</span><span class="n">GridEventBase</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Event emitted when a grid is deleted&quot;&quot;&quot;</span>
+
+    <span class="n">uuid</span><span class="p">:</span> <span class="nb">str</span></div>
+
+
+
+<span class="c1"># ============ Grid Square Events ============</span>
+<div class="viewcode-block" id="GridSquareEventBase">
+<a class="viewcode-back" href="../../../_api/smartem_decisions.model.mq_event.html#smartem_decisions.model.mq_event.GridSquareEventBase">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">GridSquareEventBase</span><span class="p">(</span><span class="n">GenericEventMessageBody</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Base model for grid square events&quot;&quot;&quot;</span>
+
+    <span class="k">pass</span></div>
+
+
+
+<div class="viewcode-block" id="GridSquareCreatedEvent">
+<a class="viewcode-back" href="../../../_api/smartem_decisions.model.mq_event.html#smartem_decisions.model.mq_event.GridSquareCreatedEvent">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">GridSquareCreatedEvent</span><span class="p">(</span><span class="n">GridSquareEventBase</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Event emitted when a grid square is created&quot;&quot;&quot;</span>
+
+    <span class="n">uuid</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">grid_uuid</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">status</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">metadata</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span></div>
+
+
+
+<div class="viewcode-block" id="GridSquareUpdatedEvent">
+<a class="viewcode-back" href="../../../_api/smartem_decisions.model.mq_event.html#smartem_decisions.model.mq_event.GridSquareUpdatedEvent">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">GridSquareUpdatedEvent</span><span class="p">(</span><span class="n">GridSquareEventBase</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Event emitted when a grid square is updated&quot;&quot;&quot;</span>
+
+    <span class="n">uuid</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">grid_uuid</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">status</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">metadata</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span></div>
+
+
+
+<div class="viewcode-block" id="GridSquareDeletedEvent">
+<a class="viewcode-back" href="../../../_api/smartem_decisions.model.mq_event.html#smartem_decisions.model.mq_event.GridSquareDeletedEvent">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">GridSquareDeletedEvent</span><span class="p">(</span><span class="n">GridSquareEventBase</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Event emitted when a grid square is deleted&quot;&quot;&quot;</span>
+
+    <span class="n">uuid</span><span class="p">:</span> <span class="nb">str</span></div>
+
+
+
+<span class="c1"># ============ Foil Hole Events ============</span>
+<div class="viewcode-block" id="FoilHoleEventBase">
+<a class="viewcode-back" href="../../../_api/smartem_decisions.model.mq_event.html#smartem_decisions.model.mq_event.FoilHoleEventBase">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">FoilHoleEventBase</span><span class="p">(</span><span class="n">GenericEventMessageBody</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Base model for foil hole events&quot;&quot;&quot;</span>
+
+    <span class="k">pass</span></div>
+
+
+
+<div class="viewcode-block" id="FoilHoleCreatedEvent">
+<a class="viewcode-back" href="../../../_api/smartem_decisions.model.mq_event.html#smartem_decisions.model.mq_event.FoilHoleCreatedEvent">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">FoilHoleCreatedEvent</span><span class="p">(</span><span class="n">FoilHoleEventBase</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Event emitted when a foil hole is created&quot;&quot;&quot;</span>
+
+    <span class="n">uuid</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">foilhole_id</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">gridsquare_id</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">gridsquare_uuid</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">center_x</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">center_y</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">quality</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">rotation</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">size_width</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">size_height</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">x_location</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">y_location</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">x_stage_position</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">y_stage_position</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">diameter</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">is_near_grid_bar</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="n">status</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">metadata</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span></div>
+
+
+
+<div class="viewcode-block" id="FoilHoleUpdatedEvent">
+<a class="viewcode-back" href="../../../_api/smartem_decisions.model.mq_event.html#smartem_decisions.model.mq_event.FoilHoleUpdatedEvent">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">FoilHoleUpdatedEvent</span><span class="p">(</span><span class="n">FoilHoleEventBase</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Event emitted when a foil hole is updated&quot;&quot;&quot;</span>
+
+    <span class="n">uuid</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">foilhole_id</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">gridsquare_id</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">gridsquare_uuid</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">center_x</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">center_y</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">quality</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">rotation</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">size_width</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">size_height</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">x_location</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">y_location</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">x_stage_position</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">y_stage_position</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">diameter</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">is_near_grid_bar</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">status</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">metadata</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span></div>
+
+
+
+<div class="viewcode-block" id="FoilHoleDeletedEvent">
+<a class="viewcode-back" href="../../../_api/smartem_decisions.model.mq_event.html#smartem_decisions.model.mq_event.FoilHoleDeletedEvent">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">FoilHoleDeletedEvent</span><span class="p">(</span><span class="n">FoilHoleEventBase</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Event emitted when a foil hole is deleted&quot;&quot;&quot;</span>
+
+    <span class="n">uuid</span><span class="p">:</span> <span class="nb">str</span></div>
+
+
+
+<span class="c1"># ============ Micrograph Events ============</span>
+<div class="viewcode-block" id="MicrographEventBase">
+<a class="viewcode-back" href="../../../_api/smartem_decisions.model.mq_event.html#smartem_decisions.model.mq_event.MicrographEventBase">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">MicrographEventBase</span><span class="p">(</span><span class="n">GenericEventMessageBody</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Base model for micrograph events&quot;&quot;&quot;</span>
+
+    <span class="k">pass</span></div>
+
+
+
+<div class="viewcode-block" id="MicrographCreatedEvent">
+<a class="viewcode-back" href="../../../_api/smartem_decisions.model.mq_event.html#smartem_decisions.model.mq_event.MicrographCreatedEvent">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">MicrographCreatedEvent</span><span class="p">(</span><span class="n">MicrographEventBase</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Event emitted when a micrograph is created&quot;&quot;&quot;</span>
+    <span class="n">uuid</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">foilhole_uuid</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">foilhole_id</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">location_id</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">status</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">high_res_path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">manifest_file</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">acquisition_datetime</span><span class="p">:</span> <span class="n">datetime</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">defocus</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">detector_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">energy_filter</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">phase_plate</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">image_size_x</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">image_size_y</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">binning_x</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">binning_y</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">total_motion</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">average_motion</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">ctf_max_resolution_estimate</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">number_of_particles_picked</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">number_of_particles_selected</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">number_of_particles_rejected</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">metadata</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span></div>
+
+
+
+<div class="viewcode-block" id="MicrographUpdatedEvent">
+<a class="viewcode-back" href="../../../_api/smartem_decisions.model.mq_event.html#smartem_decisions.model.mq_event.MicrographUpdatedEvent">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">MicrographUpdatedEvent</span><span class="p">(</span><span class="n">MicrographEventBase</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Event emitted when a micrograph is updated&quot;&quot;&quot;</span>
+    <span class="n">uuid</span><span class="p">:</span> <span class="nb">str</span>  <span class="c1"># Required</span>
+    <span class="n">foilhole_uuid</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">foilhole_id</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">location_id</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">status</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">high_res_path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">manifest_file</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">acquisition_datetime</span><span class="p">:</span> <span class="n">datetime</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">defocus</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">detector_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">energy_filter</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">phase_plate</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">image_size_x</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">image_size_y</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">binning_x</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">binning_y</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">total_motion</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">average_motion</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">ctf_max_resolution_estimate</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">number_of_particles_picked</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">number_of_particles_selected</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">number_of_particles_rejected</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">selection_distribution</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">pick_distribution</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">metadata</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span></div>
+
+
+<div class="viewcode-block" id="MicrographDeletedEvent">
+<a class="viewcode-back" href="../../../_api/smartem_decisions.model.mq_event.html#smartem_decisions.model.mq_event.MicrographDeletedEvent">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">MicrographDeletedEvent</span><span class="p">(</span><span class="n">MicrographEventBase</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Event emitted when a micrograph is deleted&quot;&quot;&quot;</span>
+
+    <span class="n">uuid</span><span class="p">:</span> <span class="nb">str</span></div>
+
+
+
+<span class="c1"># ============ Data Processing and ML Events ============</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">MotionCorrectionStartBody</span><span class="p">(</span><span class="n">GenericEventMessageBody</span><span class="p">):</span>
-    <span class="n">micrograph_id</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">micrograph_uuid</span><span class="p">:</span> <span class="nb">str</span>
 
 
 <span class="k">class</span><span class="w"> </span><span class="nc">MotionCorrectionCompleteBody</span><span class="p">(</span><span class="n">GenericEventMessageBody</span><span class="p">):</span>
-    <span class="n">micrograph_id</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">micrograph_uuid</span><span class="p">:</span> <span class="nb">str</span>
     <span class="n">total_motion</span><span class="p">:</span> <span class="nb">float</span>
     <span class="n">average_motion</span><span class="p">:</span> <span class="nb">float</span>
     <span class="n">ctf_max_resolution_estimate</span><span class="p">:</span> <span class="nb">float</span>
@@ -552,11 +946,11 @@
 
 
 <span class="k">class</span><span class="w"> </span><span class="nc">CtfStartBody</span><span class="p">(</span><span class="n">GenericEventMessageBody</span><span class="p">):</span>
-    <span class="n">micrograph_id</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">micrograph_uuid</span><span class="p">:</span> <span class="nb">str</span>
 
 
 <span class="k">class</span><span class="w"> </span><span class="nc">CtfCompleteBody</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
-    <span class="n">micrograph_id</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">micrograph_uuid</span><span class="p">:</span> <span class="nb">str</span>
     <span class="n">total_motion</span><span class="p">:</span> <span class="nb">float</span>
     <span class="n">average_motion</span><span class="p">:</span> <span class="nb">float</span>
     <span class="n">ctf_max_resolution_estimate</span><span class="p">:</span> <span class="nb">float</span>
@@ -573,11 +967,11 @@
 
 
 <span class="k">class</span><span class="w"> </span><span class="nc">ParticlePickingStartBody</span><span class="p">(</span><span class="n">GenericEventMessageBody</span><span class="p">):</span>
-    <span class="n">micrograph_id</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">micrograph_uuid</span><span class="p">:</span> <span class="nb">str</span>
 
 
-<span class="k">class</span><span class="w"> </span><span class="nc">ParticlePickingCompleteBody</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
-    <span class="n">micrograph_id</span><span class="p">:</span> <span class="nb">int</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">ParticlePickingCompleteBody</span><span class="p">(</span><span class="n">GenericEventMessageBody</span><span class="p">):</span>
+    <span class="n">micrograph_uuid</span><span class="p">:</span> <span class="nb">str</span>
     <span class="n">number_of_particles_picked</span><span class="p">:</span> <span class="nb">int</span>
     <span class="n">pick_distribution</span><span class="p">:</span> <span class="nb">dict</span>
 
@@ -602,12 +996,12 @@
 <span class="sd">        relion_options: RelionServiceOptions</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="n">micrograph_id</span><span class="p">:</span> <span class="nb">int</span></div>
+    <span class="n">micrograph_uuid</span><span class="p">:</span> <span class="nb">str</span></div>
 
 
 
-<span class="k">class</span><span class="w"> </span><span class="nc">ParticleSelectionCompleteBody</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
-    <span class="n">micrograph_id</span><span class="p">:</span> <span class="nb">int</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">ParticleSelectionCompleteBody</span><span class="p">(</span><span class="n">GenericEventMessageBody</span><span class="p">):</span>
+    <span class="n">micrograph_uuid</span><span class="p">:</span> <span class="nb">str</span>
     <span class="n">number_of_particles_selected</span><span class="p">:</span> <span class="nb">int</span>
     <span class="n">number_of_particles_rejected</span><span class="p">:</span> <span class="nb">int</span>
     <span class="n">selection_distribution</span><span class="p">:</span> <span class="nb">dict</span>
@@ -624,10 +1018,6 @@
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">number_of_particles_rejected</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Number of Particles Rejected should be a non-negative int&quot;</span><span class="p">)</span>
         <span class="k">return</span> <span class="bp">self</span>
-
-
-<span class="k">class</span><span class="w"> </span><span class="nc">AcquisitionEndBody</span><span class="p">(</span><span class="n">GenericEventMessageBody</span><span class="p">):</span>
-    <span class="n">acquisition_id</span><span class="p">:</span> <span class="nb">int</span>
 </pre></div>
 
                 </article>
