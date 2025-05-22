@@ -104,39 +104,39 @@ def publish_grid_deleted(grid_id):
 # ========== Grid Square DB Entity Mutations ==========
 def publish_gridsquare_created(gridsquare_data):
     """Publish grid square created event to RabbitMQ"""
-    event = GridSquareCreatedEvent(**{"event_type": MessageQueueEventType.GRID_SQUARE_CREATED, **gridsquare_data})
-    return rmq_publisher.publish_event(MessageQueueEventType.GRID_SQUARE_CREATED, event)
+    event = GridSquareCreatedEvent(**{"event_type": MessageQueueEventType.GRIDSQUARE_CREATED, **gridsquare_data})
+    return rmq_publisher.publish_event(MessageQueueEventType.GRIDSQUARE_CREATED, event)
 
 
 def publish_gridsquare_updated(gridsquare_data):
     """Publish grid square updated event to RabbitMQ"""
-    event = GridSquareUpdatedEvent(**{"event_type": MessageQueueEventType.GRID_SQUARE_UPDATED, **gridsquare_data})
-    return rmq_publisher.publish_event(MessageQueueEventType.GRID_SQUARE_UPDATED, event)
+    event = GridSquareUpdatedEvent(**{"event_type": MessageQueueEventType.GRIDSQUARE_UPDATED, **gridsquare_data})
+    return rmq_publisher.publish_event(MessageQueueEventType.GRIDSQUARE_UPDATED, event)
 
 
 def publish_gridsquare_deleted(gridsquare_id):
     """Publish grid square deleted event to RabbitMQ"""
-    event = GridSquareDeletedEvent(event_type=MessageQueueEventType.GRID_SQUARE_DELETED, id=gridsquare_id)
-    return rmq_publisher.publish_event(MessageQueueEventType.GRID_SQUARE_DELETED, event)
+    event = GridSquareDeletedEvent(event_type=MessageQueueEventType.GRIDSQUARE_DELETED, id=gridsquare_id)
+    return rmq_publisher.publish_event(MessageQueueEventType.GRIDSQUARE_DELETED, event)
 
 
 # ========== Foil Hole DB Entity Mutations ==========
 def publish_foilhole_created(foilhole_data):
     """Publish foil hole created event to RabbitMQ"""
-    event = FoilHoleCreatedEvent(**{"event_type": MessageQueueEventType.FOIL_HOLE_CREATED, **foilhole_data})
-    return rmq_publisher.publish_event(MessageQueueEventType.FOIL_HOLE_CREATED, event)
+    event = FoilHoleCreatedEvent(**{"event_type": MessageQueueEventType.FOILHOLE_CREATED, **foilhole_data})
+    return rmq_publisher.publish_event(MessageQueueEventType.FOILHOLE_CREATED, event)
 
 
 def publish_foilhole_updated(foilhole_data):
     """Publish foil hole updated event to RabbitMQ"""
-    event = FoilHoleUpdatedEvent(**{"event_type": MessageQueueEventType.FOIL_HOLE_UPDATED, **foilhole_data})
-    return rmq_publisher.publish_event(MessageQueueEventType.FOIL_HOLE_UPDATED, event)
+    event = FoilHoleUpdatedEvent(**{"event_type": MessageQueueEventType.FOILHOLE_UPDATED, **foilhole_data})
+    return rmq_publisher.publish_event(MessageQueueEventType.FOILHOLE_UPDATED, event)
 
 
 def publish_foilhole_deleted(foilhole_id):
     """Publish foil hole deleted event to RabbitMQ"""
-    event = FoilHoleDeletedEvent(event_type=MessageQueueEventType.FOIL_HOLE_DELETED, id=foilhole_id)
-    return rmq_publisher.publish_event(MessageQueueEventType.FOIL_HOLE_DELETED, event)
+    event = FoilHoleDeletedEvent(event_type=MessageQueueEventType.FOILHOLE_DELETED, id=foilhole_id)
+    return rmq_publisher.publish_event(MessageQueueEventType.FOILHOLE_DELETED, event)
 
 
 # ========== Micrograph DB Entity Mutations ==========
