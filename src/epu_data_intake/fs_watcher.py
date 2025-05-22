@@ -32,7 +32,9 @@ Patterns match the following files:
 
 :type: list[str]
 """
-DEFAULT_PATTERNS = [  # TODO consider merging with props in EpuParser
+DEFAULT_PATTERNS = [
+    # TODO consider merging with props in EpuParser
+    # TODO (techdebt) This should be treated as immutable - don't modify!
     "EpuSession.dm",
     "Metadata/GridSquare_*.dm",
     "Images-Disc*/GridSquare_*/GridSquare_*_*.xml",
@@ -78,11 +80,11 @@ class RateLimitedFilesystemEventHandler(FileSystemEventHandler):
         dry_run: bool = False,
         api_url: str | None = None,
         log_interval: float = 10.0,
-        patterns: list[str] = DEFAULT_PATTERNS,
+        patterns: list[str] | None = None,
     ):
         self.last_log_time = time.time()
         self.log_interval = log_interval
-        self.patterns = patterns
+        self.patterns = patterns if patterns is not None else DEFAULT_PATTERNS.copy()
         self.verbose = logging.getLogger().level <= logging.INFO
         # Distinguish between new and previously seen files.
         self.changed_files = {}
@@ -143,7 +145,7 @@ class RateLimitedFilesystemEventHandler(FileSystemEventHandler):
         # New grid discovered? If so - instantiate in store
         if new_file_detected and re.search(EpuParser.session_dm_pattern, event.src_path):
             assert self.datastore.get_grid_by_path(event.src_path) is None  # guaranteed because is a new file
-            grid = GridData(Path(event.src_path).parent.resolve())
+            grid = GridData(data_dir=Path(event.src_path).parent.resolve())
             self.datastore.create_grid(grid)
 
         # try to work out which grid the touched file relates to
@@ -178,9 +180,8 @@ class RateLimitedFilesystemEventHandler(FileSystemEventHandler):
 
         if grid and acquisition_data != grid.acquisition_date:
             grid.acquisition_data = acquisition_data
-            self.datastore.update_grid(grid_uuid, grid)
+            self.datastore.update_grid(grid)
             logging.debug(f"Updated acquisition_data for grid: {grid_uuid}")
-            False and logging.debug(grid.acquisition_data)
 
     def _process_orphaned_files(self, grid_uuid: str):
         """Process any orphaned files that belong to this grid"""
@@ -203,9 +204,8 @@ class RateLimitedFilesystemEventHandler(FileSystemEventHandler):
         grid = self.datastore.get_grid(grid_uuid)
         if atlas_data != grid.atlas_data:
             grid.atlas_data = atlas_data
-            self.datastore.update_grid(grid_uuid, grid)
+            self.datastore.update_grid(grid)
             logging.debug(f"Updated atlas_data for grid: {grid_uuid}")
-            False and logging.debug(grid.atlas_data)
 
     def _on_gridsquare_metadata_detected(self, path: str, grid_uuid: str, is_new_file: bool = True):
         logging.info(f"Gridsquare metadata {'detected' if is_new_file else 'updated'}: {path}")
@@ -220,7 +220,7 @@ class RateLimitedFilesystemEventHandler(FileSystemEventHandler):
         gridsquare = self.datastore.find_gridsquare_by_natural_id(gridsquare_id)
         if not gridsquare:
             gridsquare = GridSquareData(
-                id=gridsquare_id,
+                gridsquare_id=gridsquare_id,
                 metadata=gridsquare_metadata,
                 grid_uuid=grid.uuid,
             )
@@ -229,7 +229,7 @@ class RateLimitedFilesystemEventHandler(FileSystemEventHandler):
         else:
             logging.info(f"Updating existing GridSquare: {gridsquare_id} of Grid {grid.uuid}")
             gridsquare.metadata = gridsquare_metadata
-            self.datastore.update_gridsquare(gridsquare.uuid, gridsquare)
+            self.datastore.update_gridsquare(gridsquare)
 
     def _on_gridsquare_manifest_detected(self, path: str, grid_uuid, is_new_file: bool = True):
         logging.info(f"Gridsquare manifest {'detected' if is_new_file else 'updated'}: {path}")
@@ -244,7 +244,7 @@ class RateLimitedFilesystemEventHandler(FileSystemEventHandler):
         gridsquare = self.datastore.find_gridsquare_by_natural_id(gridsquare_id)
         if not gridsquare:
             gridsquare = GridSquareData(
-                id=gridsquare_id,
+                gridsquare_id=gridsquare_id,
                 manifest=gridsquare_manifest,
                 grid_uuid=grid.uuid,
             )
@@ -253,9 +253,9 @@ class RateLimitedFilesystemEventHandler(FileSystemEventHandler):
         else:
             logging.info(f"Updating existing GridSquare: {gridsquare_id} of Grid {gridsquare.grid_uuid}")
             gridsquare.manifest = gridsquare_manifest
-            self.datastore.update_gridsquare(gridsquare.uuid, gridsquare)
+            self.datastore.update_gridsquare(gridsquare)
 
-        False and logging.debug(gridsquare)
+        logging.debug(gridsquare)
 
     def _on_foilhole_detected(self, path: str, grid_uuid: str, is_new_file: bool = True):
         logging.info(f"Foilhole {'detected' if is_new_file else 'updated'}: {path}")
@@ -271,7 +271,7 @@ class RateLimitedFilesystemEventHandler(FileSystemEventHandler):
         # TODO ensure create overwrites existing by uuid,
         #  ensure self.datastore.gridsquare_rels is populated:
         self.datastore.create_foilhole(foilhole)
-        False and logging.debug(foilhole)
+        logging.debug(foilhole)
 
     def _on_micrograph_detected(self, path: str, grid_uuid: str, is_new_file: bool = True):
         logging.info(f"Micrograph {'detected' if is_new_file else 'updated'}: {path}")
@@ -283,18 +283,25 @@ class RateLimitedFilesystemEventHandler(FileSystemEventHandler):
         micrograph_manifest = EpuParser.parse_micrograph_manifest(path)
         foilholes = [fh for fh in self.datastore.foilholes.values() if fh.id == foilhole_id]
         gridsquare_id = foilholes[0].gridsquare_id if foilholes else ""
+        foilhole = self.datastore.find_foilhole_by_natural_id(foilhole_id)
+        if not foilhole:
+            logging.warning(
+                f"Could not find foilhole by natural ID {foilhole_id}, "
+                f"skipping micrograph creation for micrograph {micrograph_manifest.unique_id}"
+            )
+            return
 
         micrograph = MicrographData(
             id=micrograph_manifest.unique_id,
+            foilhole_uuid=foilhole.uuid,
+            foilhole_id=foilhole_id,
             location_id=location_id,
             gridsquare_id=gridsquare_id,
             high_res_path=Path(""),
-            foilhole_id=foilhole_id,
             manifest_file=Path(path),
             manifest=micrograph_manifest,
         )
         self.datastore.create_micrograph(micrograph)  # TODO create and update?
-        False and logging.debug(micrograph)
 
     def _on_session_complete(self):
         """

@@ -689,10 +689,11 @@ def get_event_handlers() -> dict[str, Callable]:
         MessageQueueEventType.ATLAS_UPDATED.value: handle_atlas_updated,
         MessageQueueEventType.ATLAS_DELETED.value: handle_atlas_deleted,
         MessageQueueEventType.GRID_CREATED.value: handle_grid_created,
-        MessageQueueEventType.GRID_SQUARE_CREATED.value: handle_gridsquare_created,
-        MessageQueueEventType.FOIL_HOLE_CREATED.value: handle_foilhole_created,
+        MessageQueueEventType.GRIDSQUARE_CREATED.value: handle_gridsquare_created,
+        MessageQueueEventType.GRIDSQUARE_UPDATED.value: handle_gridsquare_updated,
+        MessageQueueEventType.FOILHOLE_CREATED.value: handle_foilhole_created,
         MessageQueueEventType.MICROGRAPH_CREATED.value: handle_micrograph_created,
-        # TODO: Add handlers for all other event types
+        # TODO: Add handlers for all other event types as needed
     }
 
 
