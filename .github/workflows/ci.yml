@@ -52,14 +52,14 @@ jobs:
     secrets:
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
-# TODO restore or remove
-#  container:
-#    needs: check
-#    if: needs.check.outputs.branch-pr == ''
-#    uses: ./.github/workflows/_container.yml
-#    permissions:
-#      contents: read
-#      packages: write
+  # TODO restore or remove
+  container:
+    needs: check
+    if: needs.check.outputs.branch-pr == ''
+    uses: ./.github/workflows/_container.yml
+    permissions:
+      contents: read
+      packages: write
 
   docs:
     needs: check
