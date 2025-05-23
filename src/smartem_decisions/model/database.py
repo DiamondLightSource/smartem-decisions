@@ -24,6 +24,7 @@ from smartem_decisions.model.entity_status import (
     MicrographStatusType,
 )
 from smartem_decisions.utils import (
+    logger,
     setup_postgres_connection,
 )
 
@@ -48,7 +49,7 @@ class Atlas(SQLModel, table=True, table_name="atlas"):
     __table_args__ = {"extend_existing": True}
     uuid: str = Field(primary_key=True)
     atlas_id: str = Field(default="")
-    grid_id: str | None = Field(default=None, foreign_key="grid.uuid")
+    grid_uuid: str | None = Field(default=None, foreign_key="grid.uuid")
     acquisition_date: datetime | None = Field(default=None)
     storage_folder: str | None = Field(default=None)
     description: str | None = Field(default=None)
@@ -85,7 +86,7 @@ class Grid(SQLModel, table=True, table_name="grid"):
 class AtlasTile(SQLModel, table=True, table_name="atlastile"):
     __table_args__ = {"extend_existing": True}
     uuid: str = Field(primary_key=True)
-    atlas_id: str | None = Field(default=None, foreign_key="atlas.uuid")
+    atlas_uuid: str | None = Field(default=None, foreign_key="atlas.uuid")
     tile_id: str = Field(default="")
     position_x: int | None = Field(default=None)
     position_y: int | None = Field(default=None)
@@ -202,7 +203,7 @@ class QualityPredictionModel(SQLModel, table=True):
 class QualityPredictionModelParameter(SQLModel, table=True):
     __table_args__ = {"extend_existing": True}
     id: int | None = Field(default=None, primary_key=True)
-    grid_id: str = Field(foreign_key="grid.uuid")
+    grid_uuid: str = Field(foreign_key="grid.uuid")
     timestamp: datetime = Field(default_factory=datetime.now)
     prediction_model_name: str = Field(foreign_key="qualitypredictionmodel.name")
     key: str
@@ -214,8 +215,8 @@ class QualityPredictionModelParameter(SQLModel, table=True):
 class QualityPredictionModelWeight(SQLModel, table=True):
     __table_args__ = {"extend_existing": True}
     id: int | None = Field(default=None, primary_key=True)
-    grid_id: str = Field(foreign_key="grid.uuid")
-    micrograph_id: str | None = Field(default=None, foreign_key="micrograph.uuid")
+    grid_uuid: str = Field(foreign_key="grid.uuid")
+    micrograph_uuid: str | None = Field(default=None, foreign_key="micrograph.uuid")
     micrograph_quality: bool | None = Field(default=None)
     timestamp: datetime = Field(default_factory=datetime.now)
     origin: str | None = Field(default=None)
@@ -232,8 +233,8 @@ class QualityPrediction(SQLModel, table=True):
     timestamp: datetime = Field(default_factory=datetime.now)
     value: float
     prediction_model_name: str = Field(foreign_key="qualitypredictionmodel.name")
-    foilhole_id: str | None = Field(default=None, foreign_key="foilhole.uuid")
-    gridsquare_id: str | None = Field(default=None, foreign_key="gridsquare.uuid")
+    foilhole_uuid: str | None = Field(default=None, foreign_key="foilhole.uuid")
+    gridsquare_uuid: str | None = Field(default=None, foreign_key="gridsquare.uuid")
     foilhole: FoilHole | None = Relationship(back_populates="prediction")
     gridsquare: GridSquare | None = Relationship(back_populates="prediction")
     model: QualityPredictionModel | None = Relationship(back_populates="predictions")
@@ -285,7 +286,7 @@ def _create_db_and_tables(engine):
             # grid indexes
             sess.execute(text("CREATE INDEX IF NOT EXISTS idx_grid_id_pattern ON grid (uuid text_pattern_ops);"))
             sess.execute(text("CREATE INDEX IF NOT EXISTS idx_grid_id_hash ON grid USING hash (uuid);"))
-            sess.execute(text("CREATE INDEX IF NOT EXISTS idx_grid_acquisition_id ON grid (acquisition_id);"))
+            sess.execute(text("CREATE INDEX IF NOT EXISTS idx_grid_acquisition_id ON grid (acquisition_uuid);"))
             sess.execute(text("CREATE INDEX IF NOT EXISTS idx_grid_name ON grid (name);"))
 
             # gridsquare indexes
@@ -293,14 +294,14 @@ def _create_db_and_tables(engine):
                 text("CREATE INDEX IF NOT EXISTS idx_gridsquare_id_pattern ON gridsquare (uuid text_pattern_ops);")
             )
             sess.execute(text("CREATE INDEX IF NOT EXISTS idx_gridsquare_id_hash ON gridsquare USING hash (uuid);"))
-            sess.execute(text("CREATE INDEX IF NOT EXISTS idx_gridsquare_grid_id ON gridsquare (grid_id);"))
+            sess.execute(text("CREATE INDEX IF NOT EXISTS idx_gridsquare_grid_id ON gridsquare (grid_uuid);"))
 
             # foilhole indexes
             sess.execute(
                 text("CREATE INDEX IF NOT EXISTS idx_foilhole_id_pattern ON foilhole (uuid text_pattern_ops);")
             )
             sess.execute(text("CREATE INDEX IF NOT EXISTS idx_foilhole_id_hash ON foilhole USING hash (uuid);"))
-            sess.execute(text("CREATE INDEX IF NOT EXISTS idx_foilhole_gridsquare_id ON foilhole (gridsquare_id);"))
+            sess.execute(text("CREATE INDEX IF NOT EXISTS idx_foilhole_gridsquare_id ON foilhole (gridsquare_uuid);"))
             sess.execute(text("CREATE INDEX IF NOT EXISTS idx_foilhole_quality ON foilhole (quality);"))
 
             # micrograph indexes
@@ -308,7 +309,7 @@ def _create_db_and_tables(engine):
                 text("CREATE INDEX IF NOT EXISTS idx_micrograph_id_pattern ON micrograph (uuid text_pattern_ops);")
             )
             sess.execute(text("CREATE INDEX IF NOT EXISTS idx_micrograph_id_hash ON micrograph USING hash (uuid);"))
-            sess.execute(text("CREATE INDEX IF NOT EXISTS idx_micrograph_foilhole_id ON micrograph (foilhole_id);"))
+            sess.execute(text("CREATE INDEX IF NOT EXISTS idx_micrograph_foilhole_id ON micrograph (foilhole_uuid);"))
 
             sess.commit()
         except Exception as e:
@@ -319,7 +320,7 @@ def _create_db_and_tables(engine):
             sess.execute(
                 text("CREATE INDEX IF NOT EXISTS idx_atlastile_id_pattern ON atlastile (uuid text_pattern_ops);")
             )
-            sess.execute(text("CREATE INDEX IF NOT EXISTS idx_atlastile_atlas_id ON atlastile (atlas_id);"))
+            sess.execute(text("CREATE INDEX IF NOT EXISTS idx_atlastile_atlas_id ON atlastile (atlas_uuid);"))
             sess.commit()
         except Exception as e:
             logger.error(f"Error creating atlastile indexes: {e}")

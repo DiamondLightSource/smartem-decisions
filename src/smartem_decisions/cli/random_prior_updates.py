@@ -9,23 +9,23 @@ from smartem_decisions.utils import setup_postgres_connection
 
 
 def perform_random_updates(
-    grid_id: int | None = None,
+    grid_uuid: str | None = None,
     random_range: tuple[float, float] = (0, 1),
     origin: str = "motion_correction",
 ) -> None:
     engine = setup_postgres_connection()
     with Session(engine) as sess:
-        if grid_id is None:
+        if grid_uuid is None:
             grid = sess.exec(select(Grid)).first()
-            grid_id = grid.id
+            grid_uuid = grid.uuid
         mics = sess.exec(
             select(Micrograph, FoilHole, GridSquare)
-            .where(Micrograph.foilhole_id == FoilHole.id)
-            .where(FoilHole.gridsquare_id == GridSquare.id)
-            .where(GridSquare.grid_id == grid_id)
+            .where(Micrograph.foilhole_uuid == FoilHole.uuid)
+            .where(FoilHole.gridsquare_uuid == GridSquare.uuid)
+            .where(GridSquare.grid_uuid == grid_uuid)
         ).all()
         for m in mics:
-            prior_update(random.uniform(random_range[0], random_range[1]) < 0.5, m[0].id, sess, origin=origin)
+            prior_update(random.uniform(random_range[0], random_range[1]) < 0.5, m[0].uuid, sess, origin=origin)
     return None
 
 
