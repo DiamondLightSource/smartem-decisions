@@ -25,13 +25,13 @@ jobs:
     if: ${{ !startsWith(github.event.pull_request.title, '[WIP]') || github.event_name != 'pull_request' }}
     uses: ./.github/workflows/_check.yml
 
-# TODO restore
-#  lint:
-#    needs: check
-#    if: needs.check.outputs.branch-pr == ''
-#    uses: ./.github/workflows/_tox.yml
-#    with:
-#      tox: pre-commit,type-checking
+
+  lint:
+    needs: check
+    if: needs.check.outputs.branch-pr == ''
+    uses: ./.github/workflows/_tox.yml
+    with:
+      tox: pre-commit,type-checking
 
   test:
     needs: check
