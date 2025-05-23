@@ -15,22 +15,22 @@ from smartem_decisions.model.database import (
 
 def prior_update(
     quality: bool,
-    micrograph_id: int,
+    micrograph_uuid: str,
     session: Session,
     origin: str | None = None,
     ignore_if_matches_previous: bool = True,
 ) -> None:
-    # get the grid id from the micrograph
+    # get the grid uuid from the micrograph
     # this should only ever produce a single response
     hierarchy_response = session.exec(
         select(Micrograph, FoilHole, GridSquare)
-        .where(Micrograph.id == micrograph_id)
-        .where(FoilHole.id == Micrograph.foilhole_id)
-        .where(FoilHole.gridsquare_id == GridSquare.id)
+        .where(Micrograph.uuid == micrograph_uuid)
+        .where(FoilHole.uuid == Micrograph.foilhole_uuid)
+        .where(FoilHole.gridsquare_uuid == GridSquare.uuid)
     ).one()
-    grid_id = hierarchy_response[2].grid_id
-    square_id = hierarchy_response[2].id
-    hole_id = hierarchy_response[1].id
+    grid_uuid = hierarchy_response[2].grid_uuid
+    square_uuid = hierarchy_response[2].uuid
+    hole_uuid = hierarchy_response[1].uuid
 
     # if checking for previous updates coming from this micrograph,
     # check if there was a previous result and whether it matches this one
@@ -38,7 +38,7 @@ def prior_update(
     if ignore_if_matches_previous:
         previous_update_check = session.exec(
             select(QualityPredictionModelWeight)
-            .where(QualityPredictionModelWeight.micrograph_id == micrograph_id)
+            .where(QualityPredictionModelWeight.micrograph_uuid == micrograph_uuid)
             .order_by(QualityPredictionModelWeight.timestamp)
         ).all()
         if previous_update_check and previous_update_check[-1].micrograph_quality is quality:
@@ -59,11 +59,11 @@ def prior_update(
             select(QualityPrediction, QualityPredictionModelWeight)
             .where(
                 or_(
-                    QualityPrediction.foilhole_id == hole_id,
-                    QualityPrediction.gridsquare_id == square_id,
+                    QualityPrediction.foilhole_uuid == hole_uuid,
+                    QualityPrediction.gridsquare_uuid == square_uuid,
                 )
             )
-            .where(QualityPredictionModelWeight.grid_id == grid_id)
+            .where(QualityPredictionModelWeight.grid_uuid == grid_uuid)
             .where(QualityPrediction.prediction_model_name == QualityPredictionModelWeight.prediction_model_name)
             .where(QualityPredictionModelWeight.prediction_model_name == m)
             .order_by(desc(QualityPrediction.timestamp))
@@ -78,8 +78,8 @@ def prior_update(
             updated_value = updated_value**2
         updates.append(
             QualityPredictionModelWeight(
-                grid_id=pred[1].grid_id,
-                micrograph_id=micrograph_id,
+                grid_uuid=pred[1].grid_uuid,
+                micrograph_uuid=micrograph_uuid,
                 micrograph_quality=quality,
                 origin=origin,
                 prediction_model_name=pred[1].prediction_model_name,
