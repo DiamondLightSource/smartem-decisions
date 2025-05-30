@@ -1,9 +1,9 @@
 import json
 from pathlib import Path
 
-from src.epu_data_intake.core_http_api_client import SmartEMAPIClient
-from src.epu_data_intake.model.schemas import AcquisitionData, FoilHoleData, GridData, GridSquareData, MicrographData
-from src.smartem_decisions.utils import logger
+from epu_data_intake.core_http_api_client import SmartEMAPIClient
+from epu_data_intake.model.schemas import AcquisitionData, FoilHoleData, GridData, GridSquareData, MicrographData
+from smartem_decisions.utils import logger
 
 
 class InMemoryDataStore:
@@ -198,7 +198,10 @@ class PersistentDataStore(InMemoryDataStore):
                 raise RuntimeError(f"API call to create acquisition {self.acquisition.uuid} failed with no response")
             logger.info(f"Successfully created acquisition {self.acquisition.uuid} in API")
         except Exception as e:
-            error_msg = f"CRITICAL FAILURE: Unable to initialize API client or create acquisition {self.acquisition.uuid}: {str(e)}"
+            error_msg = (
+                "CRITICAL FAILURE: "
+                f"Unable to initialize API client or create acquisition {self.acquisition.uuid}: {str(e)}"
+            )
             logger.critical(error_msg)
             logger.debug("Stack trace:", exc_info=True)
             import sys
@@ -292,6 +295,7 @@ class PersistentDataStore(InMemoryDataStore):
     # TODO rollback retries in no race condition, otherwise implement throttling universally
     def create_micrograph(self, micrograph: MicrographData):
         import time
+
         max_retries = 3
         retry_delay = 1.0  # seconds
 

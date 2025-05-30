@@ -3,7 +3,7 @@ from pathlib import Path
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from src.epu_data_intake.utils import generate_uuid
+from epu_data_intake.utils import generate_uuid
 
 
 class MicrographManifest(BaseModel):
@@ -51,6 +51,12 @@ class FoilHoleData(BaseModel):
     rotation: float | None = None
     size_width: float | None = None
     size_height: float | None = None
+    x_location: int | None = None
+    y_location: int | None = None
+    x_stage_position: float | None = None
+    y_stage_position: float | None = None
+    diameter: int | None = None
+    is_near_grid_bar: bool = False
     uuid: str = Field(default_factory=generate_uuid)
 
     model_config = ConfigDict(from_attributes=True)

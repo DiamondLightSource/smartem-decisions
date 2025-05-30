@@ -8,8 +8,8 @@ import pika
 from dotenv import load_dotenv
 from pydantic import BaseModel
 
-from src.smartem_decisions.log_manager import logger
-from src.smartem_decisions.model.mq_event import MessageQueueEventType
+from smartem_decisions.log_manager import logger
+from smartem_decisions.model.mq_event import MessageQueueEventType
 
 
 class RabbitMQConnection:

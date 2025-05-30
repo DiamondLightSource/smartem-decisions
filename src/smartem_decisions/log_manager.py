@@ -8,7 +8,7 @@ from dataclasses import dataclass, field
 import graypy
 from dotenv import load_dotenv
 
-from src.smartem_decisions._version import __version__
+from smartem_decisions._version import __version__
 
 
 # TODO: use or loose

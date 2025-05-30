@@ -5,17 +5,18 @@ import platform
 import signal
 import time
 from pathlib import Path
+from typing import Annotated
 
 import typer
 from watchdog.observers import Observer
 
-from src.epu_data_intake.core_http_api_client import SmartEMAPIClient as APIClient
-from src.epu_data_intake.fs_parser import EpuParser
-from src.epu_data_intake.fs_watcher import (
+from epu_data_intake.core_http_api_client import SmartEMAPIClient as APIClient
+from epu_data_intake.fs_parser import EpuParser
+from epu_data_intake.fs_watcher import (
     DEFAULT_PATTERNS,
     RateLimitedFilesystemEventHandler,
 )
-from src.epu_data_intake.model.store import InMemoryDataStore
+from epu_data_intake.model.store import InMemoryDataStore
 
 
 # Create a callback to handle the verbose flag at the root level
@@ -194,27 +195,41 @@ def validate_epu_dir(
 
 @epu_data_intake_cli.command("watch")
 def watch_directory(
-    path: Path = typer.Argument(..., help="Directory to watch"),
-    dry_run: bool = typer.Option(
-        False, "--dry_run", "-n", help="Enables dry run mode, writing data in-memory and not posting to Core's HTTP API"
-    ),
+    path: Annotated[Path, typer.Argument(..., help="Directory to watch")],
+    dry_run: Annotated[
+        bool,
+        typer.Option(
+            False,
+            "--dry_run",
+            "-n",
+            help="Enables dry run mode, writing data in-memory and not posting to Core's HTTP API",
+        ),
+    ],
     # TODO
     #  - consider providing via env but allowing override via CLI.
     #  - Investigate how Win env vars work.
     #  - Accept a hard-coded value at build time
-    api_url: str = typer.Option(
-        "http://127.0.0.1:8000", "--api-url", "-a", help="URL for the Core API (required unless in dry run mode)"
-    ),
+    api_url: Annotated[
+        str,
+        typer.Option(
+            "http://127.0.0.1:8000", "--api-url", "-a", help="URL for the Core API (required unless in dry run mode)"
+        ),
+    ],
     # TODO currently unused because logging should come from `~smartem_decisions~` `shared` module,
     #  and the log filename should be wired to `log_manager` instantiation once that's in place.
-    log_file: str | None = typer.Option("fs_changes.log", "--log-file", "-l", help="Log file path (optional)"),
-    log_interval: float = typer.Option(
-        10.0, "--interval", "-i", help="Minimum interval between log entries in seconds"
-    ),
+    log_file: Annotated[
+        str | None, typer.Option("fs_changes.log", "--log-file", "-l", help="Log file path (optional)")
+    ],
+    log_interval: Annotated[
+        float, typer.Option(10.0, "--interval", "-i", help="Minimum interval between log entries in seconds")
+    ],
     # TODO decide if there's ever a use-case when we might want to override the defaults - drop otherwise
-    patterns: list[str] = typer.Option(
-        DEFAULT_PATTERNS, "--pattern", "-p", help="File patterns to watch (can be specified multiple times)"
-    ),
+    patterns: Annotated[
+        list[str],
+        typer.Option(
+            DEFAULT_PATTERNS, "--pattern", "-p", help="File patterns to watch (can be specified multiple times)"
+        ),
+    ],
     verbose: int = shared_verbosity_option,
 ):
     """Watch directory for file changes and log them in JSON format."""
@@ -236,7 +251,7 @@ def watch_directory(
             logging.info(f"API is reachable at {api_url} - Status: {status_result.get('status', 'unknown')}")
         except Exception as e:
             logging.error(f"Error: API at {api_url} is not reachable: {str(e)}")
-            raise typer.Exit(1)
+            raise typer.Exit(1) from None
 
     logging.info(f"Starting to watch directory: {str(path)} (including subdirectories) for patterns: {patterns}")
 

@@ -9,13 +9,13 @@ from pathlib import Path
 
 from watchdog.events import FileSystemEventHandler
 
-from src.epu_data_intake.fs_parser import EpuParser
-from src.epu_data_intake.model.schemas import (
+from epu_data_intake.fs_parser import EpuParser
+from epu_data_intake.model.schemas import (
     GridData,
     GridSquareData,
     MicrographData,
 )
-from src.epu_data_intake.model.store import InMemoryDataStore, PersistentDataStore
+from epu_data_intake.model.store import InMemoryDataStore, PersistentDataStore
 
 """Default glob patterns for EPU data files.
 
