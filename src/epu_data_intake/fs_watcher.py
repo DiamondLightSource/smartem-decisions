@@ -270,7 +270,14 @@ class RateLimitedFilesystemEventHandler(FileSystemEventHandler):
 
         # TODO ensure create overwrites existing by uuid,
         #  ensure self.datastore.gridsquare_rels is populated:
-        self.datastore.create_foilhole(foilhole)
+        found_foilhole = self.datastore.find_foilhole_by_natural_id(foilhole.uuid)
+        if found_foilhole:
+            uuid = foilhole.uuid
+            foilhole.uuid = found_foilhole.uuid
+            self.datastore.remove_foilhole(uuid)
+            self.datastore.update_foilhole(foilhole)
+        else:
+            self.datastore.create_foilhole(foilhole)
         logging.debug(foilhole)
 
     def _on_micrograph_detected(self, path: str, grid_uuid: str, is_new_file: bool = True):
