@@ -4,8 +4,8 @@ import yaml
 from dotenv import load_dotenv
 from sqlmodel import create_engine
 
-from src.smartem_decisions.log_manager import logger
-from src.smartem_decisions.rabbitmq import RabbitMQConsumer, RabbitMQPublisher
+from smartem_decisions.log_manager import logger
+from smartem_decisions.rabbitmq import RabbitMQConsumer, RabbitMQPublisher
 
 
 def load_conf():

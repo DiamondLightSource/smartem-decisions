@@ -7,7 +7,7 @@ from datetime import datetime
 import httpx
 from pydantic import BaseModel
 
-from src.epu_data_intake.model.schemas import (
+from epu_data_intake.model.schemas import (
     AcquisitionData,
     AtlasData,
     AtlasTileData,
@@ -16,12 +16,12 @@ from src.epu_data_intake.model.schemas import (
     GridSquareData,
     MicrographData,
 )
-from src.smartem_decisions.model.entity_status import (
+from smartem_decisions.model.entity_status import (
     AcquisitionStatus,
     GridSquareStatus,
     GridStatus,
 )
-from src.smartem_decisions.model.http_request import (
+from smartem_decisions.model.http_request import (
     AcquisitionCreateRequest,
     AtlasCreateRequest,
     AtlasTileCreateRequest,
@@ -30,7 +30,7 @@ from src.smartem_decisions.model.http_request import (
     GridSquareCreateRequest,
     MicrographCreateRequest,
 )
-from src.smartem_decisions.model.http_response import (
+from smartem_decisions.model.http_response import (
     AcquisitionResponse,
     AtlasResponse,
     AtlasTileResponse,
@@ -119,11 +119,11 @@ class EntityConverter:
             rotation=entity.rotation,
             size_width=entity.size_width,
             size_height=entity.size_height,
-            x_location=None,
-            y_location=None,
-            x_stage_position=None,
-            y_stage_position=None,
-            diameter=None,
+            x_location=entity.x_location,
+            y_location=entity.y_location,
+            x_stage_position=entity.x_stage_position,
+            y_stage_position=entity.y_stage_position,
+            diameter=entity.diameter,
         )
 
     @staticmethod
@@ -317,13 +317,13 @@ class SmartEMAPIClient:
                     except Exception as e:
                         self._logger.error(f"Error validating response data from {url}: {e}")
                         self._logger.debug(f"Response data that failed validation: {data}")
-                        raise ValueError(f"Invalid response data: {str(e)}")
+                        raise ValueError(f"Invalid response data: {str(e)}") from None
 
                 return data
             except json.JSONDecodeError as e:
                 self._logger.error(f"Could not parse JSON response from {url}: {e}")
                 self._logger.debug(f"Raw response: {response.text}")
-                raise ValueError(f"Invalid JSON response: {str(e)}")
+                raise ValueError(f"Invalid JSON response: {str(e)}") from None
 
         except httpx.HTTPStatusError as e:
             status_code = e.response.status_code

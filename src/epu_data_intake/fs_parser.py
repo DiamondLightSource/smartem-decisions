@@ -7,7 +7,7 @@ from pathlib import Path
 
 from lxml import etree
 
-from src.epu_data_intake.model.schemas import (
+from epu_data_intake.model.schemas import (
     AcquisitionData,
     AtlasData,
     AtlasTileData,
@@ -23,7 +23,7 @@ from src.epu_data_intake.model.schemas import (
     MicrographData,
     MicrographManifest,
 )
-from src.epu_data_intake.model.store import InMemoryDataStore
+from epu_data_intake.model.store import InMemoryDataStore
 
 
 class EpuParser:
@@ -165,8 +165,8 @@ class EpuParser:
             ):
                 if event == "end":
 
-                    def get_element_text(xpath):
-                        elements = element.xpath(xpath, namespaces=namespaces)
+                    def get_element_text(xpath, el=element):
+                        elements = el.xpath(xpath, namespaces=namespaces)
                         return elements[0].text if elements else None
 
                     acquisition_date_str = get_element_text(".//ns:Atlas/ns:AcquisitionDateTime")
@@ -380,7 +380,10 @@ class EpuParser:
             foilhole_positions: dict[int, FoilHolePosition] = {}
 
             # Find all KeyValuePair elements
-            kvp_xpath = ".//def:TargetLocationsEfficient/a:m_serializationArray/*[starts-with(local-name(), 'KeyValuePairOfintTargetLocation')]"
+            kvp_xpath = (
+                ".//def:TargetLocationsEfficient/a:m_serializationArray/"
+                "*[starts-with(local-name(), 'KeyValuePairOfintTargetLocation')]"
+            )
             kvp_elements = root.xpath(kvp_xpath, namespaces=namespaces)
 
             for element in kvp_elements:
@@ -496,8 +499,8 @@ class EpuParser:
             ):
                 if event == "end":
 
-                    def get_element_text(xpath):
-                        elements = element.xpath(xpath, namespaces=namespaces)
+                    def get_element_text(xpath, el=element):
+                        elements = el.xpath(xpath, namespaces=namespaces)
                         return elements[0].text if elements else None
 
                     def get_custom_value(key):
@@ -647,8 +650,8 @@ class EpuParser:
             ):
                 if event == "end":
 
-                    def get_element_text(xpath):
-                        elements = element.xpath(xpath, namespaces=namespaces)
+                    def get_element_text(xpath, el=element):
+                        elements = el.xpath(xpath, namespaces=namespaces)
                         return elements[0].text if elements else None
 
                     def get_custom_value(key):
@@ -754,6 +757,18 @@ class EpuParser:
 
             datastore.create_gridsquare(gridsquare)
             logging.debug(f"Added gridsquare: {gridsquare_id} (uuid: {gridsquare.uuid})")
+            for fh_id, fh_position in gridsquare_metadata.foilhole_positions.items():
+                fh = FoilHoleData(
+                    id=str(fh_id),
+                    gridsquare_id=gridsquare_id,
+                    gridsquare_uuid=gridsquare.uuid,
+                    x_location=fh_position.x_location,
+                    y_location=fh_position.y_location,
+                    x_stage_position=fh_position.x_stage_position,
+                    y_stage_position=fh_position.y_stage_position,
+                    diameter=fh_position.diameter,
+                )
+                datastore.create_foilhole(fh)
 
         # 3. Parse gridsquare manifests and associated data
         for gridsquare_manifest_path in list(grid.data_dir.glob("Images-Disc*/GridSquare_*/GridSquare_*_*.xml")):
@@ -781,7 +796,14 @@ class EpuParser:
                     foilhole.gridsquare_uuid = gridsquare.uuid
 
                     # Add to datastore
-                    datastore.create_foilhole(foilhole)
+                    found_foilhole = datastore.find_foilhole_by_natural_id(foilhole_id)
+                    if found_foilhole:
+                        new_uuid = foilhole.uuid
+                        foilhole.uuid = found_foilhole.uuid
+                        datastore.remove_foilhole(new_uuid)
+                        datastore.update_foilhole(foilhole)
+                    else:
+                        datastore.create_foilhole(foilhole)
                     logging.debug(f"Added foilhole: {foilhole_id} (uuid: {foilhole.uuid})")
 
                 # 3.2 Parse micrographs for this gridsquare

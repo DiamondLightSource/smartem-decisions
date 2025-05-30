@@ -1,18 +1,18 @@
 #!/usr/bin/env python
 
 import json
-import pika
 from collections.abc import Callable
 from datetime import datetime
 from typing import Any
 
+import pika
 from dotenv import load_dotenv
 from pydantic import ValidationError
 from sqlalchemy import select
 from sqlalchemy.orm import Session as SqlAlchemySession
 
-from src.smartem_decisions.log_manager import logger
-from src.smartem_decisions.model.database import (
+from smartem_decisions.log_manager import logger
+from smartem_decisions.model.database import (
     Acquisition,
     Atlas,
     FoilHole,
@@ -20,14 +20,14 @@ from src.smartem_decisions.model.database import (
     GridSquare,
     Micrograph,
 )
-from src.smartem_decisions.model.entity_status import (
+from smartem_decisions.model.entity_status import (
     AcquisitionStatus,
     FoilHoleStatus,
     GridSquareStatus,
     GridStatus,
     MicrographStatus,
 )
-from src.smartem_decisions.model.mq_event import (
+from smartem_decisions.model.mq_event import (
     AcquisitionCreatedEvent,
     AcquisitionDeletedEvent,
     AcquisitionUpdatedEvent,
@@ -48,7 +48,7 @@ from src.smartem_decisions.model.mq_event import (
     MicrographDeletedEvent,
     MicrographUpdatedEvent,
 )
-from src.smartem_decisions.utils import (
+from smartem_decisions.utils import (
     load_conf,
     rmq_consumer,
     setup_postgres_connection,
@@ -555,8 +555,9 @@ def handle_micrograph_created(event_data: dict[str, Any], session: SqlAlchemySes
             foilhole_uuid=event.foilhole_uuid,
             foilhole_id=event.foilhole_id,
             location_id=event.location_id if hasattr(event, "location_id") else None,
-            status=MicrographStatus(event.status) if hasattr(event,
-                                                             "status") and event.status is not None else MicrographStatus.NONE,
+            status=MicrographStatus(event.status)
+            if hasattr(event, "status") and event.status is not None
+            else MicrographStatus.NONE,
             high_res_path=event.high_res_path if hasattr(event, "high_res_path") else None,
             manifest_file=event.manifest_file if hasattr(event, "manifest_file") else None,
             acquisition_datetime=event.acquisition_datetime if hasattr(event, "acquisition_datetime") else None,
@@ -709,8 +710,8 @@ def on_message(ch, method, properties, body):
     """
     # Get retry count from message headers only once
     retry_count = 0
-    if properties.headers and 'x-retry-count' in properties.headers:
-        retry_count = properties.headers['x-retry-count']
+    if properties.headers and "x-retry-count" in properties.headers:
+        retry_count = properties.headers["x-retry-count"]
 
     # Default event_type
     event_type = "unknown"
@@ -752,16 +753,16 @@ def on_message(ch, method, properties, body):
         else:
             # Republish with incremented retry count
             headers = properties.headers or {}
-            headers['x-retry-count'] = retry_count + 1
+            headers["x-retry-count"] = retry_count + 1
 
             logger.debug(f"Republishing message with retry count {retry_count + 1}, event_type: {event_type}")
 
             try:
                 ch.basic_publish(
-                    exchange='',
+                    exchange="",
                     routing_key=method.routing_key,
                     body=body,
-                    properties=pika.BasicProperties(headers=headers)
+                    properties=pika.BasicProperties(headers=headers),
                 )
                 ch.basic_ack(delivery_tag=method.delivery_tag)
             except Exception as republish_error:

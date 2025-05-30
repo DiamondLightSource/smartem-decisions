@@ -2,7 +2,7 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict
 
-from src.smartem_decisions.model.entity_status import (
+from smartem_decisions.model.entity_status import (
     AcquisitionStatus,
     FoilHoleStatus,
     GridSquareStatus,
