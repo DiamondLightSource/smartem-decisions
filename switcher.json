@@ -2,5 +2,9 @@
   {
     "version": "main",
     "url": "https://DiamondLightSource.github.io/smartem-decisions/main/"
+  },
+  {
+    "version": "test-v0.0.2",
+    "url": "https://DiamondLightSource.github.io/smartem-decisions/test-v0.0.2/"
   }
 ]
