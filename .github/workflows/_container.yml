@@ -35,7 +35,11 @@ jobs:
           tags: tag_for_testing
 
       - name: Test cli works in cached runtime image
-        run: docker run --rm tag_for_testing "python -m src.smartem_decisions --version"
+        run: |
+          echo "Testing smartem_decisions module..."
+          docker run --rm tag_for_testing "python -c 'import smartem_decisions; print(\"Module imported successfully\")'"
+          echo "Testing main entry point..."
+          docker run --rm tag_for_testing "python -m smartem_decisions --version"
 
       - name: Create tags for publishing image
         id: meta
