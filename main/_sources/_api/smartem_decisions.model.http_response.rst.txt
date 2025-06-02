@@ -5,6 +5,8 @@
         
         
         
+        
+        
 
 .. automodule:: smartem_decisions.model.http_response
     :members:
@@ -21,6 +23,8 @@
         :nosignatures:
     
         AcquisitionResponse
+        AtlasResponse
+        AtlasTileResponse
         FoilHoleResponse
         GridResponse
         GridSquareResponse

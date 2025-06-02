@@ -7,7 +7,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>smartem_decisions.log_manager &#8212; smartem-decisions 0.1.dev123+g7a10cc9 documentation</title>
+    <title>smartem_decisions.log_manager &#8212; smartem-decisions 0.1.dev157+g0e8b5fc documentation</title>
   
   
   
@@ -40,7 +40,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../../_static/documentation_options.js?v=a4eba44f"></script>
+    <script src="../../_static/documentation_options.js?v=0c91d5e7"></script>
     <script src="../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -442,13 +442,17 @@
                 <article class="bd-article">
                   
   <h1>Source code for smartem_decisions.log_manager</h1><div class="highlight"><pre>
-<span></span><span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span></span><span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging.handlers</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span><span class="p">,</span> <span class="n">field</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">graypy</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">dotenv</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_dotenv</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">smartem_decisions._version</span><span class="w"> </span><span class="kn">import</span> <span class="n">__version__</span>
 
 
 <span class="c1"># TODO: use or loose</span>
@@ -492,7 +496,7 @@
 <span class="sd">    the correct HTTP functionality.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">host</span><span class="p">,</span> <span class="n">port</span><span class="o">=</span><span class="mi">12202</span><span class="p">,</span> <span class="n">compress</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="s1">&#39;/&#39;</span><span class="p">,</span> <span class="n">ssl</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="mf">5.0</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">host</span><span class="p">,</span> <span class="n">port</span><span class="o">=</span><span class="mi">12202</span><span class="p">,</span> <span class="n">compress</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="s2">&quot;/&quot;</span><span class="p">,</span> <span class="n">ssl</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="mf">5.0</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="c1"># Initialize the base handler</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">compress</span><span class="o">=</span><span class="n">compress</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 
@@ -501,12 +505,12 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">port</span> <span class="o">=</span> <span class="n">port</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">path</span> <span class="o">=</span> <span class="n">path</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">ssl</span> <span class="o">=</span> <span class="n">ssl</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">proto</span> <span class="o">=</span> <span class="s1">&#39;https&#39;</span> <span class="k">if</span> <span class="n">ssl</span> <span class="k">else</span> <span class="s1">&#39;http&#39;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">url</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">proto</span><span class="si">}</span><span class="s1">://</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">host</span><span class="si">}</span><span class="s1">:</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">port</span><span class="si">}{</span><span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="si">}</span><span class="s1">&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">proto</span> <span class="o">=</span> <span class="s2">&quot;https&quot;</span> <span class="k">if</span> <span class="n">ssl</span> <span class="k">else</span> <span class="s2">&quot;http&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">url</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">proto</span><span class="si">}</span><span class="s2">://</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">host</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">port</span><span class="si">}{</span><span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="si">}</span><span class="s2">&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">timeout</span> <span class="o">=</span> <span class="n">timeout</span>
 
         <span class="c1"># Define HTTP headers</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">headers</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;Content-Type&#39;</span><span class="p">:</span> <span class="s1">&#39;application/json&#39;</span><span class="p">}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">headers</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;Content-Type&quot;</span><span class="p">:</span> <span class="s2">&quot;application/json&quot;</span><span class="p">}</span>
 
 <div class="viewcode-block" id="FixedGELFHTTPHandler.emit">
 <a class="viewcode-back" href="../../_api/smartem_decisions.log_manager.html#smartem_decisions.log_manager.FixedGELFHTTPHandler.emit">[docs]</a>
@@ -519,25 +523,27 @@
             <span class="n">message_dict</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_make_gelf_dict</span><span class="p">(</span><span class="n">record</span><span class="p">)</span>
 
             <span class="c1"># Convert to JSON</span>
-            <span class="n">message</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">message_dict</span><span class="p">)</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s1">&#39;utf-8&#39;</span><span class="p">)</span>
+            <span class="n">message</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">message_dict</span><span class="p">)</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span>
 
             <span class="c1"># Send via HTTP or HTTPS</span>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">ssl</span><span class="p">:</span>
                 <span class="kn">import</span><span class="w"> </span><span class="nn">http.client</span>
+
                 <span class="n">connection</span> <span class="o">=</span> <span class="n">http</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">HTTPSConnection</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">host</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">port</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">timeout</span><span class="p">)</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="kn">import</span><span class="w"> </span><span class="nn">http.client</span>
+
                 <span class="n">connection</span> <span class="o">=</span> <span class="n">http</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">HTTPConnection</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">host</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">port</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">timeout</span><span class="p">)</span>
 
             <span class="c1"># Send the request</span>
-            <span class="n">connection</span><span class="o">.</span><span class="n">request</span><span class="p">(</span><span class="s1">&#39;POST&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="p">,</span> <span class="n">message</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">headers</span><span class="p">)</span>
+            <span class="n">connection</span><span class="o">.</span><span class="n">request</span><span class="p">(</span><span class="s2">&quot;POST&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="p">,</span> <span class="n">message</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">headers</span><span class="p">)</span>
 
             <span class="c1"># Get response and close connection</span>
             <span class="n">response</span> <span class="o">=</span> <span class="n">connection</span><span class="o">.</span><span class="n">getresponse</span><span class="p">()</span>
             <span class="n">connection</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
 
             <span class="k">if</span> <span class="n">response</span><span class="o">.</span><span class="n">status</span> <span class="o">!=</span> <span class="mi">202</span><span class="p">:</span>
-                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;HTTP error: </span><span class="si">{</span><span class="n">response</span><span class="o">.</span><span class="n">status</span><span class="si">}</span><span class="s1"> </span><span class="si">{</span><span class="n">response</span><span class="o">.</span><span class="n">reason</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;HTTP error: </span><span class="si">{</span><span class="n">response</span><span class="o">.</span><span class="n">status</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">response</span><span class="o">.</span><span class="n">reason</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
         <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">handleError</span><span class="p">(</span><span class="n">record</span><span class="p">)</span></div>
@@ -564,7 +570,7 @@
     <span class="n">graylog_debugging</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>  <span class="c1"># Enable debug output from graypy</span>
     <span class="n">graylog_tls</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>  <span class="c1"># Enable TLS/SSL for TCP and HTTP</span>
     <span class="c1"># Formatting</span>
-    <span class="n">format_string</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="si">%(asctime)s</span><span class="s1"> - </span><span class="si">%(name)s</span><span class="s1"> - </span><span class="si">%(levelname)s</span><span class="s1"> - </span><span class="si">%(message)s</span><span class="s1">&#39;</span>
+    <span class="n">format_string</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">%(asctime)s</span><span class="s2"> - </span><span class="si">%(name)s</span><span class="s2"> - </span><span class="si">%(levelname)s</span><span class="s2"> - </span><span class="si">%(message)s</span><span class="s2">&quot;</span>
     <span class="n">handlers</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">list</span><span class="p">,</span> <span class="n">init</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span></div>
 
 
@@ -603,9 +609,7 @@
         <span class="c1"># File handler with rotation</span>
         <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">file_path</span><span class="p">:</span>
             <span class="n">file_handler</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">handlers</span><span class="o">.</span><span class="n">RotatingFileHandler</span><span class="p">(</span>
-                <span class="n">config</span><span class="o">.</span><span class="n">file_path</span><span class="p">,</span>
-                <span class="n">maxBytes</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">file_max_size</span><span class="p">,</span>
-                <span class="n">backupCount</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">file_backup_count</span>
+                <span class="n">config</span><span class="o">.</span><span class="n">file_path</span><span class="p">,</span> <span class="n">maxBytes</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">file_max_size</span><span class="p">,</span> <span class="n">backupCount</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">file_backup_count</span>
             <span class="p">)</span>
             <span class="n">file_handler</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">level</span><span class="p">)</span>
             <span class="n">file_handler</span><span class="o">.</span><span class="n">setFormatter</span><span class="p">(</span><span class="n">formatter</span><span class="p">)</span>
@@ -621,21 +625,19 @@
 
             <span class="c1"># Define base parameters for all handlers</span>
             <span class="n">base_kwargs</span> <span class="o">=</span> <span class="p">{</span>
-                <span class="s1">&#39;facility&#39;</span><span class="p">:</span> <span class="n">facility</span><span class="p">,</span>
-                <span class="s1">&#39;debugging_fields&#39;</span><span class="p">:</span> <span class="n">config</span><span class="o">.</span><span class="n">graylog_debugging</span><span class="p">,</span>
-                <span class="s1">&#39;extra_fields&#39;</span><span class="p">:</span> <span class="n">config</span><span class="o">.</span><span class="n">graylog_extra_fields</span><span class="o">.</span><span class="n">copy</span><span class="p">(),</span>  <span class="c1"># Make a copy to avoid modifying original</span>
+                <span class="s2">&quot;facility&quot;</span><span class="p">:</span> <span class="n">facility</span><span class="p">,</span>
+                <span class="s2">&quot;debugging_fields&quot;</span><span class="p">:</span> <span class="n">config</span><span class="o">.</span><span class="n">graylog_debugging</span><span class="p">,</span>
+                <span class="s2">&quot;extra_fields&quot;</span><span class="p">:</span> <span class="n">config</span><span class="o">.</span><span class="n">graylog_extra_fields</span><span class="o">.</span><span class="n">copy</span><span class="p">(),</span>  <span class="c1"># Make a copy to avoid modifying original</span>
             <span class="p">}</span>
 
             <span class="c1"># Add source to extra_fields since it&#39;s not directly supported by BaseGELFHandler</span>
             <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">graylog_source</span><span class="p">:</span>
-                <span class="n">base_kwargs</span><span class="p">[</span><span class="s1">&#39;extra_fields&#39;</span><span class="p">][</span><span class="s1">&#39;source&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">graylog_source</span>
+                <span class="n">base_kwargs</span><span class="p">[</span><span class="s2">&quot;extra_fields&quot;</span><span class="p">][</span><span class="s2">&quot;source&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">graylog_source</span>
 
             <span class="c1"># Configure protocol-specific handlers</span>
             <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">graylog_protocol</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s2">&quot;tcp&quot;</span><span class="p">:</span>
                 <span class="n">graylog_handler</span> <span class="o">=</span> <span class="n">graypy</span><span class="o">.</span><span class="n">GELFTCPHandler</span><span class="p">(</span>
-                    <span class="n">host</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">graylog_host</span><span class="p">,</span>
-                    <span class="n">port</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">graylog_port</span><span class="p">,</span>
-                    <span class="o">**</span><span class="n">base_kwargs</span>
+                    <span class="n">host</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">graylog_host</span><span class="p">,</span> <span class="n">port</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">graylog_port</span><span class="p">,</span> <span class="o">**</span><span class="n">base_kwargs</span>
                 <span class="p">)</span>
             <span class="k">elif</span> <span class="n">config</span><span class="o">.</span><span class="n">graylog_protocol</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s2">&quot;http&quot;</span><span class="p">:</span>
                 <span class="n">graylog_handler</span> <span class="o">=</span> <span class="n">FixedGELFHTTPHandler</span><span class="p">(</span>
@@ -643,13 +645,12 @@
                     <span class="n">port</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">graylog_port</span><span class="p">,</span>
                     <span class="n">ssl</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">graylog_tls</span><span class="p">,</span>
                     <span class="n">compress</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-                    <span class="n">path</span><span class="o">=</span><span class="s1">&#39;/&#39;</span><span class="p">,</span>
-                    <span class="o">**</span><span class="n">base_kwargs</span>
+                    <span class="n">path</span><span class="o">=</span><span class="s2">&quot;/&quot;</span><span class="p">,</span>
+                    <span class="o">**</span><span class="n">base_kwargs</span><span class="p">,</span>
                 <span class="p">)</span>
             <span class="k">elif</span> <span class="n">config</span><span class="o">.</span><span class="n">graylog_protocol</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s2">&quot;amqp&quot;</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span>
-                    <span class="s2">&quot;AMQP protocol requires additional configuration. &quot;</span>
-                    <span class="s2">&quot;Implement with graypy.AMQPHandler if needed.&quot;</span>
+                    <span class="s2">&quot;AMQP protocol requires additional configuration. Implement with graypy.AMQPHandler if needed.&quot;</span>
                 <span class="p">)</span>
             <span class="k">elif</span> <span class="n">config</span><span class="o">.</span><span class="n">graylog_protocol</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s2">&quot;redis&quot;</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span>
@@ -658,9 +659,7 @@
                 <span class="p">)</span>
             <span class="k">else</span><span class="p">:</span>  <span class="c1"># Default to UDP</span>
                 <span class="n">graylog_handler</span> <span class="o">=</span> <span class="n">graypy</span><span class="o">.</span><span class="n">GELFUDPHandler</span><span class="p">(</span>
-                    <span class="n">host</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">graylog_host</span><span class="p">,</span>
-                    <span class="n">port</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">graylog_port</span><span class="p">,</span>
-                    <span class="o">**</span><span class="n">base_kwargs</span>
+                    <span class="n">host</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">graylog_host</span><span class="p">,</span> <span class="n">port</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">graylog_port</span><span class="p">,</span> <span class="o">**</span><span class="n">base_kwargs</span>
                 <span class="p">)</span>
 
             <span class="n">graylog_handler</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">level</span><span class="p">)</span>
@@ -670,58 +669,81 @@
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">logger</span>
 
 
+<span class="k">def</span><span class="w"> </span><span class="nf">setup_logger</span><span class="p">():</span>
+    <span class="n">load_dotenv</span><span class="p">()</span>
+    <span class="n">required_env_vars</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;GRAYLOG_HOST&quot;</span><span class="p">,</span> <span class="s2">&quot;GRAYLOG_UDP_PORT&quot;</span><span class="p">]</span>
+
+    <span class="n">env_vars</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">required_env_vars</span><span class="p">:</span>
+        <span class="n">value</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error: Required environment variable &#39;</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">&#39; is not set&quot;</span><span class="p">)</span>
+            <span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">env_vars</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
+
+    <span class="k">return</span> <span class="n">LogManager</span><span class="o">.</span><span class="n">get_instance</span><span class="p">(</span><span class="s2">&quot;smartem_decisions&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">configure</span><span class="p">(</span>
+        <span class="n">LogConfig</span><span class="p">(</span>
+            <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">,</span>
+            <span class="n">console</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="n">file_path</span><span class="o">=</span><span class="s2">&quot;smartem_decisions-core.log&quot;</span><span class="p">,</span>  <span class="c1"># TODO define in app config</span>
+            <span class="n">graylog_host</span><span class="o">=</span><span class="n">env_vars</span><span class="p">[</span><span class="s2">&quot;GRAYLOG_HOST&quot;</span><span class="p">],</span>
+            <span class="n">graylog_port</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">env_vars</span><span class="p">[</span><span class="s2">&quot;GRAYLOG_UDP_PORT&quot;</span><span class="p">]),</span>
+            <span class="n">graylog_protocol</span><span class="o">=</span><span class="s2">&quot;udp&quot;</span><span class="p">,</span>
+            <span class="n">graylog_facility</span><span class="o">=</span><span class="s2">&quot;smartem_decisions-core&quot;</span><span class="p">,</span>  <span class="c1"># TODO define in app config</span>
+            <span class="n">graylog_extra_fields</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;environment&quot;</span><span class="p">:</span> <span class="s2">&quot;development&quot;</span><span class="p">,</span> <span class="s2">&quot;version&quot;</span><span class="p">:</span> <span class="n">__version__</span><span class="p">},</span>
+        <span class="p">)</span>
+    <span class="p">)</span>
+
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">setup_logger</span><span class="p">()</span>
+
 <span class="c1"># Usage example</span>
 <span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
     <span class="c1"># Initialize log manager</span>
     <span class="n">log_manager</span> <span class="o">=</span> <span class="n">LogManager</span><span class="o">.</span><span class="n">get_instance</span><span class="p">(</span><span class="s2">&quot;smartem_decisions&quot;</span><span class="p">)</span>
 
     <span class="c1"># Console only</span>
-    <span class="n">logger</span> <span class="o">=</span> <span class="n">log_manager</span><span class="o">.</span><span class="n">configure</span><span class="p">(</span><span class="n">LogConfig</span><span class="p">(</span>
-        <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">,</span>
-        <span class="n">console</span><span class="o">=</span><span class="kc">True</span>
-    <span class="p">))</span>
+    <span class="n">logger</span> <span class="o">=</span> <span class="n">log_manager</span><span class="o">.</span><span class="n">configure</span><span class="p">(</span><span class="n">LogConfig</span><span class="p">(</span><span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">,</span> <span class="n">console</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
     <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Console logging&quot;</span><span class="p">)</span>
 
     <span class="c1"># Console + File</span>
-    <span class="n">logger</span> <span class="o">=</span> <span class="n">log_manager</span><span class="o">.</span><span class="n">configure</span><span class="p">(</span><span class="n">LogConfig</span><span class="p">(</span>
-        <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
-        <span class="n">console</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-        <span class="n">file_path</span><span class="o">=</span><span class="s2">&quot;app.log&quot;</span>
-    <span class="p">))</span>
+    <span class="n">logger</span> <span class="o">=</span> <span class="n">log_manager</span><span class="o">.</span><span class="n">configure</span><span class="p">(</span><span class="n">LogConfig</span><span class="p">(</span><span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span> <span class="n">console</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">file_path</span><span class="o">=</span><span class="s2">&quot;app.log&quot;</span><span class="p">))</span>
     <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Console and file logging&quot;</span><span class="p">)</span>
 
     <span class="c1"># All handlers including Graylog with UDP</span>
-    <span class="n">logger</span> <span class="o">=</span> <span class="n">log_manager</span><span class="o">.</span><span class="n">configure</span><span class="p">(</span><span class="n">LogConfig</span><span class="p">(</span>
-        <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">WARNING</span><span class="p">,</span>
-        <span class="n">console</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-        <span class="n">file_path</span><span class="o">=</span><span class="s2">&quot;app.log&quot;</span><span class="p">,</span>
-        <span class="n">graylog_host</span><span class="o">=</span><span class="s2">&quot;localhost&quot;</span><span class="p">,</span>
-        <span class="n">graylog_port</span><span class="o">=</span><span class="mi">12201</span><span class="p">,</span>
-        <span class="n">graylog_protocol</span><span class="o">=</span><span class="s2">&quot;udp&quot;</span><span class="p">,</span>
-        <span class="n">graylog_facility</span><span class="o">=</span><span class="s2">&quot;my_application&quot;</span><span class="p">,</span>
-        <span class="n">graylog_extra_fields</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;environment&quot;</span><span class="p">:</span> <span class="s2">&quot;development&quot;</span><span class="p">,</span> <span class="s2">&quot;version&quot;</span><span class="p">:</span> <span class="s2">&quot;1.0.0&quot;</span><span class="p">}</span>
-    <span class="p">))</span>
+    <span class="n">logger</span> <span class="o">=</span> <span class="n">log_manager</span><span class="o">.</span><span class="n">configure</span><span class="p">(</span>
+        <span class="n">LogConfig</span><span class="p">(</span>
+            <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">WARNING</span><span class="p">,</span>
+            <span class="n">console</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="n">file_path</span><span class="o">=</span><span class="s2">&quot;app.log&quot;</span><span class="p">,</span>
+            <span class="n">graylog_host</span><span class="o">=</span><span class="s2">&quot;localhost&quot;</span><span class="p">,</span>
+            <span class="n">graylog_port</span><span class="o">=</span><span class="mi">12201</span><span class="p">,</span>
+            <span class="n">graylog_protocol</span><span class="o">=</span><span class="s2">&quot;udp&quot;</span><span class="p">,</span>
+            <span class="n">graylog_facility</span><span class="o">=</span><span class="s2">&quot;my_application&quot;</span><span class="p">,</span>
+            <span class="n">graylog_extra_fields</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;environment&quot;</span><span class="p">:</span> <span class="s2">&quot;development&quot;</span><span class="p">,</span> <span class="s2">&quot;version&quot;</span><span class="p">:</span> <span class="s2">&quot;1.0.0&quot;</span><span class="p">},</span>
+        <span class="p">)</span>
+    <span class="p">)</span>
     <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;Logging everywhere&quot;</span><span class="p">)</span>
 
     <span class="c1"># Example with TCP</span>
-    <span class="n">logger</span> <span class="o">=</span> <span class="n">log_manager</span><span class="o">.</span><span class="n">configure</span><span class="p">(</span><span class="n">LogConfig</span><span class="p">(</span>
-        <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">ERROR</span><span class="p">,</span>
-        <span class="n">console</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-        <span class="n">graylog_host</span><span class="o">=</span><span class="s2">&quot;localhost&quot;</span><span class="p">,</span>
-        <span class="n">graylog_port</span><span class="o">=</span><span class="mi">12202</span><span class="p">,</span>
-        <span class="n">graylog_protocol</span><span class="o">=</span><span class="s2">&quot;tcp&quot;</span>
-    <span class="p">))</span>
+    <span class="n">logger</span> <span class="o">=</span> <span class="n">log_manager</span><span class="o">.</span><span class="n">configure</span><span class="p">(</span>
+        <span class="n">LogConfig</span><span class="p">(</span>
+            <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">ERROR</span><span class="p">,</span> <span class="n">console</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">graylog_host</span><span class="o">=</span><span class="s2">&quot;localhost&quot;</span><span class="p">,</span> <span class="n">graylog_port</span><span class="o">=</span><span class="mi">12202</span><span class="p">,</span> <span class="n">graylog_protocol</span><span class="o">=</span><span class="s2">&quot;tcp&quot;</span>
+        <span class="p">)</span>
+    <span class="p">)</span>
     <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;TCP logging to Graylog&quot;</span><span class="p">)</span>
 
     <span class="c1"># Example with HTTP and TLS</span>
-    <span class="n">logger</span> <span class="o">=</span> <span class="n">log_manager</span><span class="o">.</span><span class="n">configure</span><span class="p">(</span><span class="n">LogConfig</span><span class="p">(</span>
-        <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">ERROR</span><span class="p">,</span>
-        <span class="n">console</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-        <span class="n">graylog_host</span><span class="o">=</span><span class="s2">&quot;localhost&quot;</span><span class="p">,</span>
-        <span class="n">graylog_port</span><span class="o">=</span><span class="mi">12202</span><span class="p">,</span>
-        <span class="n">graylog_protocol</span><span class="o">=</span><span class="s2">&quot;http&quot;</span><span class="p">,</span>
-        <span class="n">graylog_tls</span><span class="o">=</span><span class="kc">True</span>
-    <span class="p">))</span>
+    <span class="n">logger</span> <span class="o">=</span> <span class="n">log_manager</span><span class="o">.</span><span class="n">configure</span><span class="p">(</span>
+        <span class="n">LogConfig</span><span class="p">(</span>
+            <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">ERROR</span><span class="p">,</span>
+            <span class="n">console</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="n">graylog_host</span><span class="o">=</span><span class="s2">&quot;localhost&quot;</span><span class="p">,</span>
+            <span class="n">graylog_port</span><span class="o">=</span><span class="mi">12202</span><span class="p">,</span>
+            <span class="n">graylog_protocol</span><span class="o">=</span><span class="s2">&quot;http&quot;</span><span class="p">,</span>
+            <span class="n">graylog_tls</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="p">)</span>
     <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;Secure HTTP logging to Graylog&quot;</span><span class="p">)</span>
 </pre></div>
 

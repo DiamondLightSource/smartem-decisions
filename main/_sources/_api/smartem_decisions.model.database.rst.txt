@@ -6,6 +6,12 @@
         
         
         
+        
+        
+        
+        
+        
+        
 
 .. automodule:: smartem_decisions.model.database
     :members:
@@ -22,10 +28,16 @@
         :nosignatures:
     
         Acquisition
+        Atlas
+        AtlasTile
         FoilHole
         Grid
         GridSquare
         Micrograph
+        QualityPrediction
+        QualityPredictionModel
+        QualityPredictionModelParameter
+        QualityPredictionModelWeight
         main
     
     

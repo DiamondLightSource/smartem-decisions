@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>smartem_decisions.model &#8212; smartem-decisions 0.1.dev155+gc776108 documentation</title>
+    <title>smartem_decisions.model &#8212; smartem-decisions 0.1.dev157+g0e8b5fc documentation</title>
   
   
   
@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../_static/documentation_options.js?v=f0de1180"></script>
+    <script src="../_static/documentation_options.js?v=0c91d5e7"></script>
     <script src="../_static/doctools.js?v=9bcbadda"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -58,8 +58,8 @@
     <link rel="icon" href="../_static/dls-logo.svg"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="smartem_decisions.model.entity_status" href="smartem_decisions.model.entity_status.html" />
-    <link rel="prev" title="smartem_decisions.cli" href="smartem_decisions.cli.html" />
+    <link rel="next" title="smartem_decisions.model.database" href="smartem_decisions.model.database.html" />
+    <link rel="prev" title="smartem_decisions.log_manager" href="smartem_decisions.log_manager.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
   <meta name="docsearch:version" content="main" />
@@ -398,13 +398,29 @@
   <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
   <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
 <li class="toctree-l1 current active has-children"><a class="reference internal" href="smartem_decisions.html">API</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
-<li class="toctree-l2"><a class="reference internal" href="smartem_decisions.cli.html"><code class="docutils literal notranslate"><span class="pre">smartem_decisions.cli</span></code></a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="smartem_decisions.cli.html"><code class="docutils literal notranslate"><span class="pre">smartem_decisions.cli</span></code></a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="smartem_decisions.cli.initialise_prediction_model_weights.html"><code class="docutils literal notranslate"><span class="pre">smartem_decisions.cli.initialise_prediction_model_weights</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="smartem_decisions.cli.random_model_predictions.html"><code class="docutils literal notranslate"><span class="pre">smartem_decisions.cli.random_model_predictions</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="smartem_decisions.cli.random_prior_updates.html"><code class="docutils literal notranslate"><span class="pre">smartem_decisions.cli.random_prior_updates</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="smartem_decisions.cli.register_quality_prediction_model.html"><code class="docutils literal notranslate"><span class="pre">smartem_decisions.cli.register_quality_prediction_model</span></code></a></li>
+</ul>
+</details></li>
+<li class="toctree-l2"><a class="reference internal" href="smartem_decisions.log_manager.html"><code class="docutils literal notranslate"><span class="pre">smartem_decisions.log_manager</span></code></a></li>
 <li class="toctree-l2 current active has-children"><a class="current reference internal" href="#"><code class="docutils literal notranslate"><span class="pre">smartem_decisions.model</span></code></a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="smartem_decisions.model.database.html"><code class="docutils literal notranslate"><span class="pre">smartem_decisions.model.database</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="smartem_decisions.model.entity_status.html"><code class="docutils literal notranslate"><span class="pre">smartem_decisions.model.entity_status</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="smartem_decisions.model.http_request.html"><code class="docutils literal notranslate"><span class="pre">smartem_decisions.model.http_request</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="smartem_decisions.model.http_response.html"><code class="docutils literal notranslate"><span class="pre">smartem_decisions.model.http_response</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="smartem_decisions.model.mq_event.html"><code class="docutils literal notranslate"><span class="pre">smartem_decisions.model.mq_event</span></code></a></li>
 </ul>
 </details></li>
-<li class="toctree-l2"><a class="reference internal" href="smartem_decisions.predictions.html"><code class="docutils literal notranslate"><span class="pre">smartem_decisions.predictions</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="smartem_decisions.mq_consumer.html"><code class="docutils literal notranslate"><span class="pre">smartem_decisions.mq_consumer</span></code></a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="smartem_decisions.predictions.html"><code class="docutils literal notranslate"><span class="pre">smartem_decisions.predictions</span></code></a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="smartem_decisions.predictions.update.html"><code class="docutils literal notranslate"><span class="pre">smartem_decisions.predictions.update</span></code></a></li>
+</ul>
+</details></li>
+<li class="toctree-l2"><a class="reference internal" href="smartem_decisions.rabbitmq.html"><code class="docutils literal notranslate"><span class="pre">smartem_decisions.rabbitmq</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="smartem_decisions.utils.html"><code class="docutils literal notranslate"><span class="pre">smartem_decisions.utils</span></code></a></li>
 </ul>
 </details></li>
 <li class="toctree-l1"><a class="reference internal" href="../genindex.html">Index</a></li>
@@ -477,10 +493,19 @@
 <p class="rubric">Submodules</p>
 <div class="pst-scrollable-table-container"><table class="autosummary longtable table">
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="smartem_decisions.model.entity_status.html#module-smartem_decisions.model.entity_status" title="smartem_decisions.model.entity_status"><code class="xref py py-obj docutils literal notranslate"><span class="pre">entity_status</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="smartem_decisions.model.database.html#module-smartem_decisions.model.database" title="smartem_decisions.model.database"><code class="xref py py-obj docutils literal notranslate"><span class="pre">database</span></code></a></p></td>
 <td><p></p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="smartem_decisions.model.mq_event.html#module-smartem_decisions.model.mq_event" title="smartem_decisions.model.mq_event"><code class="xref py py-obj docutils literal notranslate"><span class="pre">mq_event</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="smartem_decisions.model.entity_status.html#module-smartem_decisions.model.entity_status" title="smartem_decisions.model.entity_status"><code class="xref py py-obj docutils literal notranslate"><span class="pre">entity_status</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="smartem_decisions.model.http_request.html#module-smartem_decisions.model.http_request" title="smartem_decisions.model.http_request"><code class="xref py py-obj docutils literal notranslate"><span class="pre">http_request</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="smartem_decisions.model.http_response.html#module-smartem_decisions.model.http_response" title="smartem_decisions.model.http_response"><code class="xref py py-obj docutils literal notranslate"><span class="pre">http_response</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="smartem_decisions.model.mq_event.html#module-smartem_decisions.model.mq_event" title="smartem_decisions.model.mq_event"><code class="xref py py-obj docutils literal notranslate"><span class="pre">mq_event</span></code></a></p></td>
 <td><p></p></td>
 </tr>
 </tbody>
@@ -499,20 +524,20 @@
                   
 <div class="prev-next-area">
     <a class="left-prev"
-       href="smartem_decisions.cli.html"
+       href="smartem_decisions.log_manager.html"
        title="previous page">
       <i class="fa-solid fa-angle-left"></i>
       <div class="prev-next-info">
         <p class="prev-next-subtitle">previous</p>
-        <p class="prev-next-title"><code class="docutils literal notranslate"><span class="pre">smartem_decisions.cli</span></code></p>
+        <p class="prev-next-title"><code class="docutils literal notranslate"><span class="pre">smartem_decisions.log_manager</span></code></p>
       </div>
     </a>
     <a class="right-next"
-       href="smartem_decisions.model.entity_status.html"
+       href="smartem_decisions.model.database.html"
        title="next page">
       <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title"><code class="docutils literal notranslate"><span class="pre">smartem_decisions.model.entity_status</span></code></p>
+        <p class="prev-next-title"><code class="docutils literal notranslate"><span class="pre">smartem_decisions.model.database</span></code></p>
       </div>
       <i class="fa-solid fa-angle-right"></i>
     </a>

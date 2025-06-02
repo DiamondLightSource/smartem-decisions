@@ -1,0 +1,23 @@
+``smartem_decisions.cli.random_prior_updates``
+==============================================
+        
+        
+
+.. automodule:: smartem_decisions.cli.random_prior_updates
+    :members:
+
+    
+    
+    
+
+    
+    
+    .. rubric:: Members
+
+    .. autosummary::
+        :nosignatures:
+    
+        perform_random_updates
+        run
+    
+    

@@ -1,6 +1,8 @@
 ``smartem_decisions.utils``
 ===========================
         
+        
+        
 
 .. automodule:: smartem_decisions.utils
     :members:
@@ -17,5 +19,7 @@
         :nosignatures:
     
         load_conf
+        setup_postgres_connection
+        setup_rabbitmq
     
     
