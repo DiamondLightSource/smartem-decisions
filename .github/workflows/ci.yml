@@ -5,6 +5,9 @@ on:
   push:
     branches:
       - main
+    tags:
+      - 'v*'  # Trigger on version tags like v1.0.0
+      - 'test-v*' # Trigger on version test tags like test-v0.0.1 ; TODO remove when no longer needed
   pull_request:
     branches:
       - main
@@ -52,7 +55,6 @@ jobs:
     secrets:
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
-  # TODO restore or remove
   container:
     needs: check
     if: needs.check.outputs.branch-pr == ''
