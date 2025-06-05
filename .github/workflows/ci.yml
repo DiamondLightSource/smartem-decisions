@@ -7,7 +7,6 @@ on:
       - main
     tags:
       - 'v*'  # Trigger on version tags like v1.0.0
-      - 'test-v*' # Trigger on version test tags like test-v0.0.1 ; TODO remove when no longer needed
   pull_request:
     branches:
       - main

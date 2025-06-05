@@ -1,0 +1,57 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: smartem-worker
+  namespace: smartem-decisions
+  labels:
+    app: smartem-worker
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: smartem-worker
+  template:
+    metadata:
+      labels:
+        app: smartem-worker
+    spec:
+      containers:
+      - name: smartem-worker
+        image: ghcr.io/diamondlightsource/smartem-decisions:latest
+        env:
+        - name: ROLE
+          value: "worker"
+        - name: DB_USER
+          valueFrom:
+            secretKeyRef:
+              name: smartem-secrets
+              key: DB_USER
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: smartem-secrets
+              key: DB_PASSWORD
+        - name: RABBITMQ_USER
+          valueFrom:
+            secretKeyRef:
+              name: smartem-secrets
+              key: RABBITMQ_USER
+        - name: RABBITMQ_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: smartem-secrets
+              key: RABBITMQ_PASSWORD
+        volumeMounts:
+        - name: config-volume
+          mountPath: /app/config
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+      volumes:
+      - name: config-volume
+        configMap:
+          name: smartem-config
