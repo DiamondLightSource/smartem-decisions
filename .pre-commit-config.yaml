@@ -6,6 +6,7 @@ repos:
         exclude: ^docs/assets/
       - id: check-yaml
         exclude: ^docs/assets/
+        args: ['--allow-multiple-documents']
       - id: check-merge-conflict
         exclude: ^docs/assets/
       - id: end-of-file-fixer

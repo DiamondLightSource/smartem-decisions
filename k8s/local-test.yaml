@@ -1,0 +1,659 @@
+# k8s/local-test-extended.yaml - Complete local k3s testing setup with supporting services
+
+# namespace.yaml
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: smartem-decisions
+
+---
+
+# configmap.yaml - Local configuration with internal service references
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: smartem-config
+  namespace: smartem-decisions
+data:
+  config.yaml: |
+    database:
+      host: postgres-service
+      port: 5432
+      name: smartem_db
+    rabbitmq:
+      host: rabbitmq-service
+      port: 5672
+    graylog:
+      host: graylog-service
+      port: 12201
+    api:
+      port: 8000
+
+---
+
+# secret.yaml - Test credentials
+apiVersion: v1
+kind: Secret
+metadata:
+  name: smartem-secrets
+  namespace: smartem-decisions
+type: Opaque
+data:
+  DB_USER: dGVzdA==         # test
+  DB_PASSWORD: dGVzdA==     # test
+  RABBITMQ_USER: Z3Vlc3Q=   # guest
+  RABBITMQ_PASSWORD: Z3Vlc3Q= # guest
+  GRAYLOG_PASSWORD_SECRET: c29tZXNlY3JldGZvcmdyYXlsb2c= # somesecretforgraylog
+  GRAYLOG_ROOT_PASSWORD_SHA2: OGM4MjJkNzUyNjEwNzQxOTc3NTIyZGUzMDc4NzA1N2ZlMjEwMjUwMGVlMzY0ODExNDQ1M2M5MzkxMzc3NjA4Mw== # sha256 of 'admin'
+
+---
+
+# PostgreSQL Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres
+  namespace: smartem-decisions
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres
+  template:
+    metadata:
+      labels:
+        app: postgres
+    spec:
+      containers:
+      - name: postgres
+        image: postgres:latest
+        env:
+        - name: POSTGRES_USER
+          valueFrom:
+            secretKeyRef:
+              name: smartem-secrets
+              key: DB_USER
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: smartem-secrets
+              key: DB_PASSWORD
+        - name: POSTGRES_DB
+          value: smartem_db
+        - name: PGDATA
+          value: /var/lib/postgresql/data/pgdata
+        ports:
+        - containerPort: 5432
+        volumeMounts:
+        - name: postgres-storage
+          mountPath: /var/lib/postgresql/data
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "300m"
+      volumes:
+      - name: postgres-storage
+        emptyDir: {}
+
+---
+
+# PostgreSQL Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres-service
+  namespace: smartem-decisions
+spec:
+  selector:
+    app: postgres
+  ports:
+  - port: 5432
+    targetPort: 5432
+  type: ClusterIP
+
+---
+
+# PostgreSQL NodePort for external access
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres-external
+  namespace: smartem-decisions
+spec:
+  selector:
+    app: postgres
+  ports:
+  - port: 5432
+    targetPort: 5432
+    nodePort: 30432
+  type: NodePort
+
+---
+
+# RabbitMQ Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rabbitmq
+  namespace: smartem-decisions
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: rabbitmq
+  template:
+    metadata:
+      labels:
+        app: rabbitmq
+    spec:
+      containers:
+      - name: rabbitmq
+        image: rabbitmq:management
+        env:
+        - name: RABBITMQ_DEFAULT_USER
+          valueFrom:
+            secretKeyRef:
+              name: smartem-secrets
+              key: RABBITMQ_USER
+        - name: RABBITMQ_DEFAULT_PASS
+          valueFrom:
+            secretKeyRef:
+              name: smartem-secrets
+              key: RABBITMQ_PASSWORD
+        ports:
+        - containerPort: 5672
+        - containerPort: 15672
+        volumeMounts:
+        - name: rabbitmq-data
+          mountPath: /var/lib/rabbitmq
+        - name: rabbitmq-logs
+          mountPath: /var/log/rabbitmq
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "300m"
+      volumes:
+      - name: rabbitmq-data
+        emptyDir: {}
+      - name: rabbitmq-logs
+        emptyDir: {}
+
+---
+
+# RabbitMQ Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: rabbitmq-service
+  namespace: smartem-decisions
+spec:
+  selector:
+    app: rabbitmq
+  ports:
+  - name: amqp
+    port: 5672
+    targetPort: 5672
+  - name: management
+    port: 15672
+    targetPort: 15672
+  type: ClusterIP
+
+---
+
+# RabbitMQ NodePort for external access
+apiVersion: v1
+kind: Service
+metadata:
+  name: rabbitmq-external
+  namespace: smartem-decisions
+spec:
+  selector:
+    app: rabbitmq
+  ports:
+  - name: amqp
+    port: 5672
+    targetPort: 5672
+    nodePort: 30672
+  - name: management
+    port: 15672
+    targetPort: 15672
+    nodePort: 30673
+  type: NodePort
+
+---
+
+# MongoDB Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mongodb
+  namespace: smartem-decisions
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mongodb
+  template:
+    metadata:
+      labels:
+        app: mongodb
+    spec:
+      containers:
+      - name: mongodb
+        image: mongo:5
+        ports:
+        - containerPort: 27017
+        volumeMounts:
+        - name: mongodb-storage
+          mountPath: /data/db
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "300m"
+      volumes:
+      - name: mongodb-storage
+        emptyDir: {}
+
+---
+
+# MongoDB Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: mongodb-service
+  namespace: smartem-decisions
+spec:
+  selector:
+    app: mongodb
+  ports:
+  - port: 27017
+    targetPort: 27017
+  type: ClusterIP
+
+---
+
+# Elasticsearch Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: elasticsearch
+  namespace: smartem-decisions
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: elasticsearch
+  template:
+    metadata:
+      labels:
+        app: elasticsearch
+    spec:
+      containers:
+      - name: elasticsearch
+        image: docker.elastic.co/elasticsearch/elasticsearch:7.10.2
+        env:
+        - name: http.host
+          value: "0.0.0.0"
+        - name: transport.host
+          value: "localhost"
+        - name: network.host
+          value: "0.0.0.0"
+        - name: ES_JAVA_OPTS
+          value: "-Xms512m -Xmx512m"
+        - name: discovery.type
+          value: "single-node"
+        ports:
+        - containerPort: 9200
+        - containerPort: 9300
+        volumeMounts:
+        - name: elasticsearch-storage
+          mountPath: /usr/share/elasticsearch/data
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "200m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+      volumes:
+      - name: elasticsearch-storage
+        emptyDir: {}
+
+---
+
+# Elasticsearch Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: elasticsearch-service
+  namespace: smartem-decisions
+spec:
+  selector:
+    app: elasticsearch
+  ports:
+  - name: http
+    port: 9200
+    targetPort: 9200
+  - name: transport
+    port: 9300
+    targetPort: 9300
+  type: ClusterIP
+
+---
+
+# Graylog Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: graylog
+  namespace: smartem-decisions
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: graylog
+  template:
+    metadata:
+      labels:
+        app: graylog
+    spec:
+      containers:
+      - name: graylog
+        image: graylog/graylog:6.1.10
+        env:
+        - name: GRAYLOG_HTTP_EXTERNAL_URI
+          value: "http://localhost:30900/"
+        - name: GRAYLOG_ELASTICSEARCH_HOSTS
+          value: "http://elasticsearch-service:9200"
+        - name: GRAYLOG_MONGODB_URI
+          value: "mongodb://mongodb-service:27017/graylog"
+        - name: GRAYLOG_PASSWORD_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: smartem-secrets
+              key: GRAYLOG_PASSWORD_SECRET
+        - name: GRAYLOG_ROOT_PASSWORD_SHA2
+          valueFrom:
+            secretKeyRef:
+              name: smartem-secrets
+              key: GRAYLOG_ROOT_PASSWORD_SHA2
+        - name: GRAYLOG_ROOT_TIMEZONE
+          value: "UTC"
+        ports:
+        - containerPort: 9000
+        - containerPort: 12201
+        - containerPort: 1514
+        volumeMounts:
+        - name: graylog-data
+          mountPath: /usr/share/graylog/data/data
+        - name: graylog-journal
+          mountPath: /usr/share/graylog/data/journal
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "200m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+      volumes:
+      - name: graylog-data
+        emptyDir: {}
+      - name: graylog-journal
+        emptyDir: {}
+
+---
+
+# Graylog Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: graylog-service
+  namespace: smartem-decisions
+spec:
+  selector:
+    app: graylog
+  ports:
+  - name: http
+    port: 9000
+    targetPort: 9000
+  - name: gelf-udp
+    port: 12201
+    targetPort: 12201
+    protocol: UDP
+  - name: syslog
+    port: 1514
+    targetPort: 1514
+    protocol: UDP
+  type: ClusterIP
+
+---
+
+# Graylog NodePort for external access
+apiVersion: v1
+kind: Service
+metadata:
+  name: graylog-external
+  namespace: smartem-decisions
+spec:
+  selector:
+    app: graylog
+  ports:
+  - name: http
+    port: 9000
+    targetPort: 9000
+    nodePort: 30900
+  - name: gelf-udp
+    port: 12201
+    targetPort: 12201
+    nodePort: 30201
+    protocol: UDP
+  type: NodePort
+
+---
+
+# Adminer Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: adminer
+  namespace: smartem-decisions
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: adminer
+  template:
+    metadata:
+      labels:
+        app: adminer
+    spec:
+      containers:
+      - name: adminer
+        image: adminer:latest
+        env:
+        - name: ADMINER_DEFAULT_SERVER
+          value: postgres-service
+        ports:
+        - containerPort: 8080
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "50m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+
+---
+
+# Adminer Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: adminer-external
+  namespace: smartem-decisions
+spec:
+  selector:
+    app: adminer
+  ports:
+  - port: 8080
+    targetPort: 8080
+    nodePort: 30808
+  type: NodePort
+
+---
+
+# http-api-deployment.yaml - Updated with proper service references
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: smartem-http-api
+  namespace: smartem-decisions
+  labels:
+    app: smartem-http-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: smartem-http-api
+  template:
+    metadata:
+      labels:
+        app: smartem-http-api
+    spec:
+      imagePullSecrets:
+      - name: ghcr-secret
+      containers:
+      - name: smartem-http-api
+        image: ghcr.io/diamondlightsource/smartem-decisions:latest
+        ports:
+        - containerPort: 8000
+        env:
+        - name: ROLE
+          value: "api"
+        - name: DB_USER
+          valueFrom:
+            secretKeyRef:
+              name: smartem-secrets
+              key: DB_USER
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: smartem-secrets
+              key: DB_PASSWORD
+        - name: RABBITMQ_USER
+          valueFrom:
+            secretKeyRef:
+              name: smartem-secrets
+              key: RABBITMQ_USER
+        - name: RABBITMQ_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: smartem-secrets
+              key: RABBITMQ_PASSWORD
+        volumeMounts:
+        - name: config-volume
+          mountPath: /app/config
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "200m"
+      volumes:
+      - name: config-volume
+        configMap:
+          name: smartem-config
+
+---
+
+# worker-deployment.yaml - Updated with proper service references
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: smartem-worker
+  namespace: smartem-decisions
+  labels:
+    app: smartem-worker
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: smartem-worker
+  template:
+    metadata:
+      labels:
+        app: smartem-worker
+    spec:
+      imagePullSecrets:
+      - name: ghcr-secret
+      containers:
+      - name: smartem-worker
+        image: ghcr.io/diamondlightsource/smartem-decisions:latest
+        env:
+        - name: ROLE
+          value: "worker"
+        - name: DB_USER
+          valueFrom:
+            secretKeyRef:
+              name: smartem-secrets
+              key: DB_USER
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: smartem-secrets
+              key: DB_PASSWORD
+        - name: RABBITMQ_USER
+          valueFrom:
+            secretKeyRef:
+              name: smartem-secrets
+              key: RABBITMQ_USER
+        - name: RABBITMQ_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: smartem-secrets
+              key: RABBITMQ_PASSWORD
+        volumeMounts:
+        - name: config-volume
+          mountPath: /app/config
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "200m"
+      volumes:
+      - name: config-volume
+        configMap:
+          name: smartem-config
+
+---
+
+# NodePort service for local access to API
+apiVersion: v1
+kind: Service
+metadata:
+  name: smartem-http-api-service
+  namespace: smartem-decisions
+  labels:
+    app: smartem-http-api
+spec:
+  selector:
+    app: smartem-http-api
+  ports:
+  - name: http
+    port: 80
+    targetPort: 8000
+    nodePort: 30080
+    protocol: TCP
+  type: NodePort

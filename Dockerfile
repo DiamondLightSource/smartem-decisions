@@ -32,7 +32,7 @@ COPY --from=build /venv/ /venv/
 COPY --from=build /app/ /app/
 ENV PATH=/venv/bin:$PATH
 
-# Use a shell form of ENTRYPOINT to allow for environment variable expansion
-ENTRYPOINT ["/bin/bash", "-c"]
-# Run database initialization and then start the API server
-CMD ["cd /app && source .env && python -m smartem_decisions.model.database && uvicorn smartem_decisions.http_api:app --host 0.0.0.0 --port $HTTP_API_PORT"]
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+ENTRYPOINT ["/entrypoint.sh"]
