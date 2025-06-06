@@ -42,7 +42,7 @@ class RabbitMQConnection:
         Returns:
             dict: Connection parameters
         """
-        load_dotenv()
+        load_dotenv(override=False)  # Don't override existing env vars as these might be coming from k8s
 
         required_env_vars = ["RABBITMQ_HOST", "RABBITMQ_PORT", "RABBITMQ_USER", "RABBITMQ_PASSWORD"]
         for key in required_env_vars:
