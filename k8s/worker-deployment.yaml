@@ -15,22 +15,24 @@ spec:
       labels:
         app: smartem-worker
     spec:
+      imagePullSecrets:
+      - name: ghcr-secret
       containers:
       - name: smartem-worker
         image: ghcr.io/diamondlightsource/smartem-decisions:latest
         env:
         - name: ROLE
           value: "worker"
-        - name: DB_USER
+        - name: POSTGRES_USER
           valueFrom:
             secretKeyRef:
               name: smartem-secrets
-              key: DB_USER
-        - name: DB_PASSWORD
+              key: POSTGRES_USER
+        - name: POSTGRES_PASSWORD
           valueFrom:
             secretKeyRef:
               name: smartem-secrets
-              key: DB_PASSWORD
+              key: POSTGRES_PASSWORD
         - name: RABBITMQ_USER
           valueFrom:
             secretKeyRef:
@@ -41,9 +43,9 @@ spec:
             secretKeyRef:
               name: smartem-secrets
               key: RABBITMQ_PASSWORD
-        volumeMounts:
-        - name: config-volume
-          mountPath: /app/config
+        envFrom:
+        - configMapRef:
+            name: smartem-config
         resources:
           requests:
             memory: "256Mi"
@@ -51,7 +53,3 @@ spec:
           limits:
             memory: "512Mi"
             cpu: "500m"
-      volumes:
-      - name: config-volume
-        configMap:
-          name: smartem-config
