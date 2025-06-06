@@ -54,7 +54,7 @@ from smartem_decisions.utils import (
     setup_postgres_connection,
 )
 
-load_dotenv()
+load_dotenv(override=False)  # Don't override existing env vars as these might be coming from k8s
 conf = load_conf()
 db_engine = setup_postgres_connection()
 

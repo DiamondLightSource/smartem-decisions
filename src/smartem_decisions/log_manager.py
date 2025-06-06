@@ -217,7 +217,7 @@ class LogManager:
 
 
 def setup_logger():
-    load_dotenv()
+    load_dotenv(override=False)  # Don't override existing env vars as these might be coming from k8s
     required_env_vars = ["GRAYLOG_HOST", "GRAYLOG_UDP_PORT"]
 
     env_vars = {}
