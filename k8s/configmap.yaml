@@ -4,16 +4,5 @@ metadata:
   name: smartem-config
   namespace: smartem-decisions
 data:
-  config.yaml: |
-    # Your config.yaml contents go here
-    # Update with your actual configuration
-    database:
-      host: postgres-service  # Update with your actual postgres service
-      port: 5432
-      name: smartem_db
-    rabbitmq:
-      host: rabbitmq-service  # Update with your actual rabbitmq service
-      port: 5672
-    graylog:
-      host: graylog-service   # Update with your actual graylog service
-      port: 12201
+  MODE: "prod"
+  HTTP_API_PORT: "8000"
