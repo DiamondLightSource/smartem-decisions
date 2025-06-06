@@ -1,0 +1,43 @@
+``smartem_decisions.model.database``
+====================================
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+
+.. automodule:: smartem_decisions.model.database
+    :members:
+
+    
+    
+    
+
+    
+    
+    .. rubric:: Members
+
+    .. autosummary::
+        :nosignatures:
+    
+        Acquisition
+        Atlas
+        AtlasTile
+        FoilHole
+        Grid
+        GridSquare
+        Micrograph
+        QualityPrediction
+        QualityPredictionModel
+        QualityPredictionModelParameter
+        QualityPredictionModelWeight
+        main
+    
+    

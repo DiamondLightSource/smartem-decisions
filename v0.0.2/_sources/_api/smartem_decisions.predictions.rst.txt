@@ -1,0 +1,22 @@
+``smartem_decisions.predictions``
+=================================
+
+.. automodule:: smartem_decisions.predictions
+    :members:
+
+    
+    
+    .. rubric:: Submodules
+
+    .. autosummary::
+        :toctree:
+        :template: custom-module-template.rst
+        :recursive:
+    
+        update
+    
+    
+
+    
+    
+    

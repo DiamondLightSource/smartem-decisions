@@ -1,0 +1,23 @@
+``smartem_decisions.cli.register_quality_prediction_model``
+===========================================================
+        
+        
+
+.. automodule:: smartem_decisions.cli.register_quality_prediction_model
+    :members:
+
+    
+    
+    
+
+    
+    
+    .. rubric:: Members
+
+    .. autosummary::
+        :nosignatures:
+    
+        register
+        run
+    
+    
