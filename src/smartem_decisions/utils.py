@@ -24,7 +24,7 @@ def load_conf():
 
 
 def setup_postgres_connection():
-    load_dotenv()
+    load_dotenv(override=False)  # Don't override existing env vars as these might be coming from k8s
     required_env_vars = ["POSTGRES_USER", "POSTGRES_PASSWORD", "POSTGRES_PORT", "POSTGRES_DB"]
 
     env_vars = {}
