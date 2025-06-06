@@ -1,0 +1,27 @@
+``smartem_decisions.log_manager``
+=================================
+        
+        
+        
+        
+
+.. automodule:: smartem_decisions.log_manager
+    :members:
+
+    
+    
+    
+
+    
+    
+    .. rubric:: Members
+
+    .. autosummary::
+        :nosignatures:
+    
+        FixedGELFHTTPHandler
+        LogConfig
+        LogManager
+        setup_logger
+    
+    

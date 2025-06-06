@@ -1,0 +1,21 @@
+``smartem_decisions.predictions.update``
+========================================
+        
+
+.. automodule:: smartem_decisions.predictions.update
+    :members:
+
+    
+    
+    
+
+    
+    
+    .. rubric:: Members
+
+    .. autosummary::
+        :nosignatures:
+    
+        prior_update
+    
+    

@@ -1,0 +1,75 @@
+``smartem_decisions.model.http_request``
+========================================
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+
+.. automodule:: smartem_decisions.model.http_request
+    :members:
+
+    
+    
+    
+
+    
+    
+    .. rubric:: Members
+
+    .. autosummary::
+        :nosignatures:
+    
+        AcquisitionBaseFields
+        AcquisitionBaseRequest
+        AcquisitionCreateRequest
+        AcquisitionUpdateRequest
+        AtlasBaseFields
+        AtlasBaseRequest
+        AtlasCreateRequest
+        AtlasTileBaseFields
+        AtlasTileBaseRequest
+        AtlasTileCreateRequest
+        AtlasTileUpdateRequest
+        AtlasUpdateRequest
+        FoilHoleBaseFields
+        FoilHoleBaseRequest
+        FoilHoleCreateRequest
+        FoilHoleUpdateRequest
+        GridBaseFields
+        GridBaseRequest
+        GridCreateRequest
+        GridSquareBaseFields
+        GridSquareBaseRequest
+        GridSquareCreateRequest
+        GridSquareUpdateRequest
+        GridUpdateRequest
+        MicrographBaseFields
+        MicrographBaseRequest
+        MicrographCreateRequest
+        MicrographUpdateRequest
+    
+    
