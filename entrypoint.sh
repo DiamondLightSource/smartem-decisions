@@ -7,7 +7,8 @@ source .env
 case "${ROLE:-api}" in
     api)
         echo "Starting HTTP API..."
-        # python -m smartem_decisions.model.database
+        # TODO we don't want to do it indiscriminately on every container launch:
+        python -m smartem_decisions.model.database
         exec uvicorn smartem_decisions.http_api:app --host 0.0.0.0 --port $HTTP_API_PORT
         ;;
     worker)
