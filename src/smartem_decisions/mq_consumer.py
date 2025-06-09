@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import json
+import time
 from collections.abc import Callable
 from datetime import datetime
 from typing import Any
@@ -772,13 +773,17 @@ def on_message(ch, method, properties, body):
 
 def main():
     """Main function to run the consumer"""
-    try:
-        # Start consuming messages with the on_message callback
-        rmq_consumer.consume(on_message, prefetch_count=1)
-    except KeyboardInterrupt:
-        logger.info("Consumer stopped by user")
-    except Exception as e:
-        logger.error(f"Error in consumer: {e}")
+    while True:
+        try:
+            logger.info("Starting RabbitMQ consumer...")
+            rmq_consumer.consume(on_message, prefetch_count=1)
+        except KeyboardInterrupt:
+            logger.info("Consumer stopped by user")
+            break
+        except Exception as e:
+            logger.error(f"Error in consumer: {e}")
+            logger.info("Retrying in 10 seconds...")
+            time.sleep(10)
 
 
 if __name__ == "__main__":
