@@ -25,7 +25,7 @@ def load_conf():
 
 def setup_postgres_connection():
     load_dotenv(override=False)  # Don't override existing env vars as these might be coming from k8s
-    required_env_vars = ["POSTGRES_USER", "POSTGRES_PASSWORD", "POSTGRES_PORT", "POSTGRES_DB"]
+    required_env_vars = ["POSTGRES_USER", "POSTGRES_PASSWORD", "POSTGRES_HOST", "POSTGRES_PORT", "POSTGRES_DB"]
 
     env_vars = {}
     for key in required_env_vars:
@@ -37,7 +37,7 @@ def setup_postgres_connection():
 
     engine = create_engine(
         f"postgresql+psycopg2://{env_vars['POSTGRES_USER']}:{env_vars['POSTGRES_PASSWORD']}@"
-        f"localhost:{env_vars['POSTGRES_PORT']}/{env_vars['POSTGRES_DB']}",
+        f"{env_vars['POSTGRES_HOST']}:{env_vars['POSTGRES_PORT']}/{env_vars['POSTGRES_DB']}",
         echo=True,  # TODO test if possible to feed this output through our logger
     )
     return engine

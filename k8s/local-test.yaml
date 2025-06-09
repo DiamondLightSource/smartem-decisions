@@ -1,7 +1,3 @@
-# k8s/local-test-extended.yaml - Complete local k3s testing setup with supporting services
-%YAML 1.2
----
-# namespace.yaml
 apiVersion: v1
 kind: Namespace
 metadata:
@@ -9,7 +5,6 @@ metadata:
 
 ---
 
-# configmap.yaml - Local configuration with environment variables
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -30,7 +25,6 @@ data:
 
 ---
 
-# secret.yaml - Test credentials
 apiVersion: v1
 kind: Secret
 metadata:
@@ -38,16 +32,15 @@ metadata:
   namespace: smartem-decisions
 type: Opaque
 data:
-  POSTGRES_USER: dGVzdA==         # test
-  POSTGRES_PASSWORD: dGVzdA==     # test
-  RABBITMQ_USER: Z3Vlc3Q=   # guest
-  RABBITMQ_PASSWORD: Z3Vlc3Q= # guest
-  GRAYLOG_PASSWORD_SECRET: c29tZXNlY3JldGZvcmdyYXlsb2c= # somesecretforgraylog
-  GRAYLOG_ROOT_PASSWORD_SHA2: OGM4MjJkNzUyNjEwNzQxOTc3NTIyZGUzMDc4NzA1N2ZlMjEwMjUwMGVlMzY0ODExNDQ1M2M5MzkxMzc3NjA4Mw== # sha256 of 'admin'
+  POSTGRES_USER: dXNlcm5hbWU=
+  POSTGRES_PASSWORD: cGFzc3dvcmQ=
+  RABBITMQ_USER: dXNlcm5hbWU=
+  RABBITMQ_PASSWORD: cGFzc3dvcmQ=
+  GRAYLOG_PASSWORD_SECRET: c29tZXNlY3JldGZvcmdyYXlsb2c=
+  GRAYLOG_ROOT_PASSWORD_SHA2: OGM4MjJkNzUyNjEwNzQxOTc3NTIyZGUzMDc4NzA1N2ZlMjEwMjUwMGVlMzY0ODExNDQ1M2M5MzkxMzc3NjA4Mw==
 
 ---
 
-# PostgreSQL Deployment
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -71,12 +64,12 @@ spec:
           valueFrom:
             secretKeyRef:
               name: smartem-secrets
-              key: DB_USER
+              key: POSTGRES_USER
         - name: POSTGRES_PASSWORD
           valueFrom:
             secretKeyRef:
               name: smartem-secrets
-              key: DB_PASSWORD
+              key: POSTGRES_PASSWORD
         - name: POSTGRES_DB
           value: smartem_db
         - name: PGDATA
@@ -99,7 +92,6 @@ spec:
 
 ---
 
-# PostgreSQL Service
 apiVersion: v1
 kind: Service
 metadata:
@@ -115,7 +107,6 @@ spec:
 
 ---
 
-# PostgreSQL NodePort for external access
 apiVersion: v1
 kind: Service
 metadata:
@@ -132,7 +123,6 @@ spec:
 
 ---
 
-# RabbitMQ Deployment
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -185,7 +175,6 @@ spec:
 
 ---
 
-# RabbitMQ Service
 apiVersion: v1
 kind: Service
 metadata:
@@ -205,7 +194,6 @@ spec:
 
 ---
 
-# RabbitMQ NodePort for external access
 apiVersion: v1
 kind: Service
 metadata:
@@ -227,7 +215,6 @@ spec:
 
 ---
 
-# MongoDB Deployment
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -264,7 +251,6 @@ spec:
 
 ---
 
-# MongoDB Service
 apiVersion: v1
 kind: Service
 metadata:
@@ -280,7 +266,6 @@ spec:
 
 ---
 
-# Elasticsearch Deployment
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -329,7 +314,6 @@ spec:
 
 ---
 
-# Elasticsearch Service
 apiVersion: v1
 kind: Service
 metadata:
@@ -349,7 +333,6 @@ spec:
 
 ---
 
-# Graylog Deployment
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -411,7 +394,6 @@ spec:
 
 ---
 
-# Graylog Service
 apiVersion: v1
 kind: Service
 metadata:
@@ -436,7 +418,6 @@ spec:
 
 ---
 
-# Graylog NodePort for external access
 apiVersion: v1
 kind: Service
 metadata:
@@ -459,7 +440,6 @@ spec:
 
 ---
 
-# Adminer Deployment
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -493,7 +473,6 @@ spec:
 
 ---
 
-# Adminer Service
 apiVersion: v1
 kind: Service
 metadata:
@@ -510,7 +489,6 @@ spec:
 
 ---
 
-# http-api-deployment.yaml - Updated with proper service references
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -561,7 +539,6 @@ spec:
         envFrom:
         - configMapRef:
             name: smartem-config
-        volumeMounts:
         resources:
           requests:
             memory: "128Mi"
@@ -569,11 +546,9 @@ spec:
           limits:
             memory: "256Mi"
             cpu: "200m"
-      volumes:
 
 ---
 
-# worker-deployment.yaml - Updated with proper service references
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -622,7 +597,6 @@ spec:
         envFrom:
         - configMapRef:
             name: smartem-config
-        volumeMounts:
         resources:
           requests:
             memory: "128Mi"
@@ -630,14 +604,9 @@ spec:
           limits:
             memory: "256Mi"
             cpu: "200m"
-      volumes:
-      - name: config-volume
-        configMap:
-          name: smartem-config
 
 ---
 
-# NodePort service for local access to API
 apiVersion: v1
 kind: Service
 metadata:
