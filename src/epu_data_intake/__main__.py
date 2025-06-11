@@ -5,7 +5,6 @@ import platform
 import signal
 import time
 from pathlib import Path
-from typing import Annotated
 
 import typer
 from watchdog.observers import Observer
@@ -18,47 +17,9 @@ from epu_data_intake.fs_watcher import (
 )
 from epu_data_intake.model.store import InMemoryDataStore
 
-
-# Create a callback to handle the verbose flag at the root level
-def logging_callback(ctx: typer.Context, param: typer.CallbackParam, value: int):
-    if value == 2:  # Debug level (most verbose)
-        logging.basicConfig(
-            level=logging.DEBUG,
-            format="%(asctime)s - %(levelname)s - %(message)s",
-            force=True,
-        )
-    elif value == 1:  # Info level (current verbose)
-        logging.basicConfig(
-            level=logging.INFO,
-            format="%(asctime)s - %(levelname)s - %(message)s",
-            force=True,
-        )
-    else:  # Default warning level
-        logging.basicConfig(
-            level=logging.WARNING,
-            format="%(asctime)s - %(levelname)s - %(message)s",
-            force=True,
-        )
-    # Store verbosity level in context
-    ctx.ensure_object(dict)
-    ctx.obj["verbosity"] = value
-    return value
-
-
 epu_data_intake_cli = typer.Typer(help="EPU Data Intake Tools")
 parse_cli = typer.Typer(help="Commands for parsing EPU data")
 epu_data_intake_cli.add_typer(parse_cli, name="parse")
-
-# Add verbose flag to root command
-shared_verbosity_option = typer.Option(
-    0,
-    "--verbose",
-    "-v",
-    count=True,
-    help="Verbosity level: -v for INFO, -vv for DEBUG",
-    callback=logging_callback,
-    is_eager=True,  # Process this flag before other parameters
-)
 
 
 # Add callbacks to all command groups to support -v/-vv flags
@@ -66,13 +27,13 @@ shared_verbosity_option = typer.Option(
 # does the actual work of configuring the logging.
 # They just need to exist to allow Typer to recognize the flag at that command level.
 @epu_data_intake_cli.callback()
-def main_callback(verbose: int = shared_verbosity_option):
+def main_callback():
     """Main callback to enable verbose flag on root command"""
     pass
 
 
 @parse_cli.callback()
-def parse_callback(verbose: int = shared_verbosity_option):
+def parse_callback():
     """Parse group callback to enable verbose flag on parse command"""
     pass
 
@@ -80,7 +41,7 @@ def parse_callback(verbose: int = shared_verbosity_option):
 @parse_cli.command("dir")
 def parse_epu_output_dir(
     epu_output_dir: str,
-    verbose: int = shared_verbosity_option,
+    verbose: int = 0,
 ):
     """Parse an entire EPU output directory structure. May contain multiple grids"""
     # Rationale here is that parsers don't persist data to API by design - only watch command does that
@@ -97,7 +58,7 @@ def parse_epu_output_dir(
 @parse_cli.command("grid")
 def parse_grid(
     grid_data_dir: str,
-    verbose: int = shared_verbosity_option,  # Used by Typer for CLI context, do not remove
+    verbose: int = 0,  # Used by Typer for CLI context, do not remove
 ):
     is_valid, errors = EpuParser.validate_project_dir(Path(grid_data_dir))
 
@@ -117,7 +78,7 @@ def parse_grid(
 @parse_cli.command("session")
 def parse_epu_session(
     path: str,
-    verbose: int = shared_verbosity_option,  # Used by Typer for CLI context, do not remove
+    verbose: int = 0,  # Used by Typer for CLI context, do not remove
 ):
     """Parse an EPU session manifest file."""
     epu_session_data = EpuParser.parse_epu_session_manifest(path)
@@ -127,7 +88,7 @@ def parse_epu_session(
 @parse_cli.command("atlas")
 def parse_atlas(
     path: str,
-    verbose: int = shared_verbosity_option,  # Used by Typer for CLI context, do not remove
+    verbose: int = 0,  # Used by Typer for CLI context, do not remove
 ):
     """Parse an atlas manifest file."""
     atlas_data = EpuParser.parse_atlas_manifest(path)
@@ -137,7 +98,7 @@ def parse_atlas(
 @parse_cli.command("gridsquare-metadata")
 def parse_gridsquare_metadata(
     path: str,
-    verbose: int = shared_verbosity_option,  # Used by Typer for CLI context, do not remove
+    verbose: int = 0,  # Used by Typer for CLI context, do not remove
 ):
     """Parse grid square metadata."""
     metadata = EpuParser.parse_gridsquare_metadata(path)
@@ -147,7 +108,7 @@ def parse_gridsquare_metadata(
 @parse_cli.command("gridsquare")
 def parse_gridsquare(
     path: str,
-    verbose: int = shared_verbosity_option,  # Used by Typer for CLI context, do not remove
+    verbose: int = 0,  # Used by Typer for CLI context, do not remove
 ):
     """Parse a grid square manifest file."""
     gridsquare_manifest_data = EpuParser.parse_gridsquare_manifest(path)
@@ -157,7 +118,7 @@ def parse_gridsquare(
 @parse_cli.command("foilhole")
 def parse_foilhole(
     path: str,
-    verbose: int = shared_verbosity_option,  # Used by Typer for CLI context, do not remove
+    verbose: int = 0,  # Used by Typer for CLI context, do not remove
 ):
     """Parse a foil hole manifest file."""
     foilhole_data = EpuParser.parse_foilhole_manifest(path)
@@ -167,7 +128,7 @@ def parse_foilhole(
 @parse_cli.command("micrograph")
 def parse_micrograph(
     path: str,
-    verbose: int = shared_verbosity_option,  # Used by Typer for CLI context, do not remove
+    verbose: int = 0,  # Used by Typer for CLI context, do not remove
 ):
     """Parse a micrograph manifest file."""
     micrograph_data = EpuParser.parse_micrograph_manifest(path)
@@ -177,7 +138,7 @@ def parse_micrograph(
 @epu_data_intake_cli.command("validate")
 def validate_epu_dir(
     path: str,
-    verbose: int = shared_verbosity_option,  # Used by Typer for CLI context, do not remove
+    verbose: int = 0,  # Used by Typer for CLI context, do not remove
 ):
     """Validate the structure of an EPU project directory. Note - this only asserts
     that the structure is valid, does not validate content of files within."""
@@ -195,44 +156,35 @@ def validate_epu_dir(
 
 @epu_data_intake_cli.command("watch")
 def watch_directory(
-    path: Annotated[Path, typer.Argument(..., help="Directory to watch")],
-    dry_run: Annotated[
-        bool,
-        typer.Option(
-            False,
-            "--dry_run",
-            "-n",
-            help="Enables dry run mode, writing data in-memory and not posting to Core's HTTP API",
-        ),
-    ],
-    # TODO
-    #  - consider providing via env but allowing override via CLI.
-    #  - Investigate how Win env vars work.
-    #  - Accept a hard-coded value at build time
-    api_url: Annotated[
-        str,
-        typer.Option(
-            "http://127.0.0.1:8000", "--api-url", "-a", help="URL for the Core API (required unless in dry run mode)"
-        ),
-    ],
-    # TODO currently unused because logging should come from `~smartem_decisions~` `shared` module,
-    #  and the log filename should be wired to `log_manager` instantiation once that's in place.
-    log_file: Annotated[
-        str | None, typer.Option("fs_changes.log", "--log-file", "-l", help="Log file path (optional)")
-    ],
-    log_interval: Annotated[
-        float, typer.Option(10.0, "--interval", "-i", help="Minimum interval between log entries in seconds")
-    ],
-    # TODO decide if there's ever a use-case when we might want to override the defaults - drop otherwise
-    patterns: Annotated[
-        list[str],
-        typer.Option(
-            DEFAULT_PATTERNS, "--pattern", "-p", help="File patterns to watch (can be specified multiple times)"
-        ),
-    ],
-    verbose: int = shared_verbosity_option,
+    path: Path,
+    dry_run: bool = False,
+    api_url: str = "http://127.0.0.1:8000",
+    log_file: str = "fs_changes.log",
+    log_interval: float = 10.0,
+    verbose: int = 0,
 ):
     """Watch directory for file changes and log them in JSON format."""
+
+    # Configure logging based on verbosity level
+    if verbose == 2:  # Debug level (most verbose)
+        logging.basicConfig(
+            level=logging.DEBUG,
+            format="%(asctime)s - %(levelname)s - %(message)s",
+            force=True,
+        )
+    elif verbose == 1:  # Info level
+        logging.basicConfig(
+            level=logging.INFO,
+            format="%(asctime)s - %(levelname)s - %(message)s",
+            force=True,
+        )
+    else:  # Default warning level
+        logging.basicConfig(
+            level=logging.WARNING,
+            format="%(asctime)s - %(levelname)s - %(message)s",
+            force=True,
+        )
+
     path = Path(path).absolute()
     if not path.exists():
         logging.error(f"Error: Directory {path} does not exist")
@@ -253,9 +205,11 @@ def watch_directory(
             logging.error(f"Error: API at {api_url} is not reachable: {str(e)}")
             raise typer.Exit(1) from None
 
-    logging.info(f"Starting to watch directory: {str(path)} (including subdirectories) for patterns: {patterns}")
+    logging.info(
+        f"Starting to watch directory: {str(path)} (including subdirectories) for patterns: {DEFAULT_PATTERNS}"
+    )
 
-    handler = RateLimitedFilesystemEventHandler(path, dry_run, api_url, log_interval, patterns)
+    handler = RateLimitedFilesystemEventHandler(path, dry_run, api_url, log_interval, DEFAULT_PATTERNS)
 
     logging.info("Parsing existing directory contents...")
     # TODO settle a potential race condition between parser and watcher if one exists:
