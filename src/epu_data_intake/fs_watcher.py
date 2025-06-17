@@ -115,7 +115,7 @@ class RateLimitedFilesystemEventHandler(FileSystemEventHandler):
         except ValueError:
             return False
 
-    # TODO Enhancement: log all events to graylog (if reachable) for session debugging and playback
+    # TODO Enhancement: log all events for session debugging and playback
     def on_any_event(self, event):
         if event.is_directory or not self.matches_pattern(event.src_path):
             if event.is_directory:

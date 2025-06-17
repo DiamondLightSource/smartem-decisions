@@ -16,9 +16,6 @@ data:
   POSTGRES_DB: "smartem_db"
   RABBITMQ_HOST: "rabbitmq-service"
   RABBITMQ_PORT: "5672"
-  GRAYLOG_HOST: "graylog-service"
-  GRAYLOG_UDP_PORT: "12201"
-  GRAYLOG_UI_PORT: "9000"
   HTTP_API_PORT: "8000"
   ADMINER_PORT: "8080"
 
@@ -35,8 +32,6 @@ data:
   POSTGRES_PASSWORD: cGFzc3dvcmQ=
   RABBITMQ_USER: dXNlcm5hbWU=
   RABBITMQ_PASSWORD: cGFzc3dvcmQ=
-  GRAYLOG_PASSWORD_SECRET: c29tZXNlY3JldGZvcmdyYXlsb2c=
-  GRAYLOG_ROOT_PASSWORD_SHA2: OGM4MjJkNzUyNjEwNzQxOTc3NTIyZGUzMDc4NzA1N2ZlMjEwMjUwMGVlMzY0ODExNDQ1M2M5MzkxMzc3NjA4Mw==
 
 ---
 
@@ -330,112 +325,8 @@ spec:
     targetPort: 9300
   type: ClusterIP
 
----
 
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: graylog
-  namespace: smartem-decisions
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: graylog
-  template:
-    metadata:
-      labels:
-        app: graylog
-    spec:
-      containers:
-      - name: graylog
-        image: graylog/graylog:6.1.10
-        env:
-        - name: GRAYLOG_HTTP_EXTERNAL_URI
-          value: "http://localhost:30900/"
-        - name: GRAYLOG_ELASTICSEARCH_HOSTS
-          value: "http://elasticsearch-service:9200"
-        - name: GRAYLOG_MONGODB_URI
-          value: "mongodb://mongodb-service:27017/graylog"
-        - name: GRAYLOG_PASSWORD_SECRET
-          valueFrom:
-            secretKeyRef:
-              name: smartem-secrets
-              key: GRAYLOG_PASSWORD_SECRET
-        - name: GRAYLOG_ROOT_PASSWORD_SHA2
-          valueFrom:
-            secretKeyRef:
-              name: smartem-secrets
-              key: GRAYLOG_ROOT_PASSWORD_SHA2
-        - name: GRAYLOG_ROOT_TIMEZONE
-          value: "UTC"
-        ports:
-        - containerPort: 9000
-        - containerPort: 12201
-        - containerPort: 1514
-        volumeMounts:
-        - name: graylog-data
-          mountPath: /usr/share/graylog/data/data
-        - name: graylog-journal
-          mountPath: /usr/share/graylog/data/journal
-        resources:
-          requests:
-            memory: "512Mi"
-            cpu: "200m"
-          limits:
-            memory: "1Gi"
-            cpu: "500m"
-      volumes:
-      - name: graylog-data
-        emptyDir: {}
-      - name: graylog-journal
-        emptyDir: {}
 
----
-
-apiVersion: v1
-kind: Service
-metadata:
-  name: graylog-service
-  namespace: smartem-decisions
-spec:
-  selector:
-    app: graylog
-  ports:
-  - name: http
-    port: 9000
-    targetPort: 9000
-  - name: gelf-udp
-    port: 12201
-    targetPort: 12201
-    protocol: UDP
-  - name: syslog
-    port: 1514
-    targetPort: 1514
-    protocol: UDP
-  type: ClusterIP
-
----
-
-apiVersion: v1
-kind: Service
-metadata:
-  name: graylog-external
-  namespace: smartem-decisions
-spec:
-  selector:
-    app: graylog
-  ports:
-  - name: http
-    port: 9000
-    targetPort: 9000
-    nodePort: 30900
-  - name: gelf-udp
-    port: 12201
-    targetPort: 12201
-    nodePort: 30201
-    protocol: UDP
-  type: NodePort
 
 ---
 
