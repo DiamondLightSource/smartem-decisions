@@ -4,5 +4,9 @@ metadata:
   name: smartem-config
   namespace: smartem-decisions
 data:
-  MODE: "prod"
   HTTP_API_PORT: "8000"
+  POSTGRES_HOST: "postgres-service"
+  POSTGRES_PORT: "5432"
+  POSTGRES_DB: "default"
+  RABBITMQ_HOST: "rabbitmq-service"
+  RABBITMQ_PORT: "5672"
