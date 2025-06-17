@@ -2,7 +2,13 @@
 set -e
 
 cd /app
-source .env
+# Only source .env if not in Kubernetes
+if [ -z "$KUBERNETES_SERVICE_HOST" ]; then
+    echo "Sourcing .env file for local development"
+    source .env
+else
+    echo "Running in Kubernetes - using environment variables from ConfigMap/Secrets"
+fi
 
 case "${ROLE:-api}" in
     api)
