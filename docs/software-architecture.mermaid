@@ -6,7 +6,6 @@
         end
 
         subgraph infrastructure["Infrastructure Components"]
-            log["Logging Backend (Graylog)"]
             db[("Persistent App State (PostgreSQL)")]
             mq[("Event Broker\n(RabbitMQ)")]
         end
@@ -24,7 +23,6 @@
     api --> db
     api --> mq
     dp --> mq
-    api --> log
 
     %% External connections
     em --> epu
