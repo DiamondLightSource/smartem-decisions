@@ -1,0 +1,55 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: smartem-worker
+  namespace: smartem-decisions-staging
+  labels:
+    app: smartem-worker
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: smartem-worker
+  template:
+    metadata:
+      labels:
+        app: smartem-worker
+    spec:
+      imagePullSecrets:
+      - name: ghcr-secret
+      containers:
+      - name: smartem-worker
+        image: ghcr.io/diamondlightsource/smartem-decisions:latest
+        env:
+        - name: ROLE
+          value: "worker"
+        - name: POSTGRES_USER
+          valueFrom:
+            secretKeyRef:
+              name: smartem-secrets
+              key: POSTGRES_USER
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: smartem-secrets
+              key: POSTGRES_PASSWORD
+        - name: RABBITMQ_USER
+          valueFrom:
+            secretKeyRef:
+              name: smartem-secrets
+              key: RABBITMQ_USER
+        - name: RABBITMQ_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: smartem-secrets
+              key: RABBITMQ_PASSWORD
+        envFrom:
+        - configMapRef:
+            name: smartem-config
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "200m"

@@ -25,7 +25,7 @@ epu_data_intake_cli.add_typer(parse_cli, name="parse")
 # Add callbacks to all command groups to support -v/-vv flags
 # The callback functions themselves don't need to do anything special since our `verbose_callback` function
 # does the actual work of configuring the logging.
-# They just need to exist to allow Typer to recognize the flag at that command level.
+# They just need to exist to allow Typer to recognise the flag at that command level.
 @epu_data_intake_cli.callback()
 def main_callback():
     """Main callback to enable verbose flag on root command"""

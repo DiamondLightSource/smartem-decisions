@@ -1,0 +1,76 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: smartem-http-api
+  namespace: smartem-decisions-staging
+  labels:
+    app: smartem-http-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: smartem-http-api
+  template:
+    metadata:
+      labels:
+        app: smartem-http-api
+    spec:
+      imagePullSecrets:
+      - name: ghcr-secret
+      containers:
+      - name: smartem-http-api
+        image: ghcr.io/diamondlightsource/smartem-decisions:latest
+        ports:
+        - containerPort: 8000
+        env:
+        - name: ROLE
+          value: "api"
+        - name: POSTGRES_USER
+          valueFrom:
+            secretKeyRef:
+              name: smartem-secrets
+              key: POSTGRES_USER
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: smartem-secrets
+              key: POSTGRES_PASSWORD
+        - name: RABBITMQ_USER
+          valueFrom:
+            secretKeyRef:
+              name: smartem-secrets
+              key: RABBITMQ_USER
+        - name: RABBITMQ_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: smartem-secrets
+              key: RABBITMQ_PASSWORD
+        envFrom:
+        - configMapRef:
+            name: smartem-config
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "200m"
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: smartem-http-api-service
+  namespace: smartem-decisions-staging
+  labels:
+    app: smartem-http-api
+spec:
+  selector:
+    app: smartem-http-api
+  ports:
+  - name: http
+    port: 80
+    targetPort: 8000
+    protocol: TCP
+  type: ClusterIP
