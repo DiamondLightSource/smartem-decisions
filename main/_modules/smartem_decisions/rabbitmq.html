@@ -7,7 +7,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>smartem_decisions.rabbitmq &#8212; smartem-decisions 0.1.dev159+g47a3229 documentation</title>
+    <title>smartem_decisions.rabbitmq &#8212; smartem-decisions 0.1.dev168+g6b2d52c documentation</title>
   
   
   
@@ -40,7 +40,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../../_static/documentation_options.js?v=a05b2450"></script>
+    <script src="../../_static/documentation_options.js?v=dc1a90e5"></script>
     <script src="../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -488,7 +488,7 @@
 <span class="sd">        Returns:</span>
 <span class="sd">            dict: Connection parameters</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">load_dotenv</span><span class="p">()</span>
+        <span class="n">load_dotenv</span><span class="p">(</span><span class="n">override</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>  <span class="c1"># Don&#39;t override existing env vars as these might be coming from k8s</span>
 
         <span class="n">required_env_vars</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;RABBITMQ_HOST&quot;</span><span class="p">,</span> <span class="s2">&quot;RABBITMQ_PORT&quot;</span><span class="p">,</span> <span class="s2">&quot;RABBITMQ_USER&quot;</span><span class="p">,</span> <span class="s2">&quot;RABBITMQ_PASSWORD&quot;</span><span class="p">]</span>
         <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">required_env_vars</span><span class="p">:</span>

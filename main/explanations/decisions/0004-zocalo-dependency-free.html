@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>3. No dependency on python-zocalo &#8212; smartem-decisions 0.1.dev159+g47a3229 documentation</title>
+    <title>3. No dependency on python-zocalo &#8212; smartem-decisions 0.1.dev168+g6b2d52c documentation</title>
   
   
   
@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../../_static/documentation_options.js?v=a05b2450"></script>
+    <script src="../../_static/documentation_options.js?v=dc1a90e5"></script>
     <script src="../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -476,9 +476,10 @@
 </section>
 <section id="context">
 <h2>Context<a class="headerlink" href="#context" title="Link to this heading">#</a></h2>
-<p>We need to send logs to Graylog, and this functionality is already implemented in <code class="docutils literal notranslate"><span class="pre">python-zocalo</span></code>.
-Hence, one option is to import any logging-related functionality from Zocalo, while another option is
+<p>We initially needed to send logs to Graylog, and this functionality was already implemented in <code class="docutils literal notranslate"><span class="pre">python-zocalo</span></code>.
+Hence, one option was to import any logging-related functionality from Zocalo, while another option was
 to just copy the code across, duplicating it in our repo.</p>
+<p><strong>Update</strong>: Graylog functionality has since been removed from the project. In production Kubernetes, all stdout and stderr are automatically sent to a managed Graylog instance, so we don’t need to handle this in our application code. For local development, we now use standard Python logging to keep things simple.</p>
 </section>
 <section id="decision">
 <h2>Decision<a class="headerlink" href="#decision" title="Link to this heading">#</a></h2>
@@ -490,7 +491,7 @@ discussions about whether we move off of it longer term</p>
 </section>
 <section id="consequences">
 <h2>Consequences<a class="headerlink" href="#consequences" title="Link to this heading">#</a></h2>
-<p>We will duplicate logging functionality within this project, and stay free of any Zocalo dependencies in the future.</p>
+<p>We will stay free of any Zocalo dependencies. Initially we duplicated logging functionality within this project, but have since simplified to use standard Python logging as production Kubernetes handles log aggregation automatically.</p>
 </section>
 </section>
 
