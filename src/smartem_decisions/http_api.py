@@ -1,5 +1,6 @@
 import json
 import logging
+import os
 from datetime import datetime
 
 from fastapi import Depends, FastAPI, HTTPException, Request, status
@@ -100,8 +101,19 @@ app = FastAPI(
     redoc_url=None,
 )
 
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger("fastapi")
+# Configure logging based on environment variable
+# SMARTEM_LOG_LEVEL can be: ERROR (default), INFO, DEBUG
+log_level_str = os.getenv("SMARTEM_LOG_LEVEL", "ERROR").upper()
+log_level_map = {"ERROR": logging.ERROR, "INFO": logging.INFO, "DEBUG": logging.DEBUG}
+log_level = log_level_map.get(log_level_str, logging.ERROR)
+
+logging.basicConfig(level=log_level, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+logger = logging.getLogger("smartem_decisions_api")
+
+# Also configure uvicorn loggers to use the same level
+uvicorn_loggers = ["uvicorn", "uvicorn.error", "uvicorn.access"]
+for logger_name in uvicorn_loggers:
+    logging.getLogger(logger_name).setLevel(log_level)
 
 
 # TODO remove in prod:

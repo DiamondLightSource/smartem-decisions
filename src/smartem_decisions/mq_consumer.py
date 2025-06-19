@@ -1,6 +1,10 @@
 #!/usr/bin/env python
 
+import argparse
 import json
+import logging
+import signal
+import sys
 import time
 from collections.abc import Callable
 from datetime import datetime
@@ -12,7 +16,7 @@ from pydantic import ValidationError
 from sqlalchemy import select
 from sqlalchemy.orm import Session as SqlAlchemySession
 
-from smartem_decisions.log_manager import logger
+from smartem_decisions.log_manager import LogConfig, LogManager
 from smartem_decisions.model.database import (
     Acquisition,
     Atlas,
@@ -58,6 +62,10 @@ from smartem_decisions.utils import (
 load_dotenv(override=False)  # Don't override existing env vars as these might be coming from k8s
 conf = load_conf()
 db_engine = setup_postgres_connection()
+
+# Initialize logger with default ERROR level (will be reconfigured in main())
+log_manager = LogManager.get_instance("smartem_decisions")
+logger = log_manager.configure(LogConfig(level=logging.ERROR, console=True))
 
 
 def handle_acquisition_created(event_data: dict[str, Any], session: SqlAlchemySession) -> None:
@@ -771,8 +779,38 @@ def on_message(ch, method, properties, body):
                 ch.basic_nack(delivery_tag=method.delivery_tag, requeue=True)
 
 
+def signal_handler(signum, frame):
+    """Handle shutdown signals"""
+    logger.info("Received shutdown signal, stopping consumer...")
+    rmq_consumer.stop_consuming()
+    rmq_consumer.close()
+    sys.exit(0)
+
+
 def main():
     """Main function to run the consumer"""
+    parser = argparse.ArgumentParser(description="SmartEM Decisions MQ Consumer")
+    parser.add_argument(
+        "-v", "--verbose", action="count", default=0, help="Increase verbosity (-v for INFO, -vv for DEBUG)"
+    )
+    args = parser.parse_args()
+
+    # Configure logging based on verbosity level
+    if args.verbose >= 2:  # Debug level -vv
+        log_level = logging.DEBUG
+    elif args.verbose == 1:  # Info level -v
+        log_level = logging.INFO
+    else:  # Default - only errors
+        log_level = logging.ERROR
+
+    # Reconfigure logger with the specified verbosity level
+    global logger
+    logger = log_manager.configure(LogConfig(level=log_level, console=True, file_path="smartem_decisions-core.log"))
+
+    # Set up signal handlers
+    signal.signal(signal.SIGINT, signal_handler)
+    signal.signal(signal.SIGTERM, signal_handler)
+
     while True:
         try:
             logger.info("Starting RabbitMQ consumer...")
@@ -784,6 +822,8 @@ def main():
             logger.error(f"Error in consumer: {e}")
             logger.info("Retrying in 10 seconds...")
             time.sleep(10)
+
+    rmq_consumer.close()
 
 
 if __name__ == "__main__":
