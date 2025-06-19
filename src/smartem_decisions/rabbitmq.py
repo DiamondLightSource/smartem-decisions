@@ -193,6 +193,13 @@ class RabbitMQConsumer(RabbitMQConnection):
 
         except KeyboardInterrupt:
             logger.info("Consumer stopped by user")
+            self.stop_consuming()
         except Exception as e:
             logger.error(f"Error in consumer: {e}")
             raise
+
+    def stop_consuming(self) -> None:
+        """Stop consuming messages"""
+        if self._channel and self._channel.is_open:
+            self._channel.stop_consuming()
+            logger.info("Stopped consuming messages")

@@ -89,6 +89,11 @@ Or if it is a commandline tool then you might put some example commands here:
 python -m venv .venv
 source .venv/bin/activate
 pip install -e .[all] # .[dev,common,core]
+
+# Start services with verbosity controls:
+python -m smartem_decisions.run_api -v               # HTTP API with INFO logging
+python -m smartem_decisions.mq_consumer -v           # Message queue consumer with INFO logging  
+python -m epu_data_intake watch /path/to/data -v     # File watcher with INFO logging
 ```
 
 
@@ -145,6 +150,50 @@ podman push gcr.io/diamond-pubreg/smartem_decisions/smartem_decisions:latest
     https://github.com/DiamondLightSource/cryoem-services/blob/main/src/cryoemservices/services/cryolo.py
   - particle filtering service: https://github.com/DiamondLightSource/cryoem-services/blob/main/src/cryoemservices/services/select_particles.py
 
+
+## Verbosity Control
+
+All SmartEM Decisions services support configurable logging levels to help with debugging and reduce noise in production environments.
+
+### Command Line Verbosity
+
+Use the `-v` and `-vv` flags to control verbosity:
+
+```bash
+# ERROR level only (default - minimal output)
+python -m smartem_decisions.mq_consumer
+python -m smartem_decisions.run_api  
+python -m epu_data_intake watch /path/to/data
+
+# INFO level and above (-v flag)
+python -m smartem_decisions.mq_consumer -v
+python -m smartem_decisions.run_api -v
+python -m epu_data_intake watch /path/to/data -v
+
+# DEBUG level and above (-vv flag - most verbose)
+python -m smartem_decisions.mq_consumer -vv
+python -m smartem_decisions.run_api -vv
+python -m epu_data_intake watch /path/to/data -vv
+```
+
+### Environment Variable Control
+
+For the HTTP API, you can also control logging via environment variables:
+
+```bash
+# Set log level via environment variable
+SMARTEM_LOG_LEVEL=ERROR uvicorn src.smartem_decisions.http_api:app --host 0.0.0.0 --port 8000
+SMARTEM_LOG_LEVEL=INFO uvicorn src.smartem_decisions.http_api:app --host 0.0.0.0 --port 8000
+SMARTEM_LOG_LEVEL=DEBUG uvicorn src.smartem_decisions.http_api:app --host 0.0.0.0 --port 8000
+```
+
+### Log Levels
+
+- **ERROR** (default): Only critical errors are shown
+- **INFO** (`-v`): Informational messages, warnings, and errors
+- **DEBUG** (`-vv`): All messages including detailed debugging information
+
+This verbosity control helps reduce log noise during normal operation while providing detailed output when troubleshooting issues.
 
 <!-- README only content. Anything below this line won't be included in index.md -->
 

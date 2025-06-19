@@ -161,29 +161,31 @@ def watch_directory(
     api_url: str = "http://127.0.0.1:8000",
     log_file: str = "fs_changes.log",
     log_interval: float = 10.0,
-    verbose: int = 0,
+    verbose: int = typer.Option(
+        0, "-v", "--verbose", count=True, help="Increase verbosity (-v for INFO, -vv for DEBUG)"
+    ),
 ):
     """Watch directory for file changes and log them in JSON format."""
 
     # Configure logging based on verbosity level
-    if verbose == 2:  # Debug level (most verbose)
-        logging.basicConfig(
-            level=logging.DEBUG,
-            format="%(asctime)s - %(levelname)s - %(message)s",
-            force=True,
-        )
-    elif verbose == 1:  # Info level
-        logging.basicConfig(
-            level=logging.INFO,
-            format="%(asctime)s - %(levelname)s - %(message)s",
-            force=True,
-        )
-    else:  # Default warning level
-        logging.basicConfig(
-            level=logging.WARNING,
-            format="%(asctime)s - %(levelname)s - %(message)s",
-            force=True,
-        )
+    if verbose >= 2:  # Debug level (most verbose) -vv
+        log_level = logging.DEBUG
+    elif verbose == 1:  # Info level -v
+        log_level = logging.INFO
+    else:  # Default (verbose == 0) - only errors
+        log_level = logging.ERROR
+
+    # Configure root logger
+    logging.basicConfig(
+        level=log_level,
+        format="%(asctime)s - %(levelname)s - %(message)s",
+        force=True,
+    )
+
+    # Also set level for all existing loggers to prevent debug output from other modules
+    for logger_name in logging.Logger.manager.loggerDict:
+        logger = logging.getLogger(logger_name)
+        logger.setLevel(log_level)
 
     path = Path(path).absolute()
     if not path.exists():
