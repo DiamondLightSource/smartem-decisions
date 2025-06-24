@@ -248,12 +248,14 @@ class RateLimitedFilesystemEventHandler(FileSystemEventHandler):
                 manifest=gridsquare_manifest,
                 grid_uuid=grid.uuid,
             )
-            logging.info(f"Creating new GridSquare: {gridsquare.uuid} of Grid {gridsquare.grid_uuid}")
+            logging.info(f"Creating new GridSquare: {gridsquare.uuid} (ID: {gridsquare_id}) of Grid {gridsquare.grid_uuid}")
             self.datastore.create_gridsquare(gridsquare)
+            logging.info(f"GridSquare {gridsquare.uuid} created successfully")
         else:
-            logging.info(f"Updating existing GridSquare: {gridsquare_id} of Grid {gridsquare.grid_uuid}")
+            logging.info(f"Updating existing GridSquare: {gridsquare.uuid} (ID: {gridsquare_id}) of Grid {gridsquare.grid_uuid}")
             gridsquare.manifest = gridsquare_manifest
             self.datastore.update_gridsquare(gridsquare)
+            logging.info(f"GridSquare {gridsquare.uuid} updated successfully")
 
         logging.debug(gridsquare)
 
@@ -268,16 +270,15 @@ class RateLimitedFilesystemEventHandler(FileSystemEventHandler):
         #  last to be written to fs, but additional filename-based checks wouldn't hurt - resolve latest
         #  based on timestamp found in filename.
 
-        # TODO ensure create overwrites existing by uuid,
-        #  ensure self.datastore.gridsquare_rels is populated:
-        found_foilhole = self.datastore.find_foilhole_by_natural_id(foilhole.uuid)
-        if found_foilhole:
-            uuid = foilhole.uuid
-            foilhole.uuid = found_foilhole.uuid
-            self.datastore.remove_foilhole(uuid)
-            self.datastore.update_foilhole(foilhole)
-        else:
-            self.datastore.create_foilhole(foilhole)
+        # Use upsert method which handles all UUID management and race conditions internally
+        success = self.datastore.upsert_foilhole(foilhole)
+        if not success:
+            logging.warning(f"Parent gridsquare {foilhole.gridsquare_uuid} not found for foilhole {foilhole.id}. "
+                          f"This may be a race condition. Available gridsquares: {list(self.datastore.gridsquares.keys())}. "
+                          f"Skipping foilhole creation.")
+            return
+        
+        logging.info(f"Successfully upserted foilhole {foilhole.id} (UUID: {foilhole.uuid}) for gridsquare {foilhole.gridsquare_uuid}")
         logging.debug(foilhole)
 
     def _on_micrograph_detected(self, path: str, grid_uuid: str, is_new_file: bool = True):

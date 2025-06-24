@@ -795,16 +795,12 @@ class EpuParser:
                     foilhole.gridsquare_id = gridsquare_id
                     foilhole.gridsquare_uuid = gridsquare.uuid
 
-                    # Add to datastore
-                    found_foilhole = datastore.find_foilhole_by_natural_id(foilhole_id)
-                    if found_foilhole:
-                        new_uuid = foilhole.uuid
-                        foilhole.uuid = found_foilhole.uuid
-                        datastore.remove_foilhole(new_uuid)
-                        datastore.update_foilhole(foilhole)
+                    # Add to datastore using upsert method
+                    success = datastore.upsert_foilhole(foilhole)
+                    if success:
+                        logging.debug(f"Upserted foilhole: {foilhole_id} (uuid: {foilhole.uuid})")
                     else:
-                        datastore.create_foilhole(foilhole)
-                    logging.debug(f"Added foilhole: {foilhole_id} (uuid: {foilhole.uuid})")
+                        logging.warning(f"Failed to upsert foilhole {foilhole_id} - parent gridsquare {foilhole.gridsquare_uuid} not found")
 
                 # 3.2 Parse micrographs for this gridsquare
                 for micrograph_manifest_path in list(

@@ -327,10 +327,6 @@ def get_acquisition_grids(acquisition_uuid: str, db: SqlAlchemySession = DB_DEPE
 @app.post("/acquisitions/{acquisition_uuid}/grids", response_model=GridResponse, status_code=status.HTTP_201_CREATED)
 def create_acquisition_grid(acquisition_uuid: str, grid: GridCreateRequest, db: SqlAlchemySession = DB_DEPENDENCY):
     """Create a new grid for a specific acquisition by publishing to RabbitMQ"""
-    acquisition = db.query(Acquisition).filter(Acquisition.uuid == acquisition_uuid).first()
-    if not acquisition:
-        raise HTTPException(status_code=404, detail="Acquisition not found")
-
     # Create grid data with acquisition_id
     grid_data = {"uuid": grid.uuid, "acquisition_uuid": acquisition_uuid, **grid.model_dump()}
 
@@ -423,11 +419,6 @@ def get_grid_atlas(grid_uuid: str, db: SqlAlchemySession = DB_DEPENDENCY):
 @app.post("/grids/{grid_uuid}/atlas", response_model=AtlasResponse, status_code=status.HTTP_201_CREATED)
 def create_grid_atlas(grid_uuid: str, atlas: AtlasCreateRequest, db: SqlAlchemySession = DB_DEPENDENCY):
     """Create a new atlas for a grid by publishing to RabbitMQ"""
-    # Check if grid exists
-    grid = db.query(Grid).filter(Grid.uuid == grid_uuid).first()
-    if not grid:
-        raise HTTPException(status_code=404, detail="Grid not found")
-
     # Extract tiles for later
     tiles_data = None
     if atlas.tiles:
@@ -545,11 +536,6 @@ def get_atlas_tiles_by_atlas(atlas_uuid: str, db: SqlAlchemySession = DB_DEPENDE
 @app.post("/atlases/{atlas_uuid}/tiles", response_model=AtlasTileResponse, status_code=status.HTTP_201_CREATED)
 def create_atlas_tile_for_atlas(atlas_uuid: str, tile: AtlasTileCreateRequest, db: SqlAlchemySession = DB_DEPENDENCY):
     """Create a new tile for a specific atlas by publishing to RabbitMQ"""
-    # Verify atlas exists
-    atlas = db.query(Atlas).filter(Atlas.uuid == atlas_uuid).first()
-    if not atlas:
-        raise HTTPException(status_code=404, detail="Atlas not found")
-
     # Create tile data with atlas_id
     tile_data = tile.model_dump()
     tile_data["atlas_id"] = atlas_uuid
@@ -641,11 +627,7 @@ def get_grid_gridsquares(grid_uuid: str, db: SqlAlchemySession = DB_DEPENDENCY):
 @app.post("/grids/{grid_uuid}/gridsquares", response_model=GridSquareResponse, status_code=status.HTTP_201_CREATED)
 def create_grid_gridsquare(grid_uuid: str, gridsquare: GridSquareCreateRequest, db: SqlAlchemySession = DB_DEPENDENCY):
     """Create a new grid square for a specific grid by publishing to RabbitMQ"""
-    grid = db.query(Grid).filter(Grid.uuid == grid_uuid).first()
-    if not grid:
-        raise HTTPException(status_code=404, detail="Grid not found")
-
-    gridsquare_data = {"uuid": gridsquare.uuid, "grid_id": grid_uuid, **gridsquare.model_dump()}
+    gridsquare_data = {"uuid": gridsquare.uuid, "grid_uuid": grid_uuid, **gridsquare.model_dump()}
 
     success = publish_gridsquare_created(gridsquare_data)
     if not success:
@@ -738,10 +720,6 @@ def create_gridsquare_foilhole(
     gridsquare_uuid: str, foilhole: FoilHoleCreateRequest, db: SqlAlchemySession = DB_DEPENDENCY
 ):
     """Create a new foil hole for a specific grid square by publishing to RabbitMQ"""
-    gridsquare = db.query(GridSquare).filter(GridSquare.uuid == gridsquare_uuid).first()
-    if not gridsquare:
-        raise HTTPException(status_code=404, detail="Grid Square not found")
-
     foilhole_data = {
         "gridsquare_uuid": gridsquare_uuid,  # The synthetic UUID for relationship
         **foilhole.model_dump(),
@@ -841,11 +819,6 @@ def create_foilhole_micrograph(
     foilhole_uuid: str, micrograph: MicrographCreateRequest, db: SqlAlchemySession = DB_DEPENDENCY
 ):
     """Create a new micrograph for a specific foil hole by publishing to RabbitMQ"""
-    # Check if foil hole exists
-    foilhole = db.query(FoilHole).filter(FoilHole.uuid == foilhole_uuid).first()
-    if not foilhole:
-        raise HTTPException(status_code=404, detail="Foil Hole not found")
-
     # Create micrograph data with foil hole ID
     micrograph_data = {
         "uuid": micrograph.uuid,

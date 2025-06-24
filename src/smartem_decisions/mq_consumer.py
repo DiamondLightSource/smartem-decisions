@@ -269,22 +269,38 @@ def handle_atlas_deleted(event_data: dict[str, Any], session: SqlAlchemySession)
         logger.error(f"Error processing atlas deleted event: {e}")
 
 
-def handle_grid_created(event_data: dict[str, Any], session: SqlAlchemySession) -> None:
+def handle_grid_created(event_data: dict[str, Any], session: SqlAlchemySession, channel, delivery_tag) -> bool:
     """
     Handle grid created event by creating a grid in the database
 
     Args:
         event_data: Event data for grid created
         session: Database session
+        channel: RabbitMQ channel
+        delivery_tag: Message delivery tag
+    
+    Returns:
+        bool: True if successful, False if failed (already NACKed)
     """
     try:
         event = GridCreatedEvent(**event_data)
+
+        # Check if parent acquisition exists
+        if event.acquisition_uuid:
+            acquisition = session.execute(
+                select(Acquisition).where(Acquisition.uuid == event.acquisition_uuid)
+            ).scalar_one_or_none()
+            
+            if not acquisition:
+                logger.info(f"Parent acquisition {event.acquisition_uuid} not found for grid {event.uuid}, requeuing...")
+                channel.basic_nack(delivery_tag=delivery_tag, requeue=True)
+                return False
 
         # noinspection PyTypeChecker
         existing = session.execute(select(Grid).where(Grid.uuid == event.uuid)).scalar_one_or_none()
         if existing:
             logger.warning(f"Grid with UUID {event.uuid} already exists, skipping creation")
-            return
+            return True
 
         grid = Grid(
             uuid=event.uuid,
@@ -300,12 +316,17 @@ def handle_grid_created(event_data: dict[str, Any], session: SqlAlchemySession) 
         session.add(grid)
         session.commit()
         logger.info(f"Created grid with UUID {grid.uuid}")
+        return True
 
     except ValidationError as e:
         logger.error(f"Validation error processing grid created event: {e}")
+        channel.basic_nack(delivery_tag=delivery_tag, requeue=False)
+        return False
     except Exception as e:
         session.rollback()
         logger.error(f"Error processing grid created event: {e}")
+        channel.basic_nack(delivery_tag=delivery_tag, requeue=False)
+        return False
 
 
 def handle_grid_updated(event_data: dict[str, Any], session: SqlAlchemySession) -> None:
@@ -359,18 +380,29 @@ def handle_grid_deleted(event_data: dict[str, Any], session: SqlAlchemySession) 
         logger.error(f"Error processing grid deleted event: {e}")
 
 
-def handle_gridsquare_created(event_data: dict[str, Any], session: SqlAlchemySession) -> None:
+def handle_gridsquare_created(event_data: dict[str, Any], session: SqlAlchemySession, channel, delivery_tag) -> bool:
     try:
         event = GridSquareCreatedEvent(**event_data)
+
+        # Check if parent grid exists
+        if event.grid_uuid:
+            grid = session.execute(
+                select(Grid).where(Grid.uuid == event.grid_uuid)
+            ).scalar_one_or_none()
+            
+            if not grid:
+                logger.info(f"Parent grid {event.grid_uuid} not found for gridsquare {event.uuid}, requeuing...")
+                channel.basic_nack(delivery_tag=delivery_tag, requeue=True)
+                return False
 
         existing = session.execute(select(GridSquare).where(GridSquare.uuid == event.uuid)).scalar_one_or_none()
         if existing:
             logger.warning(f"GridSquare with UUID {event.uuid} already exists, skipping creation")
-            return
+            return True
 
         gridsquare = GridSquare(
             uuid=event.uuid,
-            grid_id=event.grid_uuid,
+            grid_uuid=event.grid_uuid,
             name=event.name,
             status=GridSquareStatus(event.status),
             id="",  # TODO natural ID if present
@@ -379,12 +411,17 @@ def handle_gridsquare_created(event_data: dict[str, Any], session: SqlAlchemySes
         session.add(gridsquare)
         session.commit()
         logger.info(f"Created gridsquare with UUID {gridsquare.uuid}")
+        return True
 
     except ValidationError as e:
         logger.error(f"Validation error processing gridsquare created event: {e}")
+        channel.basic_nack(delivery_tag=delivery_tag, requeue=False)
+        return False
     except Exception as e:
         session.rollback()
         logger.error(f"Error processing gridsquare created event: {e}")
+        channel.basic_nack(delivery_tag=delivery_tag, requeue=False)
+        return False
 
 
 def handle_gridsquare_updated(event_data: dict[str, Any], session: SqlAlchemySession) -> None:
@@ -400,8 +437,8 @@ def handle_gridsquare_updated(event_data: dict[str, Any], session: SqlAlchemySes
             gridsquare.name = event.name
         if event.status is not None:
             gridsquare.status = GridSquareStatus(event.status)
-        if event.grid_id is not None:
-            gridsquare.grid_id = event.grid_id
+        if event.grid_uuid is not None:
+            gridsquare.grid_uuid = event.grid_uuid
         if event.gridsquare_id is not None:
             gridsquare.gridsquare_id = event.gridsquare_id
         if event.metadata is not None:
@@ -440,14 +477,25 @@ def handle_gridsquare_deleted(event_data: dict[str, Any], session: SqlAlchemySes
         logger.error(f"Error processing gridsquare deleted event: {e}")
 
 
-def handle_foilhole_created(event_data: dict[str, Any], session: SqlAlchemySession) -> None:
+def handle_foilhole_created(event_data: dict[str, Any], session: SqlAlchemySession, channel, delivery_tag) -> bool:
     try:
         event = FoilHoleCreatedEvent(**event_data)
+
+        # Check if parent gridsquare exists
+        if event.gridsquare_uuid:
+            gridsquare = session.execute(
+                select(GridSquare).where(GridSquare.uuid == event.gridsquare_uuid)
+            ).scalar_one_or_none()
+            
+            if not gridsquare:
+                logger.info(f"Parent gridsquare {event.gridsquare_uuid} not found for foilhole {event.uuid}, requeuing...")
+                channel.basic_nack(delivery_tag=delivery_tag, requeue=True)
+                return False
 
         existing = session.execute(select(FoilHole).where(FoilHole.uuid == event.uuid)).scalar_one_or_none()
         if existing:
             logger.warning(f"FoilHole with UUID {event.uuid} already exists, skipping creation")
-            return
+            return True
 
         foilhole = FoilHole(
             uuid=event.uuid,
@@ -471,12 +519,17 @@ def handle_foilhole_created(event_data: dict[str, Any], session: SqlAlchemySessi
         session.add(foilhole)
         session.commit()
         logger.info(f"Created foilhole with UUID {foilhole.uuid}")
+        return True
 
     except ValidationError as e:
         logger.error(f"Validation error processing foilhole created event: {e}")
+        channel.basic_nack(delivery_tag=delivery_tag, requeue=False)
+        return False
     except Exception as e:
         session.rollback()
         logger.error(f"Error processing foilhole created event: {e}")
+        channel.basic_nack(delivery_tag=delivery_tag, requeue=False)
+        return False
 
 
 def handle_foilhole_updated(event_data: dict[str, Any], session: SqlAlchemySession) -> None:
@@ -549,14 +602,25 @@ def handle_foilhole_deleted(event_data: dict[str, Any], session: SqlAlchemySessi
         logger.error(f"Error processing foilhole deleted event: {e}")
 
 
-def handle_micrograph_created(event_data: dict[str, Any], session: SqlAlchemySession) -> None:
+def handle_micrograph_created(event_data: dict[str, Any], session: SqlAlchemySession, channel, delivery_tag) -> bool:
     try:
         event = MicrographCreatedEvent(**event_data)
+
+        # Check if parent foilhole exists
+        if event.foilhole_uuid:
+            foilhole = session.execute(
+                select(FoilHole).where(FoilHole.uuid == event.foilhole_uuid)
+            ).scalar_one_or_none()
+            
+            if not foilhole:
+                logger.info(f"Parent foilhole {event.foilhole_uuid} not found for micrograph {event.uuid}, requeuing...")
+                channel.basic_nack(delivery_tag=delivery_tag, requeue=True)
+                return False
 
         existing = session.execute(select(Micrograph).where(Micrograph.uuid == event.uuid)).scalar_one_or_none()
         if existing:
             logger.warning(f"Micrograph with UUID {event.uuid} already exists, skipping creation")
-            return
+            return True
 
         micrograph = Micrograph(
             uuid=event.uuid,
@@ -587,12 +651,17 @@ def handle_micrograph_created(event_data: dict[str, Any], session: SqlAlchemySes
         session.add(micrograph)
         session.commit()
         logger.info(f"Created micrograph with UUID {micrograph.uuid}")
+        return True
 
     except ValidationError as e:
         logger.error(f"Validation error processing micrograph created event: {e}")
+        channel.basic_nack(delivery_tag=delivery_tag, requeue=False)
+        return False
     except Exception as e:
         session.rollback()
         logger.error(f"Error processing micrograph created event: {e}")
+        channel.basic_nack(delivery_tag=delivery_tag, requeue=False)
+        return False
 
 
 def handle_micrograph_updated(event_data: dict[str, Any], session: SqlAlchemySession) -> None:
@@ -699,10 +768,17 @@ def get_event_handlers() -> dict[str, Callable]:
         MessageQueueEventType.ATLAS_UPDATED.value: handle_atlas_updated,
         MessageQueueEventType.ATLAS_DELETED.value: handle_atlas_deleted,
         MessageQueueEventType.GRID_CREATED.value: handle_grid_created,
+        MessageQueueEventType.GRID_UPDATED.value: handle_grid_updated,
+        MessageQueueEventType.GRID_DELETED.value: handle_grid_deleted,
         MessageQueueEventType.GRIDSQUARE_CREATED.value: handle_gridsquare_created,
         MessageQueueEventType.GRIDSQUARE_UPDATED.value: handle_gridsquare_updated,
+        MessageQueueEventType.GRIDSQUARE_DELETED.value: handle_gridsquare_deleted,
         MessageQueueEventType.FOILHOLE_CREATED.value: handle_foilhole_created,
+        MessageQueueEventType.FOILHOLE_UPDATED.value: handle_foilhole_updated,
+        MessageQueueEventType.FOILHOLE_DELETED.value: handle_foilhole_deleted,
         MessageQueueEventType.MICROGRAPH_CREATED.value: handle_micrograph_created,
+        MessageQueueEventType.MICROGRAPH_UPDATED.value: handle_micrograph_updated,
+        MessageQueueEventType.MICROGRAPH_DELETED.value: handle_micrograph_deleted,
         # TODO: Add handlers for all other event types as needed
     }
 
@@ -744,9 +820,22 @@ def on_message(ch, method, properties, body):
 
         with SqlAlchemySession(db_engine) as session:
             handler = event_handlers[event_type]
-            handler(message, session)
-
-        ch.basic_ack(delivery_tag=method.delivery_tag)
+            
+            # For handlers that support the new signature (parent validation)
+            if event_type in [
+                MessageQueueEventType.GRID_CREATED.value,
+                MessageQueueEventType.FOILHOLE_CREATED.value,
+                MessageQueueEventType.GRIDSQUARE_CREATED.value,
+                MessageQueueEventType.MICROGRAPH_CREATED.value,
+            ]:
+                success = handler(message, session, ch, method.delivery_tag)
+                if success:
+                    ch.basic_ack(delivery_tag=method.delivery_tag)
+                # Handler will have already NACKed if it failed
+            else:
+                # Legacy handlers - just call them and ACK
+                handler(message, session)
+                ch.basic_ack(delivery_tag=method.delivery_tag)
         logger.debug(f"Successfully processed {event_type} event")
 
     except json.JSONDecodeError:

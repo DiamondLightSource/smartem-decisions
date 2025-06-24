@@ -1,9 +1,45 @@
 import json
+import time
 from pathlib import Path
 
+import httpx
 from epu_data_intake.core_http_api_client import SmartEMAPIClient
 from epu_data_intake.model.schemas import AcquisitionData, FoilHoleData, GridData, GridSquareData, MicrographData
 from smartem_decisions.utils import logger
+
+
+def retry_with_backoff(max_retries: int = 3, initial_delay: float = 1.0, backoff_factor: float = 2.0):
+    """Decorator for retrying operations with exponential backoff"""
+    def decorator(func):
+        def wrapper(*args, **kwargs):
+            last_exception = None
+            for attempt in range(max_retries):
+                try:
+                    return func(*args, **kwargs)
+                except httpx.HTTPStatusError as e:
+                    last_exception = e
+                    if e.response.status_code == 404 and attempt < max_retries - 1:
+                        delay = initial_delay * (backoff_factor ** attempt)
+                        logger.warning(f"Attempt {attempt + 1} failed with 404. Retrying in {delay:.1f}s...")
+                        time.sleep(delay)
+                        continue
+                    else:
+                        # Don't retry on non-404 errors or on last attempt
+                        raise
+                except Exception as e:
+                    last_exception = e
+                    if attempt < max_retries - 1:
+                        delay = initial_delay * (backoff_factor ** attempt)
+                        logger.warning(f"Attempt {attempt + 1} failed with {type(e).__name__}: {e}. Retrying in {delay:.1f}s...")
+                        time.sleep(delay)
+                        continue
+                    else:
+                        raise
+            
+            # If we get here, all retries failed
+            raise last_exception
+        return wrapper
+    return decorator
 
 
 class InMemoryDataStore:
@@ -138,6 +174,37 @@ class InMemoryDataStore:
     def get_foilhole(self, uuid: str):
         return self.foilholes.get(uuid)
 
+    def upsert_foilhole(self, foilhole: FoilHoleData) -> bool:
+        """Create or update a foilhole, handling UUID management internally.
+        
+        Returns:
+            bool: True if successful, False if parent gridsquare doesn't exist
+        """
+        # Check parent exists first
+        if foilhole.gridsquare_uuid not in self.gridsquares:
+            return False
+        
+        # Find existing by natural ID
+        existing = self.find_foilhole_by_natural_id(foilhole.id)
+        
+        if existing:
+            # Update: preserve the database UUID
+            foilhole.uuid = existing.uuid
+            self.update_foilhole(foilhole)
+        else:
+            # Create: use the new UUID
+            self.create_foilhole(foilhole)
+        
+        return True
+
+    def remove_foilhole_by_natural_id(self, natural_id: str) -> bool:
+        """Remove foilhole by natural ID, returns True if found and removed."""
+        existing = self.find_foilhole_by_natural_id(natural_id)
+        if existing:
+            self.remove_foilhole(existing.uuid)  # Use database UUID
+            return True
+        return False
+
     def create_micrograph(self, micrograph: MicrographData):
         self.micrographs[micrograph.uuid] = micrograph
         if micrograph.foilhole_uuid not in self.foilhole_rels:
@@ -267,9 +334,20 @@ class PersistentDataStore(InMemoryDataStore):
     def create_foilhole(self, foilhole: FoilHoleData):
         try:
             super().create_foilhole(foilhole)
-            self.api_client.create_gridsquare_foilhole(foilhole)
+            self._create_foilhole_with_retry(foilhole)
+        except httpx.HTTPStatusError as e:
+            if e.response.status_code == 404:
+                logger.error(f"Parent gridsquare {foilhole.gridsquare_uuid} not found when creating foilhole {foilhole.uuid}. "
+                           f"This indicates a race condition or missing gridsquare.")
+            else:
+                logger.error(f"HTTP {e.response.status_code} error creating foilhole UUID {foilhole.uuid}: {e}")
         except Exception as e:
-            logger.error(f"Error creating foilhole UUID {foilhole.uuid}: {e}")
+            logger.error(f"Unexpected error creating foilhole UUID {foilhole.uuid}: {e}")
+
+    @retry_with_backoff(max_retries=3, initial_delay=0.5, backoff_factor=2.0)
+    def _create_foilhole_with_retry(self, foilhole: FoilHoleData):
+        """Create foilhole with retry logic for handling race conditions"""
+        return self.api_client.create_gridsquare_foilhole(foilhole)
 
     def update_foilhole(self, foilhole: FoilHoleData):
         try:
@@ -282,8 +360,79 @@ class PersistentDataStore(InMemoryDataStore):
         try:
             super().remove_foilhole(uuid)
             self.api_client.delete_foilhole(uuid)  # TODO not tested
+        except httpx.HTTPStatusError as e:
+            if e.response.status_code == 404:
+                logger.warning(f"Foilhole {uuid} already deleted or doesn't exist (404). This is expected during cleanup.")
+            else:
+                logger.error(f"HTTP {e.response.status_code} error removing foilhole UUID {uuid}: {e}")
         except Exception as e:
-            logger.error(f"Error removing foilhole UUID {uuid}: {e}")
+            logger.error(f"Unexpected error removing foilhole UUID {uuid}: {e}")
+
+    def upsert_foilhole(self, foilhole: FoilHoleData) -> bool:
+        """Create or update a foilhole with retry logic for race conditions.
+        
+        Returns:
+            bool: True if successful, False if parent gridsquare doesn't exist after retries
+        """
+        # First check if parent exists in local store
+        if foilhole.gridsquare_uuid not in self.gridsquares:
+            return False
+        
+        # Find existing by natural ID
+        existing = self.find_foilhole_by_natural_id(foilhole.id)
+        
+        try:            
+            if existing:
+                # Update: preserve the database UUID and call API
+                foilhole.uuid = existing.uuid
+                super().update_foilhole(foilhole)
+                self.api_client.update_foilhole(foilhole)
+            else:
+                # Create: use new UUID and call API with retry
+                super().create_foilhole(foilhole)
+                self._create_foilhole_with_retry(foilhole)
+            
+            return True
+            
+        except httpx.HTTPStatusError as e:
+            if e.response.status_code == 404:
+                logger.error(f"Parent gridsquare {foilhole.gridsquare_uuid} not found when upserting foilhole {foilhole.id}. "
+                           f"This indicates a race condition or missing gridsquare.")
+                # Rollback local changes if this was a create operation
+                if not existing and foilhole.uuid in self.foilholes:
+                    super().remove_foilhole(foilhole.uuid)
+            else:
+                logger.error(f"HTTP {e.response.status_code} error upserting foilhole {foilhole.id}: {e}")
+            return False
+        except Exception as e:
+            logger.error(f"Unexpected error upserting foilhole {foilhole.id}: {e}")
+            # Rollback local changes if this was a create operation
+            if not existing and foilhole.uuid in self.foilholes:
+                super().remove_foilhole(foilhole.uuid)
+            return False
+
+    def remove_foilhole_by_natural_id(self, natural_id: str) -> bool:
+        """Remove foilhole by natural ID with graceful 404 handling."""
+        existing = self.find_foilhole_by_natural_id(natural_id)
+        if not existing:
+            return False  # Nothing to delete
+        
+        try:
+            super().remove_foilhole(existing.uuid)
+            self.api_client.delete_foilhole(existing.uuid)
+            return True
+        except httpx.HTTPStatusError as e:
+            if e.response.status_code == 404:
+                # Already deleted, clean up local state
+                super().remove_foilhole(existing.uuid)
+                logger.warning(f"Foilhole {natural_id} already deleted (404). Cleaned up local state.")
+                return True
+            else:
+                logger.error(f"HTTP {e.response.status_code} error removing foilhole {natural_id}: {e}")
+                return False
+        except Exception as e:
+            logger.error(f"Unexpected error removing foilhole {natural_id}: {e}")
+            return False
 
     # def create_micrograph(self, micrograph: MicrographData):
     #     try:
