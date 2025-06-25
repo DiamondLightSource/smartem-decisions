@@ -1,8 +1,5 @@
 #!/bin/bash
 
-# SmartEM Decisions Development Environment Manager
-# This script provides a docker-compose-like experience for k8s development
-
 set -e
 
 NAMESPACE="smartem-decisions"
@@ -61,6 +58,34 @@ check_current_status() {
     kubectl get deployments -n "$NAMESPACE" --no-headers 2>/dev/null || echo "No deployments found"
 }
 
+# Force delete stuck namespace
+force_delete_namespace() {
+    log_warning "Attempting to force delete stuck namespace: $NAMESPACE"
+    
+    # Try to remove finalizers and force delete
+    if kubectl get namespace "$NAMESPACE" -o json > /tmp/ns-backup.json 2>/dev/null; then
+        if command -v jq &> /dev/null; then
+            cat /tmp/ns-backup.json | jq '.spec.finalizers = []' | kubectl replace --raw "/api/v1/namespaces/$NAMESPACE/finalize" -f - &>/dev/null || true
+        else
+            kubectl patch namespace "$NAMESPACE" -p '{"spec":{"finalizers":[]}}' --type=merge &>/dev/null || true
+        fi
+        
+        kubectl delete namespace "$NAMESPACE" --force --grace-period=0 &>/dev/null || true
+        rm -f /tmp/ns-backup.json
+        
+        # Wait a bit for forced deletion to take effect
+        sleep 5
+        
+        if ! kubectl get namespace "$NAMESPACE" &> /dev/null; then
+            log_success "Namespace force deleted successfully"
+            return 0
+        else
+            log_error "Failed to force delete namespace"
+            return 1
+        fi
+    fi
+}
+
 # Clean up existing resources
 cleanup_environment() {
     log_info "Cleaning up existing resources in namespace: $NAMESPACE"
@@ -88,6 +113,24 @@ cleanup_environment() {
     
     if [ $timeout -eq 0 ]; then
         log_warning "Timeout waiting for pods to terminate"
+    fi
+    
+    # Wait for namespace to be fully deleted if it exists
+    if kubectl get namespace "$NAMESPACE" &> /dev/null; then
+        log_info "Waiting for namespace to be fully deleted..."
+        timeout=60
+        while kubectl get namespace "$NAMESPACE" &> /dev/null && [ $timeout -gt 0 ]; do
+            sleep 2
+            ((timeout--))
+        done
+        
+        if [ $timeout -eq 0 ]; then
+            log_warning "Timeout waiting for namespace deletion"
+            # Try force deletion if normal deletion times out
+            force_delete_namespace
+        else
+            log_success "Namespace deleted successfully"
+        fi
     fi
 }
 

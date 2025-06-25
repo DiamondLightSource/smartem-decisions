@@ -800,7 +800,9 @@ class EpuParser:
                     if success:
                         logging.debug(f"Upserted foilhole: {foilhole_id} (uuid: {foilhole.uuid})")
                     else:
-                        logging.warning(f"Failed to upsert foilhole {foilhole_id} - parent gridsquare {foilhole.gridsquare_uuid} not found")
+                        logging.warning(
+                            f"Failed to upsert foilhole {foilhole_id} - parent gridsquare {foilhole.gridsquare_uuid} not found"
+                        )
 
                 # 3.2 Parse micrographs for this gridsquare
                 for micrograph_manifest_path in list(
@@ -829,7 +831,9 @@ class EpuParser:
                         manifest=micrograph_manifest,
                     )
 
-                    datastore.create_micrograph(micrograph)
+                    success = datastore.upsert_micrograph(micrograph)
+                    if not success:
+                        logging.warning(f"Failed to upsert micrograph {micrograph.id}")
                     logging.debug(f"Added micrograph: {micrograph_manifest.unique_id} (uuid: {micrograph.uuid})")
             else:
                 logging.warning(f"Found gridsquare manifest for {gridsquare_id} but no matching gridsquare metadata")

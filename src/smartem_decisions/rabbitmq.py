@@ -162,7 +162,6 @@ class RabbitMQPublisher(RabbitMQConnection):
                 ),
             )
 
-            logger.info(f"Published {event_type.value} event to RabbitMQ")
             return True
 
         except Exception as e:
