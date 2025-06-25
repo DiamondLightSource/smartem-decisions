@@ -142,8 +142,12 @@ class RateLimitedFilesystemEventHandler(FileSystemEventHandler):
         new_file_detected = event.src_path not in self.changed_files
         self.changed_files[event.src_path] = (event, current_time, file_stat)
 
+        # Skip processing if this is a duplicate event for the same file
+        if not new_file_detected:
+            return
+
         # New grid discovered? If so - instantiate in store
-        if new_file_detected and re.search(EpuParser.session_dm_pattern, event.src_path):
+        if re.search(EpuParser.session_dm_pattern, event.src_path):
             assert self.datastore.get_grid_by_path(event.src_path) is None  # guaranteed because is a new file
             grid = GridData(data_dir=Path(event.src_path).parent.resolve())
             self.datastore.create_grid(grid)
@@ -248,11 +252,15 @@ class RateLimitedFilesystemEventHandler(FileSystemEventHandler):
                 manifest=gridsquare_manifest,
                 grid_uuid=grid.uuid,
             )
-            logging.info(f"Creating new GridSquare: {gridsquare.uuid} (ID: {gridsquare_id}) of Grid {gridsquare.grid_uuid}")
+            logging.info(
+                f"Creating new GridSquare: {gridsquare.uuid} (ID: {gridsquare_id}) of Grid {gridsquare.grid_uuid}"
+            )
             self.datastore.create_gridsquare(gridsquare)
             logging.info(f"GridSquare {gridsquare.uuid} created successfully")
         else:
-            logging.info(f"Updating existing GridSquare: {gridsquare.uuid} (ID: {gridsquare_id}) of Grid {gridsquare.grid_uuid}")
+            logging.info(
+                f"Updating existing GridSquare: {gridsquare.uuid} (ID: {gridsquare_id}) of Grid {gridsquare.grid_uuid}"
+            )
             gridsquare.manifest = gridsquare_manifest
             self.datastore.update_gridsquare(gridsquare)
             logging.info(f"GridSquare {gridsquare.uuid} updated successfully")
@@ -273,12 +281,16 @@ class RateLimitedFilesystemEventHandler(FileSystemEventHandler):
         # Use upsert method which handles all UUID management and race conditions internally
         success = self.datastore.upsert_foilhole(foilhole)
         if not success:
-            logging.warning(f"Parent gridsquare {foilhole.gridsquare_uuid} not found for foilhole {foilhole.id}. "
-                          f"This may be a race condition. Available gridsquares: {list(self.datastore.gridsquares.keys())}. "
-                          f"Skipping foilhole creation.")
+            logging.warning(
+                f"Parent gridsquare {foilhole.gridsquare_uuid} not found for foilhole {foilhole.id}. "
+                f"This may be a race condition. Available gridsquares: {list(self.datastore.gridsquares.keys())}. "
+                f"Skipping foilhole creation."
+            )
             return
-        
-        logging.info(f"Successfully upserted foilhole {foilhole.id} (UUID: {foilhole.uuid}) for gridsquare {foilhole.gridsquare_uuid}")
+
+        logging.info(
+            f"Successfully upserted foilhole {foilhole.id} (UUID: {foilhole.uuid}) for gridsquare {foilhole.gridsquare_uuid}"
+        )
         logging.debug(foilhole)
 
     def _on_micrograph_detected(self, path: str, grid_uuid: str, is_new_file: bool = True):
@@ -309,7 +321,9 @@ class RateLimitedFilesystemEventHandler(FileSystemEventHandler):
             manifest_file=Path(path),
             manifest=micrograph_manifest,
         )
-        self.datastore.create_micrograph(micrograph)  # TODO create and update?
+        success = self.datastore.upsert_micrograph(micrograph)
+        if not success:
+            logging.warning(f"Failed to upsert micrograph {micrograph.id}")  
 
     def _on_session_complete(self):
         """

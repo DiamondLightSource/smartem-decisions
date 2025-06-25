@@ -278,7 +278,7 @@ def handle_grid_created(event_data: dict[str, Any], session: SqlAlchemySession, 
         session: Database session
         channel: RabbitMQ channel
         delivery_tag: Message delivery tag
-    
+
     Returns:
         bool: True if successful, False if failed (already NACKed)
     """
@@ -290,9 +290,11 @@ def handle_grid_created(event_data: dict[str, Any], session: SqlAlchemySession, 
             acquisition = session.execute(
                 select(Acquisition).where(Acquisition.uuid == event.acquisition_uuid)
             ).scalar_one_or_none()
-            
+
             if not acquisition:
-                logger.info(f"Parent acquisition {event.acquisition_uuid} not found for grid {event.uuid}, requeuing...")
+                logger.info(
+                    f"Parent acquisition {event.acquisition_uuid} not found for grid {event.uuid}, requeuing..."
+                )
                 channel.basic_nack(delivery_tag=delivery_tag, requeue=True)
                 return False
 
@@ -386,10 +388,8 @@ def handle_gridsquare_created(event_data: dict[str, Any], session: SqlAlchemySes
 
         # Check if parent grid exists
         if event.grid_uuid:
-            grid = session.execute(
-                select(Grid).where(Grid.uuid == event.grid_uuid)
-            ).scalar_one_or_none()
-            
+            grid = session.execute(select(Grid).where(Grid.uuid == event.grid_uuid)).scalar_one_or_none()
+
             if not grid:
                 logger.info(f"Parent grid {event.grid_uuid} not found for gridsquare {event.uuid}, requeuing...")
                 channel.basic_nack(delivery_tag=delivery_tag, requeue=True)
@@ -486,9 +486,11 @@ def handle_foilhole_created(event_data: dict[str, Any], session: SqlAlchemySessi
             gridsquare = session.execute(
                 select(GridSquare).where(GridSquare.uuid == event.gridsquare_uuid)
             ).scalar_one_or_none()
-            
+
             if not gridsquare:
-                logger.info(f"Parent gridsquare {event.gridsquare_uuid} not found for foilhole {event.uuid}, requeuing...")
+                logger.info(
+                    f"Parent gridsquare {event.gridsquare_uuid} not found for foilhole {event.uuid}, requeuing..."
+                )
                 channel.basic_nack(delivery_tag=delivery_tag, requeue=True)
                 return False
 
@@ -611,9 +613,11 @@ def handle_micrograph_created(event_data: dict[str, Any], session: SqlAlchemySes
             foilhole = session.execute(
                 select(FoilHole).where(FoilHole.uuid == event.foilhole_uuid)
             ).scalar_one_or_none()
-            
+
             if not foilhole:
-                logger.info(f"Parent foilhole {event.foilhole_uuid} not found for micrograph {event.uuid}, requeuing...")
+                logger.info(
+                    f"Parent foilhole {event.foilhole_uuid} not found for micrograph {event.uuid}, requeuing..."
+                )
                 channel.basic_nack(delivery_tag=delivery_tag, requeue=True)
                 return False
 
@@ -820,7 +824,7 @@ def on_message(ch, method, properties, body):
 
         with SqlAlchemySession(db_engine) as session:
             handler = event_handlers[event_type]
-            
+
             # For handlers that support the new signature (parent validation)
             if event_type in [
                 MessageQueueEventType.GRID_CREATED.value,

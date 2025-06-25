@@ -187,58 +187,6 @@ SMARTEM_LOG_LEVEL=INFO uvicorn src.smartem_decisions.http_api:app --host 0.0.0.0
 SMARTEM_LOG_LEVEL=DEBUG uvicorn src.smartem_decisions.http_api:app --host 0.0.0.0 --port 8000
 ```
 
-### temp
-
-The following three commands are run in three separate terminals simultaneously, logs collected.
-I'd like you to inspect logs for errors, trying to trace possible errors across all three log files
-and look at source code to help narrow down problems.
-
-python -m epu_data_intake watch \
-  ../smartem-decisions-test-datasets/epu-Supervisor_20250326_145351_30_nt33824-10_grid2_1in5dil/ \
-  | tee 1.log
-python -m smartem_decisions.mq_consumer | tee 1.consumer.log
-python -m smartem_decisions.run_api | tee 1.api.log
-
-Hint: log files are large, so I'd suggest processing in chunks, correlating between log files via timestamps,
-and perhaps look at code changes to reduce the noise level of api and consumer logs
-
-```bash
-
-python -m smartem_decisions.model.database
-
-python -m epu_data_intake watch \
-  ../smartem-decisions-test-datasets/epu-Supervisor_20250326_145351_30_nt33824-10_grid2_1in5dil/ \
-  | tee 1.log
-python -m smartem_decisions.mq_consumer | tee 1.consumer.log
-python -m smartem_decisions.run_api | tee 1.api.log
-
-python -m epu_data_intake watch \
-  ../smartem-decisions-test-datasets/metadata_Supervisor_20241220_140307_72_et2_gangshun/ \
-  | tee 2.log
-python -m smartem_decisions.mq_consumer | tee 2.consumer.log
-python -m smartem_decisions.run_api | tee 2.api.log
-
-python -m epu_data_intake watch \
-  ../smartem-decisions-test-datasets/metadata_Supervisor_20250108_101446_62_cm40593-1_EPU/ \
-  | tee 3.log
-python -m smartem_decisions.mq_consumer | tee 3.consumer.log
-python -m smartem_decisions.run_api | tee 3.api.log
-
-python -m epu_data_intake watch \
-  ../smartem-decisions-test-datasets/metadata_Supervisor_20250114_220855_23_epuBSAd20_GrOxDDM/ \
-  | tee 4.log
-python -m smartem_decisions.mq_consumer | tee 4.consumer.log
-python -m smartem_decisions.run_api | tee 4.api.log
-
-python -m epu_data_intake watch \
-  ../smartem-decisions-test-datasets/bi37708-28-copy/ \
-  | tee 5.log
-python -m smartem_decisions.mq_consumer | tee 5.consumer.log
-python -m smartem_decisions.run_api | tee 5.api.log
-```
-
-
-
 ### Log Levels
 
 - **ERROR** (default): Only critical errors are shown

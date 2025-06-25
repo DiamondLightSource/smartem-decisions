@@ -361,6 +361,7 @@ class MicrographCreatedEvent(MicrographEventBase):
 class MicrographUpdatedEvent(MicrographEventBase):
     """Event emitted when a micrograph is updated"""
     uuid: str  # Required
+    micrograph_id: str | None = None
     foilhole_uuid: str | None = None
     foilhole_id: str | None = None
     location_id: str | None = None

@@ -775,7 +775,7 @@ def update_micrograph(micrograph_uuid: str, micrograph: MicrographUpdateRequest,
     update_data = micrograph.model_dump(exclude_unset=True)
 
     # Create event payload
-    event_data = {"id": micrograph_uuid, **update_data}
+    event_data = {"uuid": micrograph_uuid, **update_data}
 
     # Publish the event to RabbitMQ
     success = publish_micrograph_updated(event_data)
