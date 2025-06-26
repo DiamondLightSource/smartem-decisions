@@ -289,7 +289,8 @@ class RateLimitedFilesystemEventHandler(FileSystemEventHandler):
             return
 
         logging.info(
-            f"Successfully upserted foilhole {foilhole.id} (UUID: {foilhole.uuid}) for gridsquare {foilhole.gridsquare_uuid}"
+            f"Successfully upserted foilhole {foilhole.id} (UUID: {foilhole.uuid}) "
+            f"for gridsquare {foilhole.gridsquare_uuid}"
         )
         logging.debug(foilhole)
 
@@ -323,7 +324,7 @@ class RateLimitedFilesystemEventHandler(FileSystemEventHandler):
         )
         success = self.datastore.upsert_micrograph(micrograph)
         if not success:
-            logging.warning(f"Failed to upsert micrograph {micrograph.id}")  
+            logging.warning(f"Failed to upsert micrograph {micrograph.id}")
 
     def _on_session_complete(self):
         """
