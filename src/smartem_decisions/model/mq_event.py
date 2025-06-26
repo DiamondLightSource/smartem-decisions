@@ -74,11 +74,12 @@ class GenericEventMessageBody(BaseModel):
     def serialize_event_type(self, event_type: MessageQueueEventType, _info):
         return str(event_type.value)
 
-    @field_serializer('*', when_used='json')
+    @field_serializer("*", when_used="json")
     def serialize_datetime_fields(self, v, _info):
         if isinstance(v, datetime):
             return v.isoformat()
         return v
+
 
 # ============ Acquisition Events ============
 class AcquisitionEventBase(GenericEventMessageBody):
@@ -333,6 +334,7 @@ class MicrographEventBase(GenericEventMessageBody):
 
 class MicrographCreatedEvent(MicrographEventBase):
     """Event emitted when a micrograph is created"""
+
     uuid: str
     foilhole_uuid: str
     foilhole_id: str
@@ -360,6 +362,7 @@ class MicrographCreatedEvent(MicrographEventBase):
 
 class MicrographUpdatedEvent(MicrographEventBase):
     """Event emitted when a micrograph is updated"""
+
     uuid: str  # Required
     micrograph_id: str | None = None
     foilhole_uuid: str | None = None
@@ -386,6 +389,7 @@ class MicrographUpdatedEvent(MicrographEventBase):
     selection_distribution: str | None = None
     pick_distribution: str | None = None
     metadata: dict[str, Any] | None = None
+
 
 class MicrographDeletedEvent(MicrographEventBase):
     """Event emitted when a micrograph is deleted"""

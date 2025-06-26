@@ -194,15 +194,9 @@ def watch_directory(
 
     if not dry_run:
         try:
-            import asyncio
-
-            async def check_api():
-                async with APIClient(api_url) as client:
-                    status_data = await client.get_status()
-                    return status_data
-
-            status_result = asyncio.run(check_api())
-            logging.info(f"API is reachable at {api_url} - Status: {status_result.get('status', 'unknown')}")
+            with APIClient(api_url) as client:
+                status_data = client.get_status()
+            logging.info(f"API is reachable at {api_url} - Status: {status_data.get('status', 'unknown')}")
         except Exception as e:
             logging.error(f"Error: API at {api_url} is not reachable: {str(e)}")
             raise typer.Exit(1) from None

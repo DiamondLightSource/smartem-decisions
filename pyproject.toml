@@ -58,6 +58,7 @@ core = [
 # Data intake component dependencies
 data-intake = [
     "smartem-decisions[common]",
+    "requests",
     "lxml==5.4.0",
     "watchdog==6.0.0",
 ]

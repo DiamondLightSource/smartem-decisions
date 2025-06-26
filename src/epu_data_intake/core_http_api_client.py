@@ -1,10 +1,9 @@
-import asyncio
 import json
 import logging
 import traceback
 from datetime import datetime
 
-import httpx
+import requests
 from pydantic import BaseModel
 
 from epu_data_intake.model.schemas import (
@@ -180,7 +179,7 @@ class EntityConverter:
 
 class SmartEMAPIClient:
     """
-    Unified SmartEM API client that provides both async and sync interfaces.
+    SmartEM API client that provides synchronous HTTP interface.
 
     This client handles all API communication with the SmartEM Core API,
     provides data conversion between EPU data models and API request/response models,
@@ -198,7 +197,8 @@ class SmartEMAPIClient:
         """
         self.base_url = base_url.rstrip("/")
         self.timeout = timeout
-        self._async_client = httpx.AsyncClient(timeout=timeout)
+        self._session = requests.Session()
+        self._session.timeout = timeout
         self._logger = logger or logging.getLogger(__name__)
 
         # Configure logger if it's the default one
@@ -209,19 +209,14 @@ class SmartEMAPIClient:
             self._logger.addHandler(handler)
             self._logger.setLevel(logging.INFO)
 
-        self._loop = None
         self._logger.info(f"Initialized SmartEM API client with base URL: {base_url}")
 
     def close(self) -> None:
-        """Close the sync client connection"""
+        """Close the client connection"""
         try:
-            self._run_async(self._async_client.aclose())
+            self._session.close()
         except Exception as e:
-            self._logger.error(f"Error closing async client: {e}")
-
-    async def aclose(self) -> None:
-        """Close the async client connection"""
-        await self._async_client.aclose()
+            self._logger.error(f"Error closing session: {e}")
 
     def __enter__(self):
         return self
@@ -229,34 +224,8 @@ class SmartEMAPIClient:
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.close()
 
-    async def __aenter__(self):
-        return self
-
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
-        await self.aclose()
-
-    def _get_or_create_loop(self):
-        """Get the current event loop or create a new one if necessary"""
-        if self._loop is None:
-            try:
-                self._loop = asyncio.get_running_loop()
-            except RuntimeError:
-                self._loop = asyncio.new_event_loop()
-                asyncio.set_event_loop(self._loop)
-        return self._loop
-
-    def _run_async(self, coro):
-        """Run an async coroutine in a sync context"""
-        loop = self._get_or_create_loop()
-        if loop.is_running():
-            # If we're already in an async context, create a task
-            return asyncio.create_task(coro)
-        else:
-            # Otherwise, run the coroutine to completion
-            return loop.run_until_complete(coro)
-
     # Generic API request methods
-    async def _request(
+    def _request(
         self,
         method: str,
         endpoint: str,
@@ -276,8 +245,8 @@ class SmartEMAPIClient:
             Parsed response, list of responses, or None for delete operations
 
         Raises:
-            httpx.HTTPStatusError: If the HTTP request returns an error status code
-            httpx.RequestError: If there's a network error or timeout
+            requests.HTTPError: If the HTTP request returns an error status code
+            requests.RequestException: If there's a network error or timeout
             ValueError: If there's an error parsing the response
             Exception: For any other errors
         """
@@ -295,7 +264,7 @@ class SmartEMAPIClient:
 
         try:
             self._logger.debug(f"Making {method.upper()} request to {url}")
-            response = await self._async_client.request(method, url, json=json_data)
+            response = self._session.request(method, url, json=json_data)
             response.raise_for_status()
 
             # For delete operations, return None
@@ -325,7 +294,7 @@ class SmartEMAPIClient:
                 self._logger.debug(f"Raw response: {response.text}")
                 raise ValueError(f"Invalid JSON response: {str(e)}") from None
 
-        except httpx.HTTPStatusError as e:
+        except requests.HTTPError as e:
             status_code = e.response.status_code
             error_detail = None
 
@@ -339,7 +308,7 @@ class SmartEMAPIClient:
             self._logger.error(f"HTTP {status_code} error for {method.upper()} {url}: {error_detail}")
             raise
 
-        except httpx.RequestError as e:
+        except requests.RequestException as e:
             self._logger.error(f"Request error for {method.upper()} {url}: {e}")
             self._logger.debug(f"Request error details: {traceback.format_exc()}")
             raise
@@ -349,388 +318,211 @@ class SmartEMAPIClient:
             self._logger.debug(f"Error details: {traceback.format_exc()}")
             raise
 
-    # Entity-specific methods with both async and sync variants
+    # Entity-specific methods
 
     # Status and Health
-    async def aget_status(self) -> dict[str, object]:
-        """Get API status information (async)"""
-        return await self._request("get", "status")
-
     def get_status(self) -> dict[str, object]:
-        """Get API status information (sync)"""
-        return self._run_async(self.aget_status())
-
-    async def aget_health(self) -> dict[str, object]:
-        """Get API health check information (async)"""
-        return await self._request("get", "health")
+        """Get API status information"""
+        return self._request("get", "status")
 
     def get_health(self) -> dict[str, object]:
-        """Get API health check information (sync)"""
-        return self._run_async(self.aget_health())
+        """Get API health check information"""
+        return self._request("get", "health")
 
     # Acquisitions
-    async def aget_acquisitions(self) -> list[AcquisitionResponse]:
-        """Get all acquisitions (async)"""
-        return await self._request("get", "acquisitions", response_cls=AcquisitionResponse)
-
     def get_acquisitions(self) -> list[AcquisitionResponse]:
-        """Get all acquisitions (sync)"""
-        return self._run_async(self.aget_acquisitions())
-
-    async def acreate_acquisition(self, acquisition: AcquisitionData) -> AcquisitionResponse:
-        """Create a new acquisition (async)"""
-        acquisition = EntityConverter.acquisition_to_request(acquisition)
-        response = await self._request("post", "acquisitions", acquisition, AcquisitionResponse)
-        return response
+        """Get all acquisitions"""
+        return self._request("get", "acquisitions", response_cls=AcquisitionResponse)
 
     def create_acquisition(self, acquisition: AcquisitionData) -> AcquisitionResponse:
-        """Create a new acquisition (sync)"""
-        return self._run_async(self.acreate_acquisition(acquisition))
-
-    async def aget_acquisition(self, acquisition_uuid: str) -> AcquisitionResponse:
-        """Get a single acquisition by ID (async)"""
-        return await self._request("get", f"acquisitions/{acquisition_uuid}", response_cls=AcquisitionResponse)
+        """Create a new acquisition"""
+        acquisition = EntityConverter.acquisition_to_request(acquisition)
+        response = self._request("post", "acquisitions", acquisition, AcquisitionResponse)
+        return response
 
     def get_acquisition(self, acquisition_uuid: str) -> AcquisitionResponse:
-        """Get a single acquisition by ID (sync)"""
-        return self._run_async(self.aget_acquisition(acquisition_uuid))
-
-    async def aupdate_acquisition(self, acquisition: AcquisitionData) -> AcquisitionResponse:
-        """Update an acquisition (async)"""
-        acquisition = EntityConverter.acquisition_to_request(acquisition)
-        return await self._request("put", f"acquisitions/{acquisition.uuid}", acquisition, AcquisitionResponse)
+        """Get a single acquisition by ID"""
+        return self._request("get", f"acquisitions/{acquisition_uuid}", response_cls=AcquisitionResponse)
 
     def update_acquisition(self, acquisition: AcquisitionData) -> AcquisitionResponse:
-        """Update an acquisition (sync)"""
-        return self._run_async(self.aupdate_acquisition(acquisition))
-
-    async def adelete_acquisition(self, acquisition_uuid: str) -> None:
-        """Delete an acquisition (async)"""
-        await self._request("delete", f"acquisitions/{acquisition_uuid}")
+        """Update an acquisition"""
+        acquisition = EntityConverter.acquisition_to_request(acquisition)
+        return self._request("put", f"acquisitions/{acquisition.uuid}", acquisition, AcquisitionResponse)
 
     def delete_acquisition(self, acquisition_uuid: str) -> None:
-        """Delete an acquisition (sync)"""
-        return self._run_async(self.adelete_acquisition(acquisition_uuid))
+        """Delete an acquisition"""
+        return self._request("delete", f"acquisitions/{acquisition_uuid}")
 
     # Grids
-    async def aget_grids(self) -> list[GridResponse]:
-        """Get all grids (async)"""
-        return await self._request("get", "grids", response_cls=GridResponse)
-
     def get_grids(self) -> list[GridResponse]:
-        """Get all grids (sync)"""
-        return self._run_async(self.aget_grids())
-
-    async def aget_grid(self, grid_uuid: str) -> GridResponse:
-        """Get a single grid by ID (async)"""
-        return await self._request("get", f"grids/{grid_uuid}", response_cls=GridResponse)
+        """Get all grids"""
+        return self._request("get", "grids", response_cls=GridResponse)
 
     def get_grid(self, grid_uuid: str) -> GridResponse:
-        """Get a single grid by ID (sync)"""
-        return self._run_async(self.aget_grid(grid_uuid))
-
-    async def aupdate_grid(self, grid: GridData) -> GridResponse:
-        """Update a grid (async)"""
-        grid = EntityConverter.grid_to_request(grid)
-        return await self._request("put", f"grids/{grid.uuid}", grid, GridResponse)
+        """Get a single grid by ID"""
+        return self._request("get", f"grids/{grid_uuid}", response_cls=GridResponse)
 
     def update_grid(self, grid: GridData) -> GridResponse:
-        """Update a grid (sync)"""
-        return self._run_async(self.aupdate_grid(grid))
-
-    async def adelete_grid(self, grid_uuid: str) -> None:
-        """Delete a grid (async)"""
-        await self._request("delete", f"grids/{grid_uuid}")
+        """Update a grid"""
+        grid = EntityConverter.grid_to_request(grid)
+        return self._request("put", f"grids/{grid.uuid}", grid, GridResponse)
 
     def delete_grid(self, grid_uuid: str) -> None:
-        """Delete a grid (sync)"""
-        return self._run_async(self.adelete_grid(grid_uuid))
-
-    async def aget_acquisition_grids(self, acquisition_uuid: str) -> list[GridResponse]:
-        """Get all grids for a specific acquisition (async)"""
-        return await self._request("get", f"acquisitions/{acquisition_uuid}/grids", response_cls=GridResponse)
+        """Delete a grid"""
+        return self._request("delete", f"grids/{grid_uuid}")
 
     def get_acquisition_grids(self, acquisition_uuid: str) -> list[GridResponse]:
-        """Get all grids for a specific acquisition (sync)"""
-        return self._run_async(self.aget_acquisition_grids(acquisition_uuid))
-
-    async def acreate_acquisition_grid(self, grid: GridData) -> GridResponse:
-        """Create a new grid for a specific acquisition (async)"""
-        grid = EntityConverter.grid_to_request(grid)
-
-        response = await self._request("post", f"acquisitions/{grid.acquisition_uuid}/grids", grid, GridResponse)
-        return response
+        """Get all grids for a specific acquisition"""
+        return self._request("get", f"acquisitions/{acquisition_uuid}/grids", response_cls=GridResponse)
 
     def create_acquisition_grid(self, grid: GridData) -> GridResponse:
-        """Create a new grid for a specific acquisition (sync)"""
-        return self._run_async(self.acreate_acquisition_grid(grid))
+        """Create a new grid for a specific acquisition"""
+        grid = EntityConverter.grid_to_request(grid)
+        response = self._request("post", f"acquisitions/{grid.acquisition_uuid}/grids", grid, GridResponse)
+        return response
 
     # Atlas
-    async def aget_atlases(self) -> list[AtlasResponse]:
-        """Get all atlases (async)"""
-        return await self._request("get", "atlases", response_cls=AtlasResponse)
-
     def get_atlases(self) -> list[AtlasResponse]:
-        """Get all atlases (sync)"""
-        return self._run_async(self.aget_atlases())
-
-    async def aget_atlas(self, atlas_uuid: str) -> AtlasResponse:
-        """Get a single atlas by ID (async)"""
-        return await self._request("get", f"atlases/{atlas_uuid}", response_cls=AtlasResponse)
+        """Get all atlases"""
+        return self._request("get", "atlases", response_cls=AtlasResponse)
 
     def get_atlas(self, atlas_uuid: str) -> AtlasResponse:
-        """Get a single atlas by ID (sync)"""
-        return self._run_async(self.aget_atlas(atlas_uuid))
-
-    async def aupdate_atlas(self, atlas: AtlasData) -> AtlasResponse:
-        """Update an atlas (async)"""
-        atlas = EntityConverter.atlas_to_request(atlas)
-        return await self._request("put", f"atlases/{atlas.uuid}", atlas, AtlasResponse)
+        """Get a single atlas by ID"""
+        return self._request("get", f"atlases/{atlas_uuid}", response_cls=AtlasResponse)
 
     def update_atlas(self, atlas: AtlasData) -> AtlasResponse:
-        """Update an atlas (sync)"""
-        return self._run_async(self.aupdate_atlas(atlas))
-
-    async def adelete_atlas(self, atlas_uuid: str) -> None:
-        """Delete an atlas (async)"""
-        await self._request("delete", f"atlases/{atlas_uuid}")
+        """Update an atlas"""
+        atlas = EntityConverter.atlas_to_request(atlas)
+        return self._request("put", f"atlases/{atlas.uuid}", atlas, AtlasResponse)
 
     def delete_atlas(self, atlas_uuid: str) -> None:
-        """Delete an atlas (sync)"""
-        return self._run_async(self.adelete_atlas(atlas_uuid))
-
-    async def aget_grid_atlas(self, grid_uuid: str) -> AtlasResponse:
-        """Get the atlas for a specific grid (async)"""
-        return await self._request("get", f"grids/{grid_uuid}/atlas", response_cls=AtlasResponse)
+        """Delete an atlas"""
+        return self._request("delete", f"atlases/{atlas_uuid}")
 
     def get_grid_atlas(self, grid_uuid: str) -> AtlasResponse:
-        """Get the atlas for a specific grid (sync)"""
-        return self._run_async(self.aget_grid_atlas(grid_uuid))
-
-    async def acreate_grid_atlas(self, atlas: AtlasData) -> AtlasResponse:
-        """Create a new atlas for a grid (async)"""
-        # Convert AtlasData to AtlasCreateRequest if needed
-        atlas = EntityConverter.atlas_to_request(atlas)
-
-        response = await self._request("post", f"grids/{atlas.grid_uuid}/atlas", atlas, AtlasResponse)
-        return response
+        """Get the atlas for a specific grid"""
+        return self._request("get", f"grids/{grid_uuid}/atlas", response_cls=AtlasResponse)
 
     def create_grid_atlas(self, atlas: AtlasData) -> AtlasResponse:
-        """Create a new atlas for a grid (sync)"""
-        return self._run_async(self.acreate_grid_atlas(atlas))
+        """Create a new atlas for a grid"""
+        # Convert AtlasData to AtlasCreateRequest if needed
+        atlas = EntityConverter.atlas_to_request(atlas)
+        response = self._request("post", f"grids/{atlas.grid_uuid}/atlas", atlas, AtlasResponse)
+        return response
 
     # Atlas Tiles
-    async def aget_atlas_tiles(self) -> list[AtlasTileResponse]:
-        """Get all atlas tiles (async)"""
-        return await self._request("get", "atlas-tiles", response_cls=AtlasTileResponse)
-
     def get_atlas_tiles(self) -> list[AtlasTileResponse]:
-        """Get all atlas tiles (sync)"""
-        return self._run_async(self.aget_atlas_tiles())
-
-    async def aget_atlas_tile(self, tile_uuid: str) -> AtlasTileResponse:
-        """Get a single atlas tile by ID (async)"""
-        return await self._request("get", f"atlas-tiles/{tile_uuid}", response_cls=AtlasTileResponse)
+        """Get all atlas tiles"""
+        return self._request("get", "atlas-tiles", response_cls=AtlasTileResponse)
 
     def get_atlas_tile(self, tile_uuid: str) -> AtlasTileResponse:
-        """Get a single atlas tile by ID (sync)"""
-        return self._run_async(self.aget_atlas_tile(tile_uuid))
-
-    async def aupdate_atlas_tile(self, tile: AtlasTileData) -> AtlasTileResponse:
-        """Update an atlas tile (async)"""
-        tile = EntityConverter.atlas_tile_to_request(tile)
-        return await self._request("put", f"atlas-tiles/{tile.uuid}", tile, AtlasTileResponse)
+        """Get a single atlas tile by ID"""
+        return self._request("get", f"atlas-tiles/{tile_uuid}", response_cls=AtlasTileResponse)
 
     def update_atlas_tile(self, tile: AtlasTileData) -> AtlasTileResponse:
-        """Update an atlas tile (sync)"""
-        return self._run_async(self.aupdate_atlas_tile(tile))
-
-    async def adelete_atlas_tile(self, tile_uuid: str) -> None:
-        """Delete an atlas tile (async)"""
-        await self._request("delete", f"atlas-tiles/{tile_uuid}")
+        """Update an atlas tile"""
+        tile = EntityConverter.atlas_tile_to_request(tile)
+        return self._request("put", f"atlas-tiles/{tile.uuid}", tile, AtlasTileResponse)
 
     def delete_atlas_tile(self, tile_uuid: str) -> None:
-        """Delete an atlas tile (sync)"""
-        return self._run_async(self.adelete_atlas_tile(tile_uuid))
-
-    async def aget_atlas_tiles_by_atlas(self, atlas_uuid: str) -> list[AtlasTileResponse]:
-        """Get all tiles for a specific atlas (async)"""
-        return await self._request("get", f"atlases/{atlas_uuid}/tiles", response_cls=AtlasTileResponse)
+        """Delete an atlas tile"""
+        return self._request("delete", f"atlas-tiles/{tile_uuid}")
 
     def get_atlas_tiles_by_atlas(self, atlas_uuid: str) -> list[AtlasTileResponse]:
-        """Get all tiles for a specific atlas (sync)"""
-        return self._run_async(self.aget_atlas_tiles_by_atlas(atlas_uuid))
-
-    async def acreate_atlas_tile_for_atlas(self, tile: AtlasTileData) -> AtlasTileResponse:
-        """Create a new tile for a specific atlas (async)"""
-        tile = EntityConverter.atlas_tile_to_request(tile)
-        response = await self._request("post", f"atlases/{tile.atlas_uuid}/tiles", tile, AtlasTileResponse)
-        return response
+        """Get all tiles for a specific atlas"""
+        return self._request("get", f"atlases/{atlas_uuid}/tiles", response_cls=AtlasTileResponse)
 
     def create_atlas_tile_for_atlas(self, tile: AtlasTileData) -> AtlasTileResponse:
-        """Create a new tile for a specific atlas (sync)"""
-        return self._run_async(self.acreate_atlas_tile_for_atlas(tile))
-
-    # GridSquares
-    async def aget_gridsquares(self) -> list[GridSquareResponse]:
-        """Get all grid squares (async)"""
-        return await self._request("get", "gridsquares", response_cls=GridSquareResponse)
-
-    def get_gridsquares(self) -> list[GridSquareResponse]:
-        """Get all grid squares (sync)"""
-        return self._run_async(self.aget_gridsquares())
-
-    async def aget_gridsquare(self, gridsquare_uuid: str) -> GridSquareResponse:
-        """Get a single grid square by ID (async)"""
-        return await self._request("get", f"gridsquares/{gridsquare_uuid}", response_cls=GridSquareResponse)
-
-    def get_gridsquare(self, gridsquare_uuid: str) -> GridSquareResponse:
-        """Get a single grid square by ID (sync)"""
-        return self._run_async(self.aget_gridsquare(gridsquare_uuid))
-
-    async def aupdate_gridsquare(self, gridsquare: GridSquareData) -> GridSquareResponse:
-        """Update a grid square (async)"""
-        request_model = EntityConverter.gridsquare_to_request(gridsquare)
-        return await self._request("put", f"gridsquares/{gridsquare.uuid}", request_model, GridSquareResponse)
-
-    def update_gridsquare(self, gridsquare: GridSquareData) -> GridSquareResponse:
-        """Update a grid square (sync)"""
-        return self._run_async(self.aupdate_gridsquare(gridsquare))
-
-    async def adelete_gridsquare(self, gridsquare_uuid: str) -> None:
-        """Delete a grid square (async)"""
-        await self._request("delete", f"gridsquares/{gridsquare_uuid}")
-
-    def delete_gridsquare(self, gridsquare_uuid: str) -> None:
-        """Delete a grid square (sync)"""
-        return self._run_async(self.adelete_gridsquare(gridsquare_uuid))
-
-    async def aget_grid_gridsquares(self, grid_uuid: str) -> list[GridSquareResponse]:
-        """Get all grid squares for a specific grid (async)"""
-        return await self._request("get", f"grids/{grid_uuid}/gridsquares", response_cls=GridSquareResponse)
-
-    def get_grid_gridsquares(self, grid_uuid: str) -> list[GridSquareResponse]:
-        """Get all grid squares for a specific grid (sync)"""
-        return self._run_async(self.aget_grid_gridsquares(grid_uuid))
-
-    async def acreate_grid_gridsquare(self, gridsquare: GridSquareData) -> GridSquareResponse:
-        """Create a new grid square for a specific grid (async)"""
-        # Convert GridSquareData to GridSquareCreateRequest if needed
-        gridsquare = EntityConverter.gridsquare_to_request(gridsquare)
-
-        response = await self._request(
-            "post", f"grids/{gridsquare.grid_uuid}/gridsquares", gridsquare, GridSquareResponse
-        )
+        """Create a new tile for a specific atlas"""
+        tile = EntityConverter.atlas_tile_to_request(tile)
+        response = self._request("post", f"atlases/{tile.atlas_uuid}/tiles", tile, AtlasTileResponse)
         return response
 
+    # GridSquares
+    def get_gridsquares(self) -> list[GridSquareResponse]:
+        """Get all grid squares"""
+        return self._request("get", "gridsquares", response_cls=GridSquareResponse)
+
+    def get_gridsquare(self, gridsquare_uuid: str) -> GridSquareResponse:
+        """Get a single grid square by ID"""
+        return self._request("get", f"gridsquares/{gridsquare_uuid}", response_cls=GridSquareResponse)
+
+    def update_gridsquare(self, gridsquare: GridSquareData) -> GridSquareResponse:
+        """Update a grid square"""
+        request_model = EntityConverter.gridsquare_to_request(gridsquare)
+        return self._request("put", f"gridsquares/{gridsquare.uuid}", request_model, GridSquareResponse)
+
+    def delete_gridsquare(self, gridsquare_uuid: str) -> None:
+        """Delete a grid square"""
+        return self._request("delete", f"gridsquares/{gridsquare_uuid}")
+
+    def get_grid_gridsquares(self, grid_uuid: str) -> list[GridSquareResponse]:
+        """Get all grid squares for a specific grid"""
+        return self._request("get", f"grids/{grid_uuid}/gridsquares", response_cls=GridSquareResponse)
+
     def create_grid_gridsquare(self, gridsquare: GridSquareData) -> GridSquareResponse:
-        """Create a new grid square for a specific grid (sync)"""
-        return self._run_async(self.acreate_grid_gridsquare(gridsquare))
+        """Create a new grid square for a specific grid"""
+        # Convert GridSquareData to GridSquareCreateRequest if needed
+        gridsquare = EntityConverter.gridsquare_to_request(gridsquare)
+        response = self._request("post", f"grids/{gridsquare.grid_uuid}/gridsquares", gridsquare, GridSquareResponse)
+        return response
 
     # FoilHoles
-    async def aget_foilholes(self) -> list[FoilHoleResponse]:
-        """Get all foil holes (async)"""
-        return await self._request("get", "foilholes", response_cls=FoilHoleResponse)
-
     def get_foilholes(self) -> list[FoilHoleResponse]:
-        """Get all foil holes (sync)"""
-        return self._run_async(self.aget_foilholes())
-
-    async def aget_foilhole(self, foilhole_uuid: str) -> FoilHoleResponse:
-        """Get a single foil hole by ID (async)"""
-        return await self._request("get", f"foilholes/{foilhole_uuid}", response_cls=FoilHoleResponse)
+        """Get all foil holes"""
+        return self._request("get", "foilholes", response_cls=FoilHoleResponse)
 
     def get_foilhole(self, foilhole_uuid: str) -> FoilHoleResponse:
-        """Get a single foil hole by ID (sync)"""
-        return self._run_async(self.aget_foilhole(foilhole_uuid))
-
-    async def aupdate_foilhole(self, foilhole: FoilHoleData) -> FoilHoleResponse:
-        """Update a foil hole (async)"""
-        foilhole = EntityConverter.foilhole_to_request(foilhole)
-        return await self._request("put", f"foilholes/{foilhole.uuid}", foilhole, FoilHoleResponse)
+        """Get a single foil hole by ID"""
+        return self._request("get", f"foilholes/{foilhole_uuid}", response_cls=FoilHoleResponse)
 
     def update_foilhole(self, foilhole: FoilHoleData) -> FoilHoleResponse:
-        """Update a foil hole (sync)"""
-        return self._run_async(self.aupdate_foilhole(foilhole))
-
-    async def adelete_foilhole(self, foilhole_uuid: str) -> None:
-        """Delete a foil hole (async)"""
-        await self._request("delete", f"foilholes/{foilhole_uuid}")
+        """Update a foil hole"""
+        foilhole = EntityConverter.foilhole_to_request(foilhole)
+        return self._request("put", f"foilholes/{foilhole.uuid}", foilhole, FoilHoleResponse)
 
     def delete_foilhole(self, foilhole_uuid: str) -> None:
-        """Delete a foil hole (sync)"""
-        return self._run_async(self.adelete_foilhole(foilhole_uuid))
-
-    async def aget_gridsquare_foilholes(self, gridsquare_uuid: str) -> list[FoilHoleResponse]:
-        """Get all foil holes for a specific grid square (async)"""
-        return await self._request("get", f"gridsquares/{gridsquare_uuid}/foilholes", response_cls=FoilHoleResponse)
+        """Delete a foil hole"""
+        return self._request("delete", f"foilholes/{foilhole_uuid}")
 
     def get_gridsquare_foilholes(self, gridsquare_uuid: str) -> list[FoilHoleResponse]:
-        """Get all foil holes for a specific grid square (sync)"""
-        return self._run_async(self.aget_gridsquare_foilholes(gridsquare_uuid))
+        """Get all foil holes for a specific grid square"""
+        return self._request("get", f"gridsquares/{gridsquare_uuid}/foilholes", response_cls=FoilHoleResponse)
 
-    async def acreate_gridsquare_foilhole(self, foilhole: FoilHoleData) -> FoilHoleResponse:
-        """Create a new foil hole for a specific grid square (async)"""
+    def create_gridsquare_foilhole(self, foilhole: FoilHoleData) -> FoilHoleResponse:
+        """Create a new foil hole for a specific grid square"""
         foilhole = EntityConverter.foilhole_to_request(foilhole)
-        response = await self._request(
+        response = self._request(
             "post", f"gridsquares/{foilhole.gridsquare_uuid}/foilholes", foilhole, FoilHoleResponse
         )
         return response
 
-    def create_gridsquare_foilhole(self, foilhole: FoilHoleData) -> FoilHoleResponse:
-        """Create a new foil hole for a specific grid square (sync)"""
-        return self._run_async(self.acreate_gridsquare_foilhole(foilhole))
-
     # Micrographs
-    async def aget_micrographs(self) -> list[MicrographResponse]:
-        """Get all micrographs (async)"""
-        return await self._request("get", "micrographs", response_cls=MicrographResponse)
-
     def get_micrographs(self) -> list[MicrographResponse]:
-        """Get all micrographs (sync)"""
-        return self._run_async(self.aget_micrographs())
-
-    async def aget_micrograph(self, micrograph_uuid: str) -> MicrographResponse:
-        """Get a single micrograph by ID (async)"""
-        return await self._request("get", f"micrographs/{micrograph_uuid}", response_cls=MicrographResponse)
+        """Get all micrographs"""
+        return self._request("get", "micrographs", response_cls=MicrographResponse)
 
     def get_micrograph(self, micrograph_uuid: str) -> MicrographResponse:
-        """Get a single micrograph by ID (sync)"""
-        return self._run_async(self.aget_micrograph(micrograph_uuid))
-
-    async def aupdate_micrograph(self, micrograph: MicrographData) -> MicrographResponse:
-        """Update a micrograph (async)"""
-        micrograph = EntityConverter.micrograph_to_request(micrograph)
-        return await self._request("put", f"micrographs/{micrograph.uuid}", micrograph, MicrographResponse)
+        """Get a single micrograph by ID"""
+        return self._request("get", f"micrographs/{micrograph_uuid}", response_cls=MicrographResponse)
 
     def update_micrograph(self, micrograph: MicrographData) -> MicrographResponse:
-        """Update a micrograph (sync)"""
-        return self._run_async(self.aupdate_micrograph(micrograph))
-
-    async def adelete_micrograph(self, micrograph_id: str) -> None:
-        """Delete a micrograph (async)"""
-        await self._request("delete", f"micrographs/{micrograph_id}")
+        """Update a micrograph"""
+        micrograph = EntityConverter.micrograph_to_request(micrograph)
+        return self._request("put", f"micrographs/{micrograph.uuid}", micrograph, MicrographResponse)
 
     def delete_micrograph(self, micrograph_id: str) -> None:
-        """Delete a micrograph (sync)"""
-        return self._run_async(self.adelete_micrograph(micrograph_id))
-
-    async def aget_foilhole_micrographs(self, foilhole_id: str) -> list[MicrographResponse]:
-        """Get all micrographs for a specific foil hole (async)"""
-        return await self._request("get", f"foilholes/{foilhole_id}/micrographs", response_cls=MicrographResponse)
+        """Delete a micrograph"""
+        return self._request("delete", f"micrographs/{micrograph_id}")
 
     def get_foilhole_micrographs(self, foilhole_id: str) -> list[MicrographResponse]:
-        """Get all micrographs for a specific foil hole (sync)"""
-        return self._run_async(self.aget_foilhole_micrographs(foilhole_id))
+        """Get all micrographs for a specific foil hole"""
+        return self._request("get", f"foilholes/{foilhole_id}/micrographs", response_cls=MicrographResponse)
 
-    async def acreate_foilhole_micrograph(self, micrograph: MicrographData) -> MicrographResponse:
-        """Create a new micrograph for a specific foil hole (async)"""
+    def create_foilhole_micrograph(self, micrograph: MicrographData) -> MicrographResponse:
+        """Create a new micrograph for a specific foil hole"""
         micrograph = EntityConverter.micrograph_to_request(micrograph)
-        response = await self._request(
+        response = self._request(
             "post", f"foilholes/{micrograph.foilhole_uuid}/micrographs", micrograph, MicrographResponse
         )
         return response
-
-    def create_foilhole_micrograph(self, micrograph: MicrographData) -> MicrographResponse:
-        """Create a new micrograph for a specific foil hole (sync)"""
-        return self._run_async(self.acreate_foilhole_micrograph(micrograph))
