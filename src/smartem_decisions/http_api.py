@@ -7,6 +7,11 @@ from fastapi import Depends, FastAPI, HTTPException, Request, status
 from sqlalchemy.orm import Session as SqlAlchemySession
 from sqlalchemy.orm import sessionmaker
 
+# DB Write Mode Configuration
+# "direct" = Write directly to DB, skip MQ publishing
+# "queued" = Publish to MQ for async processing (original behavior)
+DB_WRITE_MODE = os.getenv("DB_WRITE_MODE", "direct")
+
 from src.smartem_decisions._version import __version__
 from src.smartem_decisions.model.database import (
     Acquisition,
@@ -110,6 +115,9 @@ log_level = log_level_map.get(log_level_str, logging.ERROR)
 logging.basicConfig(level=log_level, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 logger = logging.getLogger("smartem_decisions_api")
 
+# Log the DB write mode configuration
+logger.info(f"API initialized with DB_WRITE_MODE: {DB_WRITE_MODE}")
+
 # Also configure uvicorn loggers to use the same level
 uvicorn_loggers = ["uvicorn", "uvicorn.error", "uvicorn.access"]
 for logger_name in uvicorn_loggers:
@@ -181,25 +189,48 @@ def get_acquisitions(db: SqlAlchemySession = DB_DEPENDENCY):
 
 
 @app.post("/acquisitions", response_model=AcquisitionResponse, status_code=status.HTTP_201_CREATED)
-def create_acquisition(acquisition: AcquisitionCreateRequest):
-    """Create a new acquisition by publishing to RabbitMQ"""
-    acquisition_data = {
-        "uuid": acquisition.uuid,
-        "status": AcquisitionStatus.STARTED,
-        **acquisition.model_dump(exclude={"uuid"}),
-    }
+def create_acquisition(acquisition: AcquisitionCreateRequest, db: SqlAlchemySession = DB_DEPENDENCY):
+    """Create a new acquisition"""
+    if DB_WRITE_MODE == "direct":
+        # Direct DB write mode
+        acquisition_data = {
+            "uuid": acquisition.uuid,
+            "status": AcquisitionStatus.STARTED,
+            **acquisition.model_dump(exclude={"uuid"}),
+        }
 
-    success = publish_acquisition_created(acquisition_data)
-    if not success:
-        logger.error(f"Failed to publish acquisition created event for ID: {acquisition.uuid}")
+        db_acquisition = Acquisition(**acquisition_data)
+        db.add(db_acquisition)
+        db.commit()
+        db.refresh(db_acquisition)
 
-    response_data = {
-        "uuid": acquisition.uuid,
-        "status": AcquisitionStatus.STARTED,
-        **acquisition.model_dump(exclude={"uuid", "status"}),
-    }
+        # Create proper response data matching the response model
+        response_data = {
+            "uuid": acquisition.uuid,
+            "status": AcquisitionStatus.STARTED,
+            **acquisition.model_dump(exclude={"uuid", "status"}),
+        }
 
-    return AcquisitionResponse(**response_data)
+        return AcquisitionResponse(**response_data)
+    else:
+        # Queued mode (original behavior)
+        acquisition_data = {
+            "uuid": acquisition.uuid,
+            "status": AcquisitionStatus.STARTED,
+            **acquisition.model_dump(exclude={"uuid"}),
+        }
+
+        success = publish_acquisition_created(acquisition_data)
+        if not success:
+            logger.error(f"Failed to publish acquisition created event for ID: {acquisition.uuid}")
+
+        response_data = {
+            "uuid": acquisition.uuid,
+            "status": AcquisitionStatus.STARTED,
+            **acquisition.model_dump(exclude={"uuid", "status"}),
+        }
+
+        return AcquisitionResponse(**response_data)
 
 
 @app.get("/acquisitions/{acquisition_uuid}", response_model=AcquisitionResponse)
@@ -215,7 +246,7 @@ def get_acquisition(acquisition_uuid: str, db: SqlAlchemySession = DB_DEPENDENCY
 def update_acquisition(
     acquisition_uuid: str, acquisition: AcquisitionUpdateRequest, db: SqlAlchemySession = DB_DEPENDENCY
 ):
-    """Update an acquisition by publishing to RabbitMQ"""
+    """Update an acquisition"""
     # Check if acquisition exists
     db_acquisition = db.query(Acquisition).filter(Acquisition.uuid == acquisition_uuid).first()
     if not db_acquisition:
@@ -224,37 +255,84 @@ def update_acquisition(
     # Prepare update data
     update_data = acquisition.model_dump(exclude_unset=True)
 
-    # Create event payload
-    event_data = {"uuid": acquisition_uuid, **update_data}
+    if DB_WRITE_MODE == "direct":
+        # Direct DB write mode
+        for key, value in update_data.items():
+            setattr(db_acquisition, key, value)
+        db.commit()
+        db.refresh(db_acquisition)
 
-    # Publish the event to RabbitMQ
-    success = publish_acquisition_updated(event_data)
-    if not success:
-        logger.error(f"Failed to publish acquisition updated event for ID: {acquisition_uuid}")
+        # Create proper response data matching the response model
+        response_data = {
+            "uuid": db_acquisition.uuid,
+            "status": db_acquisition.status,
+            "id": db_acquisition.id,
+            "name": db_acquisition.name,
+            "start_time": db_acquisition.start_time,
+            "end_time": db_acquisition.end_time,
+            "paused_time": db_acquisition.paused_time,
+            "storage_path": db_acquisition.storage_path,
+            "atlas_path": db_acquisition.atlas_path,
+            "clustering_mode": db_acquisition.clustering_mode,
+            "clustering_radius": db_acquisition.clustering_radius,
+        }
 
-    # For immediate feedback, update the object in database, too.
-    # This isn't ideal in a true event-driven architecture, but provides better UX
-    for key, value in update_data.items():
-        setattr(db_acquisition, key, value)
+        return AcquisitionResponse(**response_data)
+    else:
+        # Queued mode (original behavior)
+        # Create event payload
+        event_data = {"uuid": acquisition_uuid, **update_data}
 
-    db.commit()
-    db.refresh(db_acquisition)
-    return db_acquisition
+        # Publish the event to RabbitMQ
+        success = publish_acquisition_updated(event_data)
+        if not success:
+            logger.error(f"Failed to publish acquisition updated event for ID: {acquisition_uuid}")
+
+        # For immediate feedback, update the object in database, too.
+        # This isn't ideal in a true event-driven architecture, but provides better UX
+        for key, value in update_data.items():
+            setattr(db_acquisition, key, value)
+
+        db.commit()
+        db.refresh(db_acquisition)
+
+        # Create proper response data matching the response model
+        response_data = {
+            "uuid": db_acquisition.uuid,
+            "status": db_acquisition.status,
+            "id": db_acquisition.id,
+            "name": db_acquisition.name,
+            "start_time": db_acquisition.start_time,
+            "end_time": db_acquisition.end_time,
+            "paused_time": db_acquisition.paused_time,
+            "storage_path": db_acquisition.storage_path,
+            "atlas_path": db_acquisition.atlas_path,
+            "clustering_mode": db_acquisition.clustering_mode,
+            "clustering_radius": db_acquisition.clustering_radius,
+        }
+
+        return AcquisitionResponse(**response_data)
 
 
 @app.delete("/acquisitions/{acquisition_uuid}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_acquisition(acquisition_uuid: str, db: SqlAlchemySession = DB_DEPENDENCY):
-    """Delete an acquisition by publishing to RabbitMQ"""
+    """Delete an acquisition"""
     # Check if acquisition exists
     db_acquisition = db.query(Acquisition).filter(Acquisition.uuid == acquisition_uuid).first()
     if not db_acquisition:
         raise HTTPException(status_code=404, detail="Acquisition not found")
 
-    success = publish_acquisition_deleted(acquisition_uuid)
-    if not success:
-        logger.error(f"Failed to publish acquisition deleted event for ID: {acquisition_uuid}")
-
-    return None
+    if DB_WRITE_MODE == "direct":
+        # Direct DB write mode
+        db.delete(db_acquisition)
+        db.commit()
+        return None
+    else:
+        # Queued mode (original behavior)
+        success = publish_acquisition_deleted(acquisition_uuid)
+        if not success:
+            logger.error(f"Failed to publish acquisition deleted event for ID: {acquisition_uuid}")
+        return None
 
 
 # ============ Grid CRUD Operations ============
@@ -277,7 +355,7 @@ def get_grid(grid_uuid: str, db: SqlAlchemySession = DB_DEPENDENCY):
 
 @app.put("/grids/{grid_uuid}", response_model=GridResponse)
 def update_grid(grid_uuid: str, grid: GridUpdateRequest, db: SqlAlchemySession = DB_DEPENDENCY):
-    """Update a grid by publishing to RabbitMQ"""
+    """Update a grid"""
     # Check if grid exists
     db_grid = db.query(Grid).filter(Grid.uuid == grid_uuid).first()
     if not db_grid:
@@ -286,21 +364,56 @@ def update_grid(grid_uuid: str, grid: GridUpdateRequest, db: SqlAlchemySession =
     # Prepare update data
     update_data = grid.model_dump(exclude_unset=True)
 
-    # Create event payload
-    event_data = {"uuid": grid_uuid, **update_data}
+    if DB_WRITE_MODE == "direct":
+        # Direct DB write mode
+        for key, value in update_data.items():
+            setattr(db_grid, key, value)
+        db.commit()
+        db.refresh(db_grid)
 
-    # Publish the event to RabbitMQ
-    success = publish_grid_updated(event_data)
-    if not success:
-        logger.error(f"Failed to publish grid updated event for ID: {grid_uuid}")
+        # Create proper response data matching the response model
+        response_data = {
+            "uuid": db_grid.uuid,
+            "acquisition_uuid": db_grid.acquisition_uuid,
+            "status": db_grid.status,
+            "name": db_grid.name,
+            "data_dir": db_grid.data_dir,
+            "atlas_dir": db_grid.atlas_dir,
+            "scan_start_time": db_grid.scan_start_time,
+            "scan_end_time": db_grid.scan_end_time,
+        }
 
-    # For immediate feedback, update the object in database too
-    for key, value in update_data.items():
-        setattr(db_grid, key, value)
+        return GridResponse(**response_data)
+    else:
+        # Queued mode (original behavior)
+        # Create event payload
+        event_data = {"uuid": grid_uuid, **update_data}
 
-    db.commit()
-    db.refresh(db_grid)
-    return db_grid
+        # Publish the event to RabbitMQ
+        success = publish_grid_updated(event_data)
+        if not success:
+            logger.error(f"Failed to publish grid updated event for ID: {grid_uuid}")
+
+        # For immediate feedback, update the object in database too
+        for key, value in update_data.items():
+            setattr(db_grid, key, value)
+
+        db.commit()
+        db.refresh(db_grid)
+
+        # Create proper response data matching the response model
+        response_data = {
+            "uuid": db_grid.uuid,
+            "acquisition_uuid": db_grid.acquisition_uuid,
+            "status": db_grid.status,
+            "name": db_grid.name,
+            "data_dir": db_grid.data_dir,
+            "atlas_dir": db_grid.atlas_dir,
+            "scan_start_time": db_grid.scan_start_time,
+            "scan_end_time": db_grid.scan_end_time,
+        }
+
+        return GridResponse(**response_data)
 
 
 @app.delete("/grids/{grid_uuid}", status_code=status.HTTP_204_NO_CONTENT)
@@ -326,24 +439,53 @@ def get_acquisition_grids(acquisition_uuid: str, db: SqlAlchemySession = DB_DEPE
 
 @app.post("/acquisitions/{acquisition_uuid}/grids", response_model=GridResponse, status_code=status.HTTP_201_CREATED)
 def create_acquisition_grid(acquisition_uuid: str, grid: GridCreateRequest, db: SqlAlchemySession = DB_DEPENDENCY):
-    """Create a new grid for a specific acquisition by publishing to RabbitMQ"""
-    # Create grid data with acquisition_id
-    grid_data = {"uuid": grid.uuid, "acquisition_uuid": acquisition_uuid, **grid.model_dump()}
+    """Create a new grid for a specific acquisition"""
+    if DB_WRITE_MODE == "direct":
+        # Direct DB write mode
+        grid_data = {
+            "uuid": grid.uuid,
+            "acquisition_uuid": acquisition_uuid,
+            "status": GridStatus.NONE,
+            **grid.model_dump(),
+        }
 
-    # Publish the event to RabbitMQ
-    success = publish_grid_created(grid_data)
-    if not success:
-        logger.error(f"Failed to publish grid created event for ID: {grid.uuid}")
+        db_grid = Grid(**grid_data)
+        db.add(db_grid)
+        db.commit()
+        db.refresh(db_grid)
 
-    # Create response data without needing to access the database
-    response_data = {
-        "uuid": grid.uuid,
-        "acquisition_uuid": acquisition_uuid,
-        "status": GridStatus.NONE,  # Set default status
-        **grid.model_dump(),
-    }
+        # Create proper response data matching the response model
+        response_data = {
+            "uuid": grid.uuid,
+            "acquisition_uuid": acquisition_uuid,
+            "status": GridStatus.NONE,
+            **grid.model_dump(),
+        }
 
-    return GridResponse(**response_data)
+        # Make sure status is set correctly (the above might get overridden by model_dump)
+        if "status" not in response_data or response_data["status"] is None:
+            response_data["status"] = GridStatus.NONE
+
+        return GridResponse(**response_data)
+    else:
+        # Queued mode (original behavior)
+        # Create grid data with acquisition_id
+        grid_data = {"uuid": grid.uuid, "acquisition_uuid": acquisition_uuid, **grid.model_dump()}
+
+        # Publish the event to RabbitMQ
+        success = publish_grid_created(grid_data)
+        if not success:
+            logger.error(f"Failed to publish grid created event for ID: {grid.uuid}")
+
+        # Create response data without needing to access the database
+        response_data = {
+            "uuid": grid.uuid,
+            "acquisition_uuid": acquisition_uuid,
+            "status": GridStatus.NONE,  # Set default status
+            **grid.model_dump(),
+        }
+
+        return GridResponse(**response_data)
 
 
 # ============ Atlas CRUD Operations ============
@@ -366,7 +508,7 @@ def get_atlas(atlas_uuid: str, db: SqlAlchemySession = DB_DEPENDENCY):
 
 @app.put("/atlases/{atlas_uuid}", response_model=AtlasResponse)
 def update_atlas(atlas_uuid: str, atlas: AtlasUpdateRequest, db: SqlAlchemySession = DB_DEPENDENCY):
-    """Update an atlas by publishing to RabbitMQ"""
+    """Update an atlas"""
     # Check if atlas exists
     db_atlas = db.query(Atlas).filter(Atlas.uuid == atlas_uuid).first()
     if not db_atlas:
@@ -375,21 +517,54 @@ def update_atlas(atlas_uuid: str, atlas: AtlasUpdateRequest, db: SqlAlchemySessi
     # Prepare update data
     update_data = atlas.model_dump(exclude_unset=True)
 
-    # Create event payload
-    event_data = {"uuid": atlas_uuid, **update_data}
+    if DB_WRITE_MODE == "direct":
+        # Direct DB write mode
+        for key, value in update_data.items():
+            setattr(db_atlas, key, value)
+        db.commit()
+        db.refresh(db_atlas)
 
-    # Publish the event to RabbitMQ
-    success = publish_atlas_updated(event_data)
-    if not success:
-        logger.error(f"Failed to publish atlas updated event for ID: {atlas_uuid}")
+        # Create proper response data matching the response model
+        response_data = {
+            "uuid": db_atlas.uuid,
+            "atlas_id": db_atlas.atlas_id,
+            "grid_uuid": db_atlas.grid_uuid,
+            "acquisition_date": db_atlas.acquisition_date,
+            "storage_folder": db_atlas.storage_folder,
+            "description": db_atlas.description,
+            "name": db_atlas.name,
+        }
 
-    # For immediate feedback, update the object in database too
-    for key, value in update_data.items():
-        setattr(db_atlas, key, value)
+        return AtlasResponse(**response_data)
+    else:
+        # Queued mode (original behavior)
+        # Create event payload
+        event_data = {"uuid": atlas_uuid, **update_data}
 
-    db.commit()
-    db.refresh(db_atlas)
-    return db_atlas
+        # Publish the event to RabbitMQ
+        success = publish_atlas_updated(event_data)
+        if not success:
+            logger.error(f"Failed to publish atlas updated event for ID: {atlas_uuid}")
+
+        # For immediate feedback, update the object in database too
+        for key, value in update_data.items():
+            setattr(db_atlas, key, value)
+
+        db.commit()
+        db.refresh(db_atlas)
+
+        # Create proper response data matching the response model
+        response_data = {
+            "uuid": db_atlas.uuid,
+            "atlas_id": db_atlas.atlas_id,
+            "grid_uuid": db_atlas.grid_uuid,
+            "acquisition_date": db_atlas.acquisition_date,
+            "storage_folder": db_atlas.storage_folder,
+            "description": db_atlas.description,
+            "name": db_atlas.name,
+        }
+
+        return AtlasResponse(**response_data)
 
 
 @app.delete("/atlases/{atlas_uuid}", status_code=status.HTTP_204_NO_CONTENT)
@@ -418,7 +593,7 @@ def get_grid_atlas(grid_uuid: str, db: SqlAlchemySession = DB_DEPENDENCY):
 
 @app.post("/grids/{grid_uuid}/atlas", response_model=AtlasResponse, status_code=status.HTTP_201_CREATED)
 def create_grid_atlas(grid_uuid: str, atlas: AtlasCreateRequest, db: SqlAlchemySession = DB_DEPENDENCY):
-    """Create a new atlas for a grid by publishing to RabbitMQ"""
+    """Create a new atlas for a grid"""
     # Extract tiles for later
     tiles_data = None
     if atlas.tiles:
@@ -427,42 +602,84 @@ def create_grid_atlas(grid_uuid: str, atlas: AtlasCreateRequest, db: SqlAlchemyS
     else:
         atlas_dict = atlas.model_dump()
 
-    # Override grid_id
+    # Override grid_uuid
     atlas_dict["grid_uuid"] = grid_uuid
 
-    # Create the atlas in DB to get an ID
-    db_atlas = Atlas(**atlas_dict)
-    db.add(db_atlas)
-    db.commit()
-    db.refresh(db_atlas)
+    if DB_WRITE_MODE == "direct":
+        # Direct DB write mode
+        db_atlas = Atlas(**atlas_dict)
+        db.add(db_atlas)
+        db.commit()
+        db.refresh(db_atlas)
 
-    # Prepare data for event publishing
-    atlas_event_data = {"uuid": db_atlas.uuid, **atlas_dict}
+        # If tiles were provided, create them too
+        if tiles_data:
+            for tile_data in tiles_data:
+                # Add atlas_uuid to each tile
+                tile_data["atlas_uuid"] = db_atlas.uuid
+                db_tile = AtlasTile(**tile_data)
+                db.add(db_tile)
+                db.commit()
+                db.refresh(db_tile)
 
-    # Publish the atlas created event
-    success = publish_atlas_created(atlas_event_data)
-    if not success:
-        logger.error(f"Failed to publish atlas created event for ID: {db_atlas.uuid}")
+        # Create proper response data matching the response model
+        response_data = {
+            "uuid": db_atlas.uuid,
+            "atlas_id": db_atlas.atlas_id,
+            "grid_uuid": db_atlas.grid_uuid,
+            "acquisition_date": db_atlas.acquisition_date,
+            "storage_folder": db_atlas.storage_folder,
+            "description": db_atlas.description,
+            "name": db_atlas.name,
+        }
 
-    # If tiles were provided, create them too
-    if tiles_data:
-        for tile_data in tiles_data:
-            # Add atlas_id to each tile
-            tile_data["atlas_uuid"] = db_atlas.uuid
+        return AtlasResponse(**response_data)
+    else:
+        # Queued mode (original behavior)
+        # Create the atlas in DB to get an ID
+        db_atlas = Atlas(**atlas_dict)
+        db.add(db_atlas)
+        db.commit()
+        db.refresh(db_atlas)
 
-            # Create tile in DB to get an ID
-            db_tile = AtlasTile(**tile_data)
-            db.add(db_tile)
-            db.commit()
-            db.refresh(db_tile)
+        # Prepare data for event publishing
+        atlas_event_data = {"uuid": db_atlas.uuid, **atlas_dict}
 
-            # Publish tile created event
-            tile_event_data = {"uuid": db_tile.id, **tile_data}
-            tile_success = publish_atlas_tile_created(tile_event_data)
-            if not tile_success:
-                logger.error(f"Failed to publish atlas tile created event for ID: {db_tile.uuid}")
+        # Publish the atlas created event
+        success = publish_atlas_created(atlas_event_data)
+        if not success:
+            logger.error(f"Failed to publish atlas created event for ID: {db_atlas.uuid}")
 
-    return db_atlas
+        # If tiles were provided, create them too
+        if tiles_data:
+            for tile_data in tiles_data:
+                # Add atlas_uuid to each tile
+                tile_data["atlas_uuid"] = db_atlas.uuid
+
+                # Create tile in DB to get an ID
+                db_tile = AtlasTile(**tile_data)
+                db.add(db_tile)
+                db.commit()
+                db.refresh(db_tile)
+
+                # Publish tile created event
+                tile_event_data = {"uuid": db_tile.uuid, **tile_data}
+                tile_success = publish_atlas_tile_created(tile_event_data)
+                if not tile_success:
+                    logger.error(f"Failed to publish atlas tile created event for ID: {db_tile.uuid}")
+
+        # Create proper response data matching the response model
+        response_data = {
+            "uuid": db_atlas.uuid,
+            "atlas_id": db_atlas.atlas_id,
+            "grid_uuid": db_atlas.grid_uuid,
+            "acquisition_date": db_atlas.acquisition_date,
+            "storage_folder": db_atlas.storage_folder,
+            "description": db_atlas.description,
+            "name": db_atlas.name,
+        }
+
+        return AtlasResponse(**response_data)
 
 
 # ============ Atlas Tile CRUD Operations ============
@@ -485,7 +702,7 @@ def get_atlas_tile(tile_uuid: str, db: SqlAlchemySession = DB_DEPENDENCY):
 
 @app.put("/atlas-tiles/{tile_uuid}", response_model=AtlasTileResponse)
 def update_atlas_tile(tile_uuid: str, tile: AtlasTileUpdateRequest, db: SqlAlchemySession = DB_DEPENDENCY):
-    """Update an atlas tile by publishing to RabbitMQ"""
+    """Update an atlas tile"""
     # Check if tile exists
     db_tile = db.query(AtlasTile).filter(AtlasTile.uuid == tile_uuid).first()
     if not db_tile:
@@ -494,21 +711,58 @@ def update_atlas_tile(tile_uuid: str, tile: AtlasTileUpdateRequest, db: SqlAlche
     # Prepare update data
     update_data = tile.model_dump(exclude_unset=True)
 
-    # Create event payload
-    event_data = {"uuid": tile_uuid, **update_data}
+    if DB_WRITE_MODE == "direct":
+        # Direct DB write mode
+        for key, value in update_data.items():
+            setattr(db_tile, key, value)
+        db.commit()
+        db.refresh(db_tile)
 
-    # Publish the event to RabbitMQ
-    success = publish_atlas_tile_updated(event_data)
-    if not success:
-        logger.error(f"Failed to publish atlas tile updated event for ID: {tile_uuid}")
+        # Create proper response data matching the response model
+        response_data = {
+            "uuid": db_tile.uuid,
+            "atlas_uuid": db_tile.atlas_uuid,
+            "tile_id": db_tile.tile_id,
+            "position_x": db_tile.position_x,
+            "position_y": db_tile.position_y,
+            "size_x": db_tile.size_x,
+            "size_y": db_tile.size_y,
+            "file_format": db_tile.file_format,
+            "base_filename": db_tile.base_filename,
+        }
 
-    # For immediate feedback, update the object in database too
-    for key, value in update_data.items():
-        setattr(db_tile, key, value)
+        return AtlasTileResponse(**response_data)
+    else:
+        # Queued mode (original behavior)
+        # Create event payload
+        event_data = {"uuid": tile_uuid, **update_data}
 
-    db.commit()
-    db.refresh(db_tile)
-    return db_tile
+        # Publish the event to RabbitMQ
+        success = publish_atlas_tile_updated(event_data)
+        if not success:
+            logger.error(f"Failed to publish atlas tile updated event for ID: {tile_uuid}")
+
+        # For immediate feedback, update the object in database too
+        for key, value in update_data.items():
+            setattr(db_tile, key, value)
+
+        db.commit()
+        db.refresh(db_tile)
+
+        # Create proper response data matching the response model
+        response_data = {
+            "uuid": db_tile.uuid,
+            "atlas_uuid": db_tile.atlas_uuid,
+            "tile_id": db_tile.tile_id,
+            "position_x": db_tile.position_x,
+            "position_y": db_tile.position_y,
+            "size_x": db_tile.size_x,
+            "size_y": db_tile.size_y,
+            "file_format": db_tile.file_format,
+            "base_filename": db_tile.base_filename,
+        }
+
+        return AtlasTileResponse(**response_data)
 
 
 @app.delete("/atlas-tiles/{tile_uuid}", status_code=status.HTTP_204_NO_CONTENT)
@@ -535,26 +789,62 @@ def get_atlas_tiles_by_atlas(atlas_uuid: str, db: SqlAlchemySession = DB_DEPENDE
 
 @app.post("/atlases/{atlas_uuid}/tiles", response_model=AtlasTileResponse, status_code=status.HTTP_201_CREATED)
 def create_atlas_tile_for_atlas(atlas_uuid: str, tile: AtlasTileCreateRequest, db: SqlAlchemySession = DB_DEPENDENCY):
-    """Create a new tile for a specific atlas by publishing to RabbitMQ"""
-    # Create tile data with atlas_id
+    """Create a new tile for a specific atlas"""
+    # Create tile data with atlas_uuid
     tile_data = tile.model_dump()
-    tile_data["atlas_id"] = atlas_uuid
+    tile_data["atlas_uuid"] = atlas_uuid
 
-    # Create tile in DB to get an ID
-    db_tile = AtlasTile(**tile_data)
-    db.add(db_tile)
-    db.commit()
-    db.refresh(db_tile)
+    if DB_WRITE_MODE == "direct":
+        # Direct DB write mode
+        db_tile = AtlasTile(**tile_data)
+        db.add(db_tile)
+        db.commit()
+        db.refresh(db_tile)
 
-    # Prepare data for event publishing
-    tile_event_data = {"uuid": db_tile.uuid, **tile_data}
+        # Create proper response data matching the response model
+        response_data = {
+            "uuid": db_tile.uuid,
+            "atlas_uuid": db_tile.atlas_uuid,
+            "tile_id": db_tile.tile_id,
+            "position_x": db_tile.position_x,
+            "position_y": db_tile.position_y,
+            "size_x": db_tile.size_x,
+            "size_y": db_tile.size_y,
+            "file_format": db_tile.file_format,
+            "base_filename": db_tile.base_filename,
+        }
 
-    # Publish the event to RabbitMQ
-    success = publish_atlas_tile_created(tile_event_data)
-    if not success:
-        logger.error(f"Failed to publish atlas tile created event for ID: {db_tile.uuid}")
+        return AtlasTileResponse(**response_data)
+    else:
+        # Queued mode (original behavior)
+        # Create tile in DB to get an ID
+        db_tile = AtlasTile(**tile_data)
+        db.add(db_tile)
+        db.commit()
+        db.refresh(db_tile)
 
-    return db_tile
+        # Prepare data for event publishing
+        tile_event_data = {"uuid": db_tile.uuid, **tile_data}
+
+        # Publish the event to RabbitMQ
+        success = publish_atlas_tile_created(tile_event_data)
+        if not success:
+            logger.error(f"Failed to publish atlas tile created event for ID: {db_tile.uuid}")
+
+        # Create proper response data matching the response model
+        response_data = {
+            "uuid": db_tile.uuid,
+            "atlas_uuid": db_tile.atlas_uuid,
+            "tile_id": db_tile.tile_id,
+            "position_x": db_tile.position_x,
+            "position_y": db_tile.position_y,
+            "size_x": db_tile.size_x,
+            "size_y": db_tile.size_y,
+            "file_format": db_tile.file_format,
+            "base_filename": db_tile.base_filename,
+        }
+
+        return AtlasTileResponse(**response_data)
 
 
 # ============ GridSquare CRUD Operations ============
@@ -577,7 +867,7 @@ def get_gridsquare(gridsquare_uuid: str, db: SqlAlchemySession = DB_DEPENDENCY):
 
 @app.put("/gridsquares/{gridsquare_uuid}", response_model=GridSquareResponse)
 def update_gridsquare(gridsquare_uuid: str, gridsquare: GridSquareUpdateRequest, db: SqlAlchemySession = DB_DEPENDENCY):
-    """Update a grid square by publishing to RabbitMQ"""
+    """Update a grid square"""
     # Check if grid square exists
     db_gridsquare = db.query(GridSquare).filter(GridSquare.uuid == gridsquare_uuid).first()
     if not db_gridsquare:
@@ -586,21 +876,92 @@ def update_gridsquare(gridsquare_uuid: str, gridsquare: GridSquareUpdateRequest,
     # Prepare update data
     update_data = gridsquare.model_dump(exclude_unset=True)
 
-    # Create event payload
-    event_data = {"uuid": gridsquare_uuid, **update_data}
+    if DB_WRITE_MODE == "direct":
+        # Direct DB write mode
+        for key, value in update_data.items():
+            setattr(db_gridsquare, key, value)
+        db.commit()
+        db.refresh(db_gridsquare)
 
-    # Publish the event to RabbitMQ
-    success = publish_gridsquare_updated(event_data)
-    if not success:
-        logger.error(f"Failed to publish grid square updated event for ID: {gridsquare_uuid}")
+        # Create proper response data matching the response model
+        response_data = {
+            "uuid": db_gridsquare.uuid,
+            "grid_uuid": db_gridsquare.grid_uuid,
+            "status": db_gridsquare.status,
+            "gridsquare_id": db_gridsquare.gridsquare_id,
+            "data_dir": db_gridsquare.data_dir,
+            "atlas_node_id": db_gridsquare.atlas_node_id,
+            "state": db_gridsquare.state,
+            "rotation": db_gridsquare.rotation,
+            "image_path": db_gridsquare.image_path,
+            "selected": db_gridsquare.selected,
+            "unusable": db_gridsquare.unusable,
+            "stage_position_x": db_gridsquare.stage_position_x,
+            "stage_position_y": db_gridsquare.stage_position_y,
+            "stage_position_z": db_gridsquare.stage_position_z,
+            "center_x": db_gridsquare.center_x,
+            "center_y": db_gridsquare.center_y,
+            "physical_x": db_gridsquare.physical_x,
+            "physical_y": db_gridsquare.physical_y,
+            "size_width": db_gridsquare.size_width,
+            "size_height": db_gridsquare.size_height,
+            "acquisition_datetime": db_gridsquare.acquisition_datetime,
+            "defocus": db_gridsquare.defocus,
+            "magnification": db_gridsquare.magnification,
+            "pixel_size": db_gridsquare.pixel_size,
+            "detector_name": db_gridsquare.detector_name,
+            "applied_defocus": db_gridsquare.applied_defocus,
+        }
 
-    # For immediate feedback, update the object in database too
-    for key, value in update_data.items():
-        setattr(db_gridsquare, key, value)
+        return GridSquareResponse(**response_data)
+    else:
+        # Queued mode (original behavior)
+        # Create event payload
+        event_data = {"uuid": gridsquare_uuid, **update_data}
 
-    db.commit()
-    db.refresh(db_gridsquare)
-    return db_gridsquare
+        # Publish the event to RabbitMQ
+        success = publish_gridsquare_updated(event_data)
+        if not success:
+            logger.error(f"Failed to publish grid square updated event for ID: {gridsquare_uuid}")
+
+        # For immediate feedback, update the object in database too
+        for key, value in update_data.items():
+            setattr(db_gridsquare, key, value)
+
+        db.commit()
+        db.refresh(db_gridsquare)
+
+        # Create proper response data matching the response model
+        response_data = {
+            "uuid": db_gridsquare.uuid,
+            "grid_uuid": db_gridsquare.grid_uuid,
+            "status": db_gridsquare.status,
+            "gridsquare_id": db_gridsquare.gridsquare_id,
+            "data_dir": db_gridsquare.data_dir,
+            "atlas_node_id": db_gridsquare.atlas_node_id,
+            "state": db_gridsquare.state,
+            "rotation": db_gridsquare.rotation,
+            "image_path": db_gridsquare.image_path,
+            "selected": db_gridsquare.selected,
+            "unusable": db_gridsquare.unusable,
+            "stage_position_x": db_gridsquare.stage_position_x,
+            "stage_position_y": db_gridsquare.stage_position_y,
+            "stage_position_z": db_gridsquare.stage_position_z,
+            "center_x": db_gridsquare.center_x,
+            "center_y": db_gridsquare.center_y,
+            "physical_x": db_gridsquare.physical_x,
+            "physical_y": db_gridsquare.physical_y,
+            "size_width": db_gridsquare.size_width,
+            "size_height": db_gridsquare.size_height,
+            "acquisition_datetime": db_gridsquare.acquisition_datetime,
+            "defocus": db_gridsquare.defocus,
+            "magnification": db_gridsquare.magnification,
+            "pixel_size": db_gridsquare.pixel_size,
+            "detector_name": db_gridsquare.detector_name,
+            "applied_defocus": db_gridsquare.applied_defocus,
+        }
+
+        return GridSquareResponse(**response_data)
 
 
 @app.delete("/gridsquares/{gridsquare_uuid}", status_code=status.HTTP_204_NO_CONTENT)
@@ -626,23 +987,52 @@ def get_grid_gridsquares(grid_uuid: str, db: SqlAlchemySession = DB_DEPENDENCY):
 
 @app.post("/grids/{grid_uuid}/gridsquares", response_model=GridSquareResponse, status_code=status.HTTP_201_CREATED)
 def create_grid_gridsquare(grid_uuid: str, gridsquare: GridSquareCreateRequest, db: SqlAlchemySession = DB_DEPENDENCY):
-    """Create a new grid square for a specific grid by publishing to RabbitMQ"""
-    gridsquare_data = {"uuid": gridsquare.uuid, "grid_uuid": grid_uuid, **gridsquare.model_dump()}
+    """Create a new grid square for a specific grid"""
+    if DB_WRITE_MODE == "direct":
+        # Direct DB write mode
+        gridsquare_data = {
+            "uuid": gridsquare.uuid,
+            "grid_uuid": grid_uuid,
+            "status": GridSquareStatus.NONE,
+            **gridsquare.model_dump(),
+        }
 
-    success = publish_gridsquare_created(gridsquare_data)
-    if not success:
-        logger.error(f"Failed to publish grid square created event for ID: {gridsquare.uuid}")
+        db_gridsquare = GridSquare(**gridsquare_data)
+        db.add(db_gridsquare)
+        db.commit()
+        db.refresh(db_gridsquare)
 
-    # Create response data without needing to access the database
-    response_data = {
-        "uuid": gridsquare.uuid,  # TODO test if needed, is it not set anyway by `**gridsquare.model_dump()`?
-        "grid_uuid": grid_uuid,
-        "status": GridSquareStatus.NONE,  # TODO techdebt, should be setting default status on edge
-        # when instantiating data entity and certainly NOT HERE!!
-        **gridsquare.model_dump(),
-    }
+        # Create proper response data matching the response model
+        response_data = {
+            "uuid": gridsquare.uuid,
+            "grid_uuid": grid_uuid,
+            "status": GridSquareStatus.NONE,
+            **gridsquare.model_dump(),
+        }
 
-    return GridSquareResponse(**response_data)
+        # Make sure status is set correctly (the above might get overridden by model_dump)
+        if "status" not in response_data or response_data["status"] is None:
+            response_data["status"] = GridSquareStatus.NONE
+
+        return GridSquareResponse(**response_data)
+    else:
+        # Queued mode (original behavior)
+        gridsquare_data = {"uuid": gridsquare.uuid, "grid_uuid": grid_uuid, **gridsquare.model_dump()}
+
+        success = publish_gridsquare_created(gridsquare_data)
+        if not success:
+            logger.error(f"Failed to publish grid square created event for ID: {gridsquare.uuid}")
+
+        # Create response data without needing to access the database
+        response_data = {
+            "uuid": gridsquare.uuid,  # TODO test if needed, is it not set anyway by `**gridsquare.model_dump()`?
+            "grid_uuid": grid_uuid,
+            "status": GridSquareStatus.NONE,  # TODO techdebt, should be setting default status on edge
+            # when instantiating data entity and certainly NOT HERE!!
+            **gridsquare.model_dump(),
+        }
+
+        return GridSquareResponse(**response_data)
 
 
 # ============ FoilHole CRUD Operations ============
@@ -665,7 +1055,7 @@ def get_foilhole(foilhole_uuid: str, db: SqlAlchemySession = DB_DEPENDENCY):
 
 @app.put("/foilholes/{foilhole_uuid}", response_model=FoilHoleResponse)
 def update_foilhole(foilhole_uuid: str, foilhole: FoilHoleUpdateRequest, db: SqlAlchemySession = DB_DEPENDENCY):
-    """Update a foil hole by publishing to RabbitMQ"""
+    """Update a foil hole"""
     # TODO this isn't tested
 
     # Check if foil hole exists
@@ -676,21 +1066,74 @@ def update_foilhole(foilhole_uuid: str, foilhole: FoilHoleUpdateRequest, db: Sql
     # Prepare update data
     update_data = foilhole.model_dump(exclude_unset=True)
 
-    # Create event payload
-    event_data = {"uuid": foilhole_uuid, **update_data}
+    if DB_WRITE_MODE == "direct":
+        # Direct DB write mode
+        for key, value in update_data.items():
+            setattr(db_foilhole, key, value)
+        db.commit()
+        db.refresh(db_foilhole)
 
-    # Publish the event to RabbitMQ
-    success = publish_foilhole_updated(event_data)
-    if not success:
-        logger.error(f"Failed to publish foil hole updated event for ID: {foilhole_uuid}")
+        # Create proper response data matching the response model
+        response_data = {
+            "uuid": db_foilhole.uuid,
+            "foilhole_id": db_foilhole.foilhole_id,
+            "gridsquare_uuid": db_foilhole.gridsquare_uuid,
+            "gridsquare_id": db_foilhole.gridsquare_id,
+            "status": db_foilhole.status if db_foilhole.status is not None else FoilHoleStatus.NONE,
+            "center_x": db_foilhole.center_x,
+            "center_y": db_foilhole.center_y,
+            "quality": db_foilhole.quality,
+            "rotation": db_foilhole.rotation,
+            "size_width": db_foilhole.size_width,
+            "size_height": db_foilhole.size_height,
+            "x_location": db_foilhole.x_location,
+            "y_location": db_foilhole.y_location,
+            "x_stage_position": db_foilhole.x_stage_position,
+            "y_stage_position": db_foilhole.y_stage_position,
+            "diameter": db_foilhole.diameter,
+            "is_near_grid_bar": db_foilhole.is_near_grid_bar,
+        }
 
-    # For immediate feedback, update the object in database too
-    for key, value in update_data.items():
-        setattr(db_foilhole, key, value)
+        return FoilHoleResponse(**response_data)
+    else:
+        # Queued mode (original behavior)
+        # Create event payload
+        event_data = {"uuid": foilhole_uuid, **update_data}
 
-    db.commit()
-    db.refresh(db_foilhole)
-    return db_foilhole
+        # Publish the event to RabbitMQ
+        success = publish_foilhole_updated(event_data)
+        if not success:
+            logger.error(f"Failed to publish foil hole updated event for ID: {foilhole_uuid}")
+
+        # For immediate feedback, update the object in database too
+        for key, value in update_data.items():
+            setattr(db_foilhole, key, value)
+
+        db.commit()
+        db.refresh(db_foilhole)
+
+        # Create proper response data matching the response model
+        response_data = {
+            "uuid": db_foilhole.uuid,
+            "foilhole_id": db_foilhole.foilhole_id,
+            "gridsquare_uuid": db_foilhole.gridsquare_uuid,
+            "gridsquare_id": db_foilhole.gridsquare_id,
+            "status": db_foilhole.status if db_foilhole.status is not None else FoilHoleStatus.NONE,
+            "center_x": db_foilhole.center_x,
+            "center_y": db_foilhole.center_y,
+            "quality": db_foilhole.quality,
+            "rotation": db_foilhole.rotation,
+            "size_width": db_foilhole.size_width,
+            "size_height": db_foilhole.size_height,
+            "x_location": db_foilhole.x_location,
+            "y_location": db_foilhole.y_location,
+            "x_stage_position": db_foilhole.x_stage_position,
+            "y_stage_position": db_foilhole.y_stage_position,
+            "diameter": db_foilhole.diameter,
+            "is_near_grid_bar": db_foilhole.is_near_grid_bar,
+        }
+
+        return FoilHoleResponse(**response_data)
 
 
 @app.delete("/foilholes/{foilhole_uuid}", status_code=status.HTTP_204_NO_CONTENT)
@@ -719,30 +1162,53 @@ def get_gridsquare_foilholes(gridsquare_uuid: str, db: SqlAlchemySession = DB_DE
 def create_gridsquare_foilhole(
     gridsquare_uuid: str, foilhole: FoilHoleCreateRequest, db: SqlAlchemySession = DB_DEPENDENCY
 ):
-    """Create a new foil hole for a specific grid square by publishing to RabbitMQ"""
-    foilhole_data = {
-        "gridsquare_uuid": gridsquare_uuid,  # The synthetic UUID for relationship
-        **foilhole.model_dump(),
-    }
+    """Create a new foil hole for a specific grid square"""
+    if DB_WRITE_MODE == "direct":
+        # Direct DB write mode
+        foilhole_data = {"gridsquare_uuid": gridsquare_uuid, "status": FoilHoleStatus.NONE, **foilhole.model_dump()}
 
-    success = publish_foilhole_created(foilhole_data)
-    if not success:
-        logger.error(f"Failed to publish foil hole created event for foilhole: {foilhole.uuid}")
+        db_foilhole = FoilHole(**foilhole_data)
+        db.add(db_foilhole)
+        db.commit()
+        db.refresh(db_foilhole)
 
-    # Create response data without needing to access the database
-    response_data = {
-        "gridsquare_uuid": gridsquare_uuid,
-        "status": FoilHoleStatus.NONE.value,  # TODO techdebt, should be setting default status on edge
-        # when instantiating data entity and certainly NOT HERE!!
-        **foilhole.model_dump(),
-    }
+        # Create proper response data matching the response model
+        response_data = {
+            "gridsquare_uuid": gridsquare_uuid,
+            "status": FoilHoleStatus.NONE.value,
+            **foilhole.model_dump(),
+        }
 
-    # Make sure status is set correctly (the above might get overridden by model_dump)
-    # TODO: remove hacky-hacky when techdebt above addressed
-    if "status" not in response_data or response_data["status"] is None:
-        response_data["status"] = FoilHoleStatus.NONE.value
+        # Make sure status is set correctly (the above might get overridden by model_dump)
+        if "status" not in response_data or response_data["status"] is None:
+            response_data["status"] = FoilHoleStatus.NONE.value
 
-    return FoilHoleResponse(**response_data)
+        return FoilHoleResponse(**response_data)
+    else:
+        # Queued mode (original behavior)
+        foilhole_data = {
+            "gridsquare_uuid": gridsquare_uuid,  # The synthetic UUID for relationship
+            **foilhole.model_dump(),
+        }
+
+        success = publish_foilhole_created(foilhole_data)
+        if not success:
+            logger.error(f"Failed to publish foil hole created event for foilhole: {foilhole.uuid}")
+
+        # Create response data without needing to access the database
+        response_data = {
+            "gridsquare_uuid": gridsquare_uuid,
+            "status": FoilHoleStatus.NONE.value,  # TODO techdebt, should be setting default status on edge
+            # when instantiating data entity and certainly NOT HERE!!
+            **foilhole.model_dump(),
+        }
+
+        # Make sure status is set correctly (the above might get overridden by model_dump)
+        # TODO: remove hacky-hacky when techdebt above addressed
+        if "status" not in response_data or response_data["status"] is None:
+            response_data["status"] = FoilHoleStatus.NONE.value
+
+        return FoilHoleResponse(**response_data)
 
 
 # ============ Micrograph CRUD Operations ============
@@ -765,7 +1231,7 @@ def get_micrograph(micrograph_uuid: str, db: SqlAlchemySession = DB_DEPENDENCY):
 
 @app.put("/micrographs/{micrograph_uuid}", response_model=MicrographResponse)
 def update_micrograph(micrograph_uuid: str, micrograph: MicrographUpdateRequest, db: SqlAlchemySession = DB_DEPENDENCY):
-    """Update a micrograph by publishing to RabbitMQ"""
+    """Update a micrograph"""
     # Check if micrograph exists
     db_micrograph = db.query(Micrograph).filter(Micrograph.uuid == micrograph_uuid).first()
     if not db_micrograph:
@@ -774,21 +1240,90 @@ def update_micrograph(micrograph_uuid: str, micrograph: MicrographUpdateRequest,
     # Prepare update data
     update_data = micrograph.model_dump(exclude_unset=True)
 
-    # Create event payload
-    event_data = {"uuid": micrograph_uuid, **update_data}
+    if DB_WRITE_MODE == "direct":
+        # Direct DB write mode
+        for key, value in update_data.items():
+            setattr(db_micrograph, key, value)
+        db.commit()
+        db.refresh(db_micrograph)
 
-    # Publish the event to RabbitMQ
-    success = publish_micrograph_updated(event_data)
-    if not success:
-        logger.error(f"Failed to publish micrograph updated event for ID: {micrograph_uuid}")
+        # Create proper response data matching the response model
+        response_data = {
+            "uuid": db_micrograph.uuid,
+            "micrograph_id": db_micrograph.micrograph_id,
+            "foilhole_uuid": db_micrograph.foilhole_uuid,
+            "foilhole_id": db_micrograph.foilhole_id,
+            "location_id": db_micrograph.location_id,
+            "status": db_micrograph.status,
+            "high_res_path": db_micrograph.high_res_path,
+            "manifest_file": db_micrograph.manifest_file,
+            "acquisition_datetime": db_micrograph.acquisition_datetime,
+            "defocus": db_micrograph.defocus,
+            "detector_name": db_micrograph.detector_name,
+            "energy_filter": db_micrograph.energy_filter,
+            "phase_plate": db_micrograph.phase_plate,
+            "image_size_x": db_micrograph.image_size_x,
+            "image_size_y": db_micrograph.image_size_y,
+            "binning_x": db_micrograph.binning_x,
+            "binning_y": db_micrograph.binning_y,
+            "total_motion": db_micrograph.total_motion,
+            "average_motion": db_micrograph.average_motion,
+            "ctf_max_resolution_estimate": db_micrograph.ctf_max_resolution_estimate,
+            "number_of_particles_selected": db_micrograph.number_of_particles_selected,
+            "number_of_particles_rejected": db_micrograph.number_of_particles_rejected,
+            "selection_distribution": db_micrograph.selection_distribution,
+            "number_of_particles_picked": db_micrograph.number_of_particles_picked,
+            "pick_distribution": db_micrograph.pick_distribution,
+        }
 
-    # For immediate feedback, update the object in database too
-    for key, value in update_data.items():
-        setattr(db_micrograph, key, value)
+        return MicrographResponse(**response_data)
+    else:
+        # Queued mode (original behavior)
+        # Create event payload
+        event_data = {"uuid": micrograph_uuid, **update_data}
 
-    db.commit()
-    db.refresh(db_micrograph)
-    return db_micrograph
+        # Publish the event to RabbitMQ
+        success = publish_micrograph_updated(event_data)
+        if not success:
+            logger.error(f"Failed to publish micrograph updated event for ID: {micrograph_uuid}")
+
+        # For immediate feedback, update the object in database too
+        for key, value in update_data.items():
+            setattr(db_micrograph, key, value)
+
+        db.commit()
+        db.refresh(db_micrograph)
+
+        # Create proper response data matching the response model
+        response_data = {
+            "uuid": db_micrograph.uuid,
+            "micrograph_id": db_micrograph.micrograph_id,
+            "foilhole_uuid": db_micrograph.foilhole_uuid,
+            "foilhole_id": db_micrograph.foilhole_id,
+            "location_id": db_micrograph.location_id,
+            "status": db_micrograph.status,
+            "high_res_path": db_micrograph.high_res_path,
+            "manifest_file": db_micrograph.manifest_file,
+            "acquisition_datetime": db_micrograph.acquisition_datetime,
+            "defocus": db_micrograph.defocus,
+            "detector_name": db_micrograph.detector_name,
+            "energy_filter": db_micrograph.energy_filter,
+            "phase_plate": db_micrograph.phase_plate,
+            "image_size_x": db_micrograph.image_size_x,
+            "image_size_y": db_micrograph.image_size_y,
+            "binning_x": db_micrograph.binning_x,
+            "binning_y": db_micrograph.binning_y,
+            "total_motion": db_micrograph.total_motion,
+            "average_motion": db_micrograph.average_motion,
+            "ctf_max_resolution_estimate": db_micrograph.ctf_max_resolution_estimate,
+            "number_of_particles_selected": db_micrograph.number_of_particles_selected,
+            "number_of_particles_rejected": db_micrograph.number_of_particles_rejected,
+            "selection_distribution": db_micrograph.selection_distribution,
+            "number_of_particles_picked": db_micrograph.number_of_particles_picked,
+            "pick_distribution": db_micrograph.pick_distribution,
+        }
+
+        return MicrographResponse(**response_data)
 
 
 @app.delete("/micrographs/{micrograph_uuid}", status_code=status.HTTP_204_NO_CONTENT)
@@ -818,30 +1353,60 @@ def get_foilhole_micrographs(foilhole_uuid: str, db: SqlAlchemySession = DB_DEPE
 def create_foilhole_micrograph(
     foilhole_uuid: str, micrograph: MicrographCreateRequest, db: SqlAlchemySession = DB_DEPENDENCY
 ):
-    """Create a new micrograph for a specific foil hole by publishing to RabbitMQ"""
-    # Create micrograph data with foil hole ID
-    micrograph_data = {
-        "uuid": micrograph.uuid,
-        "foilhole_uuid": foilhole_uuid,
-        "status": MicrographStatus.NONE,
-        **micrograph.model_dump(),
-    }
+    """Create a new micrograph for a specific foil hole"""
+    if DB_WRITE_MODE == "direct":
+        # Direct DB write mode
+        micrograph_data = {
+            "uuid": micrograph.uuid,
+            "foilhole_uuid": foilhole_uuid,
+            "status": MicrographStatus.NONE,
+            **micrograph.model_dump(),
+        }
 
-    # Publish the event to RabbitMQ
-    success = publish_micrograph_created(micrograph_data)
-    if not success:
-        logger.error(
-            f"Failed to publish micrograph created event for natural ID: {micrograph.uuid}"
-        )  # TODO respond with 500?
+        db_micrograph = Micrograph(**micrograph_data)
+        db.add(db_micrograph)
+        db.commit()
+        db.refresh(db_micrograph)
 
-    # Create response data without needing to access the database
-    response_data = {
-        "uuid": micrograph.uuid,
-        "foilhole_uuid": foilhole_uuid,
-        "foilhole_id": micrograph.foilhole_id,
-        "micrograph_id": micrograph.uuid,
-        "status": MicrographStatus.NONE,  # Always provide a valid enum value
-        **micrograph.model_dump(exclude={"status", "foilhole_uuid"}),  # Avoid duplicates
-    }
+        # Create proper response data matching the response model
+        response_data = {
+            "uuid": micrograph.uuid,
+            "foilhole_uuid": foilhole_uuid,
+            "foilhole_id": micrograph.foilhole_id,
+            "status": MicrographStatus.NONE,
+            **micrograph.model_dump(),
+        }
 
-    return MicrographResponse(**response_data)
+        # Make sure status is set correctly (the above might get overridden by model_dump)
+        if "status" not in response_data or response_data["status"] is None:
+            response_data["status"] = MicrographStatus.NONE
+
+        return MicrographResponse(**response_data)
+    else:
+        # Queued mode (original behavior)
+        # Create micrograph data with foil hole ID
+        micrograph_data = {
+            "uuid": micrograph.uuid,
+            "foilhole_uuid": foilhole_uuid,
+            "status": MicrographStatus.NONE,
+            **micrograph.model_dump(),
+        }
+
+        # Publish the event to RabbitMQ
+        success = publish_micrograph_created(micrograph_data)
+        if not success:
+            logger.error(
+                f"Failed to publish micrograph created event for natural ID: {micrograph.uuid}"
+            )  # TODO respond with 500?
+
+        # Create response data without needing to access the database
+        response_data = {
+            "uuid": micrograph.uuid,
+            "foilhole_uuid": foilhole_uuid,
+            "foilhole_id": micrograph.foilhole_id,
+            "micrograph_id": micrograph.uuid,
+            "status": MicrographStatus.NONE,  # Always provide a valid enum value
+            **micrograph.model_dump(exclude={"status", "foilhole_uuid"}),  # Avoid duplicates
+        }
+
+        return MicrographResponse(**response_data)

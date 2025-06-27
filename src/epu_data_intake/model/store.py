@@ -9,9 +9,9 @@ from epu_data_intake.model.schemas import AcquisitionData, FoilHoleData, GridDat
 from smartem_decisions.utils import logger
 
 # Retry configuration constants
-DEFAULT_MAX_RETRIES = 3
-DEFAULT_INITIAL_DELAY = 0.5
-DEFAULT_BACKOFF_FACTOR = 2.0
+DEFAULT_MAX_RETRIES = 5
+DEFAULT_INITIAL_DELAY = 1.0
+DEFAULT_BACKOFF_FACTOR = 1.5
 
 
 def retry_with_backoff(
