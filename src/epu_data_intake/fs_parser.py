@@ -150,6 +150,55 @@ class EpuParser:
             return None
 
     @staticmethod
+    def _find_atlas_file(expected_atlas_path: Path) -> Path | None:
+        """
+        Find Atlas.dm file at expected path or in nested subdirectories.
+
+        This handles cases where atlas files are nested one level deeper than expected,
+        such as atlas/atlas/... instead of atlas/...
+
+        Args:
+            expected_atlas_path: The expected path to Atlas.dm file
+
+        Returns:
+            Path to the actual Atlas.dm file if found, None otherwise
+        """
+        # First try the exact expected path
+        if expected_atlas_path.exists():
+            return expected_atlas_path
+
+        # If not found, search in parent directory for atlas files with similar structure
+        if expected_atlas_path.parent.exists():
+            # Look for Atlas.dm files in subdirectories that match the expected structure
+            atlas_pattern = expected_atlas_path.name  # e.g., "Atlas.dm"
+
+            # Search up to 2 levels deep for Atlas.dm files
+            for atlas_file in expected_atlas_path.parent.rglob(atlas_pattern):
+                if atlas_file.is_file():
+                    # Check if this could be the right atlas file by comparing directory structure
+                    relative_path = atlas_file.relative_to(expected_atlas_path.parent)
+                    expected_relative = expected_atlas_path.relative_to(expected_atlas_path.parent)
+
+                    # If the relative paths match (allowing for extra intermediate directories)
+                    if str(expected_relative) in str(relative_path):
+                        logging.info(f"Found atlas file at alternative path: {atlas_file}")
+                        return atlas_file
+
+        # If still not found, try searching for any Atlas.dm in the general atlas directory area
+        # Go up to find the base dataset directory
+        base_dir = expected_atlas_path
+        while base_dir.parent != base_dir and base_dir.name not in ["atlas", "metadata"]:
+            base_dir = base_dir.parent
+
+        # Search for any Atlas.dm files in atlas directories
+        for atlas_file in base_dir.rglob("atlas/**/Atlas.dm"):
+            if atlas_file.is_file():
+                logging.info(f"Found atlas file in alternative atlas directory: {atlas_file}")
+                return atlas_file
+
+        return None
+
+    @staticmethod
     def parse_atlas_manifest(atlas_path: str):
         try:
             namespaces = {
@@ -737,7 +786,14 @@ class EpuParser:
 
         # 1.2 Parse Atlas.dm
         if grid.atlas_dir and grid.acquisition_data.atlas_path:
-            grid.atlas_data = EpuParser.parse_atlas_manifest(str(grid.atlas_dir))
+            atlas_file_path = EpuParser._find_atlas_file(grid.atlas_dir)
+            if atlas_file_path:
+                grid.atlas_data = EpuParser.parse_atlas_manifest(str(atlas_file_path))
+            else:
+                logging.warning(
+                    f"Atlas file not found at {grid.atlas_dir} or nested subdirectories. Skipping atlas parsing."
+                )
+                grid.atlas_data = None
 
         # Add grid to datastore
         datastore.create_grid(grid)
