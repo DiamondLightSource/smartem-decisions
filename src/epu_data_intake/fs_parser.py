@@ -22,6 +22,7 @@ from epu_data_intake.model.schemas import (
     GridSquareStagePosition,
     MicrographData,
     MicrographManifest,
+    MicroscopeData,
 )
 from epu_data_intake.model.store import InMemoryDataStore
 
@@ -109,6 +110,66 @@ class EpuParser:
         return len(errors) == 0, errors
 
     @staticmethod
+    def _parse_microscope_data(root, namespaces) -> MicroscopeData | None:
+        """
+        Parse instrument information from EPU session XML.
+
+        Note: Instrument information is typically not available in the main EpuSession.dm file
+        but rather in the individual image metadata files (GridSquare XMLs, FoilHole XMLs, etc.).
+        This method will attempt to find it but will likely return None for most EPU sessions.
+
+        Args:
+            root: XML root element
+            namespaces: XML namespaces dictionary
+
+        Returns:
+            MicroscopeData object with instrument information or None if not found
+        """
+        try:
+
+            def get_element_text(xpath):
+                elements = root.xpath(xpath, namespaces=namespaces)
+                return elements[0].text if elements else None
+
+            # Try multiple XPath patterns to find instrument data in different EPU versions
+            # Pattern 1: Direct elements (less common in EpuSession.dm)
+            instrument_model = get_element_text(".//ns:InstrumentModel") or get_element_text(".//InstrumentModel")
+            instrument_id = get_element_text(".//ns:InstrumentID") or get_element_text(".//InstrumentID")
+            computer_name = get_element_text(".//ns:ComputerName") or get_element_text(".//ComputerName")
+
+            # Pattern 2: Within microscopeData/instrument structure (more common in image files)
+            if not any([instrument_model, instrument_id, computer_name]):
+                instrument_model = get_element_text(".//microscopeData/instrument/InstrumentModel")
+                instrument_id = get_element_text(".//microscopeData/instrument/InstrumentID")
+                computer_name = get_element_text(".//microscopeData/instrument/ComputerName")
+
+            # Pattern 3: Any instrument element anywhere in the document
+            if not any([instrument_model, instrument_id, computer_name]):
+                instrument_model = get_element_text(".//instrument/InstrumentModel")
+                instrument_id = get_element_text(".//instrument/InstrumentID")
+                computer_name = get_element_text(".//instrument/ComputerName")
+
+            # If no data found, return None (this is expected for most EpuSession.dm files)
+            if not any([instrument_model, instrument_id, computer_name]):
+                logging.debug("No instrument information found in EPU session manifest (this is normal)")
+                return None
+
+            logging.info(
+                f"Found instrument info in EPU session: Model={instrument_model}, ID={instrument_id}, "
+                f"Computer={computer_name}"
+            )
+
+            return MicroscopeData(
+                instrument_model=instrument_model,
+                instrument_id=instrument_id,
+                computer_name=computer_name,
+            )
+
+        except Exception as e:
+            logging.debug(f"Could not parse instrument data from EPU session: {str(e)}")
+            return None
+
+    @staticmethod
     def parse_epu_session_manifest(manifest_path: str) -> AcquisitionData | None:
         try:
             namespaces = {
@@ -135,6 +196,9 @@ class EpuParser:
 
             start_time_str = get_element_text("./ns:StartDateTime")
 
+            # Parse instrument information
+            instrument_data = EpuParser._parse_microscope_data(root, namespaces)
+
             return AcquisitionData(
                 name=get_element_text("./ns:Name"),
                 id=get_element_text("./common:Id"),
@@ -143,6 +207,7 @@ class EpuParser:
                 storage_path=EpuParser.to_cygwin_path(storage_path) if storage_path else None,
                 clustering_mode=get_element_text("./ns:ClusteringMode"),
                 clustering_radius=get_element_text("./ns:ClusteringRadius"),
+                instrument=instrument_data,
             )
 
         except Exception as e:
@@ -686,6 +751,58 @@ class EpuParser:
             return None
 
     @staticmethod
+    def parse_microscope_from_image_metadata(manifest_path: str) -> MicroscopeData | None:
+        """
+        Extract instrument information from image metadata files (GridSquare, FoilHole, Micrograph XMLs).
+
+        Args:
+            manifest_path: Path to the XML image metadata file
+
+        Returns:
+            MicroscopeData object with instrument information or None if not found
+        """
+        try:
+            namespaces = {
+                "ms": "http://schemas.datacontract.org/2004/07/Fei.SharedObjects",
+            }
+
+            for event, element in etree.iterparse(
+                manifest_path, tag="{http://schemas.datacontract.org/2004/07/Fei.SharedObjects}MicroscopeImage"
+            ):
+                if event == "end":
+
+                    def get_element_text(xpath, el=element):
+                        elements = el.xpath(xpath, namespaces=namespaces)
+                        return elements[0].text if elements else None
+
+                    # Extract instrument information from the instrument section
+                    instrument_model = get_element_text(".//ms:microscopeData/ms:instrument/ms:InstrumentModel")
+                    instrument_id = get_element_text(".//ms:microscopeData/ms:instrument/ms:InstrumentID")
+                    computer_name = get_element_text(".//ms:microscopeData/ms:instrument/ms:ComputerName")
+
+                    # Alternative patterns without namespace
+                    if not any([instrument_model, instrument_id, computer_name]):
+                        instrument_model = get_element_text(".//instrument/InstrumentModel")
+                        instrument_id = get_element_text(".//instrument/InstrumentID")
+                        computer_name = get_element_text(".//instrument/ComputerName")
+
+                    if any([instrument_model, instrument_id, computer_name]):
+                        logging.debug(
+                            f"Found instrument info in {manifest_path}: Model={instrument_model}, "
+                            f"ID={instrument_id}, Computer={computer_name}"
+                        )
+                        return MicroscopeData(
+                            instrument_model=instrument_model,
+                            instrument_id=instrument_id,
+                            computer_name=computer_name,
+                        )
+
+        except Exception as e:
+            logging.debug(f"Could not parse instrument data from {manifest_path}: {str(e)}")
+
+        return None
+
+    @staticmethod
     def parse_micrograph_manifest(manifest_path: str) -> MicrographManifest | None:
         try:
             namespaces = {
@@ -827,6 +944,7 @@ class EpuParser:
                 datastore.create_foilhole(fh)
 
         # 3. Parse gridsquare manifests and associated data
+        instrument_extracted = False  # Track if we've already extracted instrument info for this grid
         for gridsquare_manifest_path in list(grid.data_dir.glob("Images-Disc*/GridSquare_*/GridSquare_*_*.xml")):
             gridsquare_manifest = EpuParser.parse_gridsquare_manifest(str(gridsquare_manifest_path))
             gridsquare_id = re.search(EpuParser.gridsquare_dir_pattern, str(gridsquare_manifest_path)).group(1)
@@ -836,6 +954,25 @@ class EpuParser:
                 gridsquare.manifest = gridsquare_manifest
                 datastore.update_gridsquare(gridsquare)
                 logging.debug(f"Updated gridsquare manifest: ID: {gridsquare_id} (UUID: {gridsquare.uuid})")
+
+                # Extract instrument information if not already found
+                if not instrument_extracted:
+                    instrument = EpuParser.parse_microscope_from_image_metadata(str(gridsquare_manifest_path))
+                    if instrument:
+                        grid.acquisition_data.instrument = instrument
+                        logging.info(
+                            f"Extracted instrument info: Model={instrument.instrument_model}, "
+                            f"ID={instrument.instrument_id}"
+                        )
+                        if hasattr(datastore, "api_client"):
+                            try:
+                                datastore.api_client.update_acquisition(grid.acquisition_data)
+                                logging.info(
+                                    f"Updated acquisition {grid.acquisition_data.id} with instrument information"
+                                )
+                            except Exception as e:
+                                logging.error(f"Failed to update acquisition via API: {e}")
+                        instrument_extracted = True
 
                 # 3.1 Parse foilholes for this gridsquare
                 foilhole_manifest_paths = sorted(
@@ -851,13 +988,33 @@ class EpuParser:
                     foilhole.gridsquare_id = gridsquare_id
                     foilhole.gridsquare_uuid = gridsquare.uuid
 
+                    # Extract instrument information if not already found
+                    if not instrument_extracted:
+                        instrument = EpuParser.parse_microscope_from_image_metadata(str(foilhole_manifest_path))
+                        if instrument:
+                            grid.acquisition_data.instrument = instrument
+                            logging.info(
+                                f"Extracted instrument info: Model={instrument.instrument_model}, "
+                                f"ID={instrument.instrument_id}"
+                            )
+                            if hasattr(datastore, "api_client"):
+                                try:
+                                    datastore.api_client.update_acquisition(grid.acquisition_data)
+                                    logging.info(
+                                        f"Updated acquisition {grid.acquisition_data.id} with instrument information"
+                                    )
+                                except Exception as e:
+                                    logging.error(f"Failed to update acquisition via API: {e}")
+                            instrument_extracted = True
+
                     # Add to datastore using upsert method
                     success = datastore.upsert_foilhole(foilhole)
                     if success:
                         logging.debug(f"Upserted foilhole: {foilhole_id} (uuid: {foilhole.uuid})")
                     else:
                         logging.warning(
-                            f"Failed to upsert foilhole {foilhole_id} - parent gridsquare {foilhole.gridsquare_uuid} not found"
+                            f"Failed to upsert foilhole {foilhole_id} - "
+                            f"parent gridsquare {foilhole.gridsquare_uuid} not found"
                         )
 
                 # 3.2 Parse micrographs for this gridsquare
@@ -875,6 +1032,25 @@ class EpuParser:
                             f"skipping micrograph creation for micrograph {micrograph_manifest.unique_id}"
                         )
                         continue
+
+                    # Extract instrument information if not already found
+                    if not instrument_extracted:
+                        instrument = EpuParser.parse_microscope_from_image_metadata(str(micrograph_manifest_path))
+                        if instrument:
+                            grid.acquisition_data.instrument = instrument
+                            logging.info(
+                                f"Extracted instrument info: Model={instrument.instrument_model}, "
+                                f"ID={instrument.instrument_id}"
+                            )
+                            if hasattr(datastore, "api_client"):
+                                try:
+                                    datastore.api_client.update_acquisition(grid.acquisition_data)
+                                    logging.info(
+                                        f"Updated acquisition {grid.acquisition_data.id} with instrument information"
+                                    )
+                                except Exception as e:
+                                    logging.error(f"Failed to update acquisition via API: {e}")
+                            instrument_extracted = True
 
                     micrograph = MicrographData(
                         id=micrograph_manifest.unique_id,

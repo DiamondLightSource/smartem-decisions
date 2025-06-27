@@ -159,6 +159,14 @@ class AtlasData(BaseModel):
     model_config = ConfigDict(json_encoders={datetime: lambda v: v.isoformat() if v else None}, from_attributes=True)
 
 
+class MicroscopeData(BaseModel):
+    instrument_model: str | None = None
+    instrument_id: str | None = None
+    computer_name: str | None = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 class AcquisitionData(BaseModel):
     id: str | None = None
     name: str = "Unknown"
@@ -167,6 +175,7 @@ class AcquisitionData(BaseModel):
     storage_path: str | None = None
     clustering_mode: str | None = None
     clustering_radius: str | None = None
+    instrument: MicroscopeData | None = None
     uuid: str = Field(default_factory=generate_uuid)
 
     model_config = ConfigDict(json_encoders={datetime: lambda v: v.isoformat() if v else None}, from_attributes=True)

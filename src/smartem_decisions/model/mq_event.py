@@ -97,6 +97,9 @@ class AcquisitionCreatedEvent(AcquisitionEventBase):
     status: str | None = None
     start_time: str | None = None
     end_time: str | None = None
+    instrument_model: str | None = None
+    instrument_id: str | None = None
+    computer_name: str | None = None
     metadata: dict[str, Any] | None = None
 
 
@@ -109,6 +112,9 @@ class AcquisitionUpdatedEvent(AcquisitionEventBase):
     epu_id: str | None = None
     start_time: str | None = None
     end_time: str | None = None
+    instrument_model: str | None = None
+    instrument_id: str | None = None
+    computer_name: str | None = None
     metadata: dict[str, Any] | None = None
 
 

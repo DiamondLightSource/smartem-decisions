@@ -42,6 +42,9 @@ class Acquisition(SQLModel, table=True, table_name="acquisition"):
     atlas_path: str | None = Field(default=None)
     clustering_mode: str | None = Field(default=None)
     clustering_radius: str | None = Field(default=None)
+    instrument_model: str | None = Field(default=None)
+    instrument_id: str | None = Field(default=None)
+    computer_name: str | None = Field(default=None)
     grids: list["Grid"] = Relationship(sa_relationship_kwargs={"back_populates": "acquisition"}, cascade_delete=True)
 
 

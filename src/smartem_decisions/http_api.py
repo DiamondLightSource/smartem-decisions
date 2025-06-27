@@ -7,11 +7,6 @@ from fastapi import Depends, FastAPI, HTTPException, Request, status
 from sqlalchemy.orm import Session as SqlAlchemySession
 from sqlalchemy.orm import sessionmaker
 
-# DB Write Mode Configuration
-# "direct" = Write directly to DB, skip MQ publishing
-# "queued" = Publish to MQ for async processing (original behavior)
-DB_WRITE_MODE = os.getenv("DB_WRITE_MODE", "direct")
-
 from src.smartem_decisions._version import __version__
 from src.smartem_decisions.model.database import (
     Acquisition,
@@ -82,6 +77,11 @@ from src.smartem_decisions.mq_publisher import (
 
 # from src.smartem_decisions.log_manager import logger # TODO integrate with FastAPI logger
 from src.smartem_decisions.utils import setup_postgres_connection
+
+# DB Write Mode Configuration
+# "direct" = Write directly to DB, skip MQ publishing
+# "queued" = Publish to MQ for async processing (original behavior)
+DB_WRITE_MODE = os.getenv("DB_WRITE_MODE", "direct")
 
 db_engine = setup_postgres_connection()
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=db_engine)
@@ -275,6 +275,9 @@ def update_acquisition(
             "atlas_path": db_acquisition.atlas_path,
             "clustering_mode": db_acquisition.clustering_mode,
             "clustering_radius": db_acquisition.clustering_radius,
+            "instrument_model": db_acquisition.instrument_model,
+            "instrument_id": db_acquisition.instrument_id,
+            "computer_name": db_acquisition.computer_name,
         }
 
         return AcquisitionResponse(**response_data)
@@ -309,6 +312,9 @@ def update_acquisition(
             "atlas_path": db_acquisition.atlas_path,
             "clustering_mode": db_acquisition.clustering_mode,
             "clustering_radius": db_acquisition.clustering_radius,
+            "instrument_model": db_acquisition.instrument_model,
+            "instrument_id": db_acquisition.instrument_id,
+            "computer_name": db_acquisition.computer_name,
         }
 
         return AcquisitionResponse(**response_data)
