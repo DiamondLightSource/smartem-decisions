@@ -32,9 +32,10 @@ class LogManager:
         self.name = name
 
     def configure(self, config: LogConfig) -> logging.Logger:
-        # Remove existing handlers
+        # Remove existing handlers and close them properly
         for handler in self.handlers:
             self.logger.removeHandler(handler)
+            handler.close()
         self.handlers.clear()
 
         formatter = logging.Formatter(config.format_string)
@@ -59,13 +60,24 @@ class LogManager:
 
         return self.logger
 
+    def close(self):
+        """Close all handlers to free resources"""
+        for handler in self.handlers:
+            self.logger.removeHandler(handler)
+            handler.close()
+        self.handlers.clear()
+
 
 def setup_logger():
+    # Don't create file handlers in test environment to avoid resource warnings
+    import os
+    file_path = None if "pytest" in os.environ.get("_", "") or "PYTEST_CURRENT_TEST" in os.environ else "smartem_decisions-core.log"
+    
     return LogManager.get_instance("smartem_decisions").configure(
         LogConfig(
             level=logging.INFO,
             console=True,
-            file_path="smartem_decisions-core.log",  # TODO define in app config
+            file_path=file_path,  # TODO define in app config
         )
     )
 
