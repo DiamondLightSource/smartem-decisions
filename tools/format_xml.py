@@ -8,6 +8,7 @@ import pathlib
 import shutil
 import xml.dom.minidom
 from datetime import datetime
+from typing import Annotated
 
 import typer
 from rich import print
@@ -59,13 +60,16 @@ def format_xml_files(paths: list[pathlib.Path], recursive: bool, dry_run: bool, 
 
 
 def main(
-    paths: list[pathlib.Path] = typer.Argument(
-        ..., help="Files or directories to process", exists=True, readable=True, allow_dash=True
-    ),
-    recursive: bool = typer.Option(False, "--recursive", "-r", help="Process directories recursively"),
-    dry_run: bool = typer.Option(False, "--dry-run", "-d", help="Show what would be formatted without making changes"),
-    verbose: bool = typer.Option(False, "--verbose", "-v", help="Show detailed processing information"),
-    backup: bool = typer.Option(False, "--backup", "-b", help="Create backup files before formatting"),
+    paths: Annotated[
+        list[pathlib.Path],
+        typer.Argument(help="Files or directories to process", exists=True, readable=True, allow_dash=True),
+    ],
+    recursive: Annotated[bool, typer.Option("--recursive", "-r", help="Process directories recursively")] = False,
+    dry_run: Annotated[
+        bool, typer.Option("--dry-run", "-d", help="Show what would be formatted without making changes")
+    ] = False,
+    verbose: Annotated[bool, typer.Option("--verbose", "-v", help="Show detailed processing information")] = False,
+    backup: Annotated[bool, typer.Option("--backup", "-b", help="Create backup files before formatting")] = False,
 ) -> None:
     """
     Format XML files (.dm and .xml) with proper indentation.

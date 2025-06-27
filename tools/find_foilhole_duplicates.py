@@ -5,6 +5,7 @@ import subprocess
 import sys
 from collections import defaultdict
 from pathlib import Path
+from typing import Annotated
 
 import typer
 from rich.console import Console
@@ -62,7 +63,7 @@ def find_foilhole_duplicates(directory: Path, verbose: bool):
 
     except subprocess.CalledProcessError as e:
         console.print(f"[bold red]Error running ripgrep command:[/] {e}", file=sys.stderr)
-        raise typer.Exit(code=1)
+        raise typer.Exit(code=1) from e
 
 
 def create_summary_table(duplicates):
@@ -82,13 +83,15 @@ def create_summary_table(duplicates):
 
 @app.command()
 def main(
-    directory: Path = typer.Argument(
-        Path("."),
-        help="Directory to search",
-        exists=True,
-        dir_okay=True,
-        file_okay=False,
-    ),
+    directory: Annotated[
+        Path,
+        typer.Argument(
+            help="Directory to search",
+            exists=True,
+            dir_okay=True,
+            file_okay=False,
+        ),
+    ] = Path("."),
     verbose: bool = typer.Option(False, "--verbose", "-v", help="Show detailed progress and statistics"),
     output_format: str = typer.Option("standard", "--format", "-f", help="Output format (standard, json, or summary)"),
     no_color: bool = typer.Option(False, "--no-color", help="Disable colored output"),
@@ -158,7 +161,7 @@ def main(
         console.print(f"[bold red]Error:[/] {str(e)}", file=sys.stderr)
         if verbose:
             console.print_exception()
-        raise typer.Exit(code=1)
+        raise typer.Exit(code=1) from e
 
 
 if __name__ == "__main__":

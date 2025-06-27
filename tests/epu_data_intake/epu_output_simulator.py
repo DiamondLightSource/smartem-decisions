@@ -6,6 +6,7 @@ import shutil
 import sys
 import time
 from pathlib import Path
+from typing import Annotated
 
 import typer
 
@@ -24,13 +25,17 @@ console = Console() if RICH_AVAILABLE else None
 
 @app.command()
 def simulate(
-    output_dir: Path = typer.Argument(..., help="Directory to write simulated EPU output"),
-    template_dir: Path = typer.Option(..., "--template-dir", help="Path to directory containing template data"),
-    interval: float = typer.Option(0.05, "--interval", "-i", help="Interval between changes in seconds"),
-    verbose: bool = typer.Option(False, "--verbose", "-v", help="Show detailed progress"),
-    clean_output: bool = typer.Option(True, "--clean", help="Clean output directory before starting"),
-    use_progress_bar: bool = typer.Option(False, "--progress", "-p", help="Use progress bars for visualization"),
-    run_smoke_test: bool = typer.Option(True, "--smoke-test/--no-smoke-test", help="Run smoke test after simulation"),
+    output_dir: Annotated[Path, typer.Argument(help="Directory to write simulated EPU output")],
+    template_dir: Annotated[Path, typer.Option("--template-dir", help="Path to directory containing template data")],
+    interval: Annotated[float, typer.Option("--interval", "-i", help="Interval between changes in seconds")] = 0.05,
+    verbose: Annotated[bool, typer.Option("--verbose", "-v", help="Show detailed progress")] = False,
+    clean_output: Annotated[bool, typer.Option("--clean", help="Clean output directory before starting")] = True,
+    use_progress_bar: Annotated[
+        bool, typer.Option("--progress", "-p", help="Use progress bars for visualization")
+    ] = False,
+    run_smoke_test: Annotated[
+        bool, typer.Option("--smoke-test/--no-smoke-test", help="Run smoke test after simulation")
+    ] = True,
 ):
     """
     Simulate EPU data output by writing files from a template directory to an output directory.

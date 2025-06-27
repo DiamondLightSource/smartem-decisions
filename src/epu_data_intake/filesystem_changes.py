@@ -6,6 +6,7 @@ import string
 import time
 import xml.etree.ElementTree as ET
 from pathlib import Path
+from typing import Annotated
 
 import typer
 from rich.console import Console
@@ -202,13 +203,15 @@ def run_filesystem_changes(
 
 
 def filesystem_changes(
-    directory: Path = typer.Argument(..., help="Test directory to create and modify files in"),
-    template_dir: Path | None = typer.Option(None, "--template-dir", "-t", help="Directory containing template files"),
-    duration: int = typer.Option(60, "--duration", "-d", help="Test duration in seconds"),
-    interval: float = typer.Option(0.1, "--interval", "-i", help="Interval between changes in seconds"),
-    seed: int | None = typer.Option(None, "--seed", "-s", help="Random seed for reproducible tests"),
-    verbose: bool = typer.Option(False, "--verbose", "-v", help="Show detailed progress"),
-    dry_run: bool = typer.Option(False, "--dry-run", help="Show what would be done without making changes"),
+    directory: Annotated[Path, typer.Argument(help="Test directory to create and modify files in")],
+    template_dir: Annotated[
+        Path | None, typer.Option("--template-dir", "-t", help="Directory containing template files")
+    ] = None,
+    duration: Annotated[int, typer.Option("--duration", "-d", help="Test duration in seconds")] = 60,
+    interval: Annotated[float, typer.Option("--interval", "-i", help="Interval between changes in seconds")] = 0.1,
+    seed: Annotated[int | None, typer.Option("--seed", "-s", help="Random seed for reproducible tests")] = None,
+    verbose: Annotated[bool, typer.Option("--verbose", "-v", help="Show detailed progress")] = False,
+    dry_run: Annotated[bool, typer.Option("--dry-run", help="Show what would be done without making changes")] = False,
 ) -> None:
     """CLI wrapper for run_filesystem_changes"""
     run_filesystem_changes(

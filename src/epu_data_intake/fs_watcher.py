@@ -14,6 +14,7 @@ from epu_data_intake.model.schemas import (
     GridData,
     GridSquareData,
     MicrographData,
+    MicroscopeData,
 )
 from epu_data_intake.model.store import InMemoryDataStore, PersistentDataStore
 
@@ -92,6 +93,9 @@ class RateLimitedFilesystemEventHandler(FileSystemEventHandler):
         # Maintain a buffer of "orphaned" files - files that appear to belong to a grid that doesn't exist yet
         self.orphaned_files = {}  # path -> (event, timestamp, file_stat)
 
+        # Track extracted instrument information per grid to avoid conflicts and duplicates
+        self._extracted_instruments = {}  # grid_uuid -> MicroscopeData
+
         # TODO on Win there's primary and secondary output dirs - work directly with primary if possible otherwise
         #  operate across both. Note: data is first written to primary output dir then later maybe partially copied
         #  to secondary dir.
@@ -105,6 +109,77 @@ class RateLimitedFilesystemEventHandler(FileSystemEventHandler):
             "Instantiated new datastore, "
             + ("in-memory only" if dry_run else f"data will be permanently saved to backend: {api_url}")
         )
+
+    def _instruments_match(self, inst1: MicroscopeData, inst2: MicroscopeData) -> bool:
+        """Check if two instrument records are equivalent."""
+        return (
+            inst1.instrument_model == inst2.instrument_model
+            and inst1.instrument_id == inst2.instrument_id
+            and inst1.computer_name == inst2.computer_name
+        )
+
+    def _try_extract_instrument_info(self, file_path: str, grid_uuid: str) -> None:
+        """
+        Try to extract instrument info from any XML file and store it at the acquisition level.
+
+        This method:
+        1. Attempts to extract instrument information from the given XML file
+        2. Stores it once per grid (acquisition) to avoid duplicates
+        3. Detects and logs conflicts if different instrument info is found for the same grid
+        4. Updates the acquisition record when instrument info is found
+
+        Args:
+            file_path: Path to the XML file to parse
+            grid_uuid: UUID of the grid this file belongs to
+        """
+        if grid_uuid in self._extracted_instruments:
+            return  # Already have instrument info for this grid
+
+        try:
+            instrument = EpuParser.parse_microscope_from_image_metadata(file_path)
+            if instrument:
+                if grid_uuid in self._extracted_instruments:
+                    # Check for mismatch (double-check in case of race conditions)
+                    existing = self._extracted_instruments[grid_uuid]
+                    if not self._instruments_match(existing, instrument):
+                        logging.error(
+                            f"Instrument mismatch in grid {grid_uuid}: "
+                            f"existing=Model:{existing.instrument_model}/ID:{existing.instrument_id} vs "
+                            f"new=Model:{instrument.instrument_model}/ID:{instrument.instrument_id}"
+                        )
+                        return
+                    logging.debug(f"Instrument info already extracted for grid {grid_uuid}, skipping duplicate")
+                else:
+                    # Store instrument info for this grid
+                    self._extracted_instruments[grid_uuid] = instrument
+                    logging.info(
+                        f"Extracted instrument info from {Path(file_path).name}: "
+                        f"Model={instrument.instrument_model}, ID={instrument.instrument_id}"
+                    )
+
+                    # Update acquisition record in the datastore
+                    grid = self.datastore.get_grid(grid_uuid)
+                    if grid and grid.acquisition_data:
+                        grid.acquisition_data.instrument = instrument
+                        self.datastore.update_grid(grid)
+
+                        # Update acquisition via API if using PersistentDataStore
+                        if hasattr(self.datastore, "api_client"):
+                            try:
+                                self.datastore.api_client.update_acquisition(grid.acquisition_data)
+                                logging.info(
+                                    f"Updated acquisition {grid.acquisition_data.id} via API "
+                                    f"with instrument information"
+                                )
+                            except Exception as e:
+                                logging.error(f"Failed to update acquisition {grid.acquisition_data.id} via API: {e}")
+
+                        logging.info(f"Updated acquisition {grid.acquisition_data.id} with instrument information")
+                    else:
+                        logging.warning(f"Could not update acquisition record for grid {grid_uuid}")
+
+        except Exception as e:
+            logging.debug(f"Could not extract instrument info from {file_path}: {e}")
 
     # TODO unit test this method
     def matches_pattern(self, path: str) -> bool:
@@ -176,6 +251,11 @@ class RateLimitedFilesystemEventHandler(FileSystemEventHandler):
                 self._on_foilhole_detected(path, grid_uuid, new_file_detected)
             case path if re.search(EpuParser.micrograph_xml_file_pattern, path):
                 self._on_micrograph_detected(path, grid_uuid, new_file_detected)
+
+        # Try to extract instrument information from any XML file (GridSquare, FoilHole, Micrograph XMLs)
+        # This is done opportunistically - we'll get instrument info from whichever file contains it first
+        if event.src_path.endswith(".xml") and grid_uuid:
+            self._try_extract_instrument_info(event.src_path, grid_uuid)
 
     def _on_acquisition_detected(self, path: str, grid_uuid: str, is_new_file: bool = True):
         logging.debug(f"Session manifest {'detected' if is_new_file else 'updated'}: {path}")

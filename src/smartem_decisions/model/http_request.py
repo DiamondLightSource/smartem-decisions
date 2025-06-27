@@ -23,6 +23,9 @@ class AcquisitionBaseFields(BaseModel):
     atlas_path: str | None = None
     clustering_mode: str | None = None
     clustering_radius: str | None = None
+    instrument_model: str | None = None
+    instrument_id: str | None = None
+    computer_name: str | None = None
 
     model_config = {
         "use_enum_values": True,

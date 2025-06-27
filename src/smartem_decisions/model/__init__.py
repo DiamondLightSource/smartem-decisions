@@ -1,1 +1,1 @@
-from . import mq_event
+from . import mq_event as mq_event

@@ -71,8 +71,13 @@ class LogManager:
 def setup_logger():
     # Don't create file handlers in test environment to avoid resource warnings
     import os
-    file_path = None if "pytest" in os.environ.get("_", "") or "PYTEST_CURRENT_TEST" in os.environ else "smartem_decisions-core.log"
-    
+
+    file_path = (
+        None
+        if "pytest" in os.environ.get("_", "") or "PYTEST_CURRENT_TEST" in os.environ
+        else "smartem_decisions-core.log"
+    )
+
     return LogManager.get_instance("smartem_decisions").configure(
         LogConfig(
             level=logging.INFO,

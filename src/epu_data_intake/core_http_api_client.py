@@ -61,6 +61,9 @@ class EntityConverter:
             atlas_path=entity.atlas_path,
             clustering_mode=entity.clustering_mode,
             clustering_radius=entity.clustering_radius,
+            instrument_model=entity.instrument.instrument_model if entity.instrument else None,
+            instrument_id=entity.instrument.instrument_id if entity.instrument else None,
+            computer_name=entity.instrument.computer_name if entity.instrument else None,
             status=AcquisitionStatus.STARTED,
         )
 

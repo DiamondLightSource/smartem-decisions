@@ -49,6 +49,9 @@ class AcquisitionResponse(BaseModel):
     atlas_path: str | None
     clustering_mode: str | None
     clustering_radius: str | None
+    instrument_model: str | None
+    instrument_id: str | None
+    computer_name: str | None
 
     model_config = ConfigDict(
         from_attributes=True, use_enum_values=True, json_encoders={datetime: lambda v: v.isoformat() if v else None}
