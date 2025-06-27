@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>smartem_decisions &#8212; smartem-decisions 0.1.dev169+g1dd4d8d documentation</title>
+    <title>smartem_decisions &#8212; smartem-decisions 0.1.dev176+gb825b79 documentation</title>
   
   
   
@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="_static/documentation_options.js?v=99b3d26b"></script>
+    <script src="_static/documentation_options.js?v=85db09b5"></script>
     <script src="_static/doctools.js?v=9bcbadda"></script>
     <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/clipboard.min.js?v=a7894cd8"></script>
@@ -513,6 +513,11 @@ introductory code here:</p>
 python<span class="w"> </span>-m<span class="w"> </span>venv<span class="w"> </span>.venv
 <span class="nb">source</span><span class="w"> </span>.venv/bin/activate
 pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span>.<span class="o">[</span>all<span class="o">]</span><span class="w"> </span><span class="c1"># .[dev,common,core]</span>
+
+<span class="c1"># Start services with verbosity controls:</span>
+python<span class="w"> </span>-m<span class="w"> </span>smartem_decisions.run_api<span class="w"> </span>-v<span class="w">               </span><span class="c1"># HTTP API with INFO logging</span>
+python<span class="w"> </span>-m<span class="w"> </span>smartem_decisions.mq_consumer<span class="w"> </span>-v<span class="w">           </span><span class="c1"># Message queue consumer with INFO logging  </span>
+python<span class="w"> </span>-m<span class="w"> </span>epu_data_intake<span class="w"> </span>watch<span class="w"> </span>/path/to/data<span class="w"> </span>-v<span class="w">     </span><span class="c1"># File watcher with INFO logging</span>
 </pre></div>
 </div>
 <section id="generate-docs">
@@ -577,6 +582,49 @@ https://github.com/DiamondLightSource/cryoem-services/blob/main/src/cryoemservic
 </ul>
 </li>
 </ul>
+</section>
+<section id="verbosity-control">
+<h2>Verbosity Control<a class="headerlink" href="#verbosity-control" title="Link to this heading">#</a></h2>
+<p>All SmartEM Decisions services support configurable logging levels to help with debugging and reduce noise in production environments.</p>
+<section id="command-line-verbosity">
+<h3>Command Line Verbosity<a class="headerlink" href="#command-line-verbosity" title="Link to this heading">#</a></h3>
+<p>Use the <code class="docutils literal notranslate"><span class="pre">-v</span></code> and <code class="docutils literal notranslate"><span class="pre">-vv</span></code> flags to control verbosity:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># ERROR level only (default - minimal output)</span>
+python<span class="w"> </span>-m<span class="w"> </span>smartem_decisions.mq_consumer
+python<span class="w"> </span>-m<span class="w"> </span>smartem_decisions.run_api
+python<span class="w"> </span>-m<span class="w"> </span>epu_data_intake<span class="w"> </span>watch<span class="w"> </span>/path/to/data
+
+<span class="c1"># INFO level and above (-v flag)</span>
+python<span class="w"> </span>-m<span class="w"> </span>smartem_decisions.mq_consumer<span class="w"> </span>-v
+python<span class="w"> </span>-m<span class="w"> </span>smartem_decisions.run_api<span class="w"> </span>-v
+python<span class="w"> </span>-m<span class="w"> </span>epu_data_intake<span class="w"> </span>watch<span class="w"> </span>/path/to/data<span class="w"> </span>-v
+
+<span class="c1"># DEBUG level and above (-vv flag - most verbose)</span>
+python<span class="w"> </span>-m<span class="w"> </span>smartem_decisions.mq_consumer<span class="w"> </span>-vv
+python<span class="w"> </span>-m<span class="w"> </span>smartem_decisions.run_api<span class="w"> </span>-vv
+python<span class="w"> </span>-m<span class="w"> </span>epu_data_intake<span class="w"> </span>watch<span class="w"> </span>/path/to/data<span class="w"> </span>-vv
+</pre></div>
+</div>
+</section>
+<section id="environment-variable-control">
+<h3>Environment Variable Control<a class="headerlink" href="#environment-variable-control" title="Link to this heading">#</a></h3>
+<p>For the HTTP API, you can also control logging via environment variables:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Set log level via environment variable</span>
+<span class="nv">SMARTEM_LOG_LEVEL</span><span class="o">=</span>ERROR<span class="w"> </span>uvicorn<span class="w"> </span>src.smartem_decisions.http_api:app<span class="w"> </span>--host<span class="w"> </span><span class="m">0</span>.0.0.0<span class="w"> </span>--port<span class="w"> </span><span class="m">8000</span>
+<span class="nv">SMARTEM_LOG_LEVEL</span><span class="o">=</span>INFO<span class="w"> </span>uvicorn<span class="w"> </span>src.smartem_decisions.http_api:app<span class="w"> </span>--host<span class="w"> </span><span class="m">0</span>.0.0.0<span class="w"> </span>--port<span class="w"> </span><span class="m">8000</span>
+<span class="nv">SMARTEM_LOG_LEVEL</span><span class="o">=</span>DEBUG<span class="w"> </span>uvicorn<span class="w"> </span>src.smartem_decisions.http_api:app<span class="w"> </span>--host<span class="w"> </span><span class="m">0</span>.0.0.0<span class="w"> </span>--port<span class="w"> </span><span class="m">8000</span>
+</pre></div>
+</div>
+</section>
+<section id="log-levels">
+<h3>Log Levels<a class="headerlink" href="#log-levels" title="Link to this heading">#</a></h3>
+<ul class="simple">
+<li><p><strong>ERROR</strong> (default): Only critical errors are shown</p></li>
+<li><p><strong>INFO</strong> (<code class="docutils literal notranslate"><span class="pre">-v</span></code>): Informational messages, warnings, and errors</p></li>
+<li><p><strong>DEBUG</strong> (<code class="docutils literal notranslate"><span class="pre">-vv</span></code>): All messages including detailed debugging information</p></li>
+</ul>
+<p>This verbosity control helps reduce log noise during normal operation while providing detailed output when troubleshooting issues.</p>
+</section>
 </section>
 <section id="how-the-documentation-is-structured">
 <h2>How the documentation is structured<a class="headerlink" href="#how-the-documentation-is-structured" title="Link to this heading">#</a></h2>

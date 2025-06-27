@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>smartem_decisions.mq_consumer &#8212; smartem-decisions 0.1.dev169+g1dd4d8d documentation</title>
+    <title>smartem_decisions.mq_consumer &#8212; smartem-decisions 0.1.dev176+gb825b79 documentation</title>
   
   
   
@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../_static/documentation_options.js?v=99b3d26b"></script>
+    <script src="../_static/documentation_options.js?v=85db09b5"></script>
     <script src="../_static/doctools.js?v=9bcbadda"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -420,6 +420,7 @@
 </ul>
 </details></li>
 <li class="toctree-l2"><a class="reference internal" href="smartem_decisions.rabbitmq.html"><code class="docutils literal notranslate"><span class="pre">smartem_decisions.rabbitmq</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="smartem_decisions.run_api.html"><code class="docutils literal notranslate"><span class="pre">smartem_decisions.run_api</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="smartem_decisions.utils.html"><code class="docutils literal notranslate"><span class="pre">smartem_decisions.utils</span></code></a></li>
 </ul>
 </details></li>
@@ -556,6 +557,9 @@
 <tr class="row-odd"><td><p><a class="reference internal" href="#smartem_decisions.mq_consumer.on_message" title="smartem_decisions.mq_consumer.on_message"><code class="xref py py-obj docutils literal notranslate"><span class="pre">on_message</span></code></a></p></td>
 <td><p>Callback function for processing RabbitMQ messages</p></td>
 </tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#smartem_decisions.mq_consumer.signal_handler" title="smartem_decisions.mq_consumer.signal_handler"><code class="xref py py-obj docutils literal notranslate"><span class="pre">signal_handler</span></code></a></p></td>
+<td><p>Handle shutdown signals</p></td>
+</tr>
 </tbody>
 </table>
 </div>
@@ -645,14 +649,22 @@
 
 <dl class="py function">
 <dt class="sig sig-object py" id="smartem_decisions.mq_consumer.handle_grid_created">
-<span class="sig-prename descclassname"><span class="pre">smartem_decisions.mq_consumer.</span></span><span class="sig-name descname"><span class="pre">handle_grid_created</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">event_data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.13)"><span class="pre">dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.13)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">session</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Session</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.13)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../_modules/smartem_decisions/mq_consumer.html#handle_grid_created"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#smartem_decisions.mq_consumer.handle_grid_created" title="Link to this definition">#</a></dt>
+<span class="sig-prename descclassname"><span class="pre">smartem_decisions.mq_consumer.</span></span><span class="sig-name descname"><span class="pre">handle_grid_created</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">event_data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.13)"><span class="pre">dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.13)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">session</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Session</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">channel</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">delivery_tag</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.13)"><span class="pre">bool</span></a></span></span><a class="reference internal" href="../_modules/smartem_decisions/mq_consumer.html#handle_grid_created"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#smartem_decisions.mq_consumer.handle_grid_created" title="Link to this definition">#</a></dt>
 <dd><p>Handle grid created event by creating a grid in the database</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>event_data</strong> – Event data for grid created</p></li>
 <li><p><strong>session</strong> – Database session</p></li>
+<li><p><strong>channel</strong> – RabbitMQ channel</p></li>
+<li><p><strong>delivery_tag</strong> – Message delivery tag</p></li>
 </ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>True if successful, False if failed (already NACKed)</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.13)">bool</a></p>
 </dd>
 </dl>
 </dd></dl>
@@ -685,6 +697,12 @@
 </ul>
 </dd>
 </dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="smartem_decisions.mq_consumer.signal_handler">
+<span class="sig-prename descclassname"><span class="pre">smartem_decisions.mq_consumer.</span></span><span class="sig-name descname"><span class="pre">signal_handler</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">signum</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">frame</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/smartem_decisions/mq_consumer.html#signal_handler"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#smartem_decisions.mq_consumer.signal_handler" title="Link to this definition">#</a></dt>
+<dd><p>Handle shutdown signals</p>
 </dd></dl>
 
 <dl class="py function">
@@ -751,6 +769,7 @@
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#smartem_decisions.mq_consumer.handle_grid_created"><code class="docutils literal notranslate"><span class="pre">handle_grid_created()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#smartem_decisions.mq_consumer.get_event_handlers"><code class="docutils literal notranslate"><span class="pre">get_event_handlers()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#smartem_decisions.mq_consumer.on_message"><code class="docutils literal notranslate"><span class="pre">on_message()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#smartem_decisions.mq_consumer.signal_handler"><code class="docutils literal notranslate"><span class="pre">signal_handler()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#smartem_decisions.mq_consumer.main"><code class="docutils literal notranslate"><span class="pre">main()</span></code></a></li>
 </ul>
   </nav></div>

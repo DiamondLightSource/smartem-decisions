@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>smartem_decisions.predictions &#8212; smartem-decisions 0.1.dev176+gb825b79 documentation</title>
+    <title>smartem_decisions.run_api &#8212; smartem-decisions 0.1.dev176+gb825b79 documentation</title>
   
   
   
@@ -47,7 +47,7 @@
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
     <script src="../_static/copybutton.js?v=30646c52"></script>
     <script src="../_static/design-tabs.js?v=f930bc37"></script>
-    <script>DOCUMENTATION_OPTIONS.pagename = '_api/smartem_decisions.predictions';</script>
+    <script>DOCUMENTATION_OPTIONS.pagename = '_api/smartem_decisions.run_api';</script>
     <script>
         DOCUMENTATION_OPTIONS.theme_version = '0.16.1';
         DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://DiamondLightSource.github.io/smartem-decisions/switcher.json';
@@ -58,8 +58,8 @@
     <link rel="icon" href="../_static/dls-logo.svg"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="smartem_decisions.predictions.update" href="smartem_decisions.predictions.update.html" />
-    <link rel="prev" title="smartem_decisions.mq_consumer" href="smartem_decisions.mq_consumer.html" />
+    <link rel="next" title="smartem_decisions.utils" href="smartem_decisions.utils.html" />
+    <link rel="prev" title="smartem_decisions.rabbitmq" href="smartem_decisions.rabbitmq.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
   <meta name="docsearch:version" content="main" />
@@ -415,12 +415,12 @@
 </ul>
 </details></li>
 <li class="toctree-l2"><a class="reference internal" href="smartem_decisions.mq_consumer.html"><code class="docutils literal notranslate"><span class="pre">smartem_decisions.mq_consumer</span></code></a></li>
-<li class="toctree-l2 current active has-children"><a class="current reference internal" href="#"><code class="docutils literal notranslate"><span class="pre">smartem_decisions.predictions</span></code></a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="smartem_decisions.predictions.html"><code class="docutils literal notranslate"><span class="pre">smartem_decisions.predictions</span></code></a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
 <li class="toctree-l3"><a class="reference internal" href="smartem_decisions.predictions.update.html"><code class="docutils literal notranslate"><span class="pre">smartem_decisions.predictions.update</span></code></a></li>
 </ul>
 </details></li>
 <li class="toctree-l2"><a class="reference internal" href="smartem_decisions.rabbitmq.html"><code class="docutils literal notranslate"><span class="pre">smartem_decisions.rabbitmq</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="smartem_decisions.run_api.html"><code class="docutils literal notranslate"><span class="pre">smartem_decisions.run_api</span></code></a></li>
+<li class="toctree-l2 current active"><a class="current reference internal" href="#"><code class="docutils literal notranslate"><span class="pre">smartem_decisions.run_api</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="smartem_decisions.utils.html"><code class="docutils literal notranslate"><span class="pre">smartem_decisions.utils</span></code></a></li>
 </ul>
 </details></li>
@@ -472,7 +472,7 @@
     
     <li class="breadcrumb-item"><a href="smartem_decisions.html" class="nav-link"><code class="docutils literal notranslate"><span class="pre">smartem_decisions</span></code></a></li>
     
-    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis"><code class="docutils literal notranslate"><span class="pre">smartem_decisions.predictions</span></code></span></li>
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis"><code class="docutils literal notranslate"><span class="pre">smartem_decisions.run_api</span></code></span></li>
   </ul>
 </nav>
 </div>
@@ -489,12 +489,19 @@
 <div id="searchbox"></div>
                 <article class="bd-article">
                   
-  <section id="module-smartem_decisions.predictions">
-<span id="smartem-decisions-predictions"></span><h1><code class="docutils literal notranslate"><span class="pre">smartem_decisions.predictions</span></code><a class="headerlink" href="#module-smartem_decisions.predictions" title="Link to this heading">#</a></h1>
-<p class="rubric">Submodules</p>
+  <section id="module-smartem_decisions.run_api">
+<span id="smartem-decisions-run-api"></span><h1><code class="docutils literal notranslate"><span class="pre">smartem_decisions.run_api</span></code><a class="headerlink" href="#module-smartem_decisions.run_api" title="Link to this heading">#</a></h1>
+<p>Script to run the SmartEM Decisions HTTP API with verbosity controls.</p>
+<dl class="simple">
+<dt>Usage:</dt><dd><p>python -m smartem_decisions.run_api               # ERROR level (default)
+python -m smartem_decisions.run_api -v           # INFO level
+python -m smartem_decisions.run_api -vv          # DEBUG level</p>
+</dd>
+</dl>
+<p class="rubric">Members</p>
 <div class="pst-scrollable-table-container"><table class="autosummary longtable table">
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="smartem_decisions.predictions.update.html#module-smartem_decisions.predictions.update" title="smartem_decisions.predictions.update"><code class="xref py py-obj docutils literal notranslate"><span class="pre">update</span></code></a></p></td>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">main</span></code></p></td>
 <td><p></p></td>
 </tr>
 </tbody>
@@ -513,20 +520,20 @@
                   
 <div class="prev-next-area">
     <a class="left-prev"
-       href="smartem_decisions.mq_consumer.html"
+       href="smartem_decisions.rabbitmq.html"
        title="previous page">
       <i class="fa-solid fa-angle-left"></i>
       <div class="prev-next-info">
         <p class="prev-next-subtitle">previous</p>
-        <p class="prev-next-title"><code class="docutils literal notranslate"><span class="pre">smartem_decisions.mq_consumer</span></code></p>
+        <p class="prev-next-title"><code class="docutils literal notranslate"><span class="pre">smartem_decisions.rabbitmq</span></code></p>
       </div>
     </a>
     <a class="right-next"
-       href="smartem_decisions.predictions.update.html"
+       href="smartem_decisions.utils.html"
        title="next page">
       <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title"><code class="docutils literal notranslate"><span class="pre">smartem_decisions.predictions.update</span></code></p>
+        <p class="prev-next-title"><code class="docutils literal notranslate"><span class="pre">smartem_decisions.utils</span></code></p>
       </div>
       <i class="fa-solid fa-angle-right"></i>
     </a>
@@ -545,7 +552,7 @@
 
   
   <div class="tocsection editthispage">
-    <a href="https://github.com/DiamondLightSource/smartem-decisions/edit/main/docs/_api/smartem_decisions.predictions.rst">
+    <a href="https://github.com/DiamondLightSource/smartem-decisions/edit/main/docs/_api/smartem_decisions.run_api.rst">
       <i class="fa-solid fa-pencil"></i>
       
       
@@ -561,7 +568,7 @@
   <div role="note" aria-label="source link">
     <h3>This Page</h3>
     <ul class="this-page-menu">
-      <li><a href="../_sources/_api/smartem_decisions.predictions.rst.txt"
+      <li><a href="../_sources/_api/smartem_decisions.run_api.rst.txt"
             rel="nofollow">Show Source</a></li>
     </ul>
    </div></div>

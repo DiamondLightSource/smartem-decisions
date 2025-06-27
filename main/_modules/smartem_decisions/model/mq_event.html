@@ -7,7 +7,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>smartem_decisions.model.mq_event &#8212; smartem-decisions 0.1.dev169+g1dd4d8d documentation</title>
+    <title>smartem_decisions.model.mq_event &#8212; smartem-decisions 0.1.dev176+gb825b79 documentation</title>
   
   
   
@@ -40,7 +40,7 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../../../_static/documentation_options.js?v=99b3d26b"></script>
+    <script src="../../../_static/documentation_options.js?v=85db09b5"></script>
     <script src="../../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -521,11 +521,12 @@
     <span class="k">def</span><span class="w"> </span><span class="nf">serialize_event_type</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event_type</span><span class="p">:</span> <span class="n">MessageQueueEventType</span><span class="p">,</span> <span class="n">_info</span><span class="p">):</span>
         <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">event_type</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
 
-    <span class="nd">@field_serializer</span><span class="p">(</span><span class="s1">&#39;*&#39;</span><span class="p">,</span> <span class="n">when_used</span><span class="o">=</span><span class="s1">&#39;json&#39;</span><span class="p">)</span>
+    <span class="nd">@field_serializer</span><span class="p">(</span><span class="s2">&quot;*&quot;</span><span class="p">,</span> <span class="n">when_used</span><span class="o">=</span><span class="s2">&quot;json&quot;</span><span class="p">)</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">serialize_datetime_fields</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">v</span><span class="p">,</span> <span class="n">_info</span><span class="p">):</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">datetime</span><span class="p">):</span>
             <span class="k">return</span> <span class="n">v</span><span class="o">.</span><span class="n">isoformat</span><span class="p">()</span>
         <span class="k">return</span> <span class="n">v</span>
+
 
 <span class="c1"># ============ Acquisition Events ============</span>
 <div class="viewcode-block" id="AcquisitionEventBase">
@@ -857,6 +858,7 @@
 <a class="viewcode-back" href="../../../_api/smartem_decisions.model.mq_event.html#smartem_decisions.model.mq_event.MicrographCreatedEvent">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">MicrographCreatedEvent</span><span class="p">(</span><span class="n">MicrographEventBase</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Event emitted when a micrograph is created&quot;&quot;&quot;</span>
+
     <span class="n">uuid</span><span class="p">:</span> <span class="nb">str</span>
     <span class="n">foilhole_uuid</span><span class="p">:</span> <span class="nb">str</span>
     <span class="n">foilhole_id</span><span class="p">:</span> <span class="nb">str</span>
@@ -887,7 +889,9 @@
 <a class="viewcode-back" href="../../../_api/smartem_decisions.model.mq_event.html#smartem_decisions.model.mq_event.MicrographUpdatedEvent">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">MicrographUpdatedEvent</span><span class="p">(</span><span class="n">MicrographEventBase</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Event emitted when a micrograph is updated&quot;&quot;&quot;</span>
+
     <span class="n">uuid</span><span class="p">:</span> <span class="nb">str</span>  <span class="c1"># Required</span>
+    <span class="n">micrograph_id</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="n">foilhole_uuid</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="n">foilhole_id</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="n">location_id</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
@@ -912,6 +916,7 @@
     <span class="n">selection_distribution</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="n">pick_distribution</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="n">metadata</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span></div>
+
 
 
 <div class="viewcode-block" id="MicrographDeletedEvent">

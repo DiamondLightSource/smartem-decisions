@@ -21,6 +21,7 @@
         
         
         
+        
 
 .. automodule:: smartem_decisions.mq_consumer
     :members:
@@ -57,5 +58,6 @@
         handle_micrograph_updated
         main
         on_message
+        signal_handler
     
     
