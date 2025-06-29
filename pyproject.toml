@@ -63,9 +63,14 @@ data-intake = [
     "watchdog==6.0.0",
 ]
 
+# FSRecorder tool dependencies
+fsrecorder = [
+    "watchdog>=3.0.0",
+]
+
 # Combined dependencies (for convenience)
 all = [
-    "smartem-decisions[dev,core,data-intake]",
+    "smartem-decisions[dev,core,data-intake,fsrecorder]",
 ]
 
 [project.scripts]
