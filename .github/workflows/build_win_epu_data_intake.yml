@@ -5,7 +5,7 @@ on:
     branches: [ main ]
     paths:
       - 'src/epu_data_intake/**'
-      - '.github/workflows/build-win-epu-data-intake.yml'
+      - '.github/workflows/build_win_epu_data_intake.yml'
   workflow_dispatch:
     inputs:
       branch:
