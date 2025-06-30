@@ -51,19 +51,19 @@ class MessageQueueEventType(str, Enum):
     # ACQUISITION_SESSION_END = "acquisition.session_ended"
     # GRID_SCAN_SESSION_START = "grid.scan_started"
     # GRID_SCAN_SESSION_COMPLETE = "grid.scan_completed"
-    GRIDSQUARES_DECISION_START = "gridsquares.decision_started"
+    # GRIDSQUARES_DECISION_START = "gridsquares.decision_started"
     GRIDSQUARES_DECISION_COMPLETE = "gridsquares.decision_completed"
     FOILHOLES_DETECTED = "foilholes.detected"  # TODO is this redundant?
-    FOILHOLES_DECISION_START = "foilholes.decision_started"
+    # FOILHOLES_DECISION_START = "foilholes.decision_started"
     FOILHOLES_DECISION_COMPLETE = "foilholes.decision_completed"
     MICROGRAPHS_DETECTED = "micrographs.detected"  # TODO is this redundant?
-    MOTION_CORRECTION_START = "motion_correction.started"
-    MOTION_CORRECTION_COMPLETE = "motion_{correction.completed"
-    CTF_START = "ctf.started"
+    # MOTION_CORRECTION_START = "motion_correction.started"
+    MOTION_CORRECTION_COMPLETE = "motion_correction.completed"
+    # CTF_START = "ctf.started"
     CTF_COMPLETE = "ctf.completed"
-    PARTICLE_PICKING_START = "particle_picking.started"
+    # PARTICLE_PICKING_START = "particle_picking.started"
     PARTICLE_PICKING_COMPLETE = "particle_picking.completed"
-    PARTICLE_SELECTION_START = "particle_selection.started"
+    # PARTICLE_SELECTION_START = "particle_selection.started"
     PARTICLE_SELECTION_COMPLETE = "particle_selection.completed"
 
 
