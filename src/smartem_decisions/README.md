@@ -5,9 +5,9 @@
 ./tools/dev-k8s.sh up
 
 # launch RabbitMQ worker (consumer)
-python -m smartem_decisions.mq_consumer              # ERROR level (default)
-python -m smartem_decisions.mq_consumer -v           # INFO level  
-python -m smartem_decisions.mq_consumer -vv          # DEBUG level
+python -m smartem_decisions.consumer              # ERROR level (default)
+python -m smartem_decisions.consumer -v           # INFO level  
+python -m smartem_decisions.consumer -vv          # DEBUG level
 
 # simulating an system event: 
 python -m smartem_decisions.simulate_msg --help # to see a list of options
