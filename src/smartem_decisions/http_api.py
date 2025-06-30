@@ -49,8 +49,6 @@ from src.smartem_decisions.model.http_response import (
     GridSquareResponse,
     MicrographResponse,
 )
-
-# Import event service for publishing to RabbitMQ
 from src.smartem_decisions.mq_publisher import (
     publish_acquisition_created,
     publish_acquisition_deleted,
@@ -74,7 +72,6 @@ from src.smartem_decisions.mq_publisher import (
     publish_micrograph_deleted,
     publish_micrograph_updated,
 )
-
 from src.smartem_decisions.utils import setup_postgres_connection
 
 db_engine = setup_postgres_connection()
@@ -89,7 +86,7 @@ def get_db():
         db.close()
 
 
-# Create dependency object at module level to avoid B008 linting errors
+# Create a dependency object at module level to avoid B008 linting errors
 DB_DEPENDENCY = Depends(get_db)
 
 
@@ -118,7 +115,7 @@ for logger_name in uvicorn_loggers:
 
 @app.middleware("http")
 async def log_requests(request: Request, call_next):
-    if request.method in ("POST", "PUT", "PATCH") and log_level is "DEBUG":
+    if request.method in ("POST", "PUT", "PATCH") and log_level == logging.DEBUG:
         body = await request.body()
 
         try:
@@ -192,6 +189,18 @@ def create_acquisition(acquisition: AcquisitionCreateRequest, db: SqlAlchemySess
     db.commit()
     db.refresh(db_acquisition)
 
+    success = publish_acquisition_created(
+        uuid=db_acquisition.uuid,
+        id=db_acquisition.id,
+        name=db_acquisition.name,
+        status=db_acquisition.status.value,
+        start_time=db_acquisition.start_time,
+        end_time=db_acquisition.end_time,
+        metadata=db_acquisition.metadata,
+    )
+    if not success:
+        logger.error(f"Failed to publish acquisition created event for UUID: {db_acquisition.uuid}")
+
     response_data = {
         "uuid": acquisition.uuid,
         "status": AcquisitionStatus.STARTED,
@@ -226,6 +235,18 @@ def update_acquisition(
     db.commit()
     db.refresh(db_acquisition)
 
+    success = publish_acquisition_updated(
+        uuid=db_acquisition.uuid,
+        name=db_acquisition.name,
+        status=db_acquisition.status.value if db_acquisition.status else None,
+        epu_id=db_acquisition.id,
+        start_time=db_acquisition.start_time.isoformat() if db_acquisition.start_time else None,
+        end_time=db_acquisition.end_time.isoformat() if db_acquisition.end_time else None,
+        metadata=db_acquisition.metadata,
+    )
+    if not success:
+        logger.error(f"Failed to publish acquisition updated event for UUID: {db_acquisition.uuid}")
+
     response_data = {
         "uuid": db_acquisition.uuid,
         "status": db_acquisition.status,
@@ -253,9 +274,14 @@ def delete_acquisition(acquisition_uuid: str, db: SqlAlchemySession = DB_DEPENDE
     if not db_acquisition:
         raise HTTPException(status_code=404, detail="Acquisition not found")
 
-        db.delete(db_acquisition)
-        db.commit()
-        return None
+    db.delete(db_acquisition)
+    db.commit()
+
+    success = publish_acquisition_deleted(uuid=acquisition_uuid)
+    if not success:
+        logger.error(f"Failed to publish acquisition deleted event for UUID: {acquisition_uuid}")
+
+    return None
 
 
 # ============ Grid CRUD Operations ============
@@ -289,6 +315,16 @@ def update_grid(grid_uuid: str, grid: GridUpdateRequest, db: SqlAlchemySession =
         setattr(db_grid, key, value)
     db.commit()
     db.refresh(db_grid)
+
+    success = publish_grid_updated(
+        uuid=db_grid.uuid,
+        name=db_grid.name,
+        status=db_grid.status.value if db_grid.status else None,
+        grid_id=db_grid.grid_id,
+        metadata=db_grid.metadata,
+    )
+    if not success:
+        logger.error(f"Failed to publish grid updated event for UUID: {db_grid.uuid}")
 
     response_data = {
         "uuid": db_grid.uuid,
@@ -339,6 +375,19 @@ def create_acquisition_grid(acquisition_uuid: str, grid: GridCreateRequest, db: 
     db.commit()
     db.refresh(db_grid)
 
+    success = publish_grid_created(
+        uuid=db_grid.uuid,
+        acquisition_uuid=db_grid.acquisition_uuid,
+        name=db_grid.name,
+        status=db_grid.status.value,
+        data_dir=db_grid.data_dir,
+        atlas_dir=db_grid.atlas_dir,
+        scan_start_time=db_grid.scan_start_time,
+        scan_end_time=db_grid.scan_end_time,
+    )
+    if not success:
+        logger.error(f"Failed to publish grid created event for UUID: {db_grid.uuid}")
+
     response_data = {
         "uuid": grid.uuid,
         "acquisition_uuid": acquisition_uuid,
@@ -384,6 +433,16 @@ def update_atlas(atlas_uuid: str, atlas: AtlasUpdateRequest, db: SqlAlchemySessi
         setattr(db_atlas, key, value)
     db.commit()
     db.refresh(db_atlas)
+
+    success = publish_atlas_updated(
+        uuid=db_atlas.uuid,
+        name=db_atlas.name,
+        grid_id=db_atlas.grid_id,
+        pixel_size=db_atlas.pixel_size,
+        metadata=db_atlas.metadata,
+    )
+    if not success:
+        logger.error(f"Failed to publish atlas updated event for UUID: {db_atlas.uuid}")
 
     response_data = {
         "uuid": db_atlas.uuid,
@@ -439,6 +498,17 @@ def create_grid_atlas(grid_uuid: str, atlas: AtlasCreateRequest, db: SqlAlchemyS
     db.commit()
     db.refresh(db_atlas)
 
+    success = publish_atlas_created(
+        uuid=db_atlas.uuid,
+        id=db_atlas.atlas_id,
+        name=db_atlas.name,
+        grid_id=db_atlas.grid_id,
+        pixel_size=db_atlas.pixel_size,
+        metadata=db_atlas.metadata,
+    )
+    if not success:
+        logger.error(f"Failed to publish atlas created event for UUID: {db_atlas.uuid}")
+
     # If tiles were provided, create them too
     if tiles_data:
         for tile_data in tiles_data:
@@ -448,6 +518,20 @@ def create_grid_atlas(grid_uuid: str, atlas: AtlasCreateRequest, db: SqlAlchemyS
             db.add(db_tile)
             db.commit()
             db.refresh(db_tile)
+
+            tile_success = publish_atlas_tile_created(
+                uuid=db_tile.uuid,
+                atlas_uuid=db_tile.atlas_uuid,
+                tile_id=db_tile.tile_id,
+                position_x=db_tile.position_x,
+                position_y=db_tile.position_y,
+                size_x=db_tile.size_x,
+                size_y=db_tile.size_y,
+                file_format=db_tile.file_format,
+                base_filename=db_tile.base_filename,
+            )
+            if not tile_success:
+                logger.error(f"Failed to publish atlas tile created event for UUID: {db_tile.uuid}")
 
     response_data = {
         "uuid": db_atlas.uuid,
@@ -493,6 +577,20 @@ def update_atlas_tile(tile_uuid: str, tile: AtlasTileUpdateRequest, db: SqlAlche
         setattr(db_tile, key, value)
     db.commit()
     db.refresh(db_tile)
+
+    success = publish_atlas_tile_updated(
+        uuid=db_tile.uuid,
+        atlas_uuid=db_tile.atlas_uuid,
+        tile_id=db_tile.tile_id,
+        position_x=db_tile.position_x,
+        position_y=db_tile.position_y,
+        size_x=db_tile.size_x,
+        size_y=db_tile.size_y,
+        file_format=db_tile.file_format,
+        base_filename=db_tile.base_filename,
+    )
+    if not success:
+        logger.error(f"Failed to publish atlas tile updated event for UUID: {db_tile.uuid}")
 
     response_data = {
         "uuid": db_tile.uuid,
@@ -541,6 +639,20 @@ def create_atlas_tile_for_atlas(atlas_uuid: str, tile: AtlasTileCreateRequest, d
     db.commit()
     db.refresh(db_tile)
 
+    success = publish_atlas_tile_created(
+        uuid=db_tile.uuid,
+        atlas_uuid=db_tile.atlas_uuid,
+        tile_id=db_tile.tile_id,
+        position_x=db_tile.position_x,
+        position_y=db_tile.position_y,
+        size_x=db_tile.size_x,
+        size_y=db_tile.size_y,
+        file_format=db_tile.file_format,
+        base_filename=db_tile.base_filename,
+    )
+    if not success:
+        logger.error(f"Failed to publish atlas tile created event for UUID: {db_tile.uuid}")
+
     response_data = {
         "uuid": db_tile.uuid,
         "atlas_uuid": db_tile.atlas_uuid,
@@ -587,6 +699,17 @@ def update_gridsquare(gridsquare_uuid: str, gridsquare: GridSquareUpdateRequest,
         setattr(db_gridsquare, key, value)
     db.commit()
     db.refresh(db_gridsquare)
+
+    success = publish_gridsquare_updated(
+        uuid=db_gridsquare.uuid,
+        name=db_gridsquare.name,
+        status=db_gridsquare.status.value if db_gridsquare.status else None,
+        grid_uuid=db_gridsquare.grid_uuid,
+        gridsquare_id=db_gridsquare.gridsquare_id,
+        metadata=db_gridsquare.metadata,
+    )
+    if not success:
+        logger.error(f"Failed to publish gridsquare updated event for UUID: {db_gridsquare.uuid}")
 
     response_data = {
         "uuid": db_gridsquare.uuid,
@@ -655,6 +778,16 @@ def create_grid_gridsquare(grid_uuid: str, gridsquare: GridSquareCreateRequest, 
     db.commit()
     db.refresh(db_gridsquare)
 
+    success = publish_gridsquare_created(
+        uuid=db_gridsquare.uuid,
+        grid_uuid=db_gridsquare.grid_uuid,
+        name=db_gridsquare.name,
+        status=db_gridsquare.status.value,
+        metadata=db_gridsquare.metadata,
+    )
+    if not success:
+        logger.error(f"Failed to publish gridsquare created event for UUID: {db_gridsquare.uuid}")
+
     response_data = {
         "uuid": gridsquare.uuid,
         "grid_uuid": grid_uuid,
@@ -702,6 +835,27 @@ def update_foilhole(foilhole_uuid: str, foilhole: FoilHoleUpdateRequest, db: Sql
         setattr(db_foilhole, key, value)
     db.commit()
     db.refresh(db_foilhole)
+
+    success = publish_foilhole_updated(
+        uuid=db_foilhole.uuid,
+        status=db_foilhole.status.value if db_foilhole.status else None,
+        gridsquare_id=db_foilhole.gridsquare_id,
+        foilhole_id=db_foilhole.foilhole_id,
+        center_x=db_foilhole.center_x,
+        center_y=db_foilhole.center_y,
+        quality=db_foilhole.quality,
+        rotation=db_foilhole.rotation,
+        size_width=db_foilhole.size_width,
+        size_height=db_foilhole.size_height,
+        x_location=db_foilhole.x_location,
+        y_location=db_foilhole.y_location,
+        x_stage_position=db_foilhole.x_stage_position,
+        y_stage_position=db_foilhole.y_stage_position,
+        diameter=db_foilhole.diameter,
+        is_near_grid_bar=db_foilhole.is_near_grid_bar,
+    )
+    if not success:
+        logger.error(f"Failed to publish foilhole updated event for UUID: {db_foilhole.uuid}")
 
     response_data = {
         "uuid": db_foilhole.uuid,
@@ -760,6 +914,28 @@ def create_gridsquare_foilhole(
     db.commit()
     db.refresh(db_foilhole)
 
+    success = publish_foilhole_created(
+        uuid=db_foilhole.uuid,
+        gridsquare_uuid=db_foilhole.gridsquare_uuid,
+        gridsquare_id=db_foilhole.gridsquare_id,
+        foilhole_id=db_foilhole.foilhole_id,
+        status=db_foilhole.status.value if db_foilhole.status else None,
+        center_x=db_foilhole.center_x,
+        center_y=db_foilhole.center_y,
+        quality=db_foilhole.quality,
+        rotation=db_foilhole.rotation,
+        size_width=db_foilhole.size_width,
+        size_height=db_foilhole.size_height,
+        x_location=db_foilhole.x_location,
+        y_location=db_foilhole.y_location,
+        x_stage_position=db_foilhole.x_stage_position,
+        y_stage_position=db_foilhole.y_stage_position,
+        diameter=db_foilhole.diameter,
+        is_near_grid_bar=db_foilhole.is_near_grid_bar,
+    )
+    if not success:
+        logger.error(f"Failed to publish foilhole created event for UUID: {db_foilhole.uuid}")
+
     response_data = {
         "gridsquare_uuid": gridsquare_uuid,
         "status": FoilHoleStatus.NONE.value,
@@ -804,6 +980,35 @@ def update_micrograph(micrograph_uuid: str, micrograph: MicrographUpdateRequest,
         setattr(db_micrograph, key, value)
     db.commit()
     db.refresh(db_micrograph)
+
+    success = publish_micrograph_updated(
+        uuid=db_micrograph.uuid,
+        status=db_micrograph.status.value if db_micrograph.status else None,
+        foilhole_id=db_micrograph.foilhole_id,
+        micrograph_id=db_micrograph.micrograph_id,
+        location_id=db_micrograph.location_id,
+        high_res_path=db_micrograph.high_res_path,
+        manifest_file=db_micrograph.manifest_file,
+        acquisition_datetime=db_micrograph.acquisition_datetime,
+        defocus=db_micrograph.defocus,
+        detector_name=db_micrograph.detector_name,
+        energy_filter=db_micrograph.energy_filter,
+        phase_plate=db_micrograph.phase_plate,
+        image_size_x=db_micrograph.image_size_x,
+        image_size_y=db_micrograph.image_size_y,
+        binning_x=db_micrograph.binning_x,
+        binning_y=db_micrograph.binning_y,
+        total_motion=db_micrograph.total_motion,
+        average_motion=db_micrograph.average_motion,
+        ctf_max_resolution_estimate=db_micrograph.ctf_max_resolution_estimate,
+        number_of_particles_picked=db_micrograph.number_of_particles_picked,
+        number_of_particles_selected=db_micrograph.number_of_particles_selected,
+        number_of_particles_rejected=db_micrograph.number_of_particles_rejected,
+        selection_distribution=db_micrograph.selection_distribution,
+        pick_distribution=db_micrograph.pick_distribution,
+    )
+    if not success:
+        logger.error(f"Failed to publish micrograph updated event for UUID: {db_micrograph.uuid}")
 
     response_data = {
         "uuid": db_micrograph.uuid,
@@ -874,6 +1079,30 @@ def create_foilhole_micrograph(
     db.add(db_micrograph)
     db.commit()
     db.refresh(db_micrograph)
+
+    success = publish_micrograph_created(
+        uuid=db_micrograph.uuid,
+        foilhole_uuid=db_micrograph.foilhole_uuid,
+        foilhole_id=db_micrograph.foilhole_id,
+        status=db_micrograph.status.value if db_micrograph.status else None,
+        location_id=db_micrograph.location_id,
+        high_res_path=db_micrograph.high_res_path,
+        manifest_file=db_micrograph.manifest_file,
+        acquisition_datetime=db_micrograph.acquisition_datetime,
+        defocus=db_micrograph.defocus,
+        detector_name=db_micrograph.detector_name,
+        energy_filter=db_micrograph.energy_filter,
+        phase_plate=db_micrograph.phase_plate,
+        image_size_x=db_micrograph.image_size_x,
+        image_size_y=db_micrograph.image_size_y,
+        binning_x=db_micrograph.binning_x,
+        binning_y=db_micrograph.binning_y,
+        total_motion=db_micrograph.total_motion,
+        average_motion=db_micrograph.average_motion,
+        ctf_max_resolution_estimate=db_micrograph.ctf_max_resolution_estimate,
+    )
+    if not success:
+        logger.error(f"Failed to publish micrograph created event for UUID: {db_micrograph.uuid}")
 
     response_data = {
         "uuid": micrograph.uuid,

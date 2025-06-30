@@ -19,7 +19,7 @@ case "${ROLE:-api}" in
         ;;
     worker)
         echo "Starting RabbitMQ consumer..."
-        exec python -m smartem_decisions.mq_consumer
+        exec python -m smartem_decisions.consumer
         ;;
     *)
         echo "Unknown role: $ROLE"

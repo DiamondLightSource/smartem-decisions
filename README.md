@@ -92,7 +92,7 @@ pip install -e .[all] # .[dev,common,core]
 
 # Start services with verbosity controls:
 python -m smartem_decisions.run_api -v               # HTTP API with INFO logging
-python -m smartem_decisions.mq_consumer -v           # Message queue consumer with INFO logging  
+python -m smartem_decisions.consumer -v           # Message queue consumer with INFO logging  
 python -m epu_data_intake watch /path/to/data -v     # File watcher with INFO logging
 ```
 
@@ -161,17 +161,17 @@ Use the `-v` and `-vv` flags to control verbosity:
 
 ```bash
 # ERROR level only (default - minimal output)
-python -m smartem_decisions.mq_consumer
+python -m smartem_decisions.consumer
 python -m smartem_decisions.run_api
 python -m epu_data_intake watch /path/to/data
 
 # INFO level and above (-v flag)
-python -m smartem_decisions.mq_consumer -v
+python -m smartem_decisions.consumer -v
 python -m smartem_decisions.run_api -v
 python -m epu_data_intake watch /path/to/data -v
 
 # DEBUG level and above (-vv flag - most verbose)
-python -m smartem_decisions.mq_consumer -vv
+python -m smartem_decisions.consumer -vv
 python -m smartem_decisions.run_api -vv
 python -m epu_data_intake watch /path/to/data -vv
 ```
