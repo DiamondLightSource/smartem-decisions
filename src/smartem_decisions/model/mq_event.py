@@ -1,6 +1,5 @@
 from datetime import datetime
 from enum import Enum
-from typing import Any
 
 from pydantic import (
     BaseModel,
@@ -93,35 +92,19 @@ class AcquisitionCreatedEvent(AcquisitionEventBase):
 
     uuid: str
     id: str | None = None
-    name: str | None = None
-    status: str | None = None
-    start_time: str | None = None
-    end_time: str | None = None
-    instrument_model: str | None = None
-    instrument_id: str | None = None
-    computer_name: str | None = None
-    metadata: dict[str, Any] | None = None
 
 
 class AcquisitionUpdatedEvent(AcquisitionEventBase):
     """Event emitted when an acquisition is updated"""
 
-    id: str
-    name: str | None = None
-    status: str | None = None
-    epu_id: str | None = None
-    start_time: str | None = None
-    end_time: str | None = None
-    instrument_model: str | None = None
-    instrument_id: str | None = None
-    computer_name: str | None = None
-    metadata: dict[str, Any] | None = None
+    uuid: str
+    id: str | None = None
 
 
 class AcquisitionDeletedEvent(AcquisitionEventBase):
     """Event emitted when an acquisition is deleted"""
 
-    id: str
+    uuid: str
 
 
 # ============ Atlas Events ============
@@ -134,27 +117,23 @@ class AtlasEventBase(GenericEventMessageBody):
 class AtlasCreatedEvent(AtlasEventBase):
     """Event emitted when an atlas is created"""
 
-    id: str
-    name: str
-    grid_id: str
-    pixel_size: float | None = None
-    metadata: dict[str, Any] | None = None
+    uuid: str
+    id: str | None = None
+    grid_uuid: str | None = None
 
 
 class AtlasUpdatedEvent(AtlasEventBase):
     """Event emitted when an atlas is updated"""
 
-    id: str
-    name: str | None = None
-    grid_id: str | None = None
-    pixel_size: float | None = None
-    metadata: dict[str, Any] | None = None
+    uuid: str
+    id: str | None = None
+    grid_uuid: str | None = None
 
 
 class AtlasDeletedEvent(AtlasEventBase):
     """Event emitted when an atlas is deleted"""
 
-    id: str
+    uuid: str
 
 
 # ============ Atlas Tile Events ============
@@ -167,29 +146,23 @@ class AtlasTileEventBase(GenericEventMessageBody):
 class AtlasTileCreatedEvent(AtlasTileEventBase):
     """Event emitted when an atlas tile is created"""
 
-    id: str
-    name: str
-    atlas_id: str
-    position_x: float | None = None
-    position_y: float | None = None
-    metadata: dict[str, Any] | None = None
+    uuid: str
+    id: str | None = None
+    atlas_uuid: str | None = None
 
 
 class AtlasTileUpdatedEvent(AtlasTileEventBase):
     """Event emitted when an atlas tile is updated"""
 
-    id: str
-    name: str | None = None
-    atlas_id: str | None = None
-    position_x: float | None = None
-    position_y: float | None = None
-    metadata: dict[str, Any] | None = None
+    uuid: str
+    id: str | None = None
+    atlas_uuid: str | None = None
 
 
 class AtlasTileDeletedEvent(AtlasTileEventBase):
     """Event emitted when an atlas tile is deleted"""
 
-    id: str
+    uuid: str
 
 
 # ============ Grid Events ============
@@ -209,28 +182,14 @@ class GridCreatedEvent(GridEventBase):
     """Event emitted when a grid is created"""
 
     uuid: str
-    name: str
-    acquisition_uuid: str
-    status: str | None = None
-    data_dir: str | None = None
-    atlas_dir: str | None = None
-    scan_start_time: datetime | None = None
-    scan_end_time: datetime | None = None
-    metadata: dict[str, Any] | None = None
+    acquisition_uuid: str | None = None
 
 
 class GridUpdatedEvent(GridEventBase):
     """Event emitted when a grid is updated"""
 
     uuid: str
-    name: str
-    acquisition_uuid: str
-    status: str | None = None
-    data_dir: str | None = None
-    atlas_dir: str | None = None
-    scan_start_time: datetime | None = None
-    scan_end_time: datetime | None = None
-    metadata: dict[str, Any] | None = None
+    acquisition_uuid: str | None = None
 
 
 class GridDeletedEvent(GridEventBase):
@@ -250,20 +209,16 @@ class GridSquareCreatedEvent(GridSquareEventBase):
     """Event emitted when a grid square is created"""
 
     uuid: str
-    name: str | None = None
-    grid_uuid: str
-    status: str | None = None
-    metadata: dict[str, Any] | None = None
+    grid_uuid: str | None = None
+    gridsquare_id: str | None = None
 
 
 class GridSquareUpdatedEvent(GridSquareEventBase):
     """Event emitted when a grid square is updated"""
 
     uuid: str
-    name: str | None = None
     grid_uuid: str | None = None
-    status: str | None = None
-    metadata: dict[str, Any] | None = None
+    gridsquare_id: str | None = None
 
 
 class GridSquareDeletedEvent(GridSquareEventBase):
@@ -283,23 +238,9 @@ class FoilHoleCreatedEvent(FoilHoleEventBase):
     """Event emitted when a foil hole is created"""
 
     uuid: str
-    foilhole_id: str
-    gridsquare_id: str
-    gridsquare_uuid: str
-    center_x: float | None = None
-    center_y: float | None = None
-    quality: float | None = None
-    rotation: float | None = None
-    size_width: float | None = None
-    size_height: float | None = None
-    x_location: int | None = None
-    y_location: int | None = None
-    x_stage_position: float | None = None
-    y_stage_position: float | None = None
-    diameter: int | None = None
-    is_near_grid_bar: bool = False
-    status: str | None = None
-    metadata: dict[str, Any] | None = None
+    foilhole_id: str | None = None
+    gridsquare_uuid: str | None = None
+    gridsquare_id: str | None = None
 
 
 class FoilHoleUpdatedEvent(FoilHoleEventBase):
@@ -307,22 +248,8 @@ class FoilHoleUpdatedEvent(FoilHoleEventBase):
 
     uuid: str
     foilhole_id: str | None = None
-    gridsquare_id: str | None = None
     gridsquare_uuid: str | None = None
-    center_x: float | None = None
-    center_y: float | None = None
-    quality: float | None = None
-    rotation: float | None = None
-    size_width: float | None = None
-    size_height: float | None = None
-    x_location: int | None = None
-    y_location: int | None = None
-    x_stage_position: float | None = None
-    y_stage_position: float | None = None
-    diameter: int | None = None
-    is_near_grid_bar: bool | None = None
-    status: str | None = None
-    metadata: dict[str, Any] | None = None
+    gridsquare_id: str | None = None
 
 
 class FoilHoleDeletedEvent(FoilHoleEventBase):
@@ -342,59 +269,18 @@ class MicrographCreatedEvent(MicrographEventBase):
     """Event emitted when a micrograph is created"""
 
     uuid: str
-    foilhole_uuid: str
-    foilhole_id: str
-    location_id: str | None = None
-    status: str
-    high_res_path: str | None = None
-    manifest_file: str | None = None
-    acquisition_datetime: datetime | None = None
-    defocus: float | None = None
-    detector_name: str | None = None
-    energy_filter: bool | None = None
-    phase_plate: bool | None = None
-    image_size_x: int | None = None
-    image_size_y: int | None = None
-    binning_x: int | None = None
-    binning_y: int | None = None
-    total_motion: float | None = None
-    average_motion: float | None = None
-    ctf_max_resolution_estimate: float | None = None
-    number_of_particles_picked: int | None = None
-    number_of_particles_selected: int | None = None
-    number_of_particles_rejected: int | None = None
-    metadata: dict[str, Any] | None = None
+    foilhole_uuid: str | None = None
+    foilhole_id: str | None = None
+    micrograph_id: str | None = None
 
 
 class MicrographUpdatedEvent(MicrographEventBase):
     """Event emitted when a micrograph is updated"""
 
-    uuid: str  # Required
-    micrograph_id: str | None = None
+    uuid: str
     foilhole_uuid: str | None = None
     foilhole_id: str | None = None
-    location_id: str | None = None
-    status: str | None = None
-    high_res_path: str | None = None
-    manifest_file: str | None = None
-    acquisition_datetime: datetime | None = None
-    defocus: float | None = None
-    detector_name: str | None = None
-    energy_filter: bool | None = None
-    phase_plate: bool | None = None
-    image_size_x: int | None = None
-    image_size_y: int | None = None
-    binning_x: int | None = None
-    binning_y: int | None = None
-    total_motion: float | None = None
-    average_motion: float | None = None
-    ctf_max_resolution_estimate: float | None = None
-    number_of_particles_picked: int | None = None
-    number_of_particles_selected: int | None = None
-    number_of_particles_rejected: int | None = None
-    selection_distribution: str | None = None
-    pick_distribution: str | None = None
-    metadata: dict[str, Any] | None = None
+    micrograph_id: str | None = None
 
 
 class MicrographDeletedEvent(MicrographEventBase):
