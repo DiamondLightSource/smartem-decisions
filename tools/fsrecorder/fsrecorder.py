@@ -73,10 +73,15 @@ class FSRecorder(FileSystemEventHandler):
     def _calculate_file_hash(self, file_path: Path) -> str:
         """Calculate SHA256 hash of file content"""
         hash_sha256 = hashlib.sha256()
-        with open(file_path, "rb") as f:
-            for chunk in iter(lambda: f.read(4096), b""):
-                hash_sha256.update(chunk)
-        return hash_sha256.hexdigest()
+        try:
+            with open(file_path, "rb") as f:
+                for chunk in iter(lambda: f.read(4096), b""):
+                    hash_sha256.update(chunk)
+            return hash_sha256.hexdigest()
+        except (PermissionError, OSError) as e:
+            print(f"Warning: Cannot read file {file_path}: {e}")
+            # Return a special hash to indicate the file couldn't be read
+            return f"unreadable_{file_path.stat().st_size}_{file_path.stat().st_mtime}"
 
     def _store_binary_chunk(self, content: bytes) -> str:
         """Store binary content and return chunk ID"""
@@ -121,13 +126,23 @@ class FSRecorder(FileSystemEventHandler):
                         content = file_path.read_text(encoding="utf-8", errors="ignore")
                         self.file_states[norm_path]["content"] = content
                     except Exception:
-                        # Binary file - store as chunk
-                        binary_content = file_path.read_bytes()
-                        binary_chunk_id = self._store_binary_chunk(binary_content)
+                        # Binary file or permission error - try to store as chunk
+                        try:
+                            binary_content = file_path.read_bytes()
+                            binary_chunk_id = self._store_binary_chunk(binary_content)
+                        except (PermissionError, OSError) as e:
+                            print(f"Warning: Cannot read file content for {file_path}: {e}")
+                            # Skip storing content for unreadable files
+                            pass
                 else:
                     # Large file - store as chunk
-                    binary_content = file_path.read_bytes()
-                    binary_chunk_id = self._store_binary_chunk(binary_content)
+                    try:
+                        binary_content = file_path.read_bytes()
+                        binary_chunk_id = self._store_binary_chunk(binary_content)
+                    except (PermissionError, OSError) as e:
+                        print(f"Warning: Cannot read large file content for {file_path}: {e}")
+                        # Skip storing content for unreadable files
+                        pass
 
                 # Get file timestamps
                 stat = file_path.stat()
@@ -228,11 +243,21 @@ class FSRecorder(FileSystemEventHandler):
             try:
                 content = file_path.read_text(encoding="utf-8", errors="ignore")
             except Exception:
+                try:
+                    binary_content = file_path.read_bytes()
+                    binary_chunk_id = self._store_binary_chunk(binary_content)
+                except (PermissionError, OSError) as e:
+                    print(f"Warning: Cannot read file content for {file_path}: {e}")
+                    # Skip storing content for unreadable files
+                    pass
+        else:
+            try:
                 binary_content = file_path.read_bytes()
                 binary_chunk_id = self._store_binary_chunk(binary_content)
-        else:
-            binary_content = file_path.read_bytes()
-            binary_chunk_id = self._store_binary_chunk(binary_content)
+            except (PermissionError, OSError) as e:
+                print(f"Warning: Cannot read large file content for {file_path}: {e}")
+                # Skip storing content for unreadable files
+                pass
 
         # Update state tracking
         self.file_states[norm_path] = {"size": size, "hash": content_hash, "content": content}
@@ -275,18 +300,24 @@ class FSRecorder(FileSystemEventHandler):
         """Record file append operation"""
         try:
             # Read only the appended content
-            with open(file_path, "rb") as f:
-                f.seek(old_size)
-                appended_content = f.read(new_size - old_size)
-
-            # Try to decode as text, otherwise store as binary
-            append_data = None
-            binary_chunk_id = None
-
             try:
-                append_data = appended_content.decode("utf-8")
-            except Exception:
-                binary_chunk_id = self._store_binary_chunk(appended_content)
+                with open(file_path, "rb") as f:
+                    f.seek(old_size)
+                    appended_content = f.read(new_size - old_size)
+
+                # Try to decode as text, otherwise store as binary
+                append_data = None
+                binary_chunk_id = None
+
+                try:
+                    append_data = appended_content.decode("utf-8")
+                except Exception:
+                    binary_chunk_id = self._store_binary_chunk(appended_content)
+            except (PermissionError, OSError) as e:
+                print(f"Warning: Cannot read appended content for {file_path}: {e}")
+                # Skip storing content for unreadable files
+                append_data = None
+                binary_chunk_id = None
 
             # Update state
             self.file_states[norm_path].update({"size": new_size, "hash": new_hash})
@@ -337,11 +368,21 @@ class FSRecorder(FileSystemEventHandler):
                 content = file_path.read_text(encoding="utf-8", errors="ignore")
                 self.file_states[norm_path]["content"] = content
             except Exception:
+                try:
+                    binary_content = file_path.read_bytes()
+                    binary_chunk_id = self._store_binary_chunk(binary_content)
+                except (PermissionError, OSError) as e:
+                    print(f"Warning: Cannot read file content for {file_path}: {e}")
+                    # Skip storing content for unreadable files
+                    pass
+        else:
+            try:
                 binary_content = file_path.read_bytes()
                 binary_chunk_id = self._store_binary_chunk(binary_content)
-        else:
-            binary_content = file_path.read_bytes()
-            binary_chunk_id = self._store_binary_chunk(binary_content)
+            except (PermissionError, OSError) as e:
+                print(f"Warning: Cannot read large file content for {file_path}: {e}")
+                # Skip storing content for unreadable files
+                pass
 
         # Update state
         self.file_states[norm_path].update({"size": size, "hash": content_hash})
@@ -607,10 +648,15 @@ class FSReplayer:
     def _calculate_file_hash(self, file_path: Path) -> str:
         """Calculate SHA256 hash of file content"""
         hash_sha256 = hashlib.sha256()
-        with open(file_path, "rb") as f:
-            for chunk in iter(lambda: f.read(4096), b""):
-                hash_sha256.update(chunk)
-        return hash_sha256.hexdigest()
+        try:
+            with open(file_path, "rb") as f:
+                for chunk in iter(lambda: f.read(4096), b""):
+                    hash_sha256.update(chunk)
+            return hash_sha256.hexdigest()
+        except (PermissionError, OSError) as e:
+            print(f"Warning: Cannot read file {file_path}: {e}")
+            # Return a special hash to indicate the file couldn't be read
+            return f"unreadable_{file_path.stat().st_size}_{file_path.stat().st_mtime}"
 
     def _replay_event(self, event: FSEvent):
         """Replay a single filesystem event"""
