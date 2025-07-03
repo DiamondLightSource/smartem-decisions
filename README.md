@@ -181,10 +181,10 @@ python -m epu_data_intake watch /path/to/data -vv
 For the HTTP API, you can also control logging via environment variables:
 
 ```bash
-# Set log level via environment variable
-SMARTEM_LOG_LEVEL=ERROR uvicorn src.smartem_decisions.http_api:app --host 0.0.0.0 --port 8000
-SMARTEM_LOG_LEVEL=INFO uvicorn src.smartem_decisions.http_api:app --host 0.0.0.0 --port 8000
-SMARTEM_LOG_LEVEL=DEBUG uvicorn src.smartem_decisions.http_api:app --host 0.0.0.0 --port 8000
+# Set log level via environment variable (equivalent to -v/-vv flags)
+SMARTEM_LOG_LEVEL=ERROR python -m smartem_decisions.run_api
+SMARTEM_LOG_LEVEL=INFO python -m smartem_decisions.run_api 
+SMARTEM_LOG_LEVEL=DEBUG python -m smartem_decisions.run_api
 ```
 
 ### Log Levels
