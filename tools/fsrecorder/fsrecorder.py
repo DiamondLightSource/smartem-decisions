@@ -60,6 +60,9 @@ class FSRecorder(FileSystemEventHandler):
         self.binary_chunks: dict[str, bytes] = {}
         self.chunk_counter = 0
 
+        # Track unreadable files for reporting
+        self.unreadable_files: list[str] = []
+
         # Create temp directory for binary chunks
         self.temp_dir = Path(tempfile.mkdtemp(prefix="fsrecorder_"))
 
@@ -80,6 +83,8 @@ class FSRecorder(FileSystemEventHandler):
             return hash_sha256.hexdigest()
         except (PermissionError, OSError) as e:
             print(f"Warning: Cannot read file {file_path}: {e}")
+            # Track unreadable file for reporting
+            self.unreadable_files.append(str(file_path))
             # Return a special hash to indicate the file couldn't be read
             return f"unreadable_{file_path.stat().st_size}_{file_path.stat().st_mtime}"
 
@@ -132,6 +137,8 @@ class FSRecorder(FileSystemEventHandler):
                             binary_chunk_id = self._store_binary_chunk(binary_content)
                         except (PermissionError, OSError) as e:
                             print(f"Warning: Cannot read file content for {file_path}: {e}")
+                            # Track unreadable file for reporting
+                            self.unreadable_files.append(str(file_path))
                             # Skip storing content for unreadable files
                             pass
                 else:
@@ -141,6 +148,8 @@ class FSRecorder(FileSystemEventHandler):
                         binary_chunk_id = self._store_binary_chunk(binary_content)
                     except (PermissionError, OSError) as e:
                         print(f"Warning: Cannot read large file content for {file_path}: {e}")
+                        # Track unreadable file for reporting
+                        self.unreadable_files.append(str(file_path))
                         # Skip storing content for unreadable files
                         pass
 
@@ -248,6 +257,8 @@ class FSRecorder(FileSystemEventHandler):
                     binary_chunk_id = self._store_binary_chunk(binary_content)
                 except (PermissionError, OSError) as e:
                     print(f"Warning: Cannot read file content for {file_path}: {e}")
+                    # Track unreadable file for reporting
+                    self.unreadable_files.append(str(file_path))
                     # Skip storing content for unreadable files
                     pass
         else:
@@ -256,6 +267,8 @@ class FSRecorder(FileSystemEventHandler):
                 binary_chunk_id = self._store_binary_chunk(binary_content)
             except (PermissionError, OSError) as e:
                 print(f"Warning: Cannot read large file content for {file_path}: {e}")
+                # Track unreadable file for reporting
+                self.unreadable_files.append(str(file_path))
                 # Skip storing content for unreadable files
                 pass
 
@@ -315,6 +328,8 @@ class FSRecorder(FileSystemEventHandler):
                     binary_chunk_id = self._store_binary_chunk(appended_content)
             except (PermissionError, OSError) as e:
                 print(f"Warning: Cannot read appended content for {file_path}: {e}")
+                # Track unreadable file for reporting
+                self.unreadable_files.append(str(file_path))
                 # Skip storing content for unreadable files
                 append_data = None
                 binary_chunk_id = None
@@ -373,6 +388,8 @@ class FSRecorder(FileSystemEventHandler):
                     binary_chunk_id = self._store_binary_chunk(binary_content)
                 except (PermissionError, OSError) as e:
                     print(f"Warning: Cannot read file content for {file_path}: {e}")
+                    # Track unreadable file for reporting
+                    self.unreadable_files.append(str(file_path))
                     # Skip storing content for unreadable files
                     pass
         else:
@@ -381,6 +398,8 @@ class FSRecorder(FileSystemEventHandler):
                 binary_chunk_id = self._store_binary_chunk(binary_content)
             except (PermissionError, OSError) as e:
                 print(f"Warning: Cannot read large file content for {file_path}: {e}")
+                # Track unreadable file for reporting
+                self.unreadable_files.append(str(file_path))
                 # Skip storing content for unreadable files
                 pass
 
@@ -431,6 +450,18 @@ class FSRecorder(FileSystemEventHandler):
 
         print(f"Recording saved to {self.output_file}")
         print(f"Captured {len(self.events)} events")
+
+        # Report unreadable files
+        unique_unreadable = list(set(self.unreadable_files))
+        if unique_unreadable:
+            print(f"\nUnreadable files report ({len(unique_unreadable)} files):")
+            for file_path in sorted(unique_unreadable):
+                print(f"  - {file_path}")
+            print(
+                "\nNote: These files were tracked but their content could not be read due to permission restrictions."
+            )
+        else:
+            print("\nAll files were readable during recording.")
 
     def _create_archive(self):
         """Create tar.gz archive with recording and binary chunks"""
@@ -536,12 +567,17 @@ class FSReplayer:
 
         return chunk_file.read_bytes()
 
+    def _is_unreadable_file(self, event: FSEvent) -> bool:
+        """Check if a file was unreadable during recording based on its hash format"""
+        return event.content_hash and event.content_hash.startswith("unreadable_")
+
     def replay(
         self,
         speed_multiplier: float = 1.0,
         verify_integrity: bool = True,
         max_delay: float = None,
         burst_mode: bool = False,
+        skip_unreadable: bool = False,
     ):
         """Replay the recording to target directory
 
@@ -550,6 +586,7 @@ class FSReplayer:
             verify_integrity: Enable integrity verification
             max_delay: Maximum delay between events in seconds (None = no limit)
             burst_mode: If True, process events as fast as possible with minimal delays
+            skip_unreadable: If True, skip creating files that were unreadable during recording
         """
         print(f"Replaying to {self.target_dir}")
 
@@ -564,6 +601,7 @@ class FSReplayer:
         self.target_dir.mkdir(parents=True, exist_ok=True)
 
         verification_errors = []
+        skipped_unreadable_count = 0
         start_time = time.time()
         total_original_duration = 0
 
@@ -588,13 +626,17 @@ class FSReplayer:
                     # Minimal delay in burst mode to prevent system overload
                     time.sleep(0.001)
 
-                self._replay_event(event)
+                was_skipped = self._replay_event(event, skip_unreadable=skip_unreadable)
+                if was_skipped:
+                    skipped_unreadable_count += 1
 
                 # Verify integrity after certain operations
                 if verify_integrity and event.content_hash and not event.is_directory:
-                    error = self._verify_file_integrity(event)
-                    if error:
-                        verification_errors.append(error)
+                    # Skip verification for unreadable files
+                    if not self._is_unreadable_file(event):
+                        error = self._verify_file_integrity(event)
+                        if error:
+                            verification_errors.append(error)
 
                 # Progress indicator with timing info
                 if i % 50 == 0:  # Every 50 events for better performance
@@ -608,6 +650,9 @@ class FSReplayer:
             if total_original_duration > 0:
                 compression_ratio = total_original_duration / elapsed_total
                 print(f"Time compression: {compression_ratio:.1f}x (original: {total_original_duration:.1f}s)")
+
+            if skip_unreadable and skipped_unreadable_count > 0:
+                print(f"\\nSkipped {skipped_unreadable_count} unreadable files during replay.")
 
             if verification_errors:
                 print(f"\\nIntegrity verification found {len(verification_errors)} issues:")
@@ -655,12 +700,19 @@ class FSReplayer:
             return hash_sha256.hexdigest()
         except (PermissionError, OSError) as e:
             print(f"Warning: Cannot read file {file_path}: {e}")
+            # Track unreadable file for reporting
+            self.unreadable_files.append(str(file_path))
             # Return a special hash to indicate the file couldn't be read
             return f"unreadable_{file_path.stat().st_size}_{file_path.stat().st_mtime}"
 
-    def _replay_event(self, event: FSEvent):
+    def _replay_event(self, event: FSEvent, skip_unreadable: bool = False):
         """Replay a single filesystem event"""
         target_path = self._normalize_target_path(event.src_path)
+
+        # Skip unreadable files if requested
+        if skip_unreadable and self._is_unreadable_file(event):
+            print(f"Skipped unreadable file: {event.src_path}")
+            return True
 
         try:
             if event.event_type in ["initial_dir", "created"] and event.is_directory:
@@ -696,6 +748,8 @@ class FSReplayer:
 
         except Exception as e:
             print(f"Error replaying event {event.event_type} for {event.src_path}: {e}")
+
+        return False
 
     def _replay_file_creation(self, event: FSEvent, target_path: Path):
         """Replay file creation event"""
@@ -832,6 +886,9 @@ def main():
         ),
     )
     replay_parser.add_argument("--no-verify", action="store_true", help="Skip integrity verification")
+    replay_parser.add_argument(
+        "--skip-unreadable", action="store_true", help="Skip creating files that were unreadable during recording"
+    )
 
     # Info command
     info_parser = subparsers.add_parser("info", help="Show recording information")
@@ -857,16 +914,30 @@ def main():
         if args.dev_mode:
             print("Development mode: maximum acceleration for fast testing")
             replayer.replay(
-                speed_multiplier=1000.0, verify_integrity=not args.no_verify, max_delay=0.1, burst_mode=True
+                speed_multiplier=1000.0,
+                verify_integrity=not args.no_verify,
+                max_delay=0.1,
+                burst_mode=True,
+                skip_unreadable=args.skip_unreadable,
             )
         elif args.fast:
             print("Fast mode: 100x speed with reasonable delays")
             replayer.replay(
-                speed_multiplier=100.0, verify_integrity=not args.no_verify, max_delay=1.0, burst_mode=False
+                speed_multiplier=100.0,
+                verify_integrity=not args.no_verify,
+                max_delay=1.0,
+                burst_mode=False,
+                skip_unreadable=args.skip_unreadable,
             )
         elif args.exact:
             print("Exact mode: preserving original timing")
-            replayer.replay(speed_multiplier=1.0, verify_integrity=not args.no_verify, max_delay=None, burst_mode=False)
+            replayer.replay(
+                speed_multiplier=1.0,
+                verify_integrity=not args.no_verify,
+                max_delay=None,
+                burst_mode=False,
+                skip_unreadable=args.skip_unreadable,
+            )
         else:
             # Check if user specified custom settings
             has_custom_settings = args.speed != 1.0 or args.max_delay is not None or args.burst
@@ -879,12 +950,17 @@ def main():
                     verify_integrity=not args.no_verify,
                     max_delay=args.max_delay,
                     burst_mode=args.burst,
+                    skip_unreadable=args.skip_unreadable,
                 )
             else:
                 # No preset or custom settings specified - default to fast mode
                 print("Fast mode (default): 100x speed with reasonable delays")
                 replayer.replay(
-                    speed_multiplier=100.0, verify_integrity=not args.no_verify, max_delay=1.0, burst_mode=False
+                    speed_multiplier=100.0,
+                    verify_integrity=not args.no_verify,
+                    max_delay=1.0,
+                    burst_mode=False,
+                    skip_unreadable=args.skip_unreadable,
                 )
 
     elif args.command == "info":
