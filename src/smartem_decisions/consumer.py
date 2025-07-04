@@ -14,6 +14,10 @@ from dotenv import load_dotenv
 from pydantic import ValidationError
 
 from smartem_decisions.cli.initialise_prediction_model_weights import initialise_all_models_for_grid
+from smartem_decisions.cli.random_model_predictions import (
+    generate_predictions_for_foilhole,
+    generate_predictions_for_gridsquare,
+)
 from smartem_decisions.log_manager import LogConfig, LogManager
 from smartem_decisions.model.mq_event import (
     AcquisitionCreatedEvent,
@@ -224,7 +228,7 @@ def handle_grid_deleted(event_data: dict[str, Any]) -> None:
 
 def handle_gridsquare_created(event_data: dict[str, Any], channel, delivery_tag) -> bool:
     """
-    Handle gridsquare created event by logging the event payload
+    Handle gridsquare created event by logging the event payload and generating predictions
 
     Args:
         event_data: Event data for gridsquare created
@@ -237,6 +241,16 @@ def handle_gridsquare_created(event_data: dict[str, Any], channel, delivery_tag)
     try:
         event = GridSquareCreatedEvent(**event_data)
         logger.info(f"GridSquare created event: {event.model_dump()}")
+
+        # Generate random predictions for all available models
+        try:
+            generate_predictions_for_gridsquare(event.uuid, event.grid_uuid)
+            logger.info(f"Successfully generated predictions for gridsquare {event.uuid}")
+        except Exception as prediction_error:
+            logger.error(f"Failed to generate predictions for gridsquare {event.uuid}: {prediction_error}")
+            # Don't fail the entire event processing if prediction generation fails
+            # This allows the gridsquare creation to succeed even if prediction generation has issues
+
         return True
 
     except ValidationError as e:
@@ -285,7 +299,7 @@ def handle_gridsquare_deleted(event_data: dict[str, Any]) -> None:
 
 def handle_foilhole_created(event_data: dict[str, Any], channel, delivery_tag) -> bool:
     """
-    Handle foilhole created event by logging the event payload
+    Handle foilhole created event by logging the event payload and generating predictions
 
     Args:
         event_data: Event data for foilhole created
@@ -298,6 +312,16 @@ def handle_foilhole_created(event_data: dict[str, Any], channel, delivery_tag) -
     try:
         event = FoilHoleCreatedEvent(**event_data)
         logger.info(f"FoilHole created event: {event.model_dump()}")
+
+        # Generate random predictions for all available models
+        try:
+            generate_predictions_for_foilhole(event.uuid, event.gridsquare_uuid)
+            logger.info(f"Successfully generated predictions for foilhole {event.uuid}")
+        except Exception as prediction_error:
+            logger.error(f"Failed to generate predictions for foilhole {event.uuid}: {prediction_error}")
+            # Don't fail the entire event processing if prediction generation fails
+            # This allows the foilhole creation to succeed even if prediction generation has issues
+
         return True
 
     except ValidationError as e:
