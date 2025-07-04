@@ -308,6 +308,121 @@ def _create_db_and_tables(engine):
             sess.execute(text("CREATE INDEX IF NOT EXISTS idx_micrograph_id_hash ON micrograph USING hash (uuid);"))
             sess.execute(text("CREATE INDEX IF NOT EXISTS idx_micrograph_foilhole_id ON micrograph (foilhole_uuid);"))
 
+            # QualityPredictionModelParameter indexes
+            sess.execute(
+                text(
+                    "CREATE INDEX IF NOT EXISTS idx_quality_model_param_grid_uuid "
+                    "ON qualitypredictionmodelparameter (grid_uuid);"
+                )
+            )
+            sess.execute(
+                text(
+                    "CREATE INDEX IF NOT EXISTS idx_quality_model_param_model_name "
+                    "ON qualitypredictionmodelparameter (prediction_model_name);"
+                )
+            )
+            sess.execute(
+                text(
+                    "CREATE INDEX IF NOT EXISTS idx_quality_model_param_composite "
+                    "ON qualitypredictionmodelparameter (grid_uuid, prediction_model_name);"
+                )
+            )
+            sess.execute(
+                text(
+                    "CREATE INDEX IF NOT EXISTS idx_quality_model_param_timestamp "
+                    "ON qualitypredictionmodelparameter (timestamp);"
+                )
+            )
+            sess.execute(
+                text("CREATE INDEX IF NOT EXISTS idx_quality_model_param_key ON qualitypredictionmodelparameter (key);")
+            )
+
+            # QualityPredictionModelWeight indexes
+            sess.execute(
+                text(
+                    "CREATE INDEX IF NOT EXISTS idx_quality_model_weight_grid_uuid "
+                    "ON qualitypredictionmodelweight (grid_uuid);"
+                )
+            )
+            sess.execute(
+                text(
+                    "CREATE INDEX IF NOT EXISTS idx_quality_model_weight_micrograph_uuid "
+                    "ON qualitypredictionmodelweight (micrograph_uuid);"
+                )
+            )
+            sess.execute(
+                text(
+                    "CREATE INDEX IF NOT EXISTS idx_quality_model_weight_model_name "
+                    "ON qualitypredictionmodelweight (prediction_model_name);"
+                )
+            )
+            sess.execute(
+                text(
+                    "CREATE INDEX IF NOT EXISTS idx_quality_model_weight_grid_model "
+                    "ON qualitypredictionmodelweight (grid_uuid, prediction_model_name);"
+                )
+            )
+            sess.execute(
+                text(
+                    "CREATE INDEX IF NOT EXISTS idx_quality_model_weight_micrograph_model "
+                    "ON qualitypredictionmodelweight (micrograph_uuid, prediction_model_name);"
+                )
+            )
+            sess.execute(
+                text(
+                    "CREATE INDEX IF NOT EXISTS idx_quality_model_weight_timestamp "
+                    "ON qualitypredictionmodelweight (timestamp);"
+                )
+            )
+            sess.execute(
+                text(
+                    "CREATE INDEX IF NOT EXISTS idx_quality_model_weight_value "
+                    "ON qualitypredictionmodelweight (weight);"
+                )
+            )
+            sess.execute(
+                text(
+                    "CREATE INDEX IF NOT EXISTS idx_quality_model_weight_quality "
+                    "ON qualitypredictionmodelweight (micrograph_quality);"
+                )
+            )
+
+            # QualityPrediction indexes
+            sess.execute(
+                text(
+                    "CREATE INDEX IF NOT EXISTS idx_quality_prediction_model_name "
+                    "ON qualityprediction (prediction_model_name);"
+                )
+            )
+            sess.execute(
+                text(
+                    "CREATE INDEX IF NOT EXISTS idx_quality_prediction_foilhole_uuid "
+                    "ON qualityprediction (foilhole_uuid);"
+                )
+            )
+            sess.execute(
+                text(
+                    "CREATE INDEX IF NOT EXISTS idx_quality_prediction_gridsquare_uuid "
+                    "ON qualityprediction (gridsquare_uuid);"
+                )
+            )
+            sess.execute(
+                text(
+                    "CREATE INDEX IF NOT EXISTS idx_quality_prediction_model_foilhole "
+                    "ON qualityprediction (prediction_model_name, foilhole_uuid);"
+                )
+            )
+            sess.execute(
+                text(
+                    "CREATE INDEX IF NOT EXISTS idx_quality_prediction_model_gridsquare "
+                    "ON qualityprediction (prediction_model_name, gridsquare_uuid);"
+                )
+            )
+            sess.execute(
+                text("CREATE INDEX IF NOT EXISTS idx_quality_prediction_timestamp ON qualityprediction (timestamp);")
+            )
+            sess.execute(text("CREATE INDEX IF NOT EXISTS idx_quality_prediction_value ON qualityprediction (value);"))
+
             sess.commit()
         except Exception as e:
             logger.error(f"Error creating indexes: {e}")
