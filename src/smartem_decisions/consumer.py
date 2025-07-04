@@ -13,6 +13,7 @@ import pika
 from dotenv import load_dotenv
 from pydantic import ValidationError
 
+from smartem_decisions.cli.initialise_prediction_model_weights import initialise_all_models_for_grid
 from smartem_decisions.log_manager import LogConfig, LogManager
 from smartem_decisions.model.mq_event import (
     AcquisitionCreatedEvent,
@@ -152,7 +153,7 @@ def handle_atlas_deleted(event_data: dict[str, Any]) -> None:
 
 def handle_grid_created(event_data: dict[str, Any], channel, delivery_tag) -> bool:
     """
-    Handle grid created event by logging the event payload
+    Handle grid created event by logging the event payload and initialising prediction model weights
 
     Args:
         event_data: Event data for grid created
@@ -165,6 +166,16 @@ def handle_grid_created(event_data: dict[str, Any], channel, delivery_tag) -> bo
     try:
         event = GridCreatedEvent(**event_data)
         logger.info(f"Grid created event: {event.model_dump()}")
+
+        # Initialise prediction model weights for all available models
+        try:
+            initialise_all_models_for_grid(event.uuid)
+            logger.info(f"Successfully initialised prediction model weights for grid {event.uuid}")
+        except Exception as weight_init_error:
+            logger.error(f"Failed to initialise prediction model weights for grid {event.uuid}: {weight_init_error}")
+            # Don't fail the entire event processing if weight initialisation fails
+            # This allows the grid creation to succeed even if weight initialisation has issues
+
         return True
 
     except ValidationError as e:
