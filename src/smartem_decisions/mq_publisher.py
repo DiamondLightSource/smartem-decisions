@@ -26,7 +26,7 @@ from src.smartem_decisions.utils import rmq_publisher
 
 
 # ========== Acquisition DB Entity Mutations ==========
-def publish_acquisition_created(uuid, id=None):
+def publish_acquisition_created(uuid, id=None, **kwargs):
     """Publish acquisition created event to RabbitMQ"""
     event = AcquisitionCreatedEvent(event_type=MessageQueueEventType.ACQUISITION_CREATED, uuid=uuid, id=id)
     return rmq_publisher.publish_event(MessageQueueEventType.ACQUISITION_CREATED, event)

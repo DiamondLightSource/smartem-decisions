@@ -36,12 +36,19 @@ Patterns match the following files:
 DEFAULT_PATTERNS = [
     # TODO consider merging with props in EpuParser
     # TODO (techdebt) This should be treated as immutable - don't modify!
+    # Support both root-level files and files within acquisition subdirectories
     "EpuSession.dm",
+    "*/EpuSession.dm",
     "Metadata/GridSquare_*.dm",
+    "*/Metadata/GridSquare_*.dm",
     "Images-Disc*/GridSquare_*/GridSquare_*_*.xml",
+    "*/Images-Disc*/GridSquare_*/GridSquare_*_*.xml",
     "Images-Disc*/GridSquare_*/Data/FoilHole_*_Data_*_*_*_*.xml",
+    "*/Images-Disc*/GridSquare_*/Data/FoilHole_*_Data_*_*_*_*.xml",
     "Images-Disc*/GridSquare_*/FoilHoles/FoilHole_*_*_*.xml",
+    "*/Images-Disc*/GridSquare_*/FoilHoles/FoilHole_*_*_*.xml",
     "Sample*/Atlas/Atlas.dm",
+    "*/Sample*/Atlas/Atlas.dm",
 ]
 
 
