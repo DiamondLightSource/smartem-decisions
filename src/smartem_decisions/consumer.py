@@ -18,6 +18,7 @@ from smartem_decisions.cli.random_model_predictions import (
     generate_predictions_for_foilhole,
     generate_predictions_for_gridsquare,
 )
+from smartem_decisions.cli.random_prior_updates import simulate_processing_pipeline_async
 from smartem_decisions.log_manager import LogConfig, LogManager
 from smartem_decisions.model.mq_event import (
     AcquisitionCreatedEvent,
@@ -370,7 +371,7 @@ def handle_foilhole_deleted(event_data: dict[str, Any]) -> None:
 
 def handle_micrograph_created(event_data: dict[str, Any], channel, delivery_tag) -> bool:
     """
-    Handle micrograph created event by logging the event payload
+    Handle micrograph created event by logging the event payload and starting processing simulation
 
     Args:
         event_data: Event data for micrograph created
@@ -383,6 +384,16 @@ def handle_micrograph_created(event_data: dict[str, Any], channel, delivery_tag)
     try:
         event = MicrographCreatedEvent(**event_data)
         logger.info(f"Micrograph created event: {event.model_dump()}")
+
+        # Start simulated processing pipeline in background
+        try:
+            simulate_processing_pipeline_async(event.uuid)
+            logger.info(f"Started processing pipeline simulation for micrograph {event.uuid}")
+        except Exception as simulation_error:
+            logger.error(f"Failed to start processing simulation for micrograph {event.uuid}: {simulation_error}")
+            # Don't fail the entire event processing if simulation startup fails
+            # This allows the micrograph creation to succeed even if simulation has issues
+
         return True
 
     except ValidationError as e:
