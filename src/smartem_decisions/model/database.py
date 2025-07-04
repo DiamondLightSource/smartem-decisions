@@ -2,14 +2,8 @@ from datetime import datetime
 from typing import Optional
 
 from sqlalchemy import Column, text
-from sqlmodel import (
-    Field,
-    Relationship,
-    SQLModel,
-)
-from sqlmodel import (
-    Session as SQLModelSession,
-)
+from sqlmodel import Field, Relationship, SQLModel
+from sqlmodel import Session as SQLModelSession
 
 from smartem_decisions.model.entity_status import (
     AcquisitionStatus,
@@ -330,9 +324,56 @@ def _create_db_and_tables(engine):
             sess.rollback()
 
 
+def _insert_prediction_model_data(engine):
+    """Insert mock prediction model data using cute science fiction robots."""
+    robot_models = [
+        {
+            "name": "R2-D2",
+            "description": (
+                "A sassy trash can on wheels who speaks only in beeps but somehow "
+                "always has the last word in every argument."
+            ),
+        },
+        {
+            "name": "Claptrap",
+            "description": (
+                "An overly enthusiastic one-wheeled model which never stops talking "
+                "and considers stairs to be it's greatest nemesis in the universe."
+            ),
+        },
+        {
+            "name": "WALL-E",
+            "description": (
+                "A lonely garbage-compacting model which falls in love and accidentally "
+                "saves humanity while pursuing it's passion for collecting shiny objects."
+            ),
+        },
+        {
+            "name": "Bender",
+            "description": (
+                "A beer-guzzling, cigar-smoking model which dreams of becoming a folk "
+                "singer but settles for petty theft and making sarcastic comments about humans."
+            ),
+        },
+    ]
+
+    with SQLModelSession(engine) as sess:
+        for robot in robot_models:
+            # Check if model already exists to avoid duplicates
+            existing_model = sess.get(QualityPredictionModel, robot["name"])
+            if existing_model is None:
+                model = QualityPredictionModel(name=robot["name"], description=robot["description"])
+                sess.add(model)
+                logger.info(f"Added prediction model: {robot['name']}")
+            else:
+                logger.info(f"Prediction model already exists: {robot['name']}")
+        sess.commit()
+
+
 def main():
     db_engine = setup_postgres_connection()
     _create_db_and_tables(db_engine)
+    _insert_prediction_model_data(db_engine)
 
 
 if __name__ == "__main__":
