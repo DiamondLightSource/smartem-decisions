@@ -48,3 +48,9 @@ find . -type f |
 # recursively empty all jpg, png, mrc files:
 find . -type f \( -name "*.jpg" -o -name "*.png" -o -name "*.mrc" \) -exec truncate -s 0 {} \;
 ```
+
+## Watch dir metrics (num of files and file size) as stuff is written to it
+
+```bash
+watch -n 1 'echo "Size: $(du -sh .)"; echo "Files: $(find . -type f | wc -l)"'
+```

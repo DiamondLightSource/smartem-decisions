@@ -66,7 +66,7 @@ class RabbitMQConnection:
             try:
                 # Extract credentials from connection_params to create proper credential object
                 if "credentials" in self.connection_params and isinstance(self.connection_params["credentials"], dict):
-                    credentials_dict = self.connection_params.pop("credentials")
+                    credentials_dict = self.connection_params["credentials"]
                     credentials = pika.PlainCredentials(
                         username=credentials_dict["username"], password=credentials_dict["password"]
                     )
