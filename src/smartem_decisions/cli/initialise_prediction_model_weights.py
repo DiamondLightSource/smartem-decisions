@@ -4,10 +4,8 @@ from sqlmodel import Session, select
 from smartem_decisions.model.database import Grid, QualityPredictionModel, QualityPredictionModelWeight
 from smartem_decisions.utils import logger, setup_postgres_connection
 
-DEFAULT_PREDICTION_MODEL_WEIGHT = 0.5
 
-
-def initialise_all_models_for_grid(grid_uuid: str, default_weight: float = DEFAULT_PREDICTION_MODEL_WEIGHT) -> None:
+def initialise_all_models_for_grid(grid_uuid: str) -> None:
     """
     Initialise prediction model weights for all available models for a specific grid.
 
@@ -25,6 +23,7 @@ def initialise_all_models_for_grid(grid_uuid: str, default_weight: float = DEFAU
             return
 
         # Initialise weights for each model
+        default_weight = 1 / len(models)
         for model in models:
             # Check if weight already exists for this grid-model combination
             existing_weight = sess.exec(
