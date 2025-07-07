@@ -465,6 +465,8 @@ class FSRecorder(FileSystemEventHandler):
 
     def _create_archive(self):
         """Create tar.gz archive with recording and binary chunks"""
+        print("\nPacking recording data...")
+
         # Prepare recording data
         events_data = [asdict(event) for event in self.events]
         recording = {
@@ -479,19 +481,25 @@ class FSRecorder(FileSystemEventHandler):
         }
 
         # Create recording.json in temp directory
+        print("Creating recording metadata...")
         recording_file = self.temp_dir / "recording.json"
         recording_file.write_text(json.dumps(recording, indent=2))
 
         # Create tar.gz archive
+        print("Creating compressed archive...")
+        chunk_count = len(list(self.temp_dir.glob("*.bin")))
         with tarfile.open(self.output_file, "w:gz") as tar:
             # Add recording.json
             tar.add(recording_file, arcname="recording.json")
 
             # Add all binary chunks
+            if chunk_count > 0:
+                print(f"Packing {chunk_count} binary chunks...")
             for chunk_file in self.temp_dir.glob("*.bin"):
                 tar.add(chunk_file, arcname=f"chunks/{chunk_file.name}")
 
-        print(f"Created archive with {len(list(self.temp_dir.glob('*.bin')))} binary chunks")
+        print(f"✓ Archive created with {chunk_count} binary chunks")
+        print(f"✓ Packing complete: {self.output_file}")
 
 
 class FSReplayer:
@@ -521,12 +529,15 @@ class FSReplayer:
 
     def _load_from_archive(self):
         """Load recording from tar.gz archive"""
+        print("\nUnpacking recording archive...")
         self.temp_dir = Path(tempfile.mkdtemp(prefix="fsreplayer_"))
 
+        print("Extracting archive contents...")
         with tarfile.open(self.recording_file, "r:gz") as tar:
             tar.extractall(self.temp_dir)
 
         # Load recording.json
+        print("Loading recording metadata...")
         recording_file = self.temp_dir / "recording.json"
         if not recording_file.exists():
             raise ValueError("Invalid archive: missing recording.json")
@@ -537,9 +548,17 @@ class FSReplayer:
         # Set chunks directory
         self.chunks_dir = self.temp_dir / "chunks"
 
+        # Count binary chunks
+        chunk_count = len(list(self.chunks_dir.glob("*.bin"))) if self.chunks_dir.exists() else 0
+        if chunk_count > 0:
+            print(f"Found {chunk_count} binary chunks")
+
+        print("Processing events...")
         for event_data in data["events"]:
             event = FSEvent(**event_data)
             self.events.append(event)
+
+        print(f"✓ Unpacking complete: {len(self.events)} events loaded")
 
     def _load_from_json(self):
         """Load recording from legacy JSON file"""
