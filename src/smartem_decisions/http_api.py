@@ -4,6 +4,7 @@ import os
 from datetime import datetime
 
 from fastapi import Depends, FastAPI, HTTPException, Request, status
+from sqlalchemy import text
 from sqlalchemy.orm import Session as SqlAlchemySession
 from sqlalchemy.orm import sessionmaker
 
@@ -72,10 +73,18 @@ from src.smartem_decisions.mq_publisher import (
     publish_micrograph_deleted,
     publish_micrograph_updated,
 )
-from src.smartem_decisions.utils import setup_postgres_connection
+from src.smartem_decisions.utils import setup_postgres_connection, setup_rabbitmq
 
 db_engine = setup_postgres_connection()
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=db_engine)
+
+# Set up RabbitMQ connections for health checks
+try:
+    rmq_publisher, rmq_consumer = setup_rabbitmq()
+except Exception as e:
+    # Logger is defined later, so we'll use print for early initialization errors
+    print(f"Failed to initialize RabbitMQ connections for health checks: {e}")
+    rmq_publisher, rmq_consumer = None, None
 
 
 def get_db():
@@ -113,6 +122,50 @@ for logger_name in uvicorn_loggers:
     logging.getLogger(logger_name).setLevel(log_level)
 
 
+def check_database_health():
+    """Check database connectivity and basic functionality"""
+    try:
+        db = SessionLocal()
+        # Simple query to test database connectivity
+        result = db.execute(text("SELECT 1 as health_check"))
+        row = result.fetchone()
+        db.close()
+
+        if row and row[0] == 1:
+            return {"status": "ok", "details": "Database connection successful"}
+        else:
+            return {"status": "error", "details": "Database query returned unexpected result"}
+
+    except Exception as e:
+        logger.error(f"Database health check failed: {e}")
+        return {"status": "error", "details": f"Database connection failed: {str(e)}"}
+
+
+def check_rabbitmq_health():
+    """Check RabbitMQ connectivity"""
+    if rmq_publisher is None:
+        return {"status": "error", "details": "RabbitMQ publisher not initialized"}
+
+    try:
+        # Test connection by attempting to connect
+        rmq_publisher.connect()
+
+        # Connection successful - close it immediately to avoid resource leaks
+        rmq_publisher.close()
+        return {"status": "ok", "details": "RabbitMQ connection successful"}
+
+    except Exception as e:
+        logger.error(f"RabbitMQ health check failed: {e}")
+        return {"status": "error", "details": f"RabbitMQ connection failed: {str(e)}"}
+    finally:
+        # Ensure connection is closed
+        try:
+            rmq_publisher.close()
+        except Exception:
+            pass  # Ignore cleanup errors
+
+
+# TODO remove in prod:
 @app.middleware("http")
 async def log_requests(request: Request, call_next):
     if request.method in ("POST", "PUT", "PATCH") and log_level == logging.DEBUG:
@@ -135,35 +188,56 @@ async def log_requests(request: Request, call_next):
 
 @app.get("/status")
 def get_status():
-    """Get API status information"""
+    """Get API status and configuration information"""
     return {
         "status": "ok",
+        "service": "SmartEM Decisions API",
         "version": __version__,
         "timestamp": datetime.now().isoformat(),
-        "service": "SmartEM Decisions API",
+        "configuration": {
+            "log_level": log_level_str,
+            "environment": os.getenv("ENVIRONMENT", "unknown"),
+        },
+        "endpoints": {"health": "/health", "status": "/status", "docs": "/docs", "openapi": "/openapi.json"},
+        "uptime_seconds": None,  # Could be implemented with start time tracking
+        "features": {
+            "database_operations": True,
+            "message_queue_publishing": rmq_publisher is not None,
+            "direct_db_writes": True,
+        },
     }
 
 
 @app.get("/health")
 def get_health():
-    """Health check endpoint"""
-    # TODO: add database, rabbitmq connectivity checks here
-    # try:
-    #     # Simple db connectivity check
-    #     db = SessionLocal()
-    #     db.execute("SELECT 1")
-    #     db.close()
-    #     db_status = "ok"
-    # except Exception:
-    #     db_status = "error"
+    """Health check endpoint with actual connectivity checks"""
+    # Perform health checks
+    db_health = check_database_health()
+    rabbitmq_health = check_rabbitmq_health()
 
-    # TODO consider masking internal implementation details for security reasons
-    return {
-        "status": "ok",
-        "database": "ok",
-        "event broker": "ok",
+    # Determine overall status
+    overall_status = "ok" if db_health["status"] == "ok" and rabbitmq_health["status"] == "ok" else "degraded"
+
+    # Log aggregator is not implemented yet, so we'll mark it as "not_configured"
+    log_aggregator_status = "not_configured"
+
+    health_response = {
+        "status": overall_status,
         "timestamp": datetime.now().isoformat(),
+        "services": {
+            "database": {"status": db_health["status"], "details": db_health["details"]},
+            "event_broker": {"status": rabbitmq_health["status"], "details": rabbitmq_health["details"]},
+            "log_aggregator": {"status": log_aggregator_status, "details": "Log aggregation service not configured"},
+        },
+        "version": __version__,
     }
+
+    # Set appropriate HTTP status code
+    if overall_status == "ok":
+        return health_response
+    else:
+        # Return 503 Service Unavailable if any critical service is down
+        raise HTTPException(status_code=503, detail=health_response)
 
 
 # ============ Acquisition CRUD Operations ============
