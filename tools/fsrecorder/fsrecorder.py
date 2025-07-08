@@ -45,15 +45,28 @@ class FSEvent:
     binary_chunk_id: str | None = None  # Reference to binary chunk in tar
     operation_data: dict[str, Any] | None = None  # append_data, patch_info, etc.
     file_position: int | None = None  # For append/patch operations
+    is_placeholder: bool = False  # True if this is a placeholder file
 
 
 class FSRecorder(FileSystemEventHandler):
-    def __init__(self, watch_dir: str, output_file: str):
+    def __init__(
+        self,
+        watch_dir: str,
+        output_file: str,
+        skip_binary_content: bool = True,
+        force_text_extensions: list[str] = None,
+        force_binary_extensions: list[str] = None,
+    ):
         self.watch_dir = Path(watch_dir).resolve()
         self.output_file = Path(output_file)
         self.events: list[FSEvent] = []
         self.observer = Observer()
         self.running = False
+
+        # Binary content handling settings
+        self.skip_binary_content = skip_binary_content
+        self.force_text_extensions = {ext.lower().lstrip(".") for ext in (force_text_extensions or [])}
+        self.force_binary_extensions = {ext.lower().lstrip(".") for ext in (force_binary_extensions or [])}
 
         # Track file states for diff calculation
         self.file_states: dict[str, dict[str, Any]] = {}
@@ -62,6 +75,9 @@ class FSRecorder(FileSystemEventHandler):
 
         # Track unreadable files for reporting
         self.unreadable_files: list[str] = []
+
+        # Track placeholder files for reporting
+        self.placeholder_files: list[str] = []
 
         # Create temp directory for binary chunks
         self.temp_dir = Path(tempfile.mkdtemp(prefix="fsrecorder_"))
@@ -72,6 +88,143 @@ class FSRecorder(FileSystemEventHandler):
     def _normalize_path(self, path: Path) -> str:
         """Convert path to POSIX format for cross-platform compatibility"""
         return str(PurePosixPath(path))
+
+    def _is_binary_file(self, file_path: Path) -> bool:
+        """Determine if a file is binary or text based on content and extension overrides"""
+        file_extension = file_path.suffix.lower().lstrip(".")
+
+        # Check extension overrides first
+        if file_extension in self.force_text_extensions:
+            return False
+        if file_extension in self.force_binary_extensions:
+            return True
+
+        # Common text file extensions
+        text_extensions = {
+            "txt",
+            "md",
+            "json",
+            "xml",
+            "html",
+            "htm",
+            "css",
+            "js",
+            "py",
+            "java",
+            "cpp",
+            "c",
+            "h",
+            "hpp",
+            "cs",
+            "php",
+            "rb",
+            "go",
+            "rs",
+            "sh",
+            "bat",
+            "ps1",
+            "yml",
+            "yaml",
+            "toml",
+            "ini",
+            "cfg",
+            "conf",
+            "log",
+            "csv",
+            "tsv",
+            "sql",
+            "r",
+            "tex",
+            "latex",
+            "rtf",
+            "dockerfile",
+            "makefile",
+            "gitignore",
+            "gitattributes",
+            "license",
+            "readme",
+            "dm",  # Add dm as text based on your use case
+        }
+
+        # Common binary file extensions
+        binary_extensions = {
+            "jpg",
+            "jpeg",
+            "png",
+            "gif",
+            "bmp",
+            "tiff",
+            "tif",
+            "webp",
+            "ico",
+            "svg",
+            "mp4",
+            "avi",
+            "mov",
+            "wmv",
+            "flv",
+            "mkv",
+            "webm",
+            "mp3",
+            "wav",
+            "flac",
+            "ogg",
+            "pdf",
+            "doc",
+            "docx",
+            "ppt",
+            "pptx",
+            "xls",
+            "xlsx",
+            "zip",
+            "rar",
+            "7z",
+            "tar",
+            "gz",
+            "bz2",
+            "xz",
+            "exe",
+            "dll",
+            "so",
+            "dylib",
+            "bin",
+            "dat",
+            "db",
+            "sqlite",
+            "mrc",  # Add mrc as binary based on your use case
+        }
+
+        if file_extension in text_extensions:
+            return False
+        if file_extension in binary_extensions:
+            return True
+
+        # For unknown extensions, try to detect by content
+        try:
+            with open(file_path, "rb") as f:
+                chunk = f.read(1024)  # Read first 1KB
+                if not chunk:
+                    return False  # Empty file, treat as text
+
+                # Check for null bytes (common in binary files)
+                if b"\x00" in chunk:
+                    return True
+
+                # Check if content is mostly printable ASCII
+                try:
+                    chunk.decode("utf-8")
+                    return False  # Successfully decoded as UTF-8, likely text
+                except UnicodeDecodeError:
+                    return True  # Cannot decode as UTF-8, likely binary
+        except (PermissionError, OSError):
+            # If we can't read the file, default to text
+            return False
+
+    def _should_use_placeholder(self, file_path: Path) -> bool:
+        """Check if a file should be replaced with a placeholder"""
+        if not self.skip_binary_content:
+            return False
+        return self._is_binary_file(file_path)
 
     def _calculate_file_hash(self, file_path: Path) -> str:
         """Calculate SHA256 hash of file content"""
@@ -125,8 +278,13 @@ class FSRecorder(FileSystemEventHandler):
 
                 content = None
                 binary_chunk_id = None
+                is_placeholder = self._should_use_placeholder(file_path)
 
-                if size < 1024 * 1024:  # 1MB limit for inline content
+                if is_placeholder:
+                    # Create placeholder - store only size information
+                    self.placeholder_files.append(str(file_path))
+                    # Don't store any content for placeholders
+                elif size < 1024 * 1024:  # 1MB limit for inline content
                     try:
                         content = file_path.read_text(encoding="utf-8", errors="ignore")
                         self.file_states[norm_path]["content"] = content
@@ -166,6 +324,7 @@ class FSRecorder(FileSystemEventHandler):
                     content_hash=content_hash,
                     binary_chunk_id=binary_chunk_id,
                     operation_data={"mtime": stat.st_mtime, "atime": stat.st_atime},
+                    is_placeholder=is_placeholder,
                 )
                 self.events.append(event)
 
@@ -247,8 +406,13 @@ class FSRecorder(FileSystemEventHandler):
         """Record file creation event"""
         content = None
         binary_chunk_id = None
+        is_placeholder = self._should_use_placeholder(file_path)
 
-        if size < 1024 * 1024:  # 1MB limit
+        if is_placeholder:
+            # Create placeholder - store only size information
+            self.placeholder_files.append(str(file_path))
+            # Don't store any content for placeholders
+        elif size < 1024 * 1024:  # 1MB limit
             try:
                 content = file_path.read_text(encoding="utf-8", errors="ignore")
             except Exception:
@@ -284,9 +448,10 @@ class FSRecorder(FileSystemEventHandler):
             size=size,
             content_hash=content_hash,
             binary_chunk_id=binary_chunk_id,
+            is_placeholder=is_placeholder,
         )
         self.events.append(fs_event)
-        print(f"CREATED: {norm_path}")
+        print(f"CREATED: {norm_path}" + (" (binary placeholder)" if is_placeholder else ""))
 
     def _record_file_modification(self, file_path: Path, norm_path: str, current_size: int, current_hash: str):
         """Record file modification with diff-based approach"""
@@ -377,8 +542,13 @@ class FSRecorder(FileSystemEventHandler):
         """Record full file modification"""
         content = None
         binary_chunk_id = None
+        is_placeholder = self._should_use_placeholder(file_path)
 
-        if size < 1024 * 1024:  # 1MB limit
+        if is_placeholder:
+            # For placeholder files, just track the size change
+            if str(file_path) not in self.placeholder_files:
+                self.placeholder_files.append(str(file_path))
+        elif size < 1024 * 1024:  # 1MB limit
             try:
                 content = file_path.read_text(encoding="utf-8", errors="ignore")
                 self.file_states[norm_path]["content"] = content
@@ -415,9 +585,10 @@ class FSRecorder(FileSystemEventHandler):
             size=size,
             content_hash=content_hash,
             binary_chunk_id=binary_chunk_id,
+            is_placeholder=is_placeholder,
         )
         self.events.append(fs_event)
-        print(f"MODIFIED: {norm_path}")
+        print(f"MODIFIED: {norm_path}" + (" (binary placeholder)" if is_placeholder else ""))
 
     def start_recording(self):
         """Start recording filesystem events"""
@@ -462,6 +633,14 @@ class FSRecorder(FileSystemEventHandler):
             )
         else:
             print("\nAll files were readable during recording.")
+
+        # Report placeholder files
+        unique_placeholders = list(set(self.placeholder_files))
+        if unique_placeholders:
+            print(f"\nBinary placeholder files report ({len(unique_placeholders)} files):")
+            for file_path in sorted(unique_placeholders):
+                print(f"  - {file_path}")
+            print("\nNote: These binary files were replaced with empty placeholders to reduce archive size.")
 
     def _create_archive(self):
         """Create tar.gz archive with recording and binary chunks"""
@@ -774,18 +953,27 @@ class FSReplayer:
         """Replay file creation event"""
         target_path.parent.mkdir(parents=True, exist_ok=True)
 
-        if event.content is not None:
+        if getattr(event, "is_placeholder", False):
+            # Create empty placeholder file with correct size
+            with open(target_path, "wb") as f:
+                if event.size:
+                    f.write(b"\0" * event.size)
+            print(f"Created binary placeholder file: {event.src_path} ({event.size} bytes)")
+        elif event.content is not None:
             # Text content
             target_path.write_text(event.content)
+            print(f"Created file: {event.src_path}")
         elif event.binary_chunk_id:
             # Binary content from chunk
             binary_content = self._load_binary_chunk(event.binary_chunk_id)
             target_path.write_bytes(binary_content)
+            print(f"Created file: {event.src_path}")
         else:
             # Create empty file with correct size
             with open(target_path, "wb") as f:
                 if event.size:
                     f.write(b"\0" * event.size)
+            print(f"Created file: {event.src_path}")
 
         # Set timestamps if available
         if event.operation_data and "mtime" in event.operation_data:
@@ -796,23 +984,31 @@ class FSReplayer:
             except Exception as e:
                 print(f"Warning: Could not set timestamps for {event.src_path}: {e}")
 
-        print(f"Created file: {event.src_path}")
-
     def _replay_file_modification(self, event: FSEvent, target_path: Path):
         """Replay file modification event"""
         if not target_path.exists():
             print(f"Warning: Cannot modify non-existent file {event.src_path}")
             return
 
-        if event.content is not None:
+        if getattr(event, "is_placeholder", False):
+            # For placeholder files, just update the size
+            with open(target_path, "r+b") as f:
+                f.truncate(event.size or 0)
+                if event.size:
+                    f.seek(0)
+                    f.write(b"\0" * event.size)
+            print(f"Modified binary placeholder file: {event.src_path} ({event.size} bytes)")
+        elif event.content is not None:
             # Text content - full replacement
             target_path.write_text(event.content)
+            print(f"Modified file: {event.src_path}")
         elif event.binary_chunk_id:
             # Binary content - full replacement
             binary_content = self._load_binary_chunk(event.binary_chunk_id)
             target_path.write_bytes(binary_content)
-
-        print(f"Modified file: {event.src_path}")
+            print(f"Modified file: {event.src_path}")
+        else:
+            print(f"Modified file: {event.src_path}")
 
     def _replay_file_append(self, event: FSEvent, target_path: Path):
         """Replay file append operation"""
@@ -865,6 +1061,30 @@ def main():
     record_parser = subparsers.add_parser("record", help="Record filesystem changes")
     record_parser.add_argument("directory", help="Directory to monitor")
     record_parser.add_argument("-o", "--output", required=True, help="Output recording file (.tar.gz)")
+    record_parser.add_argument(
+        "--skip-binary-content",
+        action="store_true",
+        default=True,
+        help="Replace binary files with empty placeholders (default: True)",
+    )
+    record_parser.add_argument(
+        "--no-skip-binary-content",
+        action="store_false",
+        dest="skip_binary_content",
+        help="Store full content of binary files (overrides --skip-binary-content)",
+    )
+    record_parser.add_argument(
+        "--force-text-extensions",
+        nargs="*",
+        default=[],
+        help="File extensions to always treat as text (e.g., --force-text-extensions dm dat)",
+    )
+    record_parser.add_argument(
+        "--force-binary-extensions",
+        nargs="*",
+        default=[],
+        help="File extensions to always treat as binary (e.g., --force-binary-extensions log txt)",
+    )
 
     # Replay command
     replay_parser = subparsers.add_parser("replay", help="Replay filesystem changes")
@@ -916,7 +1136,23 @@ def main():
     args = parser.parse_args()
 
     if args.command == "record":
-        recorder = FSRecorder(args.directory, args.output)
+        recorder = FSRecorder(
+            args.directory,
+            args.output,
+            args.skip_binary_content,
+            args.force_text_extensions,
+            args.force_binary_extensions,
+        )
+
+        # Print binary content handling info
+        if args.skip_binary_content:
+            print("Binary content handling: Skip binary files (replace with placeholders)")
+            if args.force_text_extensions:
+                print(f"Force text extensions: {', '.join(args.force_text_extensions)}")
+            if args.force_binary_extensions:
+                print(f"Force binary extensions: {', '.join(args.force_binary_extensions)}")
+        else:
+            print("Binary content handling: Store full content of all files")
 
         # Handle Ctrl+C gracefully
         def signal_handler(sig, frame):
