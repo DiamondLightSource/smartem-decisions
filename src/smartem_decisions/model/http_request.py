@@ -171,6 +171,10 @@ class GridSquareBaseRequest(GridSquareBaseFields):
     uuid: str
     gridsquare_id: str
     grid_uuid: str
+    center_x: int | None = None
+    center_y: int | None = None
+    size_width: int | None = None
+    size_height: int | None = None
 
 
 class GridSquareCreateRequest(GridSquareBaseRequest):

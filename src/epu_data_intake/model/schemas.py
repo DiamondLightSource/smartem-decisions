@@ -124,6 +124,10 @@ class GridSquareData(BaseModel):
     data_dir: Path | None = None
     metadata: GridSquareMetadata | None = None
     manifest: GridSquareManifest | None = None
+    center_x: int | None = None
+    center_y: int | None = None
+    size_width: int | None = None
+    size_height: int | None = None
     uuid: str = Field(default_factory=generate_uuid)
 
     model_config = ConfigDict(json_encoders={Path: lambda v: str(v) if v else None}, from_attributes=True)
