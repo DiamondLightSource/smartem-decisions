@@ -15,11 +15,7 @@ from epu_data_intake.model.schemas import (
     GridSquareData,
     MicrographData,
 )
-from smartem_decisions.model.entity_status import (
-    AcquisitionStatus,
-    GridSquareStatus,
-    GridStatus,
-)
+from smartem_decisions.model.entity_status import AcquisitionStatus, GridSquareStatus, GridStatus
 from smartem_decisions.model.http_request import (
     AcquisitionCreateRequest,
     AtlasCreateRequest,
@@ -88,6 +84,10 @@ class EntityConverter:
             grid_uuid=entity.grid_uuid,
             gridsquare_id=entity.gridsquare_id,
             uuid=entity.uuid,
+            center_x=entity.center_x,
+            center_y=entity.center_y,
+            size_width=entity.size_width,
+            size_height=entity.size_height,
             status=GridSquareStatus.NONE,
             data_dir=str(entity.data_dir) if entity.data_dir else None,
             atlas_node_id=metadata.atlas_node_id if metadata else None,
@@ -126,6 +126,7 @@ class EntityConverter:
             x_stage_position=entity.x_stage_position,
             y_stage_position=entity.y_stage_position,
             diameter=entity.diameter,
+            is_near_grid_bar=entity.is_near_grid_bar,
         )
 
     @staticmethod

@@ -915,6 +915,18 @@ class EpuParser:
         # Add grid to datastore
         datastore.create_grid(grid)
 
+        for gsid, gsp in grid.atlas_data.gridsquare_positions.items():
+            gridsquare = GridSquareData(
+                gridsquare_id=str(gsid),
+                metadata=None,
+                grid_uuid=grid.uuid,
+                center_x=gsp.center[0],
+                center_y=gsp.center[1],
+                size_width=gsp.size[0],
+                size_height=gsp.size[1],
+            )
+            datastore.create_gridsquare(gridsquare)
+
         # 2. Parse all gridsquare metadata from /Metadata directory
         metadata_dir_path = str(grid.data_dir / "Metadata")
         for gridsquare_id, filename in EpuParser.parse_gridsquares_metadata_dir(metadata_dir_path):
@@ -926,9 +938,26 @@ class EpuParser:
                 gridsquare_id=gridsquare_id,
                 metadata=gridsquare_metadata,
                 grid_uuid=grid.uuid,  # Set reference to parent grid
+                center_x=grid.atlas_data.gridsquare_positions[int(gridsquare_id)].center[0]
+                if grid.atlas_data.gridsquare_positions.get(int(gridsquare_id)) is not None
+                else None,
+                center_y=grid.atlas_data.gridsquare_positions[int(gridsquare_id)].center[1]
+                if grid.atlas_data.gridsquare_positions.get(int(gridsquare_id)) is not None
+                else None,
+                size_width=grid.atlas_data.gridsquare_positions[int(gridsquare_id)].size[0]
+                if grid.atlas_data.gridsquare_positions.get(int(gridsquare_id)) is not None
+                else None,
+                size_height=grid.atlas_data.gridsquare_positions[int(gridsquare_id)].size[1]
+                if grid.atlas_data.gridsquare_positions.get(int(gridsquare_id)) is not None
+                else None,
             )
 
-            datastore.create_gridsquare(gridsquare)
+            if grid.atlas_data.gridsquare_positions.get(int(gridsquare_id)) is not None:
+                found_grid_square = datastore.find_gridsquare_by_natural_id(gridsquare_id)
+                gridsquare.uuid = found_grid_square.uuid
+                datastore.update_gridsquare(gridsquare)
+            else:
+                datastore.create_gridsquare(gridsquare)
             logging.debug(f"Added gridsquare: {gridsquare_id} (uuid: {gridsquare.uuid})")
             for fh_id, fh_position in gridsquare_metadata.foilhole_positions.items():
                 fh = FoilHoleData(
@@ -940,6 +969,7 @@ class EpuParser:
                     x_stage_position=fh_position.x_stage_position,
                     y_stage_position=fh_position.y_stage_position,
                     diameter=fh_position.diameter,
+                    is_near_grid_bar=fh_position.is_near_grid_bar,
                 )
                 datastore.create_foilhole(fh)
 
