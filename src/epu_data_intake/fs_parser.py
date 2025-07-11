@@ -281,7 +281,7 @@ class EpuParser:
 
                     def get_element_text(xpath, el=element):
                         elements = el.xpath(xpath, namespaces=namespaces)
-                        return elements[0].text if elements else None
+                        return elements[-1].text if elements else None
 
                     acquisition_date_str = get_element_text(".//ns:Atlas/ns:AcquisitionDateTime")
 
@@ -290,9 +290,9 @@ class EpuParser:
                         acquisition_date=datetime.fromisoformat(acquisition_date_str.replace("Z", "+00:00"))
                         if acquisition_date_str
                         else None,
-                        storage_folder=get_element_text(".//ns:Atlas/ns:StorageFolder"),
-                        description=get_element_text(".//ns:Atlas/ns:Description"),
-                        name=get_element_text(".//ns:Atlas/ns:Name"),
+                        storage_folder=get_element_text(".//ns:StorageFolder"),
+                        description=get_element_text(".//ns:Description"),
+                        name=get_element_text(".//ns:Name"),
                         tiles=[
                             EpuParser._parse_atlas_tile(tile)
                             for tile in element.xpath(
