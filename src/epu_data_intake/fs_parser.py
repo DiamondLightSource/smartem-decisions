@@ -900,6 +900,10 @@ class EpuParser:
         # Build out the absolute atlas_dir path
         if grid.acquisition_data.atlas_path:
             grid.atlas_dir = Path(Path(grid_data_dir) / Path("..") / Path(grid.acquisition_data.atlas_path)).resolve()
+            if not grid.atlas_dir.exists():
+                grid.atlas_dir = Path(
+                    Path(grid_data_dir) / Path("../..") / Path(grid.acquisition_data.atlas_path)
+                ).resolve()
 
         # 1.2 Parse Atlas.dm
         if grid.atlas_dir and grid.acquisition_data.atlas_path:
@@ -915,17 +919,18 @@ class EpuParser:
         # Add grid to datastore
         datastore.create_grid(grid)
 
-        for gsid, gsp in grid.atlas_data.gridsquare_positions.items():
-            gridsquare = GridSquareData(
-                gridsquare_id=str(gsid),
-                metadata=None,
-                grid_uuid=grid.uuid,
-                center_x=gsp.center[0],
-                center_y=gsp.center[1],
-                size_width=gsp.size[0],
-                size_height=gsp.size[1],
-            )
-            datastore.create_gridsquare(gridsquare)
+        if grid.atlas_data is not None:
+            for gsid, gsp in grid.atlas_data.gridsquare_positions.items():
+                gridsquare = GridSquareData(
+                    gridsquare_id=str(gsid),
+                    metadata=None,
+                    grid_uuid=grid.uuid,
+                    center_x=gsp.center[0],
+                    center_y=gsp.center[1],
+                    size_width=gsp.size[0],
+                    size_height=gsp.size[1],
+                )
+                datastore.create_gridsquare(gridsquare)
 
         # 2. Parse all gridsquare metadata from /Metadata directory
         metadata_dir_path = str(grid.data_dir / "Metadata")
@@ -934,23 +939,30 @@ class EpuParser:
             gridsquare_metadata = EpuParser.parse_gridsquare_metadata(filename)
 
             # Create GridSquareData with ID and metadata
-            gridsquare = GridSquareData(
-                gridsquare_id=gridsquare_id,
-                metadata=gridsquare_metadata,
-                grid_uuid=grid.uuid,  # Set reference to parent grid
-                center_x=grid.atlas_data.gridsquare_positions[int(gridsquare_id)].center[0]
-                if grid.atlas_data.gridsquare_positions.get(int(gridsquare_id)) is not None
-                else None,
-                center_y=grid.atlas_data.gridsquare_positions[int(gridsquare_id)].center[1]
-                if grid.atlas_data.gridsquare_positions.get(int(gridsquare_id)) is not None
-                else None,
-                size_width=grid.atlas_data.gridsquare_positions[int(gridsquare_id)].size[0]
-                if grid.atlas_data.gridsquare_positions.get(int(gridsquare_id)) is not None
-                else None,
-                size_height=grid.atlas_data.gridsquare_positions[int(gridsquare_id)].size[1]
-                if grid.atlas_data.gridsquare_positions.get(int(gridsquare_id)) is not None
-                else None,
-            )
+            if grid.atlas_data is not None:
+                gridsquare = GridSquareData(
+                    gridsquare_id=gridsquare_id,
+                    metadata=gridsquare_metadata,
+                    grid_uuid=grid.uuid,  # Set reference to parent grid
+                    center_x=grid.atlas_data.gridsquare_positions[int(gridsquare_id)].center[0]
+                    if grid.atlas_data.gridsquare_positions.get(int(gridsquare_id)) is not None
+                    else None,
+                    center_y=grid.atlas_data.gridsquare_positions[int(gridsquare_id)].center[1]
+                    if grid.atlas_data.gridsquare_positions.get(int(gridsquare_id)) is not None
+                    else None,
+                    size_width=grid.atlas_data.gridsquare_positions[int(gridsquare_id)].size[0]
+                    if grid.atlas_data.gridsquare_positions.get(int(gridsquare_id)) is not None
+                    else None,
+                    size_height=grid.atlas_data.gridsquare_positions[int(gridsquare_id)].size[1]
+                    if grid.atlas_data.gridsquare_positions.get(int(gridsquare_id)) is not None
+                    else None,
+                )
+            else:
+                gridsquare = GridSquareData(
+                    gridsquare_id=gridsquare_id,
+                    metadata=gridsquare_metadata,
+                    grid_uuid=grid.uuid,  # Set reference to parent grid
+                )
 
             if grid.atlas_data.gridsquare_positions.get(int(gridsquare_id)) is not None:
                 found_grid_square = datastore.find_gridsquare_by_natural_id(gridsquare_id)
