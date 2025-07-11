@@ -10,12 +10,7 @@ from pathlib import Path
 from watchdog.events import FileSystemEventHandler
 
 from epu_data_intake.fs_parser import EpuParser
-from epu_data_intake.model.schemas import (
-    GridData,
-    GridSquareData,
-    MicrographData,
-    MicroscopeData,
-)
+from epu_data_intake.model.schemas import GridData, GridSquareData, MicrographData, MicroscopeData
 from epu_data_intake.model.store import InMemoryDataStore, PersistentDataStore
 
 """Default glob patterns for EPU data files.
@@ -297,6 +292,23 @@ class RateLimitedFilesystemEventHandler(FileSystemEventHandler):
             grid.atlas_data = atlas_data
             self.datastore.update_grid(grid)
             logging.debug(f"Updated atlas_data for grid: {grid_uuid}")
+            for gsid, gsp in grid.atlas_data.gridsquare_positions.items():
+                gridsquare = GridSquareData(
+                    gridsquare_id=str(gsid),
+                    metadata=None,
+                    grid_uuid=grid.uuid,
+                    center_x=gsp.center[0],
+                    center_y=gsp.center[1],
+                    size_width=gsp.size[0],
+                    size_height=gsp.size[1],
+                )
+                # need to check if each square exists already
+                if found_grid_square := self.datastore.find_gridsquare_by_natural_id(str(gsid)):
+                    gridsquare.uuid = found_grid_square.uuid
+                    self.datastore.update_gridsquare(gridsquare)
+                else:
+                    self.datastore.create_gridsquare(gridsquare)
+            logging.debug(f"Registered all squares for grid: {grid_uuid}")
 
     def _on_gridsquare_metadata_detected(self, path: str, grid_uuid: str, is_new_file: bool = True):
         logging.info(f"Gridsquare metadata {'detected' if is_new_file else 'updated'}: {path}")
