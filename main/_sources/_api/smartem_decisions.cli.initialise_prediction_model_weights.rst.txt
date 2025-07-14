@@ -2,6 +2,7 @@
 =============================================================
         
         
+        
 
 .. automodule:: smartem_decisions.cli.initialise_prediction_model_weights
     :members:
@@ -17,7 +18,8 @@
     .. autosummary::
         :nosignatures:
     
-        initialise
+        initialise_all_models_for_grid
+        initialise_prediction_model_for_grid
         run
     
     
