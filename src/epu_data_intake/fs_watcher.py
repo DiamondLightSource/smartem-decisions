@@ -227,6 +227,7 @@ class RateLimitedFilesystemEventHandler(FileSystemEventHandler):
         if re.search(EpuParser.session_dm_pattern, event.src_path):
             assert self.datastore.get_grid_by_path(event.src_path) is None  # guaranteed because is a new file
             grid = GridData(data_dir=Path(event.src_path).parent.resolve())
+            grid.acquisition_data = EpuParser.parse_epu_session_manifest(event.src_path)
             self.datastore.create_grid(grid)
 
         # try to work out which grid the touched file relates to
