@@ -311,12 +311,7 @@ def update_acquisition(
 
     success = publish_acquisition_updated(
         uuid=db_acquisition.uuid,
-        name=db_acquisition.name,
-        status=db_acquisition.status.value if db_acquisition.status else None,
-        epu_id=db_acquisition.id,
-        start_time=db_acquisition.start_time.isoformat() if db_acquisition.start_time else None,
-        end_time=db_acquisition.end_time.isoformat() if db_acquisition.end_time else None,
-        metadata=db_acquisition.metadata,
+        id=db_acquisition.id,
     )
     if not success:
         logger.error(f"Failed to publish acquisition updated event for UUID: {db_acquisition.uuid}")
