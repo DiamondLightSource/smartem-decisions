@@ -264,7 +264,7 @@ class EpuParser:
         return None
 
     @staticmethod
-    def parse_atlas_manifest(atlas_path: str):
+    def parse_atlas_manifest(atlas_path: str, grid_uuid: str):
         try:
             namespaces = {
                 "ns": "http://schemas.datacontract.org/2004/07/Applications.SciencesAppsShared.GridAtlas.Persistence",
@@ -285,7 +285,7 @@ class EpuParser:
 
                     acquisition_date_str = get_element_text(".//ns:Atlas/ns:AcquisitionDateTime")
 
-                    return AtlasData(
+                    atlas_data = AtlasData(
                         id=get_element_text(".//common:Id"),
                         acquisition_date=datetime.fromisoformat(acquisition_date_str.replace("Z", "+00:00"))
                         if acquisition_date_str
@@ -293,15 +293,18 @@ class EpuParser:
                         storage_folder=get_element_text(".//ns:StorageFolder"),
                         description=get_element_text(".//ns:Description"),
                         name=get_element_text(".//ns:Name"),
-                        tiles=[
-                            EpuParser._parse_atlas_tile(tile)
-                            for tile in element.xpath(
-                                ".//ns:Atlas/ns:TilesEfficient/ns:_items/ns:TileXml", namespaces=namespaces
-                            )
-                            if tile.xpath(".//common:Id", namespaces=namespaces)
-                        ],
+                        grid_uuid=grid_uuid,
+                        tiles=[],
                         gridsquare_positions=EpuParser._parse_gridsquare_positions(element),
                     )
+                    atlas_data.tiles = [
+                        EpuParser._parse_atlas_tile(tile, atlas_data.uuid)
+                        for tile in element.xpath(
+                            ".//ns:Atlas/ns:TilesEfficient/ns:_items/ns:TileXml", namespaces=namespaces
+                        )
+                        if tile.xpath(".//common:Id", namespaces=namespaces)
+                    ]
+                return atlas_data
 
         except Exception as e:
             logging.error(f"Failed to parse Atlas manifest: {str(e)}")
@@ -381,7 +384,7 @@ class EpuParser:
         return gridsquare_positions
 
     @staticmethod
-    def _parse_atlas_tile(tile_xml) -> AtlasTileData | None:
+    def _parse_atlas_tile(tile_xml: str, atlas_uuid: str) -> AtlasTileData | None:
         try:
             namespaces = {
                 "ns": "http://schemas.datacontract.org/2004/07/Applications.SciencesAppsShared.GridAtlas.Persistence",
@@ -407,6 +410,7 @@ class EpuParser:
 
             return AtlasTileData(
                 id=tile_id,
+                atlas_uuid=atlas_uuid,
                 tile_position=AtlasTilePosition(
                     position=position_tuple,
                     size=size_tuple,
@@ -909,7 +913,7 @@ class EpuParser:
         if grid.atlas_dir and grid.acquisition_data.atlas_path:
             atlas_file_path = EpuParser._find_atlas_file(grid.atlas_dir)
             if atlas_file_path:
-                grid.atlas_data = EpuParser.parse_atlas_manifest(str(atlas_file_path))
+                grid.atlas_data = EpuParser.parse_atlas_manifest(str(atlas_file_path), grid.uuid)
             else:
                 logging.warning(
                     f"Atlas file not found at {grid.atlas_dir} or nested subdirectories. Skipping atlas parsing."
@@ -918,6 +922,10 @@ class EpuParser:
 
         # Add grid to datastore
         datastore.create_grid(grid)
+        if grid.atlas_data:
+            datastore.create_atlas(grid.atlas_data)
+            for atlastile in grid.atlas_data.tiles:
+                datastore.create_atlastile(atlastile)
 
         if grid.atlas_data is not None:
             for gsid, gsp in grid.atlas_data.gridsquare_positions.items():
