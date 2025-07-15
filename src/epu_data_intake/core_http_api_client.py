@@ -10,7 +10,7 @@ from epu_data_intake.model.schemas import (
     AcquisitionData,
     AtlasData,
     AtlasTileData,
-    AtlasTileGridSquarePosition,
+    AtlasTileGridSquarePositionData,
     FoilHoleData,
     GridData,
     GridSquareData,
@@ -184,7 +184,7 @@ class EntityConverter:
         )
 
     @staticmethod
-    def gridsquare_position_to_request(entity: AtlasTileGridSquarePosition) -> GridSquarePositionRequest:
+    def gridsquare_position_to_request(entity: AtlasTileGridSquarePositionData) -> GridSquarePositionRequest:
         """Convert AtlasTileData to atlas tile request model"""
         return GridSquarePositionRequest(
             center_x=entity.position[0],
@@ -456,7 +456,7 @@ class SmartEMAPIClient:
         return response
 
     def link_atlas_tile_and_gridsquare(
-        self, gridsquare_position: AtlasTileGridSquarePosition
+        self, gridsquare_position: AtlasTileGridSquarePositionData
     ) -> AtlasTileGridSquarePositionResponse:
         """Link a grid square to a tile"""
         gridsquare_position = EntityConverter.gridsquare_position_to_request(gridsquare_position)

@@ -141,6 +141,13 @@ class AtlasTilePosition(BaseModel):
 
 
 class AtlasTileGridSquarePosition(BaseModel):
+    position: tuple[int, int]
+    size: tuple[int, int]
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class AtlasTileGridSquarePositionData(BaseModel):
     tile_uuid: str
     gridsquare_uuid: str
     position: tuple[int, int]
@@ -156,6 +163,7 @@ class AtlasTileData(BaseModel):
     base_filename: str | None
     atlas_uuid: str
     uuid: str = Field(default_factory=generate_uuid)
+    gridsquare_positions: dict[str, list[AtlasTileGridSquarePosition]] = {}
 
     model_config = ConfigDict(from_attributes=True)
 
