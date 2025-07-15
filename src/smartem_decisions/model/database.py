@@ -17,10 +17,7 @@ from smartem_decisions.model.entity_status import (
     MicrographStatus,
     MicrographStatusType,
 )
-from smartem_decisions.utils import (
-    logger,
-    setup_postgres_connection,
-)
+from smartem_decisions.utils import logger, setup_postgres_connection
 
 
 class Acquisition(SQLModel, table=True, table_name="acquisition"):
@@ -91,6 +88,9 @@ class AtlasTile(SQLModel, table=True, table_name="atlastile"):
     size_y: int | None = Field(default=None)
     file_format: str | None = Field(default=None)
     base_filename: str | None = Field(default=None)
+    gridsquares: list["GridSquare"] = Relationship(
+        sa_relationship_kwargs={"back_populates": "grid"}, cascade_delete=True
+    )
     atlas: Optional["Atlas"] = Relationship(sa_relationship_kwargs={"back_populates": "atlastiles"})
 
 
@@ -98,6 +98,7 @@ class GridSquare(SQLModel, table=True, table_name="gridsquare"):
     __table_args__ = {"extend_existing": True}
     uuid: str = Field(primary_key=True)
     grid_uuid: str | None = Field(default=None, foreign_key="grid.uuid")
+    tile_uuid: str | None = Field(default=None, foreign_key="atlastile.uuid")
     status: GridSquareStatus = Field(default=GridSquareStatus.NONE, sa_column=Column(GridSquareStatusType()))
     gridsquare_id: str = Field(default="")
     data_dir: str | None = Field(default=None)
@@ -123,6 +124,7 @@ class GridSquare(SQLModel, table=True, table_name="gridsquare"):
     detector_name: str | None = Field(default=None)
     applied_defocus: float | None = Field(default=None)
     grid: Grid = Relationship(sa_relationship_kwargs={"back_populates": "gridsquares"})
+    atlastile: AtlasTile = Relationship(sa_relationship_kwargs={"back_populates": "gridsquares"})
     foilholes: list["FoilHole"] = Relationship(
         sa_relationship_kwargs={"back_populates": "gridsquare"}, cascade_delete=True
     )

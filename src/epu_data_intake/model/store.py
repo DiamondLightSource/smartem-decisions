@@ -5,7 +5,15 @@ from pathlib import Path
 import requests
 
 from epu_data_intake.core_http_api_client import SmartEMAPIClient
-from epu_data_intake.model.schemas import AcquisitionData, FoilHoleData, GridData, GridSquareData, MicrographData
+from epu_data_intake.model.schemas import (
+    AcquisitionData,
+    AtlasData,
+    AtlasTileData,
+    FoilHoleData,
+    GridData,
+    GridSquareData,
+    MicrographData,
+)
 from smartem_decisions.utils import logger
 
 # Retry configuration constants
@@ -62,6 +70,8 @@ class InMemoryDataStore:
         logger.info(self.acquisition)
 
         self.grids: dict[str, GridData] = {}
+        self.atlases: dict[str, AtlasData] = {}
+        self.atlastiles: dict[str, AtlasTileData] = {}
         self.gridsquares: dict[str, GridSquareData] = {}
         self.foilholes: dict[str, FoilHoleData] = {}
         self.micrographs: dict[str, MicrographData] = {}
@@ -119,6 +129,36 @@ class InMemoryDataStore:
 
     def get_grid(self, uuid: str):
         return self.grids.get(uuid)
+
+    # Atlas methods
+    def create_atlas(self, atlas: AtlasData):
+        self.atlases[atlas.uuid] = atlas
+
+    def update_atlas(self, atlas: AtlasData):
+        if atlas.uuid in self.atlases:
+            self.atlases[atlas.uuid] = atlas
+
+    def remove_atlas(self, uuid: str):
+        if uuid in self.atlases:
+            del self.atlases[uuid]
+
+    def get_atlas(self, uuid: str):
+        return self.atlases.get(uuid)
+
+    # Atlas tile methods
+    def create_atlastile(self, atlastile: AtlasTileData):
+        self.atlastiles[atlastile.uuid] = atlastile
+
+    def update_atlastile(self, atlastile: AtlasTileData):
+        if atlastile.uuid in self.atlases:
+            self.atlastiles[atlastile.uuid] = atlastile
+
+    def remove_atlastile(self, uuid: str):
+        if uuid in self.atlastiles:
+            del self.atlastiles[uuid]
+
+    def get_atlastile(self, uuid: str):
+        return self.atlastiles.get(uuid)
 
     def create_gridsquare(self, gridsquare: GridSquareData):
         self.gridsquares[gridsquare.uuid] = gridsquare
@@ -341,6 +381,76 @@ class PersistentDataStore(InMemoryDataStore):
         except Exception as e:
             logger.error(f"Error removing grid UUID {uuid}: {e}")
             # TODO rollback localstore mutations on API failure
+
+    def create_atlas(self, atlas: AtlasData):
+        try:
+            super().create_atlas(atlas)
+            result = self.api_client.create_grid_atlas(atlas)
+            if not result:
+                logger.error(f"API call to create atlas UUID {atlas.uuid} failed, local store changes rolled back")
+        except Exception as e:
+            logger.error(f"Error creating atlas {atlas.uuid}: {e}")
+            # Roll back the local store change if the API call fails:
+            del self.atlases[atlas.uuid]
+
+    def update_atlas(self, atlas: AtlasData):
+        try:
+            super().update_atlas(atlas)
+            result = self.api_client.update_atlas(atlas)
+            if not result:
+                logger.error(f"API call to update atlas UUID {atlas.uuid} failed, but grid was updated in local store")
+        except requests.HTTPError as e:
+            if e.response.status_code == 404:
+                logger.warning(f"Atlas {atlas.uuid} exists locally but not yet in API - likely queued for creation")
+            else:
+                logger.error(f"HTTP {e.response.status_code} error updating atlas {atlas.uuid}: {e}")
+        except Exception as e:
+            logger.error(f"Error updating atlas {atlas.uuid}: {e}")
+
+    def remove_atlas(self, uuid: str):
+        try:
+            super().remove_atlas(uuid)
+            self.api_client.delete_atlas(uuid)
+        except Exception as e:
+            logger.error(f"Error removing atlas UUID {uuid}: {e}")
+
+    def create_atlastile(self, atlastile: AtlasTileData):
+        try:
+            super().create_atlastile(atlastile)
+            result = self.api_client.create_atlas_tile_for_atlas(atlastile)
+            if not result:
+                logger.error(
+                    f"API call to create atlas tile UUID {atlastile.uuid} failed, local store changes rolled back"
+                )
+        except Exception as e:
+            logger.error(f"Error creating atlas tile {atlastile.uuid}: {e}")
+            # Roll back the local store change if the API call fails:
+            del self.atlases[atlastile.uuid]
+
+    def update_atlastile(self, atlastile: AtlasTileData):
+        try:
+            super().update_atlastile(atlastile)
+            result = self.api_client.update_atlas_tile(atlastile)
+            if not result:
+                logger.error(
+                    f"API call to update atlas tile UUID {atlastile.uuid} failed, but grid was updated in local store"
+                )
+        except requests.HTTPError as e:
+            if e.response.status_code == 404:
+                logger.warning(
+                    f"Atlas tile {atlastile.uuid} exists locally but not yet in API - likely queued for creation"
+                )
+            else:
+                logger.error(f"HTTP {e.response.status_code} error updating atlas tile {atlastile.uuid}: {e}")
+        except Exception as e:
+            logger.error(f"Error updating atlas tile {atlastile.uuid}: {e}")
+
+    def remove_atlastile(self, uuid: str):
+        try:
+            super().remove_atlastile(uuid)
+            self.api_client.delete_atlas_tile(uuid)
+        except Exception as e:
+            logger.error(f"Error removing atlas tile UUID {uuid}: {e}")
 
     def create_gridsquare(self, gridsquare: GridSquareData):
         try:
