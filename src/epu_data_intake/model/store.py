@@ -9,7 +9,7 @@ from epu_data_intake.model.schemas import (
     AcquisitionData,
     AtlasData,
     AtlasTileData,
-    AtlasTileGridSquarePosition,
+    AtlasTileGridSquarePositionData,
     FoilHoleData,
     GridData,
     GridSquareData,
@@ -161,7 +161,7 @@ class InMemoryDataStore:
     def get_atlastile(self, uuid: str):
         return self.atlastiles.get(uuid)
 
-    def link_atlastile_to_gridsquare(self, gridsquare_position: AtlasTileGridSquarePosition):
+    def link_atlastile_to_gridsquare(self, gridsquare_position: AtlasTileGridSquarePositionData):
         return None
 
     def create_gridsquare(self, gridsquare: GridSquareData):
@@ -456,7 +456,7 @@ class PersistentDataStore(InMemoryDataStore):
         except Exception as e:
             logger.error(f"Error removing atlas tile UUID {uuid}: {e}")
 
-    def link_atlastile_to_gridsquare(self, gridsquare_position: AtlasTileGridSquarePosition):
+    def link_atlastile_to_gridsquare(self, gridsquare_position: AtlasTileGridSquarePositionData):
         try:
             result = self.api_client.link_atlas_tile_and_gridsquare(gridsquare_position)
             if not result:

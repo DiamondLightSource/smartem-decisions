@@ -11,6 +11,8 @@ from epu_data_intake.model.schemas import (
     AcquisitionData,
     AtlasData,
     AtlasTileData,
+    AtlasTileGridSquarePosition,
+    AtlasTileGridSquarePositionData,
     AtlasTilePosition,
     FoilHoleData,
     FoilHolePosition,
@@ -384,16 +386,18 @@ class EpuParser:
         return gridsquare_positions
 
     @staticmethod
-    def _parse_atlas_tile(tile_xml: str, atlas_uuid: str) -> AtlasTileData | None:
+    def _parse_atlas_tile(tile_xml, atlas_uuid: str) -> AtlasTileData | None:
         try:
             namespaces = {
                 "ns": "http://schemas.datacontract.org/2004/07/Applications.SciencesAppsShared.GridAtlas.Persistence",
                 "common": "http://schemas.datacontract.org/2004/07/Fei.Applications.Common.Types",
                 "draw": "http://schemas.datacontract.org/2004/07/System.Drawing",
+                "generic": "http://schemas.datacontract.org/2004/07/System.Collections.Generic",
+                "model": "http://schemas.datacontract.org/2004/07/Applications.SciencesAppsShared.GridAtlas.Datamodel",
             }
 
-            def get_element_text(xpath):
-                elements = tile_xml.xpath(xpath, namespaces=namespaces)
+            def get_element_text(xpath, xml=tile_xml):
+                elements = xml.xpath(xpath, namespaces=namespaces)
                 return elements[0].text if elements else None
 
             tile_id = get_element_text(".//common:Id")
@@ -408,7 +412,7 @@ class EpuParser:
             height_text = get_element_text("./ns:AtlasPixelPosition/draw:height")
             size_tuple = (int(width_text), int(height_text)) if width_text and height_text else None
 
-            return AtlasTileData(
+            atlastile_data = AtlasTileData(
                 id=tile_id,
                 atlas_uuid=atlas_uuid,
                 tile_position=AtlasTilePosition(
@@ -418,6 +422,34 @@ class EpuParser:
                 file_format=get_element_text("./ns:TileImageReference/common:FileFormat"),
                 base_filename=get_element_text("./ns:TileImageReference/common:BaseFileName"),
             )
+
+            def _get_gridsquare_position_data(gridsquare_position_xml) -> list[AtlasTileGridSquarePosition]:
+                return [
+                    AtlasTileGridSquarePosition(
+                        position=(
+                            get_element_text("./model:Center/draw:x", xml=n),
+                            get_element_text("./model:Center/draw:y", xml=n),
+                        ),
+                        size=(
+                            get_element_text("./model:Size/draw:width", xml=n),
+                            get_element_text("./model:Size/draw:height", xml=n),
+                        ),
+                    )
+                    for n in gridsquare_position_xml.xpath("./ns:NodePosition", namespaces=namespaces)
+                ]
+
+            gridsquare_positions = {}
+            for gs in tile_xml.xpath(
+                "./ns:Nodes/KeyValuePairs/*[starts-with(local-name(), 'KeyValuePairOfintNodeXml')]",
+                namespaces=namespaces,
+            ):
+                gs_id = get_element_text("./generic:key", xml=gs)
+                gridsquare_positions[gs_id] = _get_gridsquare_position_data(
+                    gs.xpath("./generic:value/ns:TilePositions/ns:_items/ns:TilePositionXml", namespaces=namespaces)
+                )
+
+            atlastile_data.gridsquare_positions = gridsquare_positions
+            return atlastile_data
 
         except Exception as e:
             logging.error(f"Failed to parse tile: {str(e)}")
@@ -922,12 +954,12 @@ class EpuParser:
 
         # Add grid to datastore
         datastore.create_grid(grid)
-        if grid.atlas_data:
+
+        if grid.atlas_data is not None:
             datastore.create_atlas(grid.atlas_data)
             for atlastile in grid.atlas_data.tiles:
                 datastore.create_atlastile(atlastile)
-
-        if grid.atlas_data is not None:
+            gs_uuid_map = {}
             for gsid, gsp in grid.atlas_data.gridsquare_positions.items():
                 gridsquare = GridSquareData(
                     gridsquare_id=str(gsid),
@@ -938,7 +970,18 @@ class EpuParser:
                     size_width=gsp.size[0],
                     size_height=gsp.size[1],
                 )
+                gs_uuid_map[str(gsid)] = gridsquare.uuid
                 datastore.create_gridsquare(gridsquare)
+            for atlastile in grid.atlas_data.tiles:
+                for gsid, gs_tile_pos in atlastile.gridsquare_positions.items():
+                    datastore.link_atlastile_to_gridsquare(
+                        AtlasTileGridSquarePositionData(
+                            gridsquare_uuid=gs_uuid_map[gsid],
+                            tile_uuid=atlastile.uuid,
+                            position=gs_tile_pos.position,
+                            size=gs_tile_pos.size,
+                        )
+                    )
 
         # 2. Parse all gridsquare metadata from /Metadata directory
         metadata_dir_path = str(grid.data_dir / "Metadata")
