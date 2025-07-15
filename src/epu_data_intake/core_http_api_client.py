@@ -10,6 +10,7 @@ from epu_data_intake.model.schemas import (
     AcquisitionData,
     AtlasData,
     AtlasTileData,
+    AtlasTileGridSquarePosition,
     FoilHoleData,
     GridData,
     GridSquareData,
@@ -23,11 +24,13 @@ from smartem_decisions.model.http_request import (
     FoilHoleCreateRequest,
     GridCreateRequest,
     GridSquareCreateRequest,
+    GridSquarePositionRequest,
     MicrographCreateRequest,
 )
 from smartem_decisions.model.http_response import (
     AcquisitionResponse,
     AtlasResponse,
+    AtlasTileGridSquarePositionResponse,
     AtlasTileResponse,
     FoilHoleResponse,
     GridResponse,
@@ -178,6 +181,16 @@ class EntityConverter:
             position_y=entity.position_y,
             width=entity.width,
             height=entity.height,
+        )
+
+    @staticmethod
+    def gridsquare_position_to_request(entity: AtlasTileGridSquarePosition) -> GridSquarePositionRequest:
+        """Convert AtlasTileData to atlas tile request model"""
+        return GridSquarePositionRequest(
+            center_x=entity.position[0],
+            center_y=entity.position[1],
+            size_width=entity.size[0],
+            size_height=entity.size[1],
         )
 
 
@@ -440,6 +453,19 @@ class SmartEMAPIClient:
         """Create a new tile for a specific atlas"""
         tile = EntityConverter.atlas_tile_to_request(tile)
         response = self._request("post", f"atlases/{tile.atlas_uuid}/tiles", tile, AtlasTileResponse)
+        return response
+
+    def link_atlas_tile_and_gridsquare(
+        self, gridsquare_position: AtlasTileGridSquarePosition
+    ) -> AtlasTileGridSquarePositionResponse:
+        """Link a grid square to a tile"""
+        gridsquare_position = EntityConverter.gridsquare_position_to_request(gridsquare_position)
+        response = self._request(
+            "post",
+            f"atlas-tiles/{gridsquare_position.tile_uuid}/gridsquares/{gridsquare_position.gridsquare_uuid}",
+            gridsquare_position,
+            AtlasTileGridSquarePositionResponse,
+        )
         return response
 
     # GridSquares

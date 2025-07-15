@@ -140,6 +140,15 @@ class AtlasTilePosition(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class AtlasTileGridSquarePosition(BaseModel):
+    tile_uuid: str
+    gridsquare_uuid: str
+    position: tuple[int, int]
+    size: tuple[int, int]
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 class AtlasTileData(BaseModel):
     id: str
     tile_position: AtlasTilePosition
