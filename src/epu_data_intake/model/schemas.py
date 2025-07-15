@@ -145,6 +145,7 @@ class AtlasTileData(BaseModel):
     tile_position: AtlasTilePosition
     file_format: str | None
     base_filename: str | None
+    atlas_uuid: str
     uuid: str = Field(default_factory=generate_uuid)
 
     model_config = ConfigDict(from_attributes=True)
@@ -158,6 +159,7 @@ class AtlasData(BaseModel):
     name: str
     tiles: list[AtlasTileData]
     gridsquare_positions: dict[int, GridSquarePosition] | None
+    grid_uuid: str
     uuid: str = Field(default_factory=generate_uuid)
 
     model_config = ConfigDict(json_encoders={datetime: lambda v: v.isoformat() if v else None}, from_attributes=True)
