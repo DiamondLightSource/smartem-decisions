@@ -13,6 +13,7 @@ from src.smartem_decisions.model.database import (
     Acquisition,
     Atlas,
     AtlasTile,
+    AtlasTileGridSquarePosition,
     FoilHole,
     Grid,
     GridSquare,
@@ -36,6 +37,7 @@ from src.smartem_decisions.model.http_request import (
     FoilHoleUpdateRequest,
     GridCreateRequest,
     GridSquareCreateRequest,
+    GridSquarePositionRequest,
     GridSquareUpdateRequest,
     GridUpdateRequest,
     MicrographCreateRequest,
@@ -44,6 +46,7 @@ from src.smartem_decisions.model.http_request import (
 from src.smartem_decisions.model.http_response import (
     AcquisitionResponse,
     AtlasResponse,
+    AtlasTileGridSquarePositionResponse,
     AtlasTileResponse,
     FoilHoleResponse,
     GridResponse,
@@ -679,6 +682,37 @@ def create_atlas_tile_for_atlas(atlas_uuid: str, tile: AtlasTileCreateRequest, d
     }
 
     return AtlasTileResponse(**response_data)
+
+
+@app.post(
+    "/atlas-tiles/{tile_uuid}/gridsquares/{gridsquare_uuid}",
+    response_model=AtlasTileGridSquarePositionResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+def link_atlas_tile_to_gridsquare(
+    tile_uuid: str,
+    gridsquare_uuid: str,
+    gridsquare_position: GridSquarePositionRequest,
+    db: SqlAlchemySession = DB_DEPENDENCY,
+):
+    """Connect a grid square to a tile with its position information"""
+    position_data = gridsquare_position.model_dump()
+    position_data["atlastile_uuid"] = tile_uuid
+    position_data["gridsquare_uuid"] = gridsquare_uuid
+
+    tile_square_link = AtlasTileGridSquarePosition(**position_data)
+    db.add(tile_square_link)
+    db.commit()
+
+    response_data = {
+        "atlastile_uuid": tile_square_link.atlastile_uuid,
+        "gridsquare_uuid": tile_square_link.gridsquare_uuid,
+        "center_x": tile_square_link.center_x,
+        "center_y": tile_square_link.center_y,
+        "size_width": tile_square_link.size_width,
+        "size_height": tile_square_link.size_height,
+    }
+    return AtlasTileGridSquarePositionResponse(**response_data)
 
 
 # ============ GridSquare CRUD Operations ============
