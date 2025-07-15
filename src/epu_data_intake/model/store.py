@@ -9,6 +9,7 @@ from epu_data_intake.model.schemas import (
     AcquisitionData,
     AtlasData,
     AtlasTileData,
+    AtlasTileGridSquarePosition,
     FoilHoleData,
     GridData,
     GridSquareData,
@@ -159,6 +160,9 @@ class InMemoryDataStore:
 
     def get_atlastile(self, uuid: str):
         return self.atlastiles.get(uuid)
+
+    def link_atlastile_to_gridsquare(self, gridsquare_position: AtlasTileGridSquarePosition):
+        return None
 
     def create_gridsquare(self, gridsquare: GridSquareData):
         self.gridsquares[gridsquare.uuid] = gridsquare
@@ -451,6 +455,25 @@ class PersistentDataStore(InMemoryDataStore):
             self.api_client.delete_atlas_tile(uuid)
         except Exception as e:
             logger.error(f"Error removing atlas tile UUID {uuid}: {e}")
+
+    def link_atlastile_to_gridsquare(self, gridsquare_position: AtlasTileGridSquarePosition):
+        try:
+            result = self.api_client.link_atlas_tile_and_gridsquare(gridsquare_position)
+            if not result:
+                logger.error(
+                    f"API call to link atlas tile UUID {gridsquare_position.atlastile_uuid} to grid square UUID "
+                    f"{gridsquare_position.gridsquare_uuid} failed, but grid was updated in local store"
+                )
+        except requests.HTTPError as e:
+            logger.error(
+                f"HTTP {e.response.status_code} error linking atlas tile {gridsquare_position.atlastile_uuid} "
+                f"to grid square {gridsquare_position.gridsquare_uuid}: {e}"
+            )
+        except Exception as e:
+            logger.error(
+                f"Error linking atlas tile {gridsquare_position.atlastile_uuid} to "
+                f"grid square {gridsquare_position.gridsquare_uuid}: {e}"
+            )
 
     def create_gridsquare(self, gridsquare: GridSquareData):
         try:
