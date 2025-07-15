@@ -133,6 +133,13 @@ class GridUpdateRequest(GridBaseFields):
     pass
 
 
+class GridSquarePositionRequest(BaseModel):
+    center_x: int
+    center_y: int
+    size_width: int
+    size_height: int
+
+
 # GridSquare models
 class GridSquareBaseFields(BaseModel):
     uuid: str | None = None

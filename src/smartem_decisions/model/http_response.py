@@ -25,6 +25,15 @@ class AtlasTileResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class AtlasTileGridSquarePositionResponse(BaseModel):
+    atlastile_uuid: str
+    gridsquare_uuid: str
+    center_x: int
+    center_y: int
+    size_width: int
+    size_height: int
+
+
 class AtlasResponse(BaseModel):
     uuid: str
     grid_id: str

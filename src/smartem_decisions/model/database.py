@@ -88,17 +88,28 @@ class AtlasTile(SQLModel, table=True, table_name="atlastile"):
     size_y: int | None = Field(default=None)
     file_format: str | None = Field(default=None)
     base_filename: str | None = Field(default=None)
-    gridsquares: list["GridSquare"] = Relationship(
-        sa_relationship_kwargs={"back_populates": "grid"}, cascade_delete=True
+    gridsquare_positions: list["AtlasTileGridSquarePosition"] = Relationship(
+        sa_relationship_kwargs={"back_populates": "atlastile"}, cascade_delete=True
     )
     atlas: Optional["Atlas"] = Relationship(sa_relationship_kwargs={"back_populates": "atlastiles"})
+
+
+class AtlasTileGridSquarePosition(SQLModel, table=True, table_name="atlastilegridsquareposition"):
+    __table_args__ = {"extend_existing": True}
+    atlastile_uuid: str = Field(primary_key=True, foreign_key="atlastile.uuid")
+    gridsquare_uuid: str = Field(primary_key=True, foreign_key="gridsquare.uuid")
+    center_x: int
+    center_y: int
+    size_width: int
+    size_height: int
+    atlastile: AtlasTile | None = Relationship(sa_relationship_kwargs={"back_populates": "gridsquare_positions"})
+    gridsquare: Optional["GridSquare"] = Relationship(sa_relationship_kwargs={"back_populates": "atlastile_positions"})
 
 
 class GridSquare(SQLModel, table=True, table_name="gridsquare"):
     __table_args__ = {"extend_existing": True}
     uuid: str = Field(primary_key=True)
     grid_uuid: str | None = Field(default=None, foreign_key="grid.uuid")
-    tile_uuid: str | None = Field(default=None, foreign_key="atlastile.uuid")
     status: GridSquareStatus = Field(default=GridSquareStatus.NONE, sa_column=Column(GridSquareStatusType()))
     gridsquare_id: str = Field(default="")
     data_dir: str | None = Field(default=None)
@@ -124,7 +135,9 @@ class GridSquare(SQLModel, table=True, table_name="gridsquare"):
     detector_name: str | None = Field(default=None)
     applied_defocus: float | None = Field(default=None)
     grid: Grid = Relationship(sa_relationship_kwargs={"back_populates": "gridsquares"})
-    atlastile: AtlasTile = Relationship(sa_relationship_kwargs={"back_populates": "gridsquares"})
+    atlastile_positions: list[AtlasTileGridSquarePosition] = Relationship(
+        sa_relationship_kwargs={"back_populates": "gridsquare"}, cascade_delete=True
+    )
     foilholes: list["FoilHole"] = Relationship(
         sa_relationship_kwargs={"back_populates": "gridsquare"}, cascade_delete=True
     )
