@@ -423,20 +423,26 @@ class EpuParser:
                 base_filename=get_element_text("./ns:TileImageReference/common:BaseFileName"),
             )
 
-            def _get_gridsquare_position_data(gridsquare_position_xml) -> list[AtlasTileGridSquarePosition]:
-                return [
-                    AtlasTileGridSquarePosition(
-                        position=(
-                            get_element_text("./model:Center/draw:x", xml=n),
-                            get_element_text("./model:Center/draw:y", xml=n),
-                        ),
-                        size=(
-                            get_element_text("./model:Size/draw:width", xml=n),
-                            get_element_text("./model:Size/draw:height", xml=n),
-                        ),
-                    )
-                    for n in gridsquare_position_xml.xpath("./ns:NodePosition", namespaces=namespaces)
-                ]
+            def _get_gridsquare_position_data(tile_positions) -> list[AtlasTileGridSquarePosition]:
+                result = []
+                for t in tile_positions:
+                    if get_element_text("./ns:TileId", xml=t) == tile_id and t.xpath(
+                        "./ns:NodePosition", namespaces=namespaces
+                    ):
+                        n = t.xpath("./ns:NodePosition", namespaces=namespaces)[0]
+                        result.append(
+                            AtlasTileGridSquarePosition(
+                                position=(
+                                    int(float(get_element_text("./model:Center/draw:x", xml=n))),
+                                    int(float(get_element_text("./model:Center/draw:y", xml=n))),
+                                ),
+                                size=(
+                                    int(float(get_element_text("./model:Size/draw:width", xml=n))),
+                                    int(float(get_element_text("./model:Size/draw:height", xml=n))),
+                                ),
+                            )
+                        )
+                return result
 
             gridsquare_positions = {}
             for gs in tile_xml.xpath(
@@ -974,14 +980,15 @@ class EpuParser:
                 datastore.create_gridsquare(gridsquare)
             for atlastile in grid.atlas_data.tiles:
                 for gsid, gs_tile_pos in atlastile.gridsquare_positions.items():
-                    datastore.link_atlastile_to_gridsquare(
-                        AtlasTileGridSquarePositionData(
-                            gridsquare_uuid=gs_uuid_map[gsid],
-                            tile_uuid=atlastile.uuid,
-                            position=gs_tile_pos.position,
-                            size=gs_tile_pos.size,
+                    for pos in gs_tile_pos:
+                        datastore.link_atlastile_to_gridsquare(
+                            AtlasTileGridSquarePositionData(
+                                gridsquare_uuid=gs_uuid_map[gsid],
+                                tile_uuid=atlastile.uuid,
+                                position=pos.position,
+                                size=pos.size,
+                            )
                         )
-                    )
 
         # 2. Parse all gridsquare metadata from /Metadata directory
         metadata_dir_path = str(grid.data_dir / "Metadata")

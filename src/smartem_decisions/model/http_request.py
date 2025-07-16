@@ -49,8 +49,8 @@ class AcquisitionUpdateRequest(AcquisitionBaseFields):
 
 # Atlas models
 class AtlasBaseFields(BaseModel):
-    atlas_id: str | None = None
-    grid_id: str | None = None
+    atlas_uuid: str | None = None
+    grid_uuid: str | None = None
     acquisition_date: datetime | None = None
     storage_folder: str | None = None
     description: str | None = None
@@ -71,7 +71,7 @@ class AtlasTileBaseFields(BaseModel):
     size_y: int | None = None
     file_format: str | None = None
     base_filename: str | None = None
-    atlas_id: str | None = None
+    atlas_uuid: str | None = None
 
 
 class AtlasTileBaseRequest(AtlasTileBaseFields):
@@ -79,7 +79,7 @@ class AtlasTileBaseRequest(AtlasTileBaseFields):
 
 
 class AtlasTileCreateRequest(AtlasTileBaseRequest):
-    atlas_id: str
+    atlas_uuid: str
 
 
 class AtlasTileUpdateRequest(AtlasTileBaseFields):
@@ -87,8 +87,8 @@ class AtlasTileUpdateRequest(AtlasTileBaseFields):
 
 
 class AtlasBaseRequest(AtlasBaseFields):
-    atlas_id: str
-    grid_id: str
+    atlas_uuid: str
+    grid_uuid: str
     name: str
 
 

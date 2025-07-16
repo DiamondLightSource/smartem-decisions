@@ -161,8 +161,6 @@ class EntityConverter:
         return AtlasCreateRequest(
             grid_uuid=entity.grid_uuid,
             name=entity.name,
-            type=entity.type,
-            path=str(entity.path) if entity.path else None,
             pixel_size=entity.pixel_size,
             width=entity.width,
             height=entity.height,
@@ -176,7 +174,6 @@ class EntityConverter:
             atlas_uuid=entity.atlas_uuid,
             uuid=entity.uuid,
             id=entity.id,
-            path=str(entity.path) if entity.path else None,
             position_x=entity.position_x,
             position_y=entity.position_y,
             width=entity.width,
@@ -459,10 +456,12 @@ class SmartEMAPIClient:
         self, gridsquare_position: AtlasTileGridSquarePositionData
     ) -> AtlasTileGridSquarePositionResponse:
         """Link a grid square to a tile"""
+        tile_uuid = gridsquare_position.tile_uuid
+        gridsquare_uuid = gridsquare_position.gridsquare_uuid
         gridsquare_position = EntityConverter.gridsquare_position_to_request(gridsquare_position)
         response = self._request(
             "post",
-            f"atlas-tiles/{gridsquare_position.tile_uuid}/gridsquares/{gridsquare_position.gridsquare_uuid}",
+            f"atlas-tiles/{tile_uuid}/gridsquares/{gridsquare_uuid}",
             gridsquare_position,
             AtlasTileGridSquarePositionResponse,
         )
