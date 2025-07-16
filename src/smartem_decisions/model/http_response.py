@@ -13,7 +13,7 @@ from smartem_decisions.model.entity_status import (
 
 class AtlasTileResponse(BaseModel):
     uuid: str
-    atlas_id: str
+    atlas_uuid: str
     tile_id: str
     position_x: int | None
     position_y: int | None
@@ -36,8 +36,8 @@ class AtlasTileGridSquarePositionResponse(BaseModel):
 
 class AtlasResponse(BaseModel):
     uuid: str
-    grid_id: str
-    atlas_id: str
+    grid_uuid: str
+    atlas_uuid: str
     acquisition_date: datetime | None
     storage_folder: str | None
     description: str | None

@@ -429,7 +429,7 @@ class PersistentDataStore(InMemoryDataStore):
         except Exception as e:
             logger.error(f"Error creating atlas tile {atlastile.uuid}: {e}")
             # Roll back the local store change if the API call fails:
-            del self.atlases[atlastile.uuid]
+            del self.atlastiles[atlastile.uuid]
 
     def update_atlastile(self, atlastile: AtlasTileData):
         try:
