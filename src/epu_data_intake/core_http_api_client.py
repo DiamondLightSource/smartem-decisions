@@ -154,7 +154,6 @@ class EntityConverter:
             binning_y=manifest.binning_y if manifest else None,
         )
 
-    # TODO fix
     @staticmethod
     def atlas_to_request(entity: AtlasData) -> AtlasCreateRequest:
         """Convert AtlasData to atlas request model"""
@@ -181,7 +180,6 @@ class EntityConverter:
             ],
         )
 
-    # TODO fix
     @staticmethod
     def atlas_tile_to_request(entity: AtlasTileData) -> AtlasTileCreateRequest:
         """Convert AtlasTileData to atlas tile request model"""

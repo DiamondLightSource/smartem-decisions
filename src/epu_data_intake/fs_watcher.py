@@ -10,7 +10,13 @@ from pathlib import Path
 from watchdog.events import FileSystemEventHandler
 
 from epu_data_intake.fs_parser import EpuParser
-from epu_data_intake.model.schemas import GridData, GridSquareData, MicrographData, MicroscopeData
+from epu_data_intake.model.schemas import (
+    AtlasTileGridSquarePositionData,
+    GridData,
+    GridSquareData,
+    MicrographData,
+    MicroscopeData,
+)
 from epu_data_intake.model.store import InMemoryDataStore, PersistentDataStore
 
 """Default glob patterns for EPU data files.
@@ -293,6 +299,8 @@ class RateLimitedFilesystemEventHandler(FileSystemEventHandler):
             grid.atlas_data = atlas_data
             self.datastore.update_grid(grid)
             logging.debug(f"Updated atlas_data for grid: {grid_uuid}")
+            self.datastore.create_atlas(grid.atlas_data)
+            gs_uuid_map = {}
             for gsid, gsp in grid.atlas_data.gridsquare_positions.items():
                 gridsquare = GridSquareData(
                     gridsquare_id=str(gsid),
@@ -307,9 +315,23 @@ class RateLimitedFilesystemEventHandler(FileSystemEventHandler):
                 if found_grid_square := self.datastore.find_gridsquare_by_natural_id(str(gsid)):
                     gridsquare.uuid = found_grid_square.uuid
                     self.datastore.update_gridsquare(gridsquare)
+                    gs_uuid_map[str(gsid)] = gridsquare.uuid
                 else:
                     self.datastore.create_gridsquare(gridsquare)
+                    gs_uuid_map[str(gsid)] = gridsquare.uuid
             logging.debug(f"Registered all squares for grid: {grid_uuid}")
+            for atlastile in grid.atlas_data.tiles:
+                for gsid, gs_tile_pos in atlastile.gridsquare_positions.items():
+                    for pos in gs_tile_pos:
+                        self.datastore.link_atlastile_to_gridsquare(
+                            AtlasTileGridSquarePositionData(
+                                gridsquare_uuid=gs_uuid_map[gsid],
+                                tile_uuid=atlastile.uuid,
+                                position=pos.position,
+                                size=pos.size,
+                            )
+                        )
+            logging.debug(f"Linked squares to tiles for gird: {grid_uuid}")
 
     def _on_gridsquare_metadata_detected(self, path: str, grid_uuid: str, is_new_file: bool = True):
         logging.info(f"Gridsquare metadata {'detected' if is_new_file else 'updated'}: {path}")
