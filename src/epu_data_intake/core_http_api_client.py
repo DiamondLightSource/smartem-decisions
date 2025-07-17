@@ -161,9 +161,8 @@ class EntityConverter:
         return AtlasCreateRequest(
             grid_uuid=entity.grid_uuid,
             name=entity.name,
-            pixel_size=entity.pixel_size,
-            width=entity.width,
-            height=entity.height,
+            storage_folder=entity.storage_folder,
+            acquisition_date=entity.acquisition_date,
         )
 
     # TODO fix
