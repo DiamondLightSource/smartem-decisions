@@ -170,10 +170,12 @@ class EntityConverter:
                     atlas_uuid=entity.uuid,
                     uuid=t.uuid,
                     id=t.id,
-                    position_x=t.position_x,
-                    position_y=t.position_y,
-                    width=t.width,
-                    height=t.height,
+                    position_x=t.tile_position.position[0],
+                    position_y=t.tile_position.position[1],
+                    width=t.tile_position.size[0],
+                    height=t.tile_position.size[1],
+                    file_format=t.file_format,
+                    base_filename=t.base_filename,
                 )
                 for t in entity.tiles
             ],
@@ -187,10 +189,12 @@ class EntityConverter:
             atlas_uuid=entity.atlas_uuid,
             uuid=entity.uuid,
             id=entity.id,
-            position_x=entity.position_x,
-            position_y=entity.position_y,
-            width=entity.width,
-            height=entity.height,
+            position_x=entity.tile_position.position[0],
+            position_y=entity.tile_position.position[1],
+            width=entity.tile_position.size[0],
+            height=entity.tile_position.size[1],
+            file_format=entity.file_format,
+            base_filename=entity.base_filename,
         )
 
     @staticmethod
