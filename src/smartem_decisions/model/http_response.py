@@ -37,7 +37,7 @@ class AtlasTileGridSquarePositionResponse(BaseModel):
 class AtlasResponse(BaseModel):
     uuid: str
     grid_uuid: str
-    atlas_uuid: str
+    atlas_id: str
     acquisition_date: datetime | None
     storage_folder: str | None
     description: str | None
