@@ -50,6 +50,7 @@ class AcquisitionUpdateRequest(AcquisitionBaseFields):
 # Atlas models
 class AtlasBaseFields(BaseModel):
     atlas_uuid: str | None = None
+    atlas_id: str | None = None
     grid_uuid: str | None = None
     acquisition_date: datetime | None = None
     storage_folder: str | None = None
