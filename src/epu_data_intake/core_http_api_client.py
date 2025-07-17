@@ -159,12 +159,13 @@ class EntityConverter:
     def atlas_to_request(entity: AtlasData) -> AtlasCreateRequest:
         """Convert AtlasData to atlas request model"""
         return AtlasCreateRequest(
-            atlas_uuid=entity.uuid,
+            uuid=entity.uuid,
             atlas_id=entity.id,
             grid_uuid=entity.grid_uuid,
             name=entity.name,
             storage_folder=entity.storage_folder,
             acquisition_date=entity.acquisition_date,
+            tiles=entity.tiles,
         )
 
     # TODO fix

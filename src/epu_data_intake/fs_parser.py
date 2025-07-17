@@ -963,8 +963,6 @@ class EpuParser:
 
         if grid.atlas_data is not None:
             datastore.create_atlas(grid.atlas_data)
-            for atlastile in grid.atlas_data.tiles:
-                datastore.create_atlastile(atlastile)
             gs_uuid_map = {}
             for gsid, gsp in grid.atlas_data.gridsquare_positions.items():
                 gridsquare = GridSquareData(
