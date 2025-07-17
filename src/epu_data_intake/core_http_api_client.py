@@ -169,11 +169,11 @@ class EntityConverter:
                 AtlasTileCreateRequest(
                     atlas_uuid=entity.uuid,
                     uuid=t.uuid,
-                    id=t.id,
+                    tile_id=t.id,
                     position_x=t.tile_position.position[0],
                     position_y=t.tile_position.position[1],
-                    width=t.tile_position.size[0],
-                    height=t.tile_position.size[1],
+                    size_x=t.tile_position.size[0],
+                    size_y=t.tile_position.size[1],
                     file_format=t.file_format,
                     base_filename=t.base_filename,
                 )
@@ -188,11 +188,11 @@ class EntityConverter:
         return AtlasTileCreateRequest(
             atlas_uuid=entity.atlas_uuid,
             uuid=entity.uuid,
-            id=entity.id,
+            tile_id=entity.id,
             position_x=entity.tile_position.position[0],
             position_y=entity.tile_position.position[1],
-            width=entity.tile_position.size[0],
-            height=entity.tile_position.size[1],
+            size_x=entity.tile_position.size[0],
+            size_y=entity.tile_position.size[1],
             file_format=entity.file_format,
             base_filename=entity.base_filename,
         )

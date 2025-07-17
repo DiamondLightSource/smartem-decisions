@@ -66,6 +66,7 @@ class AtlasBaseFields(BaseModel):
 
 class AtlasTileBaseFields(BaseModel):
     uuid: str | None = None
+    tile_id: str | None = None
     position_x: int | None = None
     position_y: int | None = None
     size_x: int | None = None
