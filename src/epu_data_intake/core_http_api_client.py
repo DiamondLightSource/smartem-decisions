@@ -165,7 +165,18 @@ class EntityConverter:
             name=entity.name,
             storage_folder=entity.storage_folder,
             acquisition_date=entity.acquisition_date,
-            tiles=entity.tiles,
+            tiles=[
+                AtlasTileCreateRequest(
+                    atlas_uuid=entity.uuid,
+                    uuid=t.uuid,
+                    id=t.id,
+                    position_x=t.position_x,
+                    position_y=t.position_y,
+                    width=t.width,
+                    height=t.height,
+                )
+                for t in entity.tiles
+            ],
         )
 
     # TODO fix
