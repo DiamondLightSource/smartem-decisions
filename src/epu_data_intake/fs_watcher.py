@@ -299,39 +299,48 @@ class RateLimitedFilesystemEventHandler(FileSystemEventHandler):
             grid.atlas_data = atlas_data
             self.datastore.update_grid(grid)
             logging.debug(f"Updated atlas_data for grid: {grid_uuid}")
-            self.datastore.create_atlas(grid.atlas_data)
-            gs_uuid_map = {}
-            for gsid, gsp in grid.atlas_data.gridsquare_positions.items():
-                gridsquare = GridSquareData(
-                    gridsquare_id=str(gsid),
-                    metadata=None,
-                    grid_uuid=grid.uuid,
-                    center_x=gsp.center[0],
-                    center_y=gsp.center[1],
-                    size_width=gsp.size[0],
-                    size_height=gsp.size[1],
-                )
-                # need to check if each square exists already
-                if found_grid_square := self.datastore.find_gridsquare_by_natural_id(str(gsid)):
-                    gridsquare.uuid = found_grid_square.uuid
-                    self.datastore.update_gridsquare(gridsquare)
-                    gs_uuid_map[str(gsid)] = gridsquare.uuid
-                else:
-                    self.datastore.create_gridsquare(gridsquare)
-                    gs_uuid_map[str(gsid)] = gridsquare.uuid
-            logging.debug(f"Registered all squares for grid: {grid_uuid}")
-            for atlastile in grid.atlas_data.tiles:
-                for gsid, gs_tile_pos in atlastile.gridsquare_positions.items():
-                    for pos in gs_tile_pos:
-                        self.datastore.link_atlastile_to_gridsquare(
-                            AtlasTileGridSquarePositionData(
-                                gridsquare_uuid=gs_uuid_map[gsid],
-                                tile_uuid=atlastile.uuid,
-                                position=pos.position,
-                                size=pos.size,
-                            )
+
+            # Only proceed if atlas data parsing was successful and has gridsquare positions
+            if atlas_data is not None:
+                self.datastore.create_atlas(grid.atlas_data)
+                gs_uuid_map = {}
+
+                # Check if gridsquare_positions exists before iterating
+                if atlas_data.gridsquare_positions is not None:
+                    for gsid, gsp in atlas_data.gridsquare_positions.items():
+                        gridsquare = GridSquareData(
+                            gridsquare_id=str(gsid),
+                            metadata=None,
+                            grid_uuid=grid.uuid,
+                            center_x=gsp.center[0],
+                            center_y=gsp.center[1],
+                            size_width=gsp.size[0],
+                            size_height=gsp.size[1],
                         )
-            logging.debug(f"Linked squares to tiles for gird: {grid_uuid}")
+                        # need to check if each square exists already
+                        if found_grid_square := self.datastore.find_gridsquare_by_natural_id(str(gsid)):
+                            gridsquare.uuid = found_grid_square.uuid
+                            self.datastore.update_gridsquare(gridsquare)
+                            gs_uuid_map[str(gsid)] = gridsquare.uuid
+                        else:
+                            self.datastore.create_gridsquare(gridsquare)
+                            gs_uuid_map[str(gsid)] = gridsquare.uuid
+                    logging.debug(f"Registered all squares for grid: {grid_uuid}")
+
+                # Process atlas tiles only if atlas data and tiles exist
+                if atlas_data.tiles:
+                    for atlastile in atlas_data.tiles:
+                        for gsid, gs_tile_pos in atlastile.gridsquare_positions.items():
+                            for pos in gs_tile_pos:
+                                self.datastore.link_atlastile_to_gridsquare(
+                                    AtlasTileGridSquarePositionData(
+                                        gridsquare_uuid=gs_uuid_map[gsid],
+                                        tile_uuid=atlastile.uuid,
+                                        position=pos.position,
+                                        size=pos.size,
+                                    )
+                                )
+                logging.debug(f"Linked squares to tiles for grid: {grid_uuid}")
 
     def _on_gridsquare_metadata_detected(self, path: str, grid_uuid: str, is_new_file: bool = True):
         logging.info(f"Gridsquare metadata {'detected' if is_new_file else 'updated'}: {path}")
