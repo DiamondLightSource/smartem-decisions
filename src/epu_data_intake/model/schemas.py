@@ -172,7 +172,7 @@ class AtlasData(BaseModel):
     id: str
     acquisition_date: datetime
     storage_folder: str
-    description: str
+    description: str | None = None
     name: str
     tiles: list[AtlasTileData]
     gridsquare_positions: dict[int, GridSquarePosition] | None

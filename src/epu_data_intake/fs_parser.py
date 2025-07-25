@@ -1020,7 +1020,12 @@ class EpuParser:
                     grid_uuid=grid.uuid,  # Set reference to parent grid
                 )
 
-            if grid.atlas_data.gridsquare_positions.get(int(gridsquare_id)) is not None:
+            # Check if atlas data exists and has gridsquare positions before accessing
+            if (
+                grid.atlas_data is not None
+                and grid.atlas_data.gridsquare_positions is not None
+                and grid.atlas_data.gridsquare_positions.get(int(gridsquare_id)) is not None
+            ):
                 found_grid_square = datastore.find_gridsquare_by_natural_id(gridsquare_id)
                 gridsquare.uuid = found_grid_square.uuid
                 datastore.update_gridsquare(gridsquare)
