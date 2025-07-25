@@ -23,7 +23,7 @@ def load_conf():
     return None
 
 
-def setup_postgres_connection():
+def setup_postgres_connection(echo=False):
     load_dotenv(override=False)  # Don't override existing env vars as these might be coming from k8s
     required_env_vars = ["POSTGRES_USER", "POSTGRES_PASSWORD", "POSTGRES_HOST", "POSTGRES_PORT", "POSTGRES_DB"]
 
@@ -38,7 +38,7 @@ def setup_postgres_connection():
     engine = create_engine(
         f"postgresql+psycopg2://{env_vars['POSTGRES_USER']}:{env_vars['POSTGRES_PASSWORD']}@"
         f"{env_vars['POSTGRES_HOST']}:{env_vars['POSTGRES_PORT']}/{env_vars['POSTGRES_DB']}",
-        echo=True,  # TODO test if possible to feed this output through our logger
+        echo=echo,  # Allow controlling SQL logging verbosity
     )
     return engine
 
