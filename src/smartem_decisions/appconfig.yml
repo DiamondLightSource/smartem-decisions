@@ -1,0 +1,17 @@
+app:
+  name: smartem-decisions
+  # There is technically no guarantee that every micrograph will be covered by at most 2 batches.
+  # The size of the batches basically makes incredibly unlikely but there is nothing to guarantee it.
+  particle_select_batch_size: 50000
+
+rabbitmq:
+  queue_name: smartem_decisions
+  routing_key: smartem_decisions
+
+database:
+  # SQLAlchemy connection pool settings
+  pool_size: 10          # Number of connections to maintain in pool
+  max_overflow: 20       # Additional connections beyond pool_size  
+  pool_timeout: 30       # Seconds to wait for connection from pool
+  pool_recycle: 3600     # Seconds after which connection is recreated
+  pool_pre_ping: true    # Validate connections before use (recommended for production)

@@ -3,11 +3,12 @@ import threading
 import time
 
 import typer
+from sqlalchemy.engine import Engine
 from sqlmodel import Session, select
 
 from smartem_decisions.model.database import FoilHole, Grid, GridSquare, Micrograph
 from smartem_decisions.predictions.update import prior_update
-from smartem_decisions.utils import logger, setup_postgres_connection
+from smartem_decisions.utils import get_db_engine, logger
 
 # Default time ranges for processing steps (in seconds)
 DEFAULT_MOTION_CORRECTION_DELAY = (1.0, 3.0)
@@ -20,8 +21,11 @@ def perform_random_updates(
     grid_uuid: str | None = None,
     random_range: tuple[float, float] = (0, 1),
     origin: str = "motion_correction",
+    engine: Engine = None,
 ) -> None:
-    engine = setup_postgres_connection()
+    if engine is None:
+        engine = get_db_engine()
+
     with Session(engine) as sess:
         if grid_uuid is None:
             grid = sess.exec(select(Grid)).first()
@@ -37,7 +41,7 @@ def perform_random_updates(
     return None
 
 
-def simulate_processing_pipeline(micrograph_uuid: str) -> None:
+def simulate_processing_pipeline(micrograph_uuid: str, engine: Engine = None) -> None:
     """
     Simulate the data processing pipeline for a micrograph with random delays.
 
@@ -45,7 +49,11 @@ def simulate_processing_pipeline(micrograph_uuid: str) -> None:
 
     Args:
         micrograph_uuid: UUID of the micrograph to process
+        engine: Optional database engine (uses singleton if not provided)
     """
+    if engine is None:
+        engine = get_db_engine()
+
     processing_steps = [
         ("motion_correction", DEFAULT_MOTION_CORRECTION_DELAY),
         ("ctf", DEFAULT_CTF_DELAY),
@@ -61,9 +69,8 @@ def simulate_processing_pipeline(micrograph_uuid: str) -> None:
         logger.debug(f"Simulating {step_name} for micrograph {micrograph_uuid}, delay: {delay:.2f}s")
         time.sleep(delay)
 
-        # Perform random weight update for this step
+        # Perform random weight update for this step - reuse the same engine
         try:
-            engine = setup_postgres_connection()
             with Session(engine) as sess:
                 # Generate random quality result (True/False)
                 quality_result = random.choice([True, False])
@@ -76,16 +83,19 @@ def simulate_processing_pipeline(micrograph_uuid: str) -> None:
     logger.info(f"Completed processing pipeline simulation for micrograph {micrograph_uuid}")
 
 
-def simulate_processing_pipeline_async(micrograph_uuid: str) -> None:
+def simulate_processing_pipeline_async(micrograph_uuid: str, engine: Engine = None) -> None:
     """
     Start the processing pipeline simulation in a background thread.
 
     Args:
         micrograph_uuid: UUID of the micrograph to process
+        engine: Optional database engine (uses singleton if not provided)
     """
+    if engine is None:
+        engine = get_db_engine()
 
     def run_simulation():
-        simulate_processing_pipeline(micrograph_uuid)
+        simulate_processing_pipeline(micrograph_uuid, engine)
 
     # Start simulation in background thread so it doesn't block the consumer
     thread = threading.Thread(target=run_simulation, daemon=True)
