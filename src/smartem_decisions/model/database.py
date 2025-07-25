@@ -293,7 +293,7 @@ def _create_db_and_tables(engine):
 
             # atlas indexes
             sess.execute(text("CREATE INDEX IF NOT EXISTS idx_atlas_id_pattern ON atlas (uuid text_pattern_ops);"))
-            sess.execute(text("CREATE INDEX IF NOT EXISTS idx_atlas_grid_id ON atlas (grid_id);"))
+            sess.execute(text("CREATE INDEX IF NOT EXISTS idx_atlas_grid_uuid ON atlas (grid_uuid);"))
 
             # grid indexes
             sess.execute(text("CREATE INDEX IF NOT EXISTS idx_grid_id_pattern ON grid (uuid text_pattern_ops);"))
