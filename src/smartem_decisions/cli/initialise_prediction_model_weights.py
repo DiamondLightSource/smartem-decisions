@@ -1,19 +1,22 @@
 import typer
+from sqlalchemy.engine import Engine
 from sqlmodel import Session, select
 
 from smartem_decisions.model.database import Grid, QualityPredictionModel, QualityPredictionModelWeight
-from smartem_decisions.utils import logger, setup_postgres_connection
+from smartem_decisions.utils import get_db_engine, logger
 
 
-def initialise_all_models_for_grid(grid_uuid: str) -> None:
+def initialise_all_models_for_grid(grid_uuid: str, engine: Engine = None) -> None:
     """
     Initialise prediction model weights for all available models for a specific grid.
 
     Args:
         grid_uuid: UUID of the grid to initialise weights for
-        default_weight: Default weight value to assign (default: DEFAULT_PREDICTION_MODEL_WEIGHT)
+        engine: Optional database engine (uses singleton if not provided)
     """
-    engine = setup_postgres_connection()
+    if engine is None:
+        engine = get_db_engine()
+
     with Session(engine) as sess:
         # Get all available prediction models
         models = sess.exec(select(QualityPredictionModel)).all()
@@ -45,7 +48,9 @@ def initialise_all_models_for_grid(grid_uuid: str) -> None:
         sess.commit()
 
 
-def initialise_prediction_model_for_grid(name: str, weight: float, grid_uuid: str | None = None) -> None:
+def initialise_prediction_model_for_grid(
+    name: str, weight: float, grid_uuid: str | None = None, engine: Engine = None
+) -> None:
     """
     Initialise a single prediction model weight for a grid (CLI interface).
 
@@ -53,8 +58,11 @@ def initialise_prediction_model_for_grid(name: str, weight: float, grid_uuid: st
         name: Prediction model name
         weight: Weight value to assign
         grid_uuid: Grid UUID (if None, uses first available grid)
+        engine: Optional database engine (uses singleton if not provided)
     """
-    engine = setup_postgres_connection()
+    if engine is None:
+        engine = get_db_engine()
+
     with Session(engine) as sess:
         if grid_uuid is None:
             grid = sess.exec(select(Grid)).first()

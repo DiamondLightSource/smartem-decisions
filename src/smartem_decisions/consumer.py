@@ -42,6 +42,7 @@ from smartem_decisions.model.mq_event import (
     MicrographUpdatedEvent,
 )
 from smartem_decisions.utils import (
+    get_db_engine,
     load_conf,
     rmq_consumer,
 )
@@ -52,6 +53,9 @@ conf = load_conf()
 # Initialize logger with default ERROR level (will be reconfigured in main())
 log_manager = LogManager.get_instance("smartem_decisions")
 logger = log_manager.configure(LogConfig(level=logging.ERROR, console=True))
+
+# Get singleton database engine for reuse across all event handlers
+db_engine = get_db_engine()
 
 
 def handle_acquisition_created(event_data: dict[str, Any]) -> None:
@@ -174,7 +178,7 @@ def handle_grid_created(event_data: dict[str, Any], channel, delivery_tag) -> bo
 
         # Initialise prediction model weights for all available models
         try:
-            initialise_all_models_for_grid(event.uuid)
+            initialise_all_models_for_grid(event.uuid, engine=db_engine)
             logger.info(f"Successfully initialised prediction model weights for grid {event.uuid}")
         except Exception as weight_init_error:
             logger.error(f"Failed to initialise prediction model weights for grid {event.uuid}: {weight_init_error}")
@@ -245,7 +249,7 @@ def handle_gridsquare_created(event_data: dict[str, Any], channel, delivery_tag)
 
         # Generate random predictions for all available models
         try:
-            generate_predictions_for_gridsquare(event.uuid, event.grid_uuid)
+            generate_predictions_for_gridsquare(event.uuid, event.grid_uuid, engine=db_engine)
             logger.info(f"Successfully generated predictions for gridsquare {event.uuid}")
         except Exception as prediction_error:
             logger.error(f"Failed to generate predictions for gridsquare {event.uuid}: {prediction_error}")
@@ -316,7 +320,7 @@ def handle_foilhole_created(event_data: dict[str, Any], channel, delivery_tag) -
 
         # Generate random predictions for all available models
         try:
-            generate_predictions_for_foilhole(event.uuid, event.gridsquare_uuid)
+            generate_predictions_for_foilhole(event.uuid, event.gridsquare_uuid, engine=db_engine)
             logger.info(f"Successfully generated predictions for foilhole {event.uuid}")
         except Exception as prediction_error:
             logger.error(f"Failed to generate predictions for foilhole {event.uuid}: {prediction_error}")
@@ -387,7 +391,7 @@ def handle_micrograph_created(event_data: dict[str, Any], channel, delivery_tag)
 
         # Start simulated processing pipeline in background
         try:
-            simulate_processing_pipeline_async(event.uuid)
+            simulate_processing_pipeline_async(event.uuid, engine=db_engine)
             logger.info(f"Started processing pipeline simulation for micrograph {event.uuid}")
         except Exception as simulation_error:
             logger.error(f"Failed to start processing simulation for micrograph {event.uuid}: {simulation_error}")

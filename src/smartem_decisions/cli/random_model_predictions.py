@@ -2,10 +2,11 @@ import random
 from typing import Annotated
 
 import typer
+from sqlalchemy.engine import Engine
 from sqlmodel import Session, select
 
 from smartem_decisions.model.database import FoilHole, Grid, GridSquare, QualityPrediction, QualityPredictionModel
-from smartem_decisions.utils import logger, setup_postgres_connection
+from smartem_decisions.utils import get_db_engine, logger
 
 DEFAULT_PREDICTION_RANGE = (0.0, 1.0)
 
@@ -17,10 +18,14 @@ def generate_random_predictions(
     level: Annotated[
         str, typer.Option(help="Magnification level at which to generate predictions. Options are 'hole' or 'square'")
     ] = "hole",
+    engine: Engine = None,
 ) -> None:
     if level not in ("hole", "square"):
         raise ValueError(f"Level must be set to either 'hole' or 'square' not {level}")
-    engine = setup_postgres_connection()
+
+    if engine is None:
+        engine = get_db_engine()
+
     with Session(engine) as sess:
         if grid_uuid is None:
             grid = sess.exec(select(Grid)).first()
@@ -57,15 +62,20 @@ def generate_random_predictions(
     return None
 
 
-def generate_predictions_for_gridsquare(gridsquare_uuid: str, grid_uuid: str | None = None) -> None:
+def generate_predictions_for_gridsquare(
+    gridsquare_uuid: str, grid_uuid: str | None = None, engine: Engine = None
+) -> None:
     """
     Generate random predictions for a single gridsquare using all available models.
 
     Args:
         gridsquare_uuid: UUID of the gridsquare to generate predictions for
         grid_uuid: UUID of the parent grid (optional, will be looked up if not provided)
+        engine: Optional database engine (uses singleton if not provided)
     """
-    engine = setup_postgres_connection()
+    if engine is None:
+        engine = get_db_engine()
+
     with Session(engine) as sess:
         # Get all available prediction models
         models = sess.exec(select(QualityPredictionModel)).all()
@@ -113,15 +123,20 @@ def generate_predictions_for_gridsquare(gridsquare_uuid: str, grid_uuid: str | N
             logger.info(f"Generated {len(predictions)} predictions for gridsquare {gridsquare_uuid}")
 
 
-def generate_predictions_for_foilhole(foilhole_uuid: str, gridsquare_uuid: str | None = None) -> None:
+def generate_predictions_for_foilhole(
+    foilhole_uuid: str, gridsquare_uuid: str | None = None, engine: Engine = None
+) -> None:
     """
     Generate random predictions for a single foilhole using all available models.
 
     Args:
         foilhole_uuid: UUID of the foilhole to generate predictions for
         gridsquare_uuid: UUID of the parent gridsquare (optional, for validation if provided)
+        engine: Optional database engine (uses singleton if not provided)
     """
-    engine = setup_postgres_connection()
+    if engine is None:
+        engine = get_db_engine()
+
     with Session(engine) as sess:
         # Get all available prediction models
         models = sess.exec(select(QualityPredictionModel)).all()
