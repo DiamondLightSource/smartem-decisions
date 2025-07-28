@@ -3,8 +3,6 @@ import logging.handlers
 import sys
 from dataclasses import dataclass, field
 
-from smartem_decisions.utils import load_conf
-
 
 @dataclass
 class LogConfig:
@@ -69,30 +67,6 @@ class LogManager:
             handler.close()
         self.handlers.clear()
 
-
-def setup_logger():
-    # Don't create file handlers in test environment to avoid resource warnings
-    import os
-
-    conf = load_conf()
-    file_path = (
-        None
-        if "pytest" in os.environ.get("_", "") or "PYTEST_CURRENT_TEST" in os.environ
-        else conf["app"]["log_file"]
-        if conf and conf.get("app", {}).get("log_file")
-        else "smartem_decisions-core.log"
-    )
-
-    return LogManager.get_instance("smartem_decisions").configure(
-        LogConfig(
-            level=logging.INFO,
-            console=True,
-            file_path=file_path,
-        )
-    )
-
-
-logger = setup_logger()
 
 # Usage example
 if __name__ == "__main__":

@@ -1,3 +1,4 @@
+import logging
 import os
 
 import yaml
@@ -5,12 +6,24 @@ from dotenv import load_dotenv
 from sqlalchemy.engine import Engine
 from sqlmodel import create_engine
 
-from smartem_decisions.log_manager import logger
+from smartem_decisions.log_manager import LogConfig, LogManager
 from smartem_decisions.rabbitmq import RabbitMQConsumer, RabbitMQPublisher
 
 
 def load_conf() -> dict | None:
     config_path = os.getenv("SMARTEM_DECISIONS_CONFIG") or os.path.join(os.path.dirname(__file__), "appconfig.yaml")
+    logger_file_path = (
+        None
+        if "pytest" in os.environ.get("_", "") or "PYTEST_CURRENT_TEST" in os.environ
+        else "smartem_decisions-core.log"
+    )
+    logger = LogManager.get_instance("smartem_decisions").configure(
+        LogConfig(
+            level=logging.INFO,
+            console=True,
+            file_path=logger_file_path,
+        )
+    )
     try:
         with open(config_path) as f:
             conf = yaml.safe_load(f)
@@ -24,9 +37,32 @@ def load_conf() -> dict | None:
     return None
 
 
+def setup_logger():
+    # Don't create file handlers in test environment to avoid resource warnings
+    import os
+
+    conf = load_conf()
+    file_path = (
+        None
+        if "pytest" in os.environ.get("_", "") or "PYTEST_CURRENT_TEST" in os.environ
+        else conf["app"]["log_file"]
+        if conf and conf.get("app", {}).get("log_file")
+        else "smartem_decisions-core.log"
+    )
+
+    return LogManager.get_instance("smartem_decisions").configure(
+        LogConfig(
+            level=logging.INFO,
+            console=True,
+            file_path=file_path,
+        )
+    )
+
+
+logger = setup_logger()
+
 # Global singleton engine instance
 _db_engine: Engine | None = None
-
 
 def setup_postgres_connection(echo=False, force_new=False) -> Engine:
     """
@@ -44,7 +80,6 @@ def setup_postgres_connection(echo=False, force_new=False) -> Engine:
     # Return existing engine unless forced to create new one
     if _db_engine is not None and not force_new:
         return _db_engine
-
     load_dotenv(override=False)  # Don't override existing env vars as these might be coming from k8s
     required_env_vars = ["POSTGRES_USER", "POSTGRES_PASSWORD", "POSTGRES_HOST", "POSTGRES_PORT", "POSTGRES_DB"]
 

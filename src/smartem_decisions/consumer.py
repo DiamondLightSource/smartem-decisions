@@ -13,39 +13,33 @@ import pika
 from dotenv import load_dotenv
 from pydantic import ValidationError
 
-from smartem_decisions.cli.initialise_prediction_model_weights import initialise_all_models_for_grid
+from smartem_decisions.cli.initialise_prediction_model_weights import \
+    initialise_all_models_for_grid
 from smartem_decisions.cli.random_model_predictions import (
-    generate_predictions_for_foilhole,
-    generate_predictions_for_gridsquare,
-)
-from smartem_decisions.cli.random_prior_updates import simulate_processing_pipeline_async
+    generate_predictions_for_foilhole, generate_predictions_for_gridsquare)
+from smartem_decisions.cli.random_prior_updates import \
+    simulate_processing_pipeline_async
 from smartem_decisions.log_manager import LogConfig, LogManager
-from smartem_decisions.model.mq_event import (
-    AcquisitionCreatedEvent,
-    AcquisitionDeletedEvent,
-    AcquisitionUpdatedEvent,
-    AtlasCreatedEvent,
-    AtlasDeletedEvent,
-    AtlasUpdatedEvent,
-    FoilHoleCreatedEvent,
-    FoilHoleDeletedEvent,
-    FoilHoleUpdatedEvent,
-    GridCreatedEvent,
-    GridDeletedEvent,
-    GridSquareCreatedEvent,
-    GridSquareDeletedEvent,
-    GridSquareUpdatedEvent,
-    GridUpdatedEvent,
-    MessageQueueEventType,
-    MicrographCreatedEvent,
-    MicrographDeletedEvent,
-    MicrographUpdatedEvent,
-)
-from smartem_decisions.utils import (
-    get_db_engine,
-    load_conf,
-    rmq_consumer,
-)
+from smartem_decisions.model.mq_event import (AcquisitionCreatedEvent,
+                                              AcquisitionDeletedEvent,
+                                              AcquisitionUpdatedEvent,
+                                              AtlasCreatedEvent,
+                                              AtlasDeletedEvent,
+                                              AtlasUpdatedEvent,
+                                              FoilHoleCreatedEvent,
+                                              FoilHoleDeletedEvent,
+                                              FoilHoleUpdatedEvent,
+                                              GridCreatedEvent,
+                                              GridDeletedEvent,
+                                              GridSquareCreatedEvent,
+                                              GridSquareDeletedEvent,
+                                              GridSquareUpdatedEvent,
+                                              GridUpdatedEvent,
+                                              MessageQueueEventType,
+                                              MicrographCreatedEvent,
+                                              MicrographDeletedEvent,
+                                              MicrographUpdatedEvent)
+from smartem_decisions.utils import get_db_engine, load_conf, rmq_consumer
 
 load_dotenv(override=False)  # Don't override existing env vars as these might be coming from k8s
 conf = load_conf()
@@ -585,7 +579,15 @@ def main():
 
     # Reconfigure logger with the specified verbosity level
     global logger
-    logger = log_manager.configure(LogConfig(level=log_level, console=True, file_path="smartem_decisions-core.log"))
+    logger = log_manager.configure(
+        LogConfig(
+            level=log_level,
+            console=True,
+            file_path=conf.get("app", {}).get("log_file", "smartem_decisions-core.log")
+            if conf
+            else "smartem_decisions-core.log",
+        )
+    )
 
     # Set up signal handlers
     signal.signal(signal.SIGINT, signal_handler)
