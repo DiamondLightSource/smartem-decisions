@@ -9,8 +9,8 @@ from smartem_decisions.log_manager import logger
 from smartem_decisions.rabbitmq import RabbitMQConsumer, RabbitMQPublisher
 
 
-def load_conf():
-    config_path = os.path.join(os.path.dirname(__file__), "appconfig.yml")
+def load_conf() -> dict | None:
+    config_path = os.getenv("SMARTEM_DECISIONS_CONFIG") or os.path.join(os.path.dirname(__file__), "appconfig.yaml")
     try:
         with open(config_path) as f:
             conf = yaml.safe_load(f)
