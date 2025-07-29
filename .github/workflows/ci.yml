@@ -14,7 +14,7 @@ on:
       - opened        # When PR is first created
       - synchronize   # When new commits are pushed to PR
       - ready_for_review  # When a draft PR is marked as ready
-      - edited        # When PR title/description is edited
+      # - edited      # When PR title/description is edited (DISABLED to avoid unnecessary runs)
     paths-ignore:
       - '**.md'       # Skip when only markdown files change. TODO actually we'd want to rebuild the docs in this case
       - 'docs/**'     # Skip when only documentation changes. TODO actually we'd want to rebuild the docs in this case
