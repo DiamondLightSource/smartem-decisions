@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>smartem_decisions.utils &#8212; smartem-decisions 0.1.dev220+g5b49947 documentation</title>
+    <title>smartem_decisions.utils &#8212; smartem-decisions 0.1.dev225+gd6e467e documentation</title>
   
   
   
@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../_static/documentation_options.js?v=dee72893"></script>
+    <script src="../_static/documentation_options.js?v=90788e7e"></script>
     <script src="../_static/doctools.js?v=9bcbadda"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -415,11 +415,11 @@
 <li class="toctree-l3"><a class="reference internal" href="smartem_decisions.model.mq_event.html"><code class="docutils literal notranslate"><span class="pre">smartem_decisions.model.mq_event</span></code></a></li>
 </ul>
 </details></li>
+<li class="toctree-l2"><a class="reference internal" href="smartem_decisions.mq_publisher.html"><code class="docutils literal notranslate"><span class="pre">smartem_decisions.mq_publisher</span></code></a></li>
 <li class="toctree-l2 has-children"><a class="reference internal" href="smartem_decisions.predictions.html"><code class="docutils literal notranslate"><span class="pre">smartem_decisions.predictions</span></code></a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
 <li class="toctree-l3"><a class="reference internal" href="smartem_decisions.predictions.update.html"><code class="docutils literal notranslate"><span class="pre">smartem_decisions.predictions.update</span></code></a></li>
 </ul>
 </details></li>
-<li class="toctree-l2"><a class="reference internal" href="smartem_decisions.rabbitmq.html"><code class="docutils literal notranslate"><span class="pre">smartem_decisions.rabbitmq</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="smartem_decisions.run_api.html"><code class="docutils literal notranslate"><span class="pre">smartem_decisions.run_api</span></code></a></li>
 <li class="toctree-l2 current active"><a class="current reference internal" href="#"><code class="docutils literal notranslate"><span class="pre">smartem_decisions.utils</span></code></a></li>
 </ul>
@@ -494,21 +494,70 @@
 <p class="rubric">Members</p>
 <div class="pst-scrollable-table-container"><table class="autosummary longtable table">
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#smartem_decisions.utils.get_db_engine" title="smartem_decisions.utils.get_db_engine"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_db_engine</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#smartem_decisions.utils.RabbitMQConnection" title="smartem_decisions.utils.RabbitMQConnection"><code class="xref py py-obj docutils literal notranslate"><span class="pre">RabbitMQConnection</span></code></a></p></td>
+<td><p>Base class for RabbitMQ connection management</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#smartem_decisions.utils.RabbitMQConsumer" title="smartem_decisions.utils.RabbitMQConsumer"><code class="xref py py-obj docutils literal notranslate"><span class="pre">RabbitMQConsumer</span></code></a></p></td>
+<td><p>Consumer class for receiving messages from RabbitMQ</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#smartem_decisions.utils.RabbitMQPublisher" title="smartem_decisions.utils.RabbitMQPublisher"><code class="xref py py-obj docutils literal notranslate"><span class="pre">RabbitMQPublisher</span></code></a></p></td>
+<td><p>Publisher class for sending messages to RabbitMQ</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#smartem_decisions.utils.get_db_engine" title="smartem_decisions.utils.get_db_engine"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_db_engine</span></code></a></p></td>
 <td><p>Get the singleton database engine.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#smartem_decisions.utils.get_log_file_path" title="smartem_decisions.utils.get_log_file_path"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_log_file_path</span></code></a></p></td>
+<td><p>Get the log file path with validation and fallback handling.</p></td>
 </tr>
 <tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">load_conf</span></code></p></td>
 <td><p></p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#smartem_decisions.utils.setup_postgres_connection" title="smartem_decisions.utils.setup_postgres_connection"><code class="xref py py-obj docutils literal notranslate"><span class="pre">setup_postgres_connection</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#smartem_decisions.utils.setup_logger" title="smartem_decisions.utils.setup_logger"><code class="xref py py-obj docutils literal notranslate"><span class="pre">setup_logger</span></code></a></p></td>
+<td><p>Set up logger with consolidated configuration logic.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#smartem_decisions.utils.setup_postgres_connection" title="smartem_decisions.utils.setup_postgres_connection"><code class="xref py py-obj docutils literal notranslate"><span class="pre">setup_postgres_connection</span></code></a></p></td>
 <td><p>Get or create a singleton database engine with connection pooling.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#smartem_decisions.utils.setup_rabbitmq" title="smartem_decisions.utils.setup_rabbitmq"><code class="xref py py-obj docutils literal notranslate"><span class="pre">setup_rabbitmq</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#smartem_decisions.utils.setup_rabbitmq" title="smartem_decisions.utils.setup_rabbitmq"><code class="xref py py-obj docutils literal notranslate"><span class="pre">setup_rabbitmq</span></code></a></p></td>
 <td><p>Create RabbitMQ publisher and consumer instances using configuration settings</p></td>
 </tr>
 </tbody>
 </table>
 </div>
+<dl class="py function">
+<dt class="sig sig-object py" id="smartem_decisions.utils.get_log_file_path">
+<span class="sig-prename descclassname"><span class="pre">smartem_decisions.utils.</span></span><span class="sig-name descname"><span class="pre">get_log_file_path</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">conf</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.13)"><span class="pre">dict</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.13)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.13)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../_modules/smartem_decisions/utils.html#get_log_file_path"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#smartem_decisions.utils.get_log_file_path" title="Link to this definition">#</a></dt>
+<dd><p>Get the log file path with validation and fallback handling.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>conf</strong> – Configuration dictionary (if None, will load from config file)</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Valid log file path or None for test environments</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)">str</a> | None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="smartem_decisions.utils.setup_logger">
+<span class="sig-prename descclassname"><span class="pre">smartem_decisions.utils.</span></span><span class="sig-name descname"><span class="pre">setup_logger</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">level</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><span class="pre">int</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">20</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">conf</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.13)"><span class="pre">dict</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.13)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/smartem_decisions/utils.html#setup_logger"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#smartem_decisions.utils.setup_logger" title="Link to this definition">#</a></dt>
+<dd><p>Set up logger with consolidated configuration logic.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>level</strong> – Logging level (default: INFO)</p></li>
+<li><p><strong>conf</strong> – Configuration dictionary (if None, will load from config file)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Configured logger instance</p>
+</dd>
+</dl>
+</dd></dl>
+
 <dl class="py function">
 <dt class="sig sig-object py" id="smartem_decisions.utils.setup_postgres_connection">
 <span class="sig-prename descclassname"><span class="pre">smartem_decisions.utils.</span></span><span class="sig-name descname"><span class="pre">setup_postgres_connection</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">echo</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">force_new</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Engine</span></span></span><a class="reference internal" href="../_modules/smartem_decisions/utils.html#setup_postgres_connection"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#smartem_decisions.utils.setup_postgres_connection" title="Link to this definition">#</a></dt>
@@ -535,6 +584,117 @@
 <dd class="field-odd"><p>SQLAlchemy Engine instance</p>
 </dd>
 </dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="smartem_decisions.utils.RabbitMQConnection">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">smartem_decisions.utils.</span></span><span class="sig-name descname"><span class="pre">RabbitMQConnection</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">connection_params</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.13)"><span class="pre">dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.13)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.13)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">exchange</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">queue</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'smartem_decisions'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/smartem_decisions/utils.html#RabbitMQConnection"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#smartem_decisions.utils.RabbitMQConnection" title="Link to this definition">#</a></dt>
+<dd><p>Base class for RabbitMQ connection management</p>
+<p>Initialize RabbitMQ connection</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>connection_params</strong> – Dictionary with RabbitMQ connection parameters. If None, load from environment variables</p></li>
+<li><p><strong>exchange</strong> – Exchange name to use (default is direct exchange “”)</p></li>
+<li><p><strong>queue</strong> – Queue name to use</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="smartem_decisions.utils.RabbitMQConnection.connect">
+<span class="sig-name descname"><span class="pre">connect</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.13)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../_modules/smartem_decisions/utils.html#RabbitMQConnection.connect"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#smartem_decisions.utils.RabbitMQConnection.connect" title="Link to this definition">#</a></dt>
+<dd><p>Establish connection to RabbitMQ server</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="smartem_decisions.utils.RabbitMQConnection.close">
+<span class="sig-name descname"><span class="pre">close</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.13)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../_modules/smartem_decisions/utils.html#RabbitMQConnection.close"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#smartem_decisions.utils.RabbitMQConnection.close" title="Link to this definition">#</a></dt>
+<dd><p>Close the connection to RabbitMQ</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="smartem_decisions.utils.RabbitMQConnection.channel">
+<span class="sig-name descname"><span class="pre">channel</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/smartem_decisions/utils.html#RabbitMQConnection.channel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#smartem_decisions.utils.RabbitMQConnection.channel" title="Link to this definition">#</a></dt>
+<dd><p>Get the channel object</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The current channel object</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="smartem_decisions.utils.RabbitMQPublisher">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">smartem_decisions.utils.</span></span><span class="sig-name descname"><span class="pre">RabbitMQPublisher</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">connection_params</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.13)"><span class="pre">dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.13)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.13)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">exchange</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">queue</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'smartem_decisions'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/smartem_decisions/utils.html#RabbitMQPublisher"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#smartem_decisions.utils.RabbitMQPublisher" title="Link to this definition">#</a></dt>
+<dd><p>Publisher class for sending messages to RabbitMQ</p>
+<p>Initialize RabbitMQ connection</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>connection_params</strong> – Dictionary with RabbitMQ connection parameters. If None, load from environment variables</p></li>
+<li><p><strong>exchange</strong> – Exchange name to use (default is direct exchange “”)</p></li>
+<li><p><strong>queue</strong> – Queue name to use</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="smartem_decisions.utils.RabbitMQPublisher.publish_event">
+<span class="sig-name descname"><span class="pre">publish_event</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">event_type</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="smartem_decisions.model.mq_event.html#smartem_decisions.model.mq_event.MessageQueueEventType" title="smartem_decisions.model.mq_event.MessageQueueEventType"><span class="pre">MessageQueueEventType</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">payload</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">BaseModel</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.13)"><span class="pre">dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.13)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.13)"><span class="pre">bool</span></a></span></span><a class="reference internal" href="../_modules/smartem_decisions/utils.html#RabbitMQPublisher.publish_event"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#smartem_decisions.utils.RabbitMQPublisher.publish_event" title="Link to this definition">#</a></dt>
+<dd><p>Publish an event to RabbitMQ</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>event_type</strong> – Type of event from EventType enum</p></li>
+<li><p><strong>payload</strong> – Event payload, either as Pydantic model or dictionary</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>True if message was published successfully</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.13)">bool</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="smartem_decisions.utils.RabbitMQConsumer">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">smartem_decisions.utils.</span></span><span class="sig-name descname"><span class="pre">RabbitMQConsumer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">connection_params</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.13)"><span class="pre">dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.13)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.13)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">exchange</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">queue</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'smartem_decisions'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/smartem_decisions/utils.html#RabbitMQConsumer"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#smartem_decisions.utils.RabbitMQConsumer" title="Link to this definition">#</a></dt>
+<dd><p>Consumer class for receiving messages from RabbitMQ</p>
+<p>Initialize RabbitMQ connection</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>connection_params</strong> – Dictionary with RabbitMQ connection parameters. If None, load from environment variables</p></li>
+<li><p><strong>exchange</strong> – Exchange name to use (default is direct exchange “”)</p></li>
+<li><p><strong>queue</strong> – Queue name to use</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="smartem_decisions.utils.RabbitMQConsumer.consume">
+<span class="sig-name descname"><span class="pre">consume</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">callback</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Callable" title="(in Python v3.13)"><span class="pre">Callable</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">prefetch_count</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><span class="pre">int</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.13)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../_modules/smartem_decisions/utils.html#RabbitMQConsumer.consume"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#smartem_decisions.utils.RabbitMQConsumer.consume" title="Link to this definition">#</a></dt>
+<dd><p>Start consuming messages from the queue</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>callback</strong> – Callback function to process messages</p></li>
+<li><p><strong>prefetch_count</strong> – Maximum number of unacknowledged messages (default: 1)</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="smartem_decisions.utils.RabbitMQConsumer.stop_consuming">
+<span class="sig-name descname"><span class="pre">stop_consuming</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.13)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../_modules/smartem_decisions/utils.html#RabbitMQConsumer.stop_consuming"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#smartem_decisions.utils.RabbitMQConsumer.stop_consuming" title="Link to this definition">#</a></dt>
+<dd><p>Stop consuming messages</p>
+</dd></dl>
+
 </dd></dl>
 
 <dl class="py function">
@@ -606,8 +766,25 @@
   </div>
   <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
     <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#smartem_decisions.utils.get_log_file_path"><code class="docutils literal notranslate"><span class="pre">get_log_file_path()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#smartem_decisions.utils.setup_logger"><code class="docutils literal notranslate"><span class="pre">setup_logger()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#smartem_decisions.utils.setup_postgres_connection"><code class="docutils literal notranslate"><span class="pre">setup_postgres_connection()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#smartem_decisions.utils.get_db_engine"><code class="docutils literal notranslate"><span class="pre">get_db_engine()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#smartem_decisions.utils.RabbitMQConnection"><code class="docutils literal notranslate"><span class="pre">RabbitMQConnection</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#smartem_decisions.utils.RabbitMQConnection.connect"><code class="docutils literal notranslate"><span class="pre">RabbitMQConnection.connect()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#smartem_decisions.utils.RabbitMQConnection.close"><code class="docutils literal notranslate"><span class="pre">RabbitMQConnection.close()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#smartem_decisions.utils.RabbitMQConnection.channel"><code class="docutils literal notranslate"><span class="pre">RabbitMQConnection.channel()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#smartem_decisions.utils.RabbitMQPublisher"><code class="docutils literal notranslate"><span class="pre">RabbitMQPublisher</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#smartem_decisions.utils.RabbitMQPublisher.publish_event"><code class="docutils literal notranslate"><span class="pre">RabbitMQPublisher.publish_event()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#smartem_decisions.utils.RabbitMQConsumer"><code class="docutils literal notranslate"><span class="pre">RabbitMQConsumer</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#smartem_decisions.utils.RabbitMQConsumer.consume"><code class="docutils literal notranslate"><span class="pre">RabbitMQConsumer.consume()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#smartem_decisions.utils.RabbitMQConsumer.stop_consuming"><code class="docutils literal notranslate"><span class="pre">RabbitMQConsumer.stop_consuming()</span></code></a></li>
+</ul>
+</li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#smartem_decisions.utils.setup_rabbitmq"><code class="docutils literal notranslate"><span class="pre">setup_rabbitmq()</span></code></a></li>
 </ul>
   </nav></div>

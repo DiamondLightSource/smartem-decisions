@@ -20,7 +20,6 @@
         model
         mq_publisher
         predictions
-        rabbitmq
         run_api
         utils
     

@@ -7,7 +7,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>smartem_decisions.utils &#8212; smartem-decisions 0.1.dev220+g5b49947 documentation</title>
+    <title>smartem_decisions.utils &#8212; smartem-decisions 0.1.dev225+gd6e467e documentation</title>
   
   
   
@@ -40,7 +40,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../../_static/documentation_options.js?v=dee72893"></script>
+    <script src="../../_static/documentation_options.js?v=90788e7e"></script>
     <script src="../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -442,31 +442,114 @@
                 <article class="bd-article">
                   
   <h1>Source code for smartem_decisions.utils</h1><div class="highlight"><pre>
-<span></span><span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span></span><span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Callable</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">datetime</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span>
 
+<span class="kn">import</span><span class="w"> </span><span class="nn">pika</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">yaml</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">dotenv</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_dotenv</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pydantic</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseModel</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">sqlalchemy.engine</span><span class="w"> </span><span class="kn">import</span> <span class="n">Engine</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">sqlmodel</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_engine</span>
 
-<span class="kn">from</span><span class="w"> </span><span class="nn">smartem_decisions.log_manager</span><span class="w"> </span><span class="kn">import</span> <span class="n">logger</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">smartem_decisions.rabbitmq</span><span class="w"> </span><span class="kn">import</span> <span class="n">RabbitMQConsumer</span><span class="p">,</span> <span class="n">RabbitMQPublisher</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">smartem_decisions.log_manager</span><span class="w"> </span><span class="kn">import</span> <span class="n">LogConfig</span><span class="p">,</span> <span class="n">LogManager</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">smartem_decisions.model.mq_event</span><span class="w"> </span><span class="kn">import</span> <span class="n">MessageQueueEventType</span>
 
 
-<span class="k">def</span><span class="w"> </span><span class="nf">load_conf</span><span class="p">():</span>
-    <span class="n">config_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="vm">__file__</span><span class="p">),</span> <span class="s2">&quot;appconfig.yml&quot;</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">load_conf</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">dict</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="n">config_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;SMARTEM_DECISIONS_CONFIG&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="vm">__file__</span><span class="p">),</span> <span class="s2">&quot;appconfig.yml&quot;</span><span class="p">)</span>
     <span class="k">try</span><span class="p">:</span>
         <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">config_path</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
             <span class="n">conf</span> <span class="o">=</span> <span class="n">yaml</span><span class="o">.</span><span class="n">safe_load</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">conf</span>
     <span class="k">except</span> <span class="ne">FileNotFoundError</span><span class="p">:</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Configuration file not found at </span><span class="si">{</span><span class="n">config_path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="c1"># Use basic logging since logger might not be configured yet</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Warning: Configuration file not found at </span><span class="si">{</span><span class="n">config_path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
     <span class="k">except</span> <span class="n">yaml</span><span class="o">.</span><span class="n">YAMLError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error parsing YAML file: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Warning: Error parsing YAML file: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
     <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;An unexpected error occurred: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Warning: An unexpected error occurred: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
     <span class="k">return</span> <span class="kc">None</span>
 
+
+<div class="viewcode-block" id="get_log_file_path">
+<a class="viewcode-back" href="../../_api/smartem_decisions.utils.html#smartem_decisions.utils.get_log_file_path">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_log_file_path</span><span class="p">(</span><span class="n">conf</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Get the log file path with validation and fallback handling.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        conf: Configuration dictionary (if None, will load from config file)</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        str | None: Valid log file path or None for test environments</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Don&#39;t create file handlers in test environment to avoid resource warnings</span>
+    <span class="k">if</span> <span class="s2">&quot;pytest&quot;</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;_&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">&quot;PYTEST_CURRENT_TEST&quot;</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span>
+
+    <span class="k">if</span> <span class="n">conf</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">conf</span> <span class="o">=</span> <span class="n">load_conf</span><span class="p">()</span>
+
+    <span class="c1"># Get log file path from config or use default</span>
+    <span class="n">log_file</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">conf</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;app&quot;</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;log_file&quot;</span><span class="p">,</span> <span class="s2">&quot;smartem_decisions-core.log&quot;</span><span class="p">)</span> <span class="k">if</span> <span class="n">conf</span> <span class="k">else</span> <span class="s2">&quot;smartem_decisions-core.log&quot;</span>
+    <span class="p">)</span>
+
+    <span class="c1"># Validate and ensure directory exists</span>
+    <span class="k">if</span> <span class="n">log_file</span><span class="p">:</span>
+        <span class="n">log_dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="n">log_file</span><span class="p">))</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="c1"># Create directory if it doesn&#39;t exist</span>
+            <span class="k">if</span> <span class="n">log_dir</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">log_dir</span><span class="p">):</span>
+                <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">log_dir</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+            <span class="c1"># Test if we can write to the directory</span>
+            <span class="n">test_file</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">log_dir</span> <span class="ow">or</span> <span class="s2">&quot;.&quot;</span><span class="p">,</span> <span class="s2">&quot;.write_test&quot;</span><span class="p">)</span>
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">test_file</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+                <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;test&quot;</span><span class="p">)</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">test_file</span><span class="p">)</span>
+
+            <span class="k">return</span> <span class="n">log_file</span>
+        <span class="k">except</span> <span class="p">(</span><span class="ne">OSError</span><span class="p">,</span> <span class="ne">PermissionError</span><span class="p">)</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Warning: Cannot write to log directory </span><span class="si">{</span><span class="n">log_dir</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Falling back to current directory&quot;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="s2">&quot;smartem_decisions-core.log&quot;</span>
+
+    <span class="k">return</span> <span class="s2">&quot;smartem_decisions-core.log&quot;</span></div>
+
+
+
+<div class="viewcode-block" id="setup_logger">
+<a class="viewcode-back" href="../../_api/smartem_decisions.utils.html#smartem_decisions.utils.setup_logger">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">setup_logger</span><span class="p">(</span><span class="n">level</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">,</span> <span class="n">conf</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Set up logger with consolidated configuration logic.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        level: Logging level (default: INFO)</span>
+<span class="sd">        conf: Configuration dictionary (if None, will load from config file)</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Configured logger instance</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">file_path</span> <span class="o">=</span> <span class="n">get_log_file_path</span><span class="p">(</span><span class="n">conf</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">LogManager</span><span class="o">.</span><span class="n">get_instance</span><span class="p">(</span><span class="s2">&quot;smartem_decisions&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">configure</span><span class="p">(</span>
+        <span class="n">LogConfig</span><span class="p">(</span>
+            <span class="n">level</span><span class="o">=</span><span class="n">level</span><span class="p">,</span>
+            <span class="n">console</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="n">file_path</span><span class="o">=</span><span class="n">file_path</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="p">)</span></div>
+
+
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">setup_logger</span><span class="p">()</span>
 
 <span class="c1"># Global singleton engine instance</span>
 <span class="n">_db_engine</span><span class="p">:</span> <span class="n">Engine</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
@@ -490,7 +573,6 @@
     <span class="c1"># Return existing engine unless forced to create new one</span>
     <span class="k">if</span> <span class="n">_db_engine</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">force_new</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">_db_engine</span>
-
     <span class="n">load_dotenv</span><span class="p">(</span><span class="n">override</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>  <span class="c1"># Don&#39;t override existing env vars as these might be coming from k8s</span>
     <span class="n">required_env_vars</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;POSTGRES_USER&quot;</span><span class="p">,</span> <span class="s2">&quot;POSTGRES_PASSWORD&quot;</span><span class="p">,</span> <span class="s2">&quot;POSTGRES_HOST&quot;</span><span class="p">,</span> <span class="s2">&quot;POSTGRES_PORT&quot;</span><span class="p">,</span> <span class="s2">&quot;POSTGRES_DB&quot;</span><span class="p">]</span>
 
@@ -540,6 +622,225 @@
 <span class="sd">        SQLAlchemy Engine instance</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">return</span> <span class="n">setup_postgres_connection</span><span class="p">()</span></div>
+
+
+
+<div class="viewcode-block" id="RabbitMQConnection">
+<a class="viewcode-back" href="../../_api/smartem_decisions.utils.html#smartem_decisions.utils.RabbitMQConnection">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">RabbitMQConnection</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Base class for RabbitMQ connection management</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">connection_params</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">exchange</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">queue</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;smartem_decisions&quot;</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initialize RabbitMQ connection</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            connection_params: Dictionary with RabbitMQ connection parameters. If None, load from environment variables</span>
+<span class="sd">            exchange: Exchange name to use (default is direct exchange &quot;&quot;)</span>
+<span class="sd">            queue: Queue name to use</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">connection_params</span> <span class="o">=</span> <span class="n">connection_params</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">_load_connection_params_from_env</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">exchange</span> <span class="o">=</span> <span class="n">exchange</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">queue</span> <span class="o">=</span> <span class="n">queue</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_connection</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_channel</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_load_connection_params_from_env</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Load RabbitMQ connection parameters from environment variables</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            dict: Connection parameters</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">load_dotenv</span><span class="p">(</span><span class="n">override</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>  <span class="c1"># Don&#39;t override existing env vars as these might be coming from k8s</span>
+
+        <span class="n">required_env_vars</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;RABBITMQ_HOST&quot;</span><span class="p">,</span> <span class="s2">&quot;RABBITMQ_PORT&quot;</span><span class="p">,</span> <span class="s2">&quot;RABBITMQ_USER&quot;</span><span class="p">,</span> <span class="s2">&quot;RABBITMQ_PASSWORD&quot;</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">required_env_vars</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="n">key</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error: Required environment variable &#39;</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">&#39; is not set&quot;</span><span class="p">)</span>
+                <span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">&quot;host&quot;</span><span class="p">:</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;RABBITMQ_HOST&quot;</span><span class="p">,</span> <span class="s2">&quot;localhost&quot;</span><span class="p">),</span>
+            <span class="s2">&quot;port&quot;</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;RABBITMQ_PORT&quot;</span><span class="p">,</span> <span class="s2">&quot;5672&quot;</span><span class="p">)),</span>
+            <span class="s2">&quot;virtual_host&quot;</span><span class="p">:</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;RABBITMQ_VHOST&quot;</span><span class="p">,</span> <span class="s2">&quot;/&quot;</span><span class="p">),</span>
+            <span class="s2">&quot;credentials&quot;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s2">&quot;username&quot;</span><span class="p">:</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;RABBITMQ_USER&quot;</span><span class="p">,</span> <span class="s2">&quot;guest&quot;</span><span class="p">),</span>
+                <span class="s2">&quot;password&quot;</span><span class="p">:</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;RABBITMQ_PASSWORD&quot;</span><span class="p">,</span> <span class="s2">&quot;guest&quot;</span><span class="p">),</span>
+            <span class="p">},</span>
+        <span class="p">}</span>
+
+<div class="viewcode-block" id="RabbitMQConnection.connect">
+<a class="viewcode-back" href="../../_api/smartem_decisions.utils.html#smartem_decisions.utils.RabbitMQConnection.connect">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">connect</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Establish connection to RabbitMQ server&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_connection</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">_connection</span><span class="o">.</span><span class="n">is_closed</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="c1"># Extract credentials from connection_params to create proper credential object</span>
+                <span class="k">if</span> <span class="s2">&quot;credentials&quot;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">connection_params</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">connection_params</span><span class="p">[</span><span class="s2">&quot;credentials&quot;</span><span class="p">],</span> <span class="nb">dict</span><span class="p">):</span>
+                    <span class="n">credentials_dict</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">connection_params</span><span class="p">[</span><span class="s2">&quot;credentials&quot;</span><span class="p">]</span>
+                    <span class="n">credentials</span> <span class="o">=</span> <span class="n">pika</span><span class="o">.</span><span class="n">PlainCredentials</span><span class="p">(</span>
+                        <span class="n">username</span><span class="o">=</span><span class="n">credentials_dict</span><span class="p">[</span><span class="s2">&quot;username&quot;</span><span class="p">],</span> <span class="n">password</span><span class="o">=</span><span class="n">credentials_dict</span><span class="p">[</span><span class="s2">&quot;password&quot;</span><span class="p">]</span>
+                    <span class="p">)</span>
+                    <span class="c1"># Create new connection params dict with proper credentials object</span>
+                    <span class="n">connection_params</span> <span class="o">=</span> <span class="p">{</span><span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">connection_params</span><span class="p">,</span> <span class="s2">&quot;credentials&quot;</span><span class="p">:</span> <span class="n">credentials</span><span class="p">}</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">connection_params</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">connection_params</span>
+
+                <span class="bp">self</span><span class="o">.</span><span class="n">_connection</span> <span class="o">=</span> <span class="n">pika</span><span class="o">.</span><span class="n">BlockingConnection</span><span class="p">(</span><span class="n">pika</span><span class="o">.</span><span class="n">ConnectionParameters</span><span class="p">(</span><span class="o">**</span><span class="n">connection_params</span><span class="p">))</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_channel</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_connection</span><span class="o">.</span><span class="n">channel</span><span class="p">()</span>
+
+                <span class="c1"># Declare queue with durable=True to ensure it survives broker restarts</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_channel</span><span class="o">.</span><span class="n">queue_declare</span><span class="p">(</span><span class="n">queue</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">queue</span><span class="p">,</span> <span class="n">durable</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+                <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Connected to RabbitMQ and declared queue &#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">queue</span><span class="si">}</span><span class="s2">&#39;&quot;</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Failed to connect to RabbitMQ: </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="k">raise</span></div>
+
+
+<div class="viewcode-block" id="RabbitMQConnection.close">
+<a class="viewcode-back" href="../../_api/smartem_decisions.utils.html#smartem_decisions.utils.RabbitMQConnection.close">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Close the connection to RabbitMQ&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_connection</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_connection</span><span class="o">.</span><span class="n">is_open</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_connection</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_connection</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_channel</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Closed connection to RabbitMQ&quot;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="RabbitMQConnection.channel">
+<a class="viewcode-back" href="../../_api/smartem_decisions.utils.html#smartem_decisions.utils.RabbitMQConnection.channel">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">channel</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get the channel object</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            The current channel object</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_channel</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">connect</span><span class="p">()</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_channel</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__enter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">connect</span><span class="p">()</span>
+        <span class="k">return</span> <span class="bp">self</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__exit__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">exc_type</span><span class="p">,</span> <span class="n">exc_val</span><span class="p">,</span> <span class="n">exc_tb</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">close</span><span class="p">()</span></div>
+
+
+
+<div class="viewcode-block" id="RabbitMQPublisher">
+<a class="viewcode-back" href="../../_api/smartem_decisions.utils.html#smartem_decisions.utils.RabbitMQPublisher">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">RabbitMQPublisher</span><span class="p">(</span><span class="n">RabbitMQConnection</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Publisher class for sending messages to RabbitMQ</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="RabbitMQPublisher.publish_event">
+<a class="viewcode-back" href="../../_api/smartem_decisions.utils.html#smartem_decisions.utils.RabbitMQPublisher.publish_event">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">publish_event</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event_type</span><span class="p">:</span> <span class="n">MessageQueueEventType</span><span class="p">,</span> <span class="n">payload</span><span class="p">:</span> <span class="n">BaseModel</span> <span class="o">|</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Publish an event to RabbitMQ</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            event_type: Type of event from EventType enum</span>
+<span class="sd">            payload: Event payload, either as Pydantic model or dictionary</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            bool: True if message was published successfully</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">connect</span><span class="p">()</span>
+
+            <span class="c1"># Convert Pydantic model to dict if needed</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">payload</span><span class="p">,</span> <span class="n">BaseModel</span><span class="p">):</span>
+                <span class="n">payload_dict</span> <span class="o">=</span> <span class="n">payload</span><span class="o">.</span><span class="n">model_dump</span><span class="p">()</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">payload_dict</span> <span class="o">=</span> <span class="n">payload</span>
+
+            <span class="c1"># Create message with event_type and payload</span>
+            <span class="n">message</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;event_type&quot;</span><span class="p">:</span> <span class="n">event_type</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="o">**</span><span class="n">payload_dict</span><span class="p">}</span>
+
+            <span class="c1"># Use a custom encoder for json.dumps that handles datetime objects</span>
+            <span class="k">class</span><span class="w"> </span><span class="nc">DateTimeEncoder</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">JSONEncoder</span><span class="p">):</span>
+                <span class="k">def</span><span class="w"> </span><span class="nf">default</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj</span><span class="p">):</span>
+                    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">datetime</span><span class="p">):</span>
+                        <span class="k">return</span> <span class="n">obj</span><span class="o">.</span><span class="n">isoformat</span><span class="p">()</span>
+                    <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">default</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
+
+            <span class="c1"># Convert message to JSON using the custom encoder</span>
+            <span class="n">message_json</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">message</span><span class="p">,</span> <span class="bp">cls</span><span class="o">=</span><span class="n">DateTimeEncoder</span><span class="p">)</span>
+
+            <span class="c1"># Publish message with delivery_mode=2 (persistent)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_channel</span><span class="o">.</span><span class="n">basic_publish</span><span class="p">(</span>
+                <span class="n">exchange</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">exchange</span><span class="p">,</span>
+                <span class="n">routing_key</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">queue</span><span class="p">,</span>
+                <span class="n">body</span><span class="o">=</span><span class="n">message_json</span><span class="p">,</span>
+                <span class="n">properties</span><span class="o">=</span><span class="n">pika</span><span class="o">.</span><span class="n">BasicProperties</span><span class="p">(</span>
+                    <span class="n">delivery_mode</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>  <span class="c1"># Make message persistent</span>
+                    <span class="n">content_type</span><span class="o">=</span><span class="s2">&quot;application/json&quot;</span><span class="p">,</span>
+                <span class="p">),</span>
+            <span class="p">)</span>
+
+            <span class="k">return</span> <span class="kc">True</span>
+
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Failed to publish </span><span class="si">{</span><span class="n">event_type</span><span class="o">.</span><span class="n">value</span><span class="si">}</span><span class="s2"> event: </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="kc">False</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="RabbitMQConsumer">
+<a class="viewcode-back" href="../../_api/smartem_decisions.utils.html#smartem_decisions.utils.RabbitMQConsumer">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">RabbitMQConsumer</span><span class="p">(</span><span class="n">RabbitMQConnection</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Consumer class for receiving messages from RabbitMQ</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="RabbitMQConsumer.consume">
+<a class="viewcode-back" href="../../_api/smartem_decisions.utils.html#smartem_decisions.utils.RabbitMQConsumer.consume">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">consume</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">callback</span><span class="p">:</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">prefetch_count</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Start consuming messages from the queue</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            callback: Callback function to process messages</span>
+<span class="sd">            prefetch_count: Maximum number of unacknowledged messages (default: 1)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">connect</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_channel</span><span class="o">.</span><span class="n">basic_qos</span><span class="p">(</span><span class="n">prefetch_count</span><span class="o">=</span><span class="n">prefetch_count</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_channel</span><span class="o">.</span><span class="n">basic_consume</span><span class="p">(</span><span class="n">queue</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">queue</span><span class="p">,</span> <span class="n">on_message_callback</span><span class="o">=</span><span class="n">callback</span><span class="p">)</span>
+
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Consumer started, listening on queue &#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">queue</span><span class="si">}</span><span class="s2">&#39;&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_channel</span><span class="o">.</span><span class="n">start_consuming</span><span class="p">()</span>
+
+        <span class="k">except</span> <span class="ne">KeyboardInterrupt</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Consumer stopped by user&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">stop_consuming</span><span class="p">()</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error in consumer: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">raise</span></div>
+
+
+<div class="viewcode-block" id="RabbitMQConsumer.stop_consuming">
+<a class="viewcode-back" href="../../_api/smartem_decisions.utils.html#smartem_decisions.utils.RabbitMQConsumer.stop_consuming">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">stop_consuming</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Stop consuming messages&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_channel</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_channel</span><span class="o">.</span><span class="n">is_open</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_channel</span><span class="o">.</span><span class="n">stop_consuming</span><span class="p">()</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Stopped consuming messages&quot;</span><span class="p">)</span></div>
+</div>
 
 
 
