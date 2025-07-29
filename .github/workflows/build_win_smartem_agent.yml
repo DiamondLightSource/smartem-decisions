@@ -1,11 +1,11 @@
-name: Build EPU Data Intake binary for Windows
+name: Build SmartEM Agent binary for Windows
 
 on:
   push:
     branches: [ main ]
     paths:
-      - 'src/epu_data_intake/**'
-      - '.github/workflows/build_win_epu_data_intake.yml'
+      - 'src/smartem_agent/**'
+      - '.github/workflows/build_win_smartem_agent.yml'
   workflow_dispatch:
     inputs:
       branch:
@@ -32,26 +32,26 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install pyinstaller
-        pip install -e .[common,data-intake]
+        pip install -e .[common,agent]
 
-    - name: Build EPU tools with PyInstaller
+    - name: Build SmartEM Agent tools with PyInstaller
       run: >-
         pyinstaller --onefile
-        --name smartem_epu_data_intake_tools
-        --paths src/epu_data_intake
-        src/epu_data_intake/__main__.py
+        --name smartem_smartem_agent_tools
+        --paths src/smartem_agent
+        src/smartem_agent/__main__.py
 
     - name: Copy README to dist directory
       run: |
-        copy src/epu_data_intake/README.md dist/
+        copy src/smartem_agent/README.md dist/
 
     - name: Smoke test
       run: |
-        ./dist/smartem_epu_data_intake_tools.exe --help
-        if ($LASTEXITCODE -ne 0) { throw "SmartEM data intake tools smoke test failed" }
+        ./dist/smartem_smartem_agent_tools.exe --help
+        if ($LASTEXITCODE -ne 0) { throw "SmartEM Agent tools smoke test failed" }
 
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: smartem_epu_data_intake_tools-v${{ github.run_number }}-${{ github.sha }}
+        name: smartem_smartem_agent_tools-v${{ github.run_number }}-${{ github.sha }}
         path: dist/

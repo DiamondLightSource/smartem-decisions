@@ -1,4 +1,4 @@
-from smartem_decisions.model.mq_event import (
+from smartem_backend.model.mq_event import (
     AcquisitionCreatedEvent,
     AcquisitionDeletedEvent,
     AcquisitionUpdatedEvent,
@@ -22,7 +22,7 @@ from smartem_decisions.model.mq_event import (
     MicrographDeletedEvent,
     MicrographUpdatedEvent,
 )
-from smartem_decisions.utils import rmq_publisher
+from smartem_backend.utils import rmq_publisher
 
 
 # ========== Acquisition DB Entity Mutations ==========

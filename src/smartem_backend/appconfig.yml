@@ -3,11 +3,11 @@ app:
   # There is technically no guarantee that every micrograph will be covered by at most 2 batches.
   # The size of the batches basically makes incredibly unlikely but there is nothing to guarantee it.
   particle_select_batch_size: 50000
-  log_file: smartem_decisions-core.log
+  log_file: smartem_backend-core.log
 
 rabbitmq:
-  queue_name: smartem_decisions
-  routing_key: smartem_decisions
+  queue_name: smartem_backend
+  routing_key: smartem_backend
 
 database:
   # SQLAlchemy connection pool settings

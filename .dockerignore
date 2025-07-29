@@ -1,11 +1,62 @@
+# Environment and secrets
 .env
+.env.*
+
+# Coverage and test reports
 cov.xml
+htmlcov/
+
+# Template configuration
 .copier-answers.yml
+
+# Virtual environments and build tools
 .tox
 .venv
+venv/
+build
+dist/
+
+# Git version control
+.git/
+.gitignore
+
+# CI/CD and development configs
 .github
 .devcontainer
-.vscode
-build
 docker-compose.yaml
 Dockerfile
+
+# IDE and editor files
+.vscode
+.idea/
+.ropeproject/
+
+# Python cache and compiled files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+
+# Log files
+*.log
+*.log.*
+
+# Claude AI assistant directory
+.claude
+
+# Documentation (not needed in runtime)
+docs/
+
+# Tests (not needed in production)
+tests/
+
+# Development tools
+tools/
+
+# Kubernetes configs (not needed in container)
+k8s/

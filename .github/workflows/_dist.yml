@@ -33,5 +33,5 @@ jobs:
 
 #      - name: Test module --version works using the installed wheel
 #        run: >
-#          python -m smartem_decisions --version &&
-#          python -m epu_data_intake --help
+#          python -m smartem_backend --version &&
+#          python -m smartem_agent --help

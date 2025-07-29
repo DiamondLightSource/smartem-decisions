@@ -3,7 +3,7 @@ import math
 from sqlalchemy import desc
 from sqlmodel import Session, or_, select
 
-from smartem_decisions.model.database import (
+from smartem_backend.model.database import (
     FoilHole,
     GridSquare,
     Micrograph,

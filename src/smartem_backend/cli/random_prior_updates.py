@@ -6,9 +6,9 @@ import typer
 from sqlalchemy.engine import Engine
 from sqlmodel import Session, select
 
-from smartem_decisions.model.database import FoilHole, Grid, GridSquare, Micrograph
-from smartem_decisions.predictions.update import prior_update
-from smartem_decisions.utils import get_db_engine, logger
+from smartem_backend.model.database import FoilHole, Grid, GridSquare, Micrograph
+from smartem_backend.predictions.update import prior_update
+from smartem_backend.utils import get_db_engine, logger
 
 # Default time ranges for processing steps (in seconds)
 DEFAULT_MOTION_CORRECTION_DELAY = (1.0, 3.0)

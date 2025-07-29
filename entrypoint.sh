@@ -14,12 +14,12 @@ case "${ROLE:-api}" in
     api)
         echo "Starting HTTP API..."
         # TODO we don't want to do it indiscriminately on every container launch:
-        python -m smartem_decisions.model.database
-        exec python -m smartem_decisions.run_api --host 0.0.0.0 --port ${HTTP_API_PORT:-8000}
+        python -m smartem_backend.model.database
+        exec python -m smartem_backend.run_api --host 0.0.0.0 --port ${HTTP_API_PORT:-8000}
         ;;
     worker)
         echo "Starting RabbitMQ consumer..."
-        exec python -m smartem_decisions.consumer
+        exec python -m smartem_backend.consumer
         ;;
     *)
         echo "Unknown role: $ROLE"

@@ -287,7 +287,7 @@ case "${1:-up}" in
         kubectl logs -f "deployment/$service" -n "$NAMESPACE"
         ;;
     "help"|"-h"|"--help")
-        echo "SmartEM Decisions Development Environment Manager"
+        echo "SmartEM Backend Development Environment Manager"
         echo ""
         echo "Usage: $0 [COMMAND]"
         echo ""

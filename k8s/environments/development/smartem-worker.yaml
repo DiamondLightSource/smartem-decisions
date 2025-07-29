@@ -19,7 +19,7 @@ spec:
       - name: ghcr-secret
       containers:
       - name: smartem-worker
-        image: ghcr.io/diamondlightsource/smartem-decisions:latest
+        image: ghcr.io/diamondlightsource/smartem-backend:latest
         env:
         - name: ROLE
           value: "worker"
