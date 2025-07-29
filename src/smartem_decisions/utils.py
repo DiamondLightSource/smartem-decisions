@@ -17,48 +17,82 @@ from smartem_decisions.model.mq_event import MessageQueueEventType
 
 
 def load_conf() -> dict | None:
-    config_path = os.getenv("SMARTEM_DECISIONS_CONFIG") or os.path.join(os.path.dirname(__file__), "appconfig.yaml")
-    logger_file_path = (
-        None
-        if "pytest" in os.environ.get("_", "") or "PYTEST_CURRENT_TEST" in os.environ
-        else "smartem_decisions-core.log"
-    )
-    logger = LogManager.get_instance("smartem_decisions").configure(
-        LogConfig(
-            level=logging.INFO,
-            console=True,
-            file_path=logger_file_path,
-        )
-    )
+    config_path = os.getenv("SMARTEM_DECISIONS_CONFIG") or os.path.join(os.path.dirname(__file__), "appconfig.yml")
     try:
         with open(config_path) as f:
             conf = yaml.safe_load(f)
         return conf
     except FileNotFoundError:
-        logger.error(f"Configuration file not found at {config_path}")
+        # Use basic logging since logger might not be configured yet
+        print(f"Warning: Configuration file not found at {config_path}")
     except yaml.YAMLError as e:
-        logger.error(f"Error parsing YAML file: {e}")
+        print(f"Warning: Error parsing YAML file: {e}")
     except Exception as e:
-        logger.error(f"An unexpected error occurred: {e}")
+        print(f"Warning: An unexpected error occurred: {e}")
     return None
 
 
-def setup_logger():
-    # Don't create file handlers in test environment to avoid resource warnings
-    import os
+def get_log_file_path(conf: dict | None = None) -> str | None:
+    """
+    Get the log file path with validation and fallback handling.
 
-    conf = load_conf()
-    file_path = (
-        None
-        if "pytest" in os.environ.get("_", "") or "PYTEST_CURRENT_TEST" in os.environ
-        else conf["app"]["log_file"]
-        if conf and conf.get("app", {}).get("log_file")
-        else "smartem_decisions-core.log"
+    Args:
+        conf: Configuration dictionary (if None, will load from config file)
+
+    Returns:
+        str | None: Valid log file path or None for test environments
+    """
+    # Don't create file handlers in test environment to avoid resource warnings
+    if "pytest" in os.environ.get("_", "") or "PYTEST_CURRENT_TEST" in os.environ:
+        return None
+
+    if conf is None:
+        conf = load_conf()
+
+    # Get log file path from config or use default
+    log_file = (
+        conf.get("app", {}).get("log_file", "smartem_decisions-core.log") if conf else "smartem_decisions-core.log"
     )
+
+    # Validate and ensure directory exists
+    if log_file:
+        log_dir = os.path.dirname(os.path.abspath(log_file))
+        try:
+            # Create directory if it doesn't exist
+            if log_dir and not os.path.exists(log_dir):
+                os.makedirs(log_dir, exist_ok=True)
+
+            # Test if we can write to the directory
+            test_file = os.path.join(log_dir or ".", ".write_test")
+            with open(test_file, "w") as f:
+                f.write("test")
+            os.remove(test_file)
+
+            return log_file
+        except (OSError, PermissionError) as e:
+            print(f"Warning: Cannot write to log directory {log_dir}: {e}")
+            print("Falling back to current directory")
+            return "smartem_decisions-core.log"
+
+    return "smartem_decisions-core.log"
+
+
+def setup_logger(level: int = logging.INFO, conf: dict | None = None):
+    """
+    Set up logger with consolidated configuration logic.
+
+    Args:
+        level: Logging level (default: INFO)
+        conf: Configuration dictionary (if None, will load from config file)
+
+    Returns:
+        Configured logger instance
+    """
+    file_path = get_log_file_path(conf)
 
     return LogManager.get_instance("smartem_decisions").configure(
         LogConfig(
-            level=logging.INFO,
+            level=level,
             console=True,
             file_path=file_path,
         )

@@ -41,7 +41,7 @@ from smartem_decisions.model.mq_event import (
     MicrographDeletedEvent,
     MicrographUpdatedEvent,
 )
-from smartem_decisions.utils import get_db_engine, load_conf, rmq_consumer
+from smartem_decisions.utils import get_db_engine, load_conf, rmq_consumer, setup_logger
 
 load_dotenv(override=False)  # Don't override existing env vars as these might be coming from k8s
 conf = load_conf()
@@ -581,15 +581,7 @@ def main():
 
     # Reconfigure logger with the specified verbosity level
     global logger
-    logger = log_manager.configure(
-        LogConfig(
-            level=log_level,
-            console=True,
-            file_path=conf.get("app", {}).get("log_file", "smartem_decisions-core.log")
-            if conf
-            else "smartem_decisions-core.log",
-        )
-    )
+    logger = setup_logger(level=log_level, conf=conf)
 
     # Set up signal handlers
     signal.signal(signal.SIGINT, signal_handler)
