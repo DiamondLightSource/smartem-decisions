@@ -17,7 +17,10 @@ build
 dist/
 
 # Git version control
-.git/
+# NOTE: .git/ is NOT ignored here (unlike typical .dockerignore files) because
+# setuptools-scm requires git metadata to determine the package version during
+# the Docker build process. The .git directory is cleaned up in the Dockerfile
+# after pip install completes to keep the final image clean.
 .gitignore
 
 # CI/CD and development configs
