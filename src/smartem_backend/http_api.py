@@ -8,8 +8,8 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session as SqlAlchemySession
 from sqlalchemy.orm import sessionmaker
 
-from src.smartem_decisions._version import __version__
-from src.smartem_decisions.model.database import (
+from src._version import __version__
+from src.smartem_backend.model.database import (
     Acquisition,
     Atlas,
     AtlasTile,
@@ -19,14 +19,14 @@ from src.smartem_decisions.model.database import (
     GridSquare,
     Micrograph,
 )
-from src.smartem_decisions.model.entity_status import (
+from src.smartem_backend.model.entity_status import (
     AcquisitionStatus,
     FoilHoleStatus,
     GridSquareStatus,
     GridStatus,
     MicrographStatus,
 )
-from src.smartem_decisions.model.http_request import (
+from src.smartem_backend.model.http_request import (
     AcquisitionCreateRequest,
     AcquisitionUpdateRequest,
     AtlasCreateRequest,
@@ -43,7 +43,7 @@ from src.smartem_decisions.model.http_request import (
     MicrographCreateRequest,
     MicrographUpdateRequest,
 )
-from src.smartem_decisions.model.http_response import (
+from src.smartem_backend.model.http_response import (
     AcquisitionResponse,
     AtlasResponse,
     AtlasTileGridSquarePositionResponse,
@@ -53,7 +53,7 @@ from src.smartem_decisions.model.http_response import (
     GridSquareResponse,
     MicrographResponse,
 )
-from src.smartem_decisions.mq_publisher import (
+from src.smartem_backend.mq_publisher import (
     publish_acquisition_created,
     publish_acquisition_deleted,
     publish_acquisition_updated,
@@ -76,7 +76,7 @@ from src.smartem_decisions.mq_publisher import (
     publish_micrograph_deleted,
     publish_micrograph_updated,
 )
-from src.smartem_decisions.utils import setup_postgres_connection, setup_rabbitmq
+from src.smartem_backend.utils import setup_postgres_connection, setup_rabbitmq
 
 db_engine = setup_postgres_connection()
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=db_engine)
