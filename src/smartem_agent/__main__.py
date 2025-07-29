@@ -9,13 +9,13 @@ from pathlib import Path
 import typer
 from watchdog.observers import Observer
 
-from epu_data_intake.core_http_api_client import SmartEMAPIClient as APIClient
-from epu_data_intake.fs_parser import EpuParser
-from epu_data_intake.fs_watcher import (
+from smartem_agent.core_http_api_client import SmartEMAPIClient as APIClient
+from smartem_agent.fs_parser import EpuParser
+from smartem_agent.fs_watcher import (
     DEFAULT_PATTERNS,
     RateLimitedFilesystemEventHandler,
 )
-from epu_data_intake.model.store import InMemoryDataStore
+from smartem_agent.model.store import InMemoryDataStore
 
 epu_data_intake_cli = typer.Typer(help="EPU Data Intake Tools")
 parse_cli = typer.Typer(help="Commands for parsing EPU data")

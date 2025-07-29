@@ -7,7 +7,7 @@ from pathlib import Path
 
 from lxml import etree
 
-from epu_data_intake.model.schemas import (
+from smartem_agent.model.schemas import (
     AcquisitionData,
     AtlasData,
     AtlasTileData,
@@ -26,7 +26,7 @@ from epu_data_intake.model.schemas import (
     MicrographManifest,
     MicroscopeData,
 )
-from epu_data_intake.model.store import InMemoryDataStore
+from smartem_agent.model.store import InMemoryDataStore
 
 
 class EpuParser:

@@ -1,6 +1,6 @@
 # Kubernetes Deployment
 
-This directory contains Kubernetes deployment configurations for SmartEM Decisions across different environments.
+This directory contains Kubernetes deployment configurations for SmartEM Backend across different environments.
 
 ## Quick Start (Development)
 
@@ -30,7 +30,7 @@ For local development, use the convenient script that provides a docker-compose-
 Once the environment is running, you can access:
 - **📊 Adminer (Database UI)**: http://localhost:30808
 - **🐰 RabbitMQ Management**: http://localhost:30673
-- **📡 SmartEM HTTP API**: http://localhost:30080/health
+- **📡 SmartEM Backend HTTP API**: http://localhost:30080/health
 - **📚 API Documentation**: http://localhost:30080/docs
 
 > **Note**: The script automatically handles GitHub Container Registry authentication and waits for all pods to be ready.

@@ -2,7 +2,7 @@
 
 ..
    This page is not included in the TOC tree, but must exist so that the
-   autosummary pages are generated for smartem_decisions and all its
+   autosummary pages are generated for smartem_backend and all its
    subpackages
 
 API
@@ -13,4 +13,4 @@ API
     :template: custom-module-template.rst
     :recursive:
 
-    smartem_decisions
+    smartem_backend

@@ -9,7 +9,9 @@ __pycache__/
 output.txt
 
 # Claude Code settings
-.claude/
+# Commit .claude/settings.json and .claude/agents/ for team-shared config
+# Ignore .claude/settings.local.json for personal preferences
+.claude/settings.local.json
 
 .env
 log/
@@ -81,9 +83,5 @@ lockfiles/
 
 # ruff cache
 .ruff_cache/
-
-# test data - too large for version control
-tests/testdata/metadata_Supervisor_20250108_101446_62_cm40593-1_EPU/
-tests/testdata/bi37708-28
 
 k8s/secret.yaml

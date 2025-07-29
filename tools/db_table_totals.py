@@ -10,10 +10,10 @@ from pathlib import Path
 from dotenv import load_dotenv
 from sqlmodel import Session, func, select
 
-# Add src to path so we can import from smartem_decisions
+# Add src to path so we can import from smartem_backend
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from smartem_decisions.model.database import (
+from smartem_backend.model.database import (
     Acquisition,
     Atlas,
     AtlasTile,
@@ -27,7 +27,7 @@ from smartem_decisions.model.database import (
     QualityPredictionModelParameter,
     QualityPredictionModelWeight,
 )
-from smartem_decisions.utils import setup_postgres_connection
+from smartem_backend.utils import setup_postgres_connection
 
 
 def get_table_totals():

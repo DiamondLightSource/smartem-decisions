@@ -12,12 +12,12 @@ from pydantic import BaseModel
 from sqlalchemy.engine import Engine
 from sqlmodel import create_engine
 
-from smartem_decisions.log_manager import LogConfig, LogManager
-from smartem_decisions.model.mq_event import MessageQueueEventType
+from smartem_backend.log_manager import LogConfig, LogManager
+from smartem_backend.model.mq_event import MessageQueueEventType
 
 
 def load_conf() -> dict | None:
-    config_path = os.getenv("SMARTEM_DECISIONS_CONFIG") or os.path.join(os.path.dirname(__file__), "appconfig.yml")
+    config_path = os.getenv("SMARTEM_BACKEND_CONFIG") or os.path.join(os.path.dirname(__file__), "appconfig.yml")
     try:
         with open(config_path) as f:
             conf = yaml.safe_load(f)
@@ -50,9 +50,7 @@ def get_log_file_path(conf: dict | None = None) -> str | None:
         conf = load_conf()
 
     # Get log file path from config or use default
-    log_file = (
-        conf.get("app", {}).get("log_file", "smartem_decisions-core.log") if conf else "smartem_decisions-core.log"
-    )
+    log_file = conf.get("app", {}).get("log_file", "smartem_backend-core.log") if conf else "smartem_backend-core.log"
 
     # Validate and ensure directory exists
     if log_file:
@@ -72,9 +70,9 @@ def get_log_file_path(conf: dict | None = None) -> str | None:
         except (OSError, PermissionError) as e:
             print(f"Warning: Cannot write to log directory {log_dir}: {e}")
             print("Falling back to current directory")
-            return "smartem_decisions-core.log"
+            return "smartem_backend-core.log"
 
-    return "smartem_decisions-core.log"
+    return "smartem_backend-core.log"
 
 
 def setup_logger(level: int = logging.INFO, conf: dict | None = None):
@@ -90,7 +88,7 @@ def setup_logger(level: int = logging.INFO, conf: dict | None = None):
     """
     file_path = get_log_file_path(conf)
 
-    return LogManager.get_instance("smartem_decisions").configure(
+    return LogManager.get_instance("smartem_backend").configure(
         LogConfig(
             level=level,
             console=True,
@@ -175,7 +173,7 @@ class RabbitMQConnection:
     """
 
     def __init__(
-        self, connection_params: dict[str, Any] | None = None, exchange: str = "", queue: str = "smartem_decisions"
+        self, connection_params: dict[str, Any] | None = None, exchange: str = "", queue: str = "smartem_backend"
     ):
         """
         Initialize RabbitMQ connection
@@ -379,8 +377,8 @@ def setup_rabbitmq(queue_name=None, exchange=None):
         queue_name = config["rabbitmq"]["queue_name"]
         routing_key = config["rabbitmq"]["routing_key"]
     else:
-        # Default to "smartem_decisions" if config not available
-        queue_name = queue_name or "smartem_decisions"
+        # Default to "smartem_backend" if config not available
+        queue_name = queue_name or "smartem_backend"
         routing_key = queue_name  # Use queue_name as routing_key by default
 
     exchange = exchange or ""  # Default to direct exchange if not specified

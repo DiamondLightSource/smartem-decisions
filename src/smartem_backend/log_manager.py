@@ -71,7 +71,7 @@ class LogManager:
 # Usage example
 if __name__ == "__main__":
     # Initialize log manager
-    log_manager = LogManager.get_instance("smartem_decisions")
+    log_manager = LogManager.get_instance("smartem_backend")
 
     # Console only
     logger = log_manager.configure(LogConfig(level=logging.INFO, console=True))

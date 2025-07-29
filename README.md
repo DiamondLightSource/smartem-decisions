@@ -3,7 +3,7 @@
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
-# smartem_decisions
+# smartem_backend
 
 - Project board: <https://github.com/orgs/DiamondLightSource/projects/33/views/1>
 - Test Datasets: https://gitlab.diamond.ac.uk/scisoft/cryoem/smartem-decisions-test-datasets
@@ -24,7 +24,7 @@ introductory code here:
 ```python
 from src._version import __version__
 
-print(f"Hello smartem_decisions {__version__}")
+print(f"Hello smartem_backend {__version__}")
 ```
 
 Or if it is a commandline tool then you might put some example commands here:
@@ -88,12 +88,15 @@ Or if it is a commandline tool then you might put some example commands here:
 # venv and requirements
 python -m venv .venv
 source .venv/bin/activate
-pip install -e .[all] # .[dev,common,core]
+pip install -e .[all] # .[dev,common,backend,agent]
 
 # Start services with verbosity controls:
-python -m smartem_decisions.run_api -v               # HTTP API with INFO logging
-python -m smartem_decisions.consumer -v           # Message queue consumer with INFO logging  
-python -m epu_data_intake watch /path/to/data -v     # File watcher with INFO logging
+python -m smartem_backend.run_api -v               # HTTP API with INFO logging
+python -m smartem_backend.consumer -v           # Message queue consumer with INFO logging  
+python -m smartem_agent watch /path/to/data -v     # File watcher with INFO logging
+
+# For testing file watcher with simulated EPU data:
+python tools/fsrecorder/fsrecorder.py replay recording.tar.gz /path/to/data --fast
 ```
 
 
@@ -109,17 +112,17 @@ python -m http.server -d build/html
 
 ```bash
 # podman image/container operations:
-podman build --format docker . -t smartem_decisions # build image
-podman run -p 8000:8000 localhost/smartem_decisions # run container (TODO debug Postgres connection)
-podman image rm localhost/smartem_decisions -f # clean up before rebuild
+podman build --format docker . -t smartem_backend # build image
+podman run -p 8000:8000 localhost/smartem_backend # run container (TODO debug Postgres connection)
+podman image rm localhost/smartem_backend -f # clean up before rebuild
 
 # TODO but we should push to Github not Gitlab
 # Once built, tagging and pushing is done like so:
 # Refs:
 #  - https://confluence.diamond.ac.uk/display/CLOUD/Container+Registry
 #  - https://dev-portal.diamond.ac.uk/guide/kubernetes/tutorials/containers/
-podman tag 55646974a136 gcr.io/diamond-pubreg/smartem_decisions/smartem_decisions:latest
-podman push gcr.io/diamond-pubreg/smartem_decisions/smartem_decisions:latest
+podman tag 55646974a136 gcr.io/diamond-pubreg/smartem_backend/smartem_backend:latest
+podman push gcr.io/diamond-pubreg/smartem_backend/smartem_backend:latest
 ```
 
 
@@ -161,19 +164,19 @@ Use the `-v` and `-vv` flags to control verbosity:
 
 ```bash
 # ERROR level only (default - minimal output)
-python -m smartem_decisions.consumer
-python -m smartem_decisions.run_api
-python -m epu_data_intake watch /path/to/data
+python -m smartem_backend.consumer
+python -m smartem_backend.run_api
+python -m smartem_agent watch /path/to/data
 
 # INFO level and above (-v flag)
-python -m smartem_decisions.consumer -v
-python -m smartem_decisions.run_api -v
-python -m epu_data_intake watch /path/to/data -v
+python -m smartem_backend.consumer -v
+python -m smartem_backend.run_api -v
+python -m smartem_agent watch /path/to/data -v
 
 # DEBUG level and above (-vv flag - most verbose)
-python -m smartem_decisions.consumer -vv
-python -m smartem_decisions.run_api -vv
-python -m epu_data_intake watch /path/to/data -vv
+python -m smartem_backend.consumer -vv
+python -m smartem_backend.run_api -vv
+python -m smartem_agent watch /path/to/data -vv
 ```
 
 ### Environment Variable Control
@@ -182,9 +185,9 @@ For the HTTP API, you can also control logging via environment variables:
 
 ```bash
 # Set log level via environment variable (equivalent to -v/-vv flags)
-SMARTEM_LOG_LEVEL=ERROR python -m smartem_decisions.run_api
-SMARTEM_LOG_LEVEL=INFO python -m smartem_decisions.run_api 
-SMARTEM_LOG_LEVEL=DEBUG python -m smartem_decisions.run_api
+SMARTEM_LOG_LEVEL=ERROR python -m smartem_backend.run_api
+SMARTEM_LOG_LEVEL=INFO python -m smartem_backend.run_api 
+SMARTEM_LOG_LEVEL=DEBUG python -m smartem_backend.run_api
 ```
 
 ### Log Levels

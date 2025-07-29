@@ -36,11 +36,11 @@ jobs:
 
 #      - name: Test container roles and functionality
 #        run: |
-#          echo "Testing smartem_decisions module import..."
-#          docker run --rm tag_for_testing "python -c 'import smartem_decisions; print(\"Module imported successfully\")'"
+#          echo "Testing smartem_backend module import..."
+#          docker run --rm tag_for_testing "python -c 'import smartem_backend; print(\"Module imported successfully\")'"
 #
 #          echo "Testing CLI entry point..."
-#          docker run --rm tag_for_testing "python -m smartem_decisions --version"
+#          docker run --rm tag_for_testing "python -m smartem_backend --version"
 #
 #          echo "Testing API role configuration..."
 #          docker run --rm -e ROLE=api tag_for_testing "python -c 'import os; print(f\"Role: {os.environ.get(\"ROLE\", \"not set\")}\")"

@@ -17,7 +17,7 @@ def copy_version_files():
         print(f"Warning: {source_file} does not exist, nothing to copy")
         return
 
-    target_files = [Path("src/smartem_decisions/_version.py"), Path("src/epu_data_intake/_version.py")]
+    target_files = [Path("src/smartem_backend/_version.py"), Path("src/smartem_agent/_version.py")]
 
     # Make sure target directories exist
     for target in target_files:

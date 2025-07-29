@@ -6,7 +6,7 @@ from datetime import datetime
 import requests
 from pydantic import BaseModel
 
-from epu_data_intake.model.schemas import (
+from smartem_agent.model.schemas import (
     AcquisitionData,
     AtlasData,
     AtlasTileData,
@@ -16,8 +16,8 @@ from epu_data_intake.model.schemas import (
     GridSquareData,
     MicrographData,
 )
-from smartem_decisions.model.entity_status import AcquisitionStatus, GridSquareStatus, GridStatus
-from smartem_decisions.model.http_request import (
+from smartem_backend.model.entity_status import AcquisitionStatus, GridSquareStatus, GridStatus
+from smartem_backend.model.http_request import (
     AcquisitionCreateRequest,
     AtlasCreateRequest,
     AtlasTileCreateRequest,
@@ -27,7 +27,7 @@ from smartem_decisions.model.http_request import (
     GridSquarePositionRequest,
     MicrographCreateRequest,
 )
-from smartem_decisions.model.http_response import (
+from smartem_backend.model.http_response import (
     AcquisitionResponse,
     AtlasResponse,
     AtlasTileGridSquarePositionResponse,

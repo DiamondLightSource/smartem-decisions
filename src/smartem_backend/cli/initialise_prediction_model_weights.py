@@ -2,8 +2,8 @@ import typer
 from sqlalchemy.engine import Engine
 from sqlmodel import Session, select
 
-from smartem_decisions.model.database import Grid, QualityPredictionModel, QualityPredictionModelWeight
-from smartem_decisions.utils import get_db_engine, logger
+from smartem_backend.model.database import Grid, QualityPredictionModel, QualityPredictionModelWeight
+from smartem_backend.utils import get_db_engine, logger
 
 
 def initialise_all_models_for_grid(grid_uuid: str, engine: Engine = None) -> None:

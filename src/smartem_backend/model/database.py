@@ -5,7 +5,7 @@ from sqlalchemy import Column, text
 from sqlmodel import Field, Relationship, SQLModel
 from sqlmodel import Session as SQLModelSession
 
-from smartem_decisions.model.entity_status import (
+from smartem_backend.model.entity_status import (
     AcquisitionStatus,
     AcquisitionStatusType,
     FoilHoleStatus,
@@ -17,7 +17,7 @@ from smartem_decisions.model.entity_status import (
     MicrographStatus,
     MicrographStatusType,
 )
-from smartem_decisions.utils import logger, setup_postgres_connection
+from smartem_backend.utils import logger, setup_postgres_connection
 
 
 class Acquisition(SQLModel, table=True, table_name="acquisition"):

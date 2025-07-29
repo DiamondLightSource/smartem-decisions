@@ -13,14 +13,14 @@ import pika
 from dotenv import load_dotenv
 from pydantic import ValidationError
 
-from smartem_decisions.cli.initialise_prediction_model_weights import initialise_all_models_for_grid
-from smartem_decisions.cli.random_model_predictions import (
+from smartem_backend.cli.initialise_prediction_model_weights import initialise_all_models_for_grid
+from smartem_backend.cli.random_model_predictions import (
     generate_predictions_for_foilhole,
     generate_predictions_for_gridsquare,
 )
-from smartem_decisions.cli.random_prior_updates import simulate_processing_pipeline_async
-from smartem_decisions.log_manager import LogConfig, LogManager
-from smartem_decisions.model.mq_event import (
+from smartem_backend.cli.random_prior_updates import simulate_processing_pipeline_async
+from smartem_backend.log_manager import LogConfig, LogManager
+from smartem_backend.model.mq_event import (
     AcquisitionCreatedEvent,
     AcquisitionDeletedEvent,
     AcquisitionUpdatedEvent,
@@ -41,13 +41,13 @@ from smartem_decisions.model.mq_event import (
     MicrographDeletedEvent,
     MicrographUpdatedEvent,
 )
-from smartem_decisions.utils import get_db_engine, load_conf, rmq_consumer, setup_logger
+from smartem_backend.utils import get_db_engine, load_conf, rmq_consumer, setup_logger
 
 load_dotenv(override=False)  # Don't override existing env vars as these might be coming from k8s
 conf = load_conf()
 
 # Initialize logger with default ERROR level (will be reconfigured in main())
-log_manager = LogManager.get_instance("smartem_decisions")
+log_manager = LogManager.get_instance("smartem_backend")
 logger = log_manager.configure(LogConfig(level=logging.ERROR, console=True))
 
 # Get singleton database engine for reuse across all event handlers

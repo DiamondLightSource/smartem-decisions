@@ -20,61 +20,61 @@ using a cryo-electron microscope. Data intake scripts can be used to:
 
 ```bash
 # parse complete EPU directory
-python -m epu_data_intake parse dir \
+python -m smartem_agent parse dir \
   ../smartem-decisions-test-datasets/metadata_Supervisor_20250108_101446_62_cm40593-1_EPU
 
-python -m epu_data_intake parse dir \
+python -m smartem_agent parse dir \
   ../smartem-decisions-test-datasets/metadata_Supervisor_20250114_220855_23_epuBSAd20_GrOxDDM
 
-python -m epu_data_intake parse dir \
+python -m smartem_agent parse dir \
   ../smartem-decisions-test-datasets/metadata_Supervisor_20241220_140307_72_et2_gangshun
 
 # parse things
-python -m epu_data_intake parse session \
+python -m smartem_agent parse session \
   ../smartem-decisions-test-datasets/bi37708-28-copy/Supervisor_20250129_134723_36_bi37708-28_grid7_EPU/EpuSession.dm
 
-python -m epu_data_intake parse atlas \
+python -m smartem_agent parse atlas \
   ../smartem-decisions-test-datasets/bi37708-28-copy/atlas/Supervisor_20250129_111544_bi37708-28_atlas/Atlas/Atlas.dm
 
-python -m epu_data_intake parse gridsquare \
+python -m smartem_agent parse gridsquare \
   ../smartem-decisions-test-datasets/epu-Supervisor_20250404_164354_31_EPU_nr27313-442/metadata_Supervisor_20250404_164354_31_EPU_nr27313-442/Images-Disc1/GridSquare_3568837/GridSquare_20250404_171012.xml
 
-python -m epu_data_intake parse gridsquare-metadata \
+python -m smartem_agent parse gridsquare-metadata \
   ../smartem-decisions-test-datasets/epu-Supervisor_20250404_164354_31_EPU_nr27313-442/metadata_Supervisor_20250404_164354_31_EPU_nr27313-442/Metadata/GridSquare_3568837.dm
 
-python -m epu_data_intake parse gridsquare-metadata \
+python -m smartem_agent parse gridsquare-metadata \
   ./tests/testdata/bi37708-28/Supervisor_20250129_134723_36_bi37708-28_grid7_EPU/Metadata/GridSquare_29273435.dm
 
-python -m epu_data_intake parse foilhole \
+python -m smartem_agent parse foilhole \
   tests/testdata/epu-dir-example/Images-Disc1/GridSquare_8999138/FoilHoles/FoilHole_9015889_20250108_154725.xml
 
-python -m epu_data_intake parse gridsquare-metadata \
+python -m smartem_agent parse gridsquare-metadata \
   ../smartem-decisions-test-datasets/epu-Supervisor_20250404_164354_31_EPU_nr27313-442/metadata_Supervisor_20250404_164354_31_EPU_nr27313-442/Images-Disc1/GridSquare_3568837/Data/FoilHole_3595930_Data_3590445_56_20250405_084025.xml
 
 # Validate epu project dirs (expect failure):
-python -m epu_data_intake validate \
+python -m smartem_agent validate \
   ../smartem-decisions-test-datasets/bi37708-28-copy/Supervisor_20250129_114842_73_bi37708-28_grid7_EPU
 
-python -m epu_data_intake validate \
+python -m smartem_agent validate \
   ../smartem-decisions-test-datasets/bi37708-28-copy/Supervisor_20250130_105058_11
 
-python -m epu_data_intake validate \
+python -m smartem_agent validate \
   ../smartem-decisions-test-datasets/bi37708-28-copy/Supervisor_20250130_145409_68
 
-python -m epu_data_intake validate \
+python -m smartem_agent validate \
   ../smartem-decisions-test-datasets/bi37708-28-copy/Supervisor_20250130_150924_1grid3
 
 # Validate epu project dirs (expect success):
-python -m epu_data_intake validate \
+python -m smartem_agent validate \
   ../smartem-decisions-test-datasets/bi37708-28-copy/Supervisor_20250129_134723_36_bi37708-28_grid7_EPU
 
-python -m epu_data_intake validate \
+python -m smartem_agent validate \
   ../smartem-decisions-test-datasets/bi37708-28-copy/Supervisor_20250130_133418_68apoferritin
 
-python -m epu_data_intake validate \
+python -m smartem_agent validate \
   ../smartem-decisions-test-datasets/bi37708-28-copy/Supervisor_20250130_143856_44Practice
 
-python -m epu_data_intake validate \
+python -m smartem_agent validate \
   ../smartem-decisions-test-datasets/bi37708-28-copy/Supervisor_20250130_145409_68practice2
 ```
 
@@ -84,17 +84,21 @@ We need to watch the EPU output directory for changes, to that end:
 
 ```bash
 # Launch the watcher:
-python -m epu_data_intake watch ../test-dir --log-file output.log
+python -m smartem_agent watch ../test-dir --log-file output.log
 
-# In another terminal launch a simulator that randomly writes to target dir:
-python tests/epu_data_intake/epu_output_simulator.py ../test-dir \
-  --template-dir="../smartem-decisions-test-datasets/epu-Supervisor_20250326_145351_30_nt33824-10_grid2_1in5dil" -vp
+# For testing incremental file writes, use the fsrecorder tool to simulate EPU behavior:
+# First, record from an existing EPU dataset:
+python tools/fsrecorder/fsrecorder.py record ../smartem-decisions-test-datasets/epu-Supervisor_20250326_145351_30_nt33824-10_grid2_1in5dil ../test-recording.tar.gz
+
+# Then replay it to your test directory with accelerated timing:
+python tools/fsrecorder/fsrecorder.py replay ../test-recording.tar.gz ../test-dir --fast
+
+# Alternatively, for quick testing, copy data manually:
+cp -r "../smartem-decisions-test-datasets/epu-Supervisor_20250326_145351_30_nt33824-10_grid2_1in5dil/"* ../test-dir/
 ```
 
-> Note: at present the EPU output simulator writes out the contents of template directory in random order.
-> This behaviour does not accurately represent how EPU software actually works, and will cause problems with
-> the intake agent which depends on things happening in a particular order. For example - absence of
-> `EpuSession.dm` file is pretty much a show-stopper as it provides references to atlas and is a trigger
+> **Note**: The fsrecorder tool (`tools/fsrecorder/`) provides accurate simulation of EPU file writing patterns with proper timing and ordering.
+> The absence of `EpuSession.dm` file is pretty much a show-stopper as it provides references to atlas and is a trigger
 > for instantiating a new grid entity in the internal datastore.
 
 A `watch` operation is designed to gracefully handle one of the following invocation scenarios:

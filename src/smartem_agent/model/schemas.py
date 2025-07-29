@@ -3,7 +3,7 @@ from pathlib import Path
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from epu_data_intake.utils import generate_uuid
+from smartem_agent.utils import generate_uuid
 
 
 class MicrographManifest(BaseModel):

@@ -20,7 +20,6 @@ requires-python = ">=3.12"
 # Development dependencies
 dev = [
     "copier",
-    "fastapi[standard]",
     "myst-parser",
     "pipdeptree",
     "pre-commit",
@@ -28,13 +27,14 @@ dev = [
     "pyright",
     "pytest",
     "pytest-cov",
-    "requests",
     "ruff",
     "sphinx-autobuild",
     "sphinx-copybutton",
     "sphinx-design",
     "tox-direct",
     "types-mock",
+    "types-requests",
+    "types-pyyaml",
 ]
 
 # Common dependencies (shared by all production components)
@@ -45,40 +45,43 @@ common = [
     "typer==0.16.0",
 ]
 
-# Core system component dependencies
-core = [
+# Backend system component dependencies
+backend = [
     "smartem-decisions[common]",
-    "pika==1.3.2",
-    "pydantic==2.11.7",
-    "fastapi==0.116.1",
-    "psycopg2-binary==2.9.10",
-    "sqlmodel==0.0.24",
+    "pika>=1.3.2,<2.0.0",
+    "pydantic>=2.11.7,<3.0.0",
+    "fastapi>=0.116.1,<1.0.0",
+    "uvicorn[standard]>=0.30.0,<1.0.0",
+    "psycopg2-binary>=2.9.10,<3.0.0",
+    "sqlmodel>=0.0.24,<1.0.0",
+    "httpx>=0.27.0,<1.0.0",
 ]
 
-# Data intake component dependencies
-data-intake = [
+# Agent component dependencies
+agent = [
     "smartem-decisions[common]",
-    "requests",
-    "lxml==6.0.0",
-    "watchdog==6.0.0",
+    "requests>=2.32.0,<3.0.0",
+    "lxml>=5.0.0,<6.0.0",
+    "watchdog>=4.0.0,<5.0.0",
+    "httpx>=0.27.0,<1.0.0",
 ]
 
 # FSRecorder tool dependencies
 fsrecorder = [
-    "watchdog>=3.0.0",
+    "watchdog>=4.0.0,<5.0.0",
 ]
 
 # Combined dependencies (for convenience)
 all = [
-    "smartem-decisions[dev,core,data-intake,fsrecorder]",
+    "smartem-decisions[dev,backend,agent,fsrecorder]",
 ]
 
 [project.scripts]
-smartem_epu_data_intake_tools = "epu_data_intake.__main__:main"
-"smartem.register-prediction-model" = "smartem_decisions.cli.register_quality_prediction_model:run"
-"smartem.init-model-weight" = "smartem_decisions.cli.initialise_prediction_model_weights:run"
-"smartem.random-model-predictions" = "smartem_decisions.cli.random_model_predictions:run"
-"smartem.random-prior-updates" = "smartem_decisions.cli.random_prior_updates:run"
+smartem_agent_tools = "smartem_agent.__main__:main"
+"smartem.register-prediction-model" = "smartem_backend.cli.register_quality_prediction_model:run"
+"smartem.init-model-weight" = "smartem_backend.cli.initialise_prediction_model_weights:run"
+"smartem.random-model-predictions" = "smartem_backend.cli.random_model_predictions:run"
+"smartem.random-prior-updates" = "smartem_backend.cli.random_prior_updates:run"
 
 [project.urls]
 GitHub = "https://github.com/DiamondLightSource/smartem-decisions"
@@ -93,8 +96,8 @@ name = "Val Redchenko"
 
 [tool.setuptools]
 packages = [
-    "smartem_decisions",
-    "epu_data_intake"
+    "smartem_backend",
+    "smartem_agent"
 ]
 package-dir = {"" = "src"}
 
