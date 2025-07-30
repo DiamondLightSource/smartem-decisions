@@ -5,7 +5,8 @@ from pathlib import Path
 import requests
 
 from smartem_agent.core_http_api_client import SmartEMAPIClient
-from smartem_agent.model.schemas import (
+from smartem_backend.utils import logger
+from smartem_common.schemas import (
     AcquisitionData,
     AtlasData,
     AtlasTileData,
@@ -15,7 +16,6 @@ from smartem_agent.model.schemas import (
     GridSquareData,
     MicrographData,
 )
-from smartem_backend.utils import logger
 
 # Retry configuration constants
 DEFAULT_MAX_RETRIES = 5

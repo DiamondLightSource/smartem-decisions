@@ -10,14 +10,14 @@ from pathlib import Path
 from watchdog.events import FileSystemEventHandler
 
 from smartem_agent.fs_parser import EpuParser
-from smartem_agent.model.schemas import (
+from smartem_agent.model.store import InMemoryDataStore, PersistentDataStore
+from smartem_common.schemas import (
     AtlasTileGridSquarePositionData,
     GridData,
     GridSquareData,
     MicrographData,
     MicroscopeData,
 )
-from smartem_agent.model.store import InMemoryDataStore, PersistentDataStore
 
 """Default glob patterns for EPU data files.
 
