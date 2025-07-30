@@ -1,0 +1,27 @@
+``smartem_backend.cli.random_model_predictions``
+================================================
+        
+        
+        
+        
+
+.. automodule:: smartem_backend.cli.random_model_predictions
+    :members:
+
+    
+    
+    
+
+    
+    
+    .. rubric:: Members
+
+    .. autosummary::
+        :nosignatures:
+    
+        generate_predictions_for_foilhole
+        generate_predictions_for_gridsquare
+        generate_random_predictions
+        run
+    
+    

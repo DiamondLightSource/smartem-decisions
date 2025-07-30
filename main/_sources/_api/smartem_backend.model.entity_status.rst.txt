@@ -1,0 +1,29 @@
+``smartem_backend.model.entity_status``
+=======================================
+        
+        
+        
+        
+        
+
+.. automodule:: smartem_backend.model.entity_status
+    :members:
+
+    
+    
+    
+
+    
+    
+    .. rubric:: Members
+
+    .. autosummary::
+        :nosignatures:
+    
+        AcquisitionStatusType
+        FoilHoleStatusType
+        GridSquareStatusType
+        GridStatusType
+        MicrographStatusType
+    
+    

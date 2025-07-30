@@ -1,0 +1,13 @@
+``smartem_backend.model.http_request``
+======================================
+
+.. automodule:: smartem_backend.model.http_request
+    :members:
+
+    
+    
+    
+
+    
+    
+    

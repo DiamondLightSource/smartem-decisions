@@ -1,0 +1,30 @@
+﻿``smartem_backend``
+===================
+
+.. automodule:: smartem_backend
+    :members:
+
+    
+    
+    .. rubric:: Submodules
+
+    .. autosummary::
+        :toctree:
+        :template: custom-module-template.rst
+        :recursive:
+    
+        cli
+        consumer
+        http_api
+        log_manager
+        model
+        mq_publisher
+        predictions
+        run_api
+        utils
+    
+    
+
+    
+    
+    

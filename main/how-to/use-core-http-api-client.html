@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>How to Use the SmartEM API Client &#8212; smartem-decisions 0.1.dev225+gd6e467e documentation</title>
+    <title>How to Use the SmartEM API Client &#8212; smartem-decisions 0.1.dev238+g472d199 documentation</title>
   
   
   
@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../_static/documentation_options.js?v=90788e7e"></script>
+    <script src="../_static/documentation_options.js?v=8e98254a"></script>
     <script src="../_static/doctools.js?v=9bcbadda"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -475,7 +475,7 @@
 <h2>Basic Usage<a class="headerlink" href="#basic-usage" title="Link to this heading">#</a></h2>
 <section id="importing-the-client">
 <h3>Importing the Client<a class="headerlink" href="#importing-the-client" title="Link to this heading">#</a></h3>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">src.epu_data_intake.core_http_api_client</span><span class="w"> </span><span class="kn">import</span> <span class="n">SmartEMAPIClient</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">src.smartem_agent.core_http_api_client</span><span class="w"> </span><span class="kn">import</span> <span class="n">SmartEMAPIClient</span>
 </pre></div>
 </div>
 </section>
@@ -527,7 +527,7 @@
 <h2>Working with Acquisitions<a class="headerlink" href="#working-with-acquisitions" title="Link to this heading">#</a></h2>
 <section id="creating-an-acquisition">
 <h3>Creating an Acquisition<a class="headerlink" href="#creating-an-acquisition" title="Link to this heading">#</a></h3>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">src.epu_data_intake.model.schemas</span><span class="w"> </span><span class="kn">import</span> <span class="n">EpuSessionData</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">src.smartem_agent.model.schemas</span><span class="w"> </span><span class="kn">import</span> <span class="n">EpuSessionData</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">datetime</span>
 
 <span class="c1"># Create an acquisition from EPU session data</span>
@@ -541,7 +541,7 @@
 <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Created acquisition with ID: </span><span class="si">{</span><span class="n">response</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
 <span class="c1"># Alternatively, create directly with an API request model</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">src.smartem_decisions.model.http_request</span><span class="w"> </span><span class="kn">import</span> <span class="n">AcquisitionCreateRequest</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">src.smartem_backend.model.http_request</span><span class="w"> </span><span class="kn">import</span> <span class="n">AcquisitionCreateRequest</span>
 
 <span class="n">request</span> <span class="o">=</span> <span class="n">AcquisitionCreateRequest</span><span class="p">(</span>
     <span class="nb">id</span><span class="o">=</span><span class="s2">&quot;my-acquisition-id&quot;</span><span class="p">,</span>
@@ -566,7 +566,7 @@
 </section>
 <section id="updating-an-acquisition">
 <h3>Updating an Acquisition<a class="headerlink" href="#updating-an-acquisition" title="Link to this heading">#</a></h3>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">src.smartem_decisions.model.http_request</span><span class="w"> </span><span class="kn">import</span> <span class="n">AcquisitionUpdateRequest</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">src.smartem_backend.model.http_request</span><span class="w"> </span><span class="kn">import</span> <span class="n">AcquisitionUpdateRequest</span>
 
 <span class="n">update</span> <span class="o">=</span> <span class="n">AcquisitionUpdateRequest</span><span class="p">(</span>
     <span class="n">name</span><span class="o">=</span><span class="s2">&quot;Updated Acquisition Name&quot;</span><span class="p">,</span>
@@ -598,25 +598,25 @@
 <span class="n">acquisition</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">create_acquisition</span><span class="p">(</span><span class="n">EpuSessionData</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="s2">&quot;acq-1&quot;</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;Test Acquisition&quot;</span><span class="p">))</span>
 
 <span class="c1"># Create a grid for the acquisition</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">src.epu_data_intake.model.schemas</span><span class="w"> </span><span class="kn">import</span> <span class="n">GridData</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">src.smartem_agent.model.schemas</span><span class="w"> </span><span class="kn">import</span> <span class="n">GridData</span>
 
 <span class="n">grid</span> <span class="o">=</span> <span class="n">GridData</span><span class="p">(</span><span class="n">data_dir</span><span class="o">=</span><span class="s2">&quot;/path/to/grid&quot;</span><span class="p">)</span>
 <span class="n">grid_response</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">create_acquisition_grid</span><span class="p">(</span><span class="n">acquisition</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="n">grid</span><span class="p">)</span>
 
 <span class="c1"># Create a grid square for the grid</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">src.epu_data_intake.model.schemas</span><span class="w"> </span><span class="kn">import</span> <span class="n">GridSquareData</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">src.smartem_agent.model.schemas</span><span class="w"> </span><span class="kn">import</span> <span class="n">GridSquareData</span>
 
 <span class="n">gridsquare</span> <span class="o">=</span> <span class="n">GridSquareData</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="s2">&quot;gs-1&quot;</span><span class="p">,</span> <span class="n">data_dir</span><span class="o">=</span><span class="s2">&quot;/path/to/gridsquare&quot;</span><span class="p">)</span>
 <span class="n">gridsquare_response</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">create_grid_gridsquare</span><span class="p">(</span><span class="n">grid_response</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="n">gridsquare</span><span class="p">)</span>
 
 <span class="c1"># Create a foil hole for the grid square</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">src.epu_data_intake.model.schemas</span><span class="w"> </span><span class="kn">import</span> <span class="n">FoilHoleData</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">src.smartem_agent.model.schemas</span><span class="w"> </span><span class="kn">import</span> <span class="n">FoilHoleData</span>
 
 <span class="n">foilhole</span> <span class="o">=</span> <span class="n">FoilHoleData</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="s2">&quot;fh-1&quot;</span><span class="p">,</span> <span class="n">gridsquare_id</span><span class="o">=</span><span class="n">gridsquare</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
 <span class="n">foilhole_response</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">create_gridsquare_foilhole</span><span class="p">(</span><span class="n">gridsquare_response</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="n">foilhole</span><span class="p">)</span>
 
 <span class="c1"># Create a micrograph for the foil hole</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">src.epu_data_intake.model.schemas</span><span class="w"> </span><span class="kn">import</span> <span class="n">MicrographData</span><span class="p">,</span> <span class="n">MicrographManifest</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">src.smartem_agent.model.schemas</span><span class="w"> </span><span class="kn">import</span> <span class="n">MicrographData</span><span class="p">,</span> <span class="n">MicrographManifest</span>
 
 <span class="n">manifest</span> <span class="o">=</span> <span class="n">MicrographManifest</span><span class="p">(</span>
     <span class="n">unique_id</span><span class="o">=</span><span class="s2">&quot;mic-1&quot;</span><span class="p">,</span>

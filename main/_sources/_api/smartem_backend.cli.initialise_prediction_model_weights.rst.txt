@@ -1,0 +1,25 @@
+``smartem_backend.cli.initialise_prediction_model_weights``
+===========================================================
+        
+        
+        
+
+.. automodule:: smartem_backend.cli.initialise_prediction_model_weights
+    :members:
+
+    
+    
+    
+
+    
+    
+    .. rubric:: Members
+
+    .. autosummary::
+        :nosignatures:
+    
+        initialise_all_models_for_grid
+        initialise_prediction_model_for_grid
+        run
+    
+    

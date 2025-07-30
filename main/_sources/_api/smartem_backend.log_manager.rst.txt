@@ -1,0 +1,23 @@
+``smartem_backend.log_manager``
+===============================
+        
+        
+
+.. automodule:: smartem_backend.log_manager
+    :members:
+
+    
+    
+    
+
+    
+    
+    .. rubric:: Members
+
+    .. autosummary::
+        :nosignatures:
+    
+        LogConfig
+        LogManager
+    
+    
