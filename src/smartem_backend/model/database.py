@@ -6,18 +6,20 @@ from sqlmodel import Field, Relationship, SQLModel
 from sqlmodel import Session as SQLModelSession
 
 from smartem_backend.model.entity_status import (
-    AcquisitionStatus,
     AcquisitionStatusType,
-    FoilHoleStatus,
     FoilHoleStatusType,
-    GridSquareStatus,
     GridSquareStatusType,
-    GridStatus,
     GridStatusType,
-    MicrographStatus,
     MicrographStatusType,
 )
 from smartem_backend.utils import logger, setup_postgres_connection
+from smartem_common.entity_status import (
+    AcquisitionStatus,
+    FoilHoleStatus,
+    GridSquareStatus,
+    GridStatus,
+    MicrographStatus,
+)
 
 
 class Acquisition(SQLModel, table=True, table_name="acquisition"):
