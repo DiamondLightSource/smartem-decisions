@@ -2,14 +2,14 @@ import unittest
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-from src.smartem_agent.model.schemas import GridData
-from src.smartem_agent.model.store import InMemoryDataStore
+from smartem_agent.model.store import InMemoryDataStore
+from smartem_common.schemas import GridData
 
 
 class TestInMemoryDataStore(unittest.TestCase):
     def setUp(self):
         # Set up a mock logger
-        self.logger_patcher = patch("src.smartem_agent.model.store.logger")
+        self.logger_patcher = patch("smartem_agent.model.store.logger")
         self.mock_logger = self.logger_patcher.start()
 
         # Create the InMemoryDataStore with a temp root dir
@@ -105,7 +105,7 @@ class TestInMemoryDataStore(unittest.TestCase):
     @unittest.skip("disable broken tests after refactor of InMemoryDataStore")
     def test_find_gridsquare_by_id(self):
         # Set up the gridsquares dictionary with some test data
-        from src.smartem_agent.model.schemas import GridSquareData
+        from smartem_common.schemas import GridSquareData
 
         gs1 = GridSquareData(id="GS1", grid_uuid="grid1-uuid")
         gs1.uuid = "gs1-uuid"
@@ -137,9 +137,9 @@ class TestInMemoryDataStore(unittest.TestCase):
 
 
 class TestPersistentDataStore(unittest.TestCase):
-    @patch("src.smartem_agent.core_http_api_client.SmartEMAPIClient")
+    @patch("smartem_agent.core_http_api_client.SmartEMAPIClient")
     def setUp(self, mock_api_client):
-        from src.smartem_agent.model.store import PersistentDataStore
+        from smartem_agent.model.store import PersistentDataStore
 
         # Configure the mock API client
         self.mock_api_client_instance = MagicMock()
