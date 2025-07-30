@@ -2,9 +2,16 @@
 [![Coverage](https://codecov.io/gh/DiamondLightSource/smartem-decisions/branch/main/graph/badge.svg)](https://codecov.io/gh/DiamondLightSource/smartem-decisions)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
-# SmartEM Backend
+# SmartEM Decisions
 
 A comprehensive system for smart data collection and processing in cryo-electron microscopy, designed to optimize acquisition workflows through intelligent decision-making and real-time data analysis.
+
+## System Components
+
+- **`smartem_common`**: Shared schemas, types, and utilities used across all components
+- **`smartem_api`**: HTTP API client and server functionality for component communication  
+- **`smartem_backend`**: Core backend service with database operations and message queue processing
+- **`smartem_agent`**: Data collection agent that monitors EPU output and communicates with backend
 
 - Project board: <https://github.com/orgs/DiamondLightSource/projects/33/views/1>
 - Test Datasets: https://gitlab.diamond.ac.uk/scisoft/cryoem/smartem-decisions-test-datasets
@@ -18,7 +25,7 @@ Releases        | <https://github.com/DiamondLightSource/smartem-decisions/relea
 ## Quick Start
 
 ```python
-from src._version import __version__
+from smartem_backend._version import __version__
 
 print(f"Hello smartem_backend {__version__}")
 ```
@@ -81,7 +88,7 @@ print(f"Hello smartem_backend {__version__}")
 # venv and requirements
 python -m venv .venv
 source .venv/bin/activate
-pip install -e .[all] # .[dev,common,backend,agent]
+pip install -e .[dev] # or .[backend] for production
 
 # Start services with verbosity controls:
 python -m smartem_backend.run_api -v               # HTTP API with INFO logging
