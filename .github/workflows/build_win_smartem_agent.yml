@@ -32,7 +32,7 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install pyinstaller
-        pip install -e .[common,agent]
+        pip install -e .[agent]
 
     - name: Build SmartEM Agent tools with PyInstaller
       run: >-
