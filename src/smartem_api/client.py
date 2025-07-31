@@ -67,7 +67,7 @@ class EntityConverter:
         )
 
     @staticmethod
-    def grid_to_request(entity: GridData) -> GridCreateRequest:
+    def grid_to_request(entity: GridData, lowmag: bool = False) -> GridCreateRequest:
         """Convert Grid data to grid request model"""
         return GridCreateRequest(
             uuid=entity.uuid,
@@ -76,6 +76,7 @@ class EntityConverter:
             acquisition_uuid=entity.acquisition_data.uuid,
             data_dir=str(entity.data_dir) if entity.data_dir else None,
             atlas_dir=str(entity.atlas_dir) if entity.atlas_dir else None,
+            lowmag=lowmag,
         )
 
     @staticmethod
@@ -410,6 +411,9 @@ class SmartEMAPIClient:
         response = self._request("post", f"acquisitions/{grid.acquisition_uuid}/grids", grid, GridResponse)
         return response
 
+    def grid_registered(self, grid_uuid: str) -> bool:
+        return self._request("post", f"grids/{grid_uuid}/registered")
+
     # Atlas
     def get_atlases(self) -> list[AtlasResponse]:
         """Get all atlases"""
@@ -491,9 +495,9 @@ class SmartEMAPIClient:
         """Get a single grid square by ID"""
         return self._request("get", f"gridsquares/{gridsquare_uuid}", response_cls=GridSquareResponse)
 
-    def update_gridsquare(self, gridsquare: GridSquareData) -> GridSquareResponse:
+    def update_gridsquare(self, gridsquare: GridSquareData, lowmag: bool = False) -> GridSquareResponse:
         """Update a grid square"""
-        request_model = EntityConverter.gridsquare_to_request(gridsquare)
+        request_model = EntityConverter.gridsquare_to_request(gridsquare, lowmag=lowmag)
         return self._request("put", f"gridsquares/{gridsquare.uuid}", request_model, GridSquareResponse)
 
     def delete_gridsquare(self, gridsquare_uuid: str) -> None:
@@ -504,10 +508,10 @@ class SmartEMAPIClient:
         """Get all grid squares for a specific grid"""
         return self._request("get", f"grids/{grid_uuid}/gridsquares", response_cls=GridSquareResponse)
 
-    def create_grid_gridsquare(self, gridsquare: GridSquareData) -> GridSquareResponse:
+    def create_grid_gridsquare(self, gridsquare: GridSquareData, lowmag: bool = False) -> GridSquareResponse:
         """Create a new grid square for a specific grid"""
         # Convert GridSquareData to GridSquareCreateRequest if needed
-        gridsquare = EntityConverter.gridsquare_to_request(gridsquare)
+        gridsquare = EntityConverter.gridsquare_to_request(gridsquare, lowmag=lowmag)
         response = self._request("post", f"grids/{gridsquare.grid_uuid}/gridsquares", gridsquare, GridSquareResponse)
         return response
 

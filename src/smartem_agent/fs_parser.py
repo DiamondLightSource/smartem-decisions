@@ -975,7 +975,7 @@ class EpuParser:
                     size_height=gsp.size[1],
                 )
                 gs_uuid_map[str(gsid)] = gridsquare.uuid
-                datastore.create_gridsquare(gridsquare)
+                datastore.create_gridsquare(gridsquare, lowmag=True)
             for atlastile in grid.atlas_data.tiles:
                 for gsid, gs_tile_pos in atlastile.gridsquare_positions.items():
                     for pos in gs_tile_pos:
@@ -987,6 +987,7 @@ class EpuParser:
                                 size=pos.size,
                             )
                         )
+            datastore.grid_registered(grid.uuid)
 
         # 2. Parse all gridsquare metadata from /Metadata directory
         metadata_dir_path = str(grid.data_dir / "Metadata")

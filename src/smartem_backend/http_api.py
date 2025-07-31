@@ -8,8 +8,7 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session as SqlAlchemySession
 from sqlalchemy.orm import sessionmaker
 
-from src._version import __version__
-from src.smartem_backend.model.database import (
+from smartem_backend.model.database import (
     Acquisition,
     Atlas,
     AtlasTile,
@@ -19,14 +18,14 @@ from src.smartem_backend.model.database import (
     GridSquare,
     Micrograph,
 )
-from src.smartem_backend.model.entity_status import (
+from smartem_backend.model.entity_status import (
     AcquisitionStatus,
     FoilHoleStatus,
     GridSquareStatus,
     GridStatus,
     MicrographStatus,
 )
-from src.smartem_backend.model.http_request import (
+from smartem_backend.model.http_request import (
     AcquisitionCreateRequest,
     AcquisitionUpdateRequest,
     AtlasCreateRequest,
@@ -43,7 +42,7 @@ from src.smartem_backend.model.http_request import (
     MicrographCreateRequest,
     MicrographUpdateRequest,
 )
-from src.smartem_backend.model.http_response import (
+from smartem_backend.model.http_response import (
     AcquisitionResponse,
     AtlasResponse,
     AtlasTileGridSquarePositionResponse,
@@ -53,7 +52,7 @@ from src.smartem_backend.model.http_response import (
     GridSquareResponse,
     MicrographResponse,
 )
-from src.smartem_backend.mq_publisher import (
+from smartem_backend.mq_publisher import (
     publish_acquisition_created,
     publish_acquisition_deleted,
     publish_acquisition_updated,
@@ -68,15 +67,19 @@ from src.smartem_backend.mq_publisher import (
     publish_foilhole_updated,
     publish_grid_created,
     publish_grid_deleted,
+    publish_grid_registered,
     publish_grid_updated,
     publish_gridsquare_created,
     publish_gridsquare_deleted,
+    publish_gridsquare_lowmag_created,
+    publish_gridsquare_lowmag_updated,
     publish_gridsquare_updated,
     publish_micrograph_created,
     publish_micrograph_deleted,
     publish_micrograph_updated,
 )
-from src.smartem_backend.utils import setup_postgres_connection, setup_rabbitmq
+from smartem_backend.utils import setup_postgres_connection, setup_rabbitmq
+from src._version import __version__
 
 db_engine = setup_postgres_connection()
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=db_engine)
@@ -459,6 +462,15 @@ def create_acquisition_grid(acquisition_uuid: str, grid: GridCreateRequest, db: 
     return GridResponse(**response_data)
 
 
+@app.post("/grids/{grid_uuid}/registered")
+def grid_registered(grid_uuid: str) -> bool:
+    """All squares on a grid have been registered at low mag"""
+    success = publish_grid_registered(grid_uuid)
+    if not success:
+        logger.error(f"Failed to publish grid created event for UUID: {grid_uuid}")
+    return success
+
+
 # ============ Atlas CRUD Operations ============
 
 
@@ -743,13 +755,19 @@ def update_gridsquare(gridsquare_uuid: str, gridsquare: GridSquareUpdateRequest,
     update_data = gridsquare.model_dump(exclude_unset=True)
 
     for key, value in update_data.items():
-        setattr(db_gridsquare, key, value)
+        if hasattr(db_gridsquare, key):
+            setattr(db_gridsquare, key, value)
     db.commit()
     db.refresh(db_gridsquare)
 
-    success = publish_gridsquare_updated(
-        uuid=db_gridsquare.uuid, grid_uuid=db_gridsquare.grid_uuid, gridsquare_id=db_gridsquare.gridsquare_id
-    )
+    if gridsquare.lowmag:
+        success = publish_gridsquare_lowmag_updated(
+            uuid=db_gridsquare.uuid, grid_uuid=db_gridsquare.grid_uuid, gridsquare_id=db_gridsquare.gridsquare_id
+        )
+    else:
+        success = publish_gridsquare_updated(
+            uuid=db_gridsquare.uuid, grid_uuid=db_gridsquare.grid_uuid, gridsquare_id=db_gridsquare.gridsquare_id
+        )
     if not success:
         logger.error(f"Failed to publish gridsquare updated event for UUID: {db_gridsquare.uuid}")
 
@@ -820,9 +838,14 @@ def create_grid_gridsquare(grid_uuid: str, gridsquare: GridSquareCreateRequest, 
     db.commit()
     db.refresh(db_gridsquare)
 
-    success = publish_gridsquare_created(
-        uuid=db_gridsquare.uuid, grid_uuid=db_gridsquare.grid_uuid, gridsquare_id=db_gridsquare.gridsquare_id
-    )
+    if gridsquare.lowmag:
+        success = publish_gridsquare_lowmag_created(
+            uuid=db_gridsquare.uuid, grid_uuid=db_gridsquare.grid_uuid, gridsquare_id=db_gridsquare.gridsquare_id
+        )
+    else:
+        success = publish_gridsquare_created(
+            uuid=db_gridsquare.uuid, grid_uuid=db_gridsquare.grid_uuid, gridsquare_id=db_gridsquare.gridsquare_id
+        )
     if not success:
         logger.error(f"Failed to publish gridsquare created event for UUID: {db_gridsquare.uuid}")
 

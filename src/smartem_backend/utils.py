@@ -289,7 +289,7 @@ class RabbitMQPublisher(RabbitMQConnection):
 
             # Convert Pydantic model to dict if needed
             if isinstance(payload, BaseModel):
-                payload_dict = payload.model_dump()
+                payload_dict = json.loads(payload.json())
             else:
                 payload_dict = payload
 
@@ -396,5 +396,5 @@ app_config = load_conf()
 # Create RabbitMQ connections (available as singletons throughout the application)
 rmq_publisher, rmq_consumer = setup_rabbitmq(
     queue_name=app_config["rabbitmq"]["queue_name"] if app_config and "rabbitmq" in app_config else None,
-    exchange="",  # Using default direct exchange
+    exchange=os.getenv("RABBITMQ_EXCHANGE") or "",
 )
