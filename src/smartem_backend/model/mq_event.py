@@ -399,6 +399,12 @@ class GridSquareModelPredictioEvent(GenericEventMessageBody):
     prediction_value: float
 
 
+class FoilHoleModelPredictionEvent(GenericEventMessageBody):
+    foilhole_uuid: str
+    prediction_model_name: str
+    prediction_value: float
+
+
 class ModelParameterUpdateEvent(GenericEventMessageBody):
     grid_uuid: str
     prediction_model_name: str
