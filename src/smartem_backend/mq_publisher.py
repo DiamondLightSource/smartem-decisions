@@ -13,14 +13,17 @@ from smartem_backend.model.mq_event import (
     FoilHoleUpdatedEvent,
     GridCreatedEvent,
     GridDeletedEvent,
+    GridRegisteredEvent,
     GridSquareCreatedEvent,
     GridSquareDeletedEvent,
+    GridSquareModelPredictionEvent,
     GridSquareUpdatedEvent,
     GridUpdatedEvent,
     MessageQueueEventType,
     MicrographCreatedEvent,
     MicrographDeletedEvent,
     MicrographUpdatedEvent,
+    ModelParameterUpdateEvent,
 )
 from smartem_backend.utils import rmq_publisher
 
@@ -109,6 +112,15 @@ def publish_grid_deleted(uuid):
     return rmq_publisher.publish_event(MessageQueueEventType.GRID_DELETED, event)
 
 
+def publish_grid_registered(uuid: str):
+    """Publish grid updated event to RabbitMQ"""
+    event = GridRegisteredEvent(
+        event_type=MessageQueueEventType.GRID_REGISTERED,
+        grid_uuid=uuid,
+    )
+    return rmq_publisher.publish_event(MessageQueueEventType.GRID_REGISTERED, event)
+
+
 # ========== Grid Square DB Entity Mutations ==========
 def publish_gridsquare_created(uuid, grid_uuid=None, gridsquare_id=None):
     """Publish grid square created event to RabbitMQ"""
@@ -130,6 +142,34 @@ def publish_gridsquare_deleted(uuid):
     """Publish grid square deleted event to RabbitMQ"""
     event = GridSquareDeletedEvent(event_type=MessageQueueEventType.GRIDSQUARE_DELETED, uuid=uuid)
     return rmq_publisher.publish_event(MessageQueueEventType.GRIDSQUARE_DELETED, event)
+
+
+def publish_gridsquare_lowmag_created(uuid, grid_uuid=None, gridsquare_id=None):
+    """Publish low mag grid square created event to RabbitMQ"""
+    event = GridSquareCreatedEvent(
+        event_type=MessageQueueEventType.GRIDSQUARE_LOWMAG_CREATED,
+        uuid=uuid,
+        grid_uuid=grid_uuid,
+        gridsquare_id=gridsquare_id,
+    )
+    return rmq_publisher.publish_event(MessageQueueEventType.GRIDSQUARE_LOWMAG_CREATED, event)
+
+
+def publish_gridsquare_lowmag_updated(uuid, grid_uuid=None, gridsquare_id=None):
+    """Publish low mag grid square updated event to RabbitMQ"""
+    event = GridSquareUpdatedEvent(
+        event_type=MessageQueueEventType.GRIDSQUARE_LOWMAG_UPDATED,
+        uuid=uuid,
+        grid_uuid=grid_uuid,
+        gridsquare_id=gridsquare_id,
+    )
+    return rmq_publisher.publish_event(MessageQueueEventType.GRIDSQUARE_LOWMAG_UPDATED, event)
+
+
+def publish_gridsquare_lowmag_deleted(uuid):
+    """Publish low mag grid square deleted event to RabbitMQ"""
+    event = GridSquareDeletedEvent(event_type=MessageQueueEventType.GRIDSQUARE_LOWMAG_DELETED, uuid=uuid)
+    return rmq_publisher.publish_event(MessageQueueEventType.GRIDSQUARE_LOWMAG_DELETED, event)
 
 
 # ========== Foil Hole DB Entity Mutations ==========
@@ -192,3 +232,26 @@ def publish_micrograph_deleted(uuid):
     """Publish micrograph deleted event to RabbitMQ"""
     event = MicrographDeletedEvent(event_type=MessageQueueEventType.MICROGRAPH_DELETED, uuid=uuid)
     return rmq_publisher.publish_event(MessageQueueEventType.MICROGRAPH_DELETED, event)
+
+
+def publish_gridsquare_model_prediction(gridsquare_uuid: str, model_name: str, prediction_value: float):
+    """Publish model prediction event for a grid square to RabbitMQ"""
+    event = GridSquareModelPredictionEvent(
+        event_type=MessageQueueEventType.GRIDSQUARE_MODEL_PREDICTION,
+        gridsquare_uuid=gridsquare_uuid,
+        prediction_model_name=model_name,
+        prediction_value=prediction_value,
+    )
+    return rmq_publisher.publish_event(MessageQueueEventType.GRIDSQUARE_MODEL_PREDICTION, event)
+
+
+def publish_model_parameter_update(grid_uuid: str, model_name: str, key: str, value: float):
+    """Publish model parameter update event to RabbitMQ"""
+    event = ModelParameterUpdateEvent(
+        event_type=MessageQueueEventType.MODEL_PARAMETER_UPDATE,
+        grid_uuid=grid_uuid,
+        prediction_model_name=model_name,
+        key=key,
+        value=value,
+    )
+    return rmq_publisher.publish_event(MessageQueueEventType.MODEL_PARAMETER_UPDATE, event)

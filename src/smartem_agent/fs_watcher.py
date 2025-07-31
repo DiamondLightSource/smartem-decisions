@@ -320,10 +320,10 @@ class RateLimitedFilesystemEventHandler(FileSystemEventHandler):
                         # need to check if each square exists already
                         if found_grid_square := self.datastore.find_gridsquare_by_natural_id(str(gsid)):
                             gridsquare.uuid = found_grid_square.uuid
-                            self.datastore.update_gridsquare(gridsquare)
+                            self.datastore.update_gridsquare(gridsquare, lowmag=True)
                             gs_uuid_map[str(gsid)] = gridsquare.uuid
                         else:
-                            self.datastore.create_gridsquare(gridsquare)
+                            self.datastore.create_gridsquare(gridsquare, lowmag=True)
                             gs_uuid_map[str(gsid)] = gridsquare.uuid
                     logging.debug(f"Registered all squares for grid: {grid_uuid}")
 

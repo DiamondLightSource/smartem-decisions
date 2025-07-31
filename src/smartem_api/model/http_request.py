@@ -187,11 +187,11 @@ class GridSquareBaseRequest(GridSquareBaseFields):
 
 
 class GridSquareCreateRequest(GridSquareBaseRequest):
-    pass
+    lowmag: bool = False
 
 
 class GridSquareUpdateRequest(GridSquareBaseFields):
-    pass
+    lowmag: bool = False
 
 
 # FoilHole models

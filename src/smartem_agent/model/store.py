@@ -134,6 +134,9 @@ class InMemoryDataStore:
     def get_grid(self, uuid: str):
         return self.grids.get(uuid)
 
+    def grid_registered(self, uuid: str):
+        return None
+
     # Atlas methods
     def create_atlas(self, atlas: AtlasData):
         self.atlases[atlas.uuid] = atlas
@@ -167,14 +170,14 @@ class InMemoryDataStore:
     def link_atlastile_to_gridsquare(self, gridsquare_position: AtlasTileGridSquarePositionData):
         return None
 
-    def create_gridsquare(self, gridsquare: GridSquareData):
+    def create_gridsquare(self, gridsquare: GridSquareData, lowmag: bool = False):
         self.gridsquares[gridsquare.uuid] = gridsquare
         if gridsquare.grid_uuid not in self.grid_rels:
             self.grid_rels[gridsquare.grid_uuid] = set()
         self.grid_rels[gridsquare.grid_uuid].add(gridsquare.uuid)
         self.gridsquare_rels[gridsquare.uuid] = set()
 
-    def update_gridsquare(self, gridsquare: GridSquareData):
+    def update_gridsquare(self, gridsquare: GridSquareData, lowmag: bool = False):
         if gridsquare.uuid in self.gridsquares:
             self.gridsquares[gridsquare.uuid] = gridsquare
 
@@ -389,6 +392,12 @@ class PersistentDataStore(InMemoryDataStore):
             logger.error(f"Error removing grid UUID {uuid}: {e}")
             # TODO rollback localstore mutations on API failure
 
+    def grid_registered(self, uuid: str):
+        try:
+            self.api_client.grid_registered(uuid)
+        except Exception as e:
+            logger.error(f"Error notifying of registration of grid UUID {uuid}: {e}")
+
     def create_atlas(self, atlas: AtlasData):
         try:
             super().create_atlas(atlas)
@@ -478,10 +487,10 @@ class PersistentDataStore(InMemoryDataStore):
                 f"grid square {gridsquare_position.gridsquare_uuid}: {e}"
             )
 
-    def create_gridsquare(self, gridsquare: GridSquareData):
+    def create_gridsquare(self, gridsquare: GridSquareData, lowmag: bool = False):
         try:
-            super().create_gridsquare(gridsquare)
-            result = self.api_client.create_grid_gridsquare(gridsquare)
+            super().create_gridsquare(gridsquare, lowmag=lowmag)
+            result = self.api_client.create_grid_gridsquare(gridsquare, lowmag=lowmag)
             if not result:
                 logger.error(f"API call to create gridsquare {gridsquare.uuid} failed, local store changes rolled back")
         except Exception as e:
@@ -490,10 +499,10 @@ class PersistentDataStore(InMemoryDataStore):
             del self.gridsquares[gridsquare.uuid]
             self.grid_rels[gridsquare.grid_uuid].remove(gridsquare.uuid)
 
-    def update_gridsquare(self, gridsquare: GridSquareData):
+    def update_gridsquare(self, gridsquare: GridSquareData, lowmag: bool = False):
         try:
-            super().update_gridsquare(gridsquare)
-            self.api_client.update_gridsquare(gridsquare)
+            super().update_gridsquare(gridsquare, lowmag=lowmag)
+            self.api_client.update_gridsquare(gridsquare, lowmag=lowmag)
         except requests.HTTPError as e:
             if e.response.status_code == 404:
                 logger.warning(
