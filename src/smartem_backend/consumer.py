@@ -31,6 +31,7 @@ from smartem_backend.model.mq_event import (
     AtlasUpdatedEvent,
     FoilHoleCreatedEvent,
     FoilHoleDeletedEvent,
+    FoilHoleModelPredictionEvent,
     FoilHoleUpdatedEvent,
     GridCreatedEvent,
     GridDeletedEvent,
@@ -547,6 +548,30 @@ def handle_gridsquare_model_prediction(event_data: dict[str, Any]) -> None:
         logger.error(f"Error processing grid square model prediction event: {e}")
 
 
+def handle_foilhole_model_prediction(event_data: dict[str, Any]) -> None:
+    """
+    Handle foil hole model prediction event by inserting the result into the database
+
+    Args:
+        event_data: Event data for foil hole model prediction
+    """
+    try:
+        event = FoilHoleModelPredictionEvent(**event_data)
+        quality_prediction = QualityPrediction(
+            foilhole_uuid=event.foilhole_uuid,
+            prediction_model_name=event.prediction_model_name,
+            value=event.prediction_value,
+        )
+        with Session(db_engine) as session:
+            session.add(quality_prediction)
+            session.commit()
+
+    except ValidationError as e:
+        logger.error(f"Validation error processing grid square model prediction event: {e}")
+    except Exception as e:
+        logger.error(f"Error processing grid square model prediction event: {e}")
+
+
 def handle_model_parameter_update(event_data: dict[str, Any]) -> None:
     """
     Handle model parameter update event by inserting the result into the database
@@ -603,6 +628,7 @@ def get_event_handlers() -> dict[str, Callable]:
         MessageQueueEventType.MICROGRAPH_UPDATED.value: handle_micrograph_updated,
         MessageQueueEventType.MICROGRAPH_DELETED.value: handle_micrograph_deleted,
         MessageQueueEventType.GRIDSQUARE_MODEL_PREDICTION.value: handle_gridsquare_model_prediction,
+        MessageQueueEventType.FOILHOLE_MODEL_PREDICTION.value: handle_foilhole_model_prediction,
         MessageQueueEventType.MODEL_PARAMETER_UPDATE.value: handle_model_parameter_update,
         # TODO: Add handlers for all other event types as needed
     }
