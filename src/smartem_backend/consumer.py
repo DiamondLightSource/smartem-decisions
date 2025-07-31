@@ -12,6 +12,7 @@ from typing import Any
 import pika
 from dotenv import load_dotenv
 from pydantic import ValidationError
+from sqlmodel import Session
 
 from smartem_backend.cli.initialise_prediction_model_weights import initialise_all_models_for_grid
 from smartem_backend.cli.random_model_predictions import (
@@ -20,6 +21,7 @@ from smartem_backend.cli.random_model_predictions import (
 )
 from smartem_backend.cli.random_prior_updates import simulate_processing_pipeline_async
 from smartem_backend.log_manager import LogConfig, LogManager
+from smartem_backend.model.database import QualityPrediction, QualityPredictionModelParameter
 from smartem_backend.model.mq_event import (
     AcquisitionCreatedEvent,
     AcquisitionDeletedEvent,
@@ -32,14 +34,17 @@ from smartem_backend.model.mq_event import (
     FoilHoleUpdatedEvent,
     GridCreatedEvent,
     GridDeletedEvent,
+    GridRegisteredEvent,
     GridSquareCreatedEvent,
     GridSquareDeletedEvent,
+    GridSquareModelPredictionEvent,
     GridSquareUpdatedEvent,
     GridUpdatedEvent,
     MessageQueueEventType,
     MicrographCreatedEvent,
     MicrographDeletedEvent,
     MicrographUpdatedEvent,
+    ModelParameterUpdateEvent,
 )
 from smartem_backend.utils import get_db_engine, load_conf, rmq_consumer, setup_logger
 
@@ -227,6 +232,50 @@ def handle_grid_deleted(event_data: dict[str, Any]) -> None:
         logger.error(f"Error processing grid deleted event: {e}")
 
 
+def handle_grid_registered(event_data: dict[str, Any]) -> None:
+    """
+    Handle grid registered event by logging the event payload
+
+    Args:
+        event_data: Event data for grid registered
+    """
+    try:
+        event = GridRegisteredEvent(**event_data)
+        logger.info(f"Grid registered event: {event.model_dump()}")
+
+    except ValidationError as e:
+        logger.error(f"Validation error processing grid registered event: {e}")
+    except Exception as e:
+        logger.error(f"Error processing grid registered event: {e}")
+
+
+def handle_gridsquare_lowmag_created(event_data: dict[str, Any], channel, delivery_tag) -> bool:
+    """
+    Handle low mag gridsquare created event by logging the event payload and generating predictions
+
+    Args:
+        event_data: Event data for low mag gridsquare created
+        channel: RabbitMQ channel
+        delivery_tag: Message delivery tag
+
+    Returns:
+        bool: True if successful, False if failed (already NACKed)
+    """
+    try:
+        event = GridSquareCreatedEvent(**event_data)
+        logger.info(f"GridSquare low mag created event: {event.model_dump()}")
+        channel.basic_ack(delivery_tag=delivery_tag)
+    except ValidationError as e:
+        logger.error(f"Validation error processing gridsquare created event: {e}")
+        channel.basic_nack(delivery_tag=delivery_tag, requeue=False)
+        return False
+    except Exception as e:
+        logger.error(f"Error processing gridsquare created event: {e}")
+        channel.basic_nack(delivery_tag=delivery_tag, requeue=False)
+        return False
+    return True
+
+
 def handle_gridsquare_created(event_data: dict[str, Any], channel, delivery_tag) -> bool:
     """
     Handle gridsquare created event by logging the event payload and generating predictions
@@ -264,6 +313,23 @@ def handle_gridsquare_created(event_data: dict[str, Any], channel, delivery_tag)
         return False
 
 
+def handle_gridsquare_lowmag_updated(event_data: dict[str, Any]) -> None:
+    """
+    Handle gridsquare low mag updated event by logging the event payload
+
+    Args:
+        event_data: Event data for low mag gridsquare updated
+    """
+    try:
+        event = GridSquareUpdatedEvent(**event_data)
+        logger.info(f"GridSquare low mag updated event: {event.model_dump()}")
+
+    except ValidationError as e:
+        logger.error(f"Validation error processing gridsquare low mag updated event: {e}")
+    except Exception as e:
+        logger.error(f"Error processing gridsquare low mag updated event: {e}")
+
+
 def handle_gridsquare_updated(event_data: dict[str, Any]) -> None:
     """
     Handle gridsquare updated event by logging the event payload
@@ -279,6 +345,23 @@ def handle_gridsquare_updated(event_data: dict[str, Any]) -> None:
         logger.error(f"Validation error processing gridsquare updated event: {e}")
     except Exception as e:
         logger.error(f"Error processing gridsquare updated event: {e}")
+
+
+def handle_gridsquare_lowmag_deleted(event_data: dict[str, Any]) -> None:
+    """
+    Handle low mag gridsquare deleted event by logging the event payload
+
+    Args:
+        event_data: Event data for low mag gridsquare deleted
+    """
+    try:
+        event = GridSquareDeletedEvent(**event_data)
+        logger.info(f"GridSquare low mag deleted event: {event.model_dump()}")
+
+    except ValidationError as e:
+        logger.error(f"Validation error processing low mag gridsquare deleted event: {e}")
+    except Exception as e:
+        logger.error(f"Error processing low mag gridsquare deleted event: {e}")
 
 
 def handle_gridsquare_deleted(event_data: dict[str, Any]) -> None:
@@ -440,6 +523,55 @@ def handle_micrograph_deleted(event_data: dict[str, Any]) -> None:
         logger.error(f"Error processing micrograph deleted event: {e}")
 
 
+def handle_gridsquare_model_prediction(event_data: dict[str, Any]) -> None:
+    """
+    Handle grid square model prediction event by inserting the result into the database
+
+    Args:
+        event_data: Event data for grid square model prediction
+    """
+    try:
+        event = GridSquareModelPredictionEvent(**event_data)
+        quality_prediction = QualityPrediction(
+            gridsquare_uuid=event.gridsquare_uuid,
+            prediction_model_name=event.prediction_model_name,
+            value=event.prediction_value,
+        )
+        with Session(db_engine) as session:
+            session.add(quality_prediction)
+            session.commit()
+
+    except ValidationError as e:
+        logger.error(f"Validation error processing grid square model prediction event: {e}")
+    except Exception as e:
+        logger.error(f"Error processing grid square model prediction event: {e}")
+
+
+def handle_model_parameter_update(event_data: dict[str, Any]) -> None:
+    """
+    Handle model parameter update event by inserting the result into the database
+
+    Args:
+        event_data: Event data for model parameter update
+    """
+    try:
+        event = ModelParameterUpdateEvent(**event_data)
+        model_parameter = QualityPredictionModelParameter(
+            grid_uuid=event.grid_uuid,
+            prediction_model_name=event.prediction_model_name,
+            key=event.key,
+            value=event.value,
+        )
+        with Session(db_engine) as session:
+            session.add(model_parameter)
+            session.commit()
+
+    except ValidationError as e:
+        logger.error(f"Validation error processing model parameter update event: {e}")
+    except Exception as e:
+        logger.error(f"Error processing model parameter update event: {e}")
+
+
 # Create a mapping from event types to their handler functions
 def get_event_handlers() -> dict[str, Callable]:
     """
@@ -461,12 +593,17 @@ def get_event_handlers() -> dict[str, Callable]:
         MessageQueueEventType.GRIDSQUARE_CREATED.value: handle_gridsquare_created,
         MessageQueueEventType.GRIDSQUARE_UPDATED.value: handle_gridsquare_updated,
         MessageQueueEventType.GRIDSQUARE_DELETED.value: handle_gridsquare_deleted,
+        MessageQueueEventType.GRIDSQUARE_LOWMAG_CREATED.value: handle_gridsquare_lowmag_created,
+        MessageQueueEventType.GRIDSQUARE_LOWMAG_UPDATED.value: handle_gridsquare_lowmag_updated,
+        MessageQueueEventType.GRIDSQUARE_LOWMAG_DELETED.value: handle_gridsquare_lowmag_deleted,
         MessageQueueEventType.FOILHOLE_CREATED.value: handle_foilhole_created,
         MessageQueueEventType.FOILHOLE_UPDATED.value: handle_foilhole_updated,
         MessageQueueEventType.FOILHOLE_DELETED.value: handle_foilhole_deleted,
         MessageQueueEventType.MICROGRAPH_CREATED.value: handle_micrograph_created,
         MessageQueueEventType.MICROGRAPH_UPDATED.value: handle_micrograph_updated,
         MessageQueueEventType.MICROGRAPH_DELETED.value: handle_micrograph_deleted,
+        MessageQueueEventType.GRIDSQUARE_MODEL_PREDICTION.value: handle_gridsquare_model_prediction,
+        MessageQueueEventType.MODEL_PARAMETER_UPDATE.value: handle_model_parameter_update,
         # TODO: Add handlers for all other event types as needed
     }
 

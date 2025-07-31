@@ -1,12 +1,7 @@
 from datetime import datetime
 from enum import Enum
 
-from pydantic import (
-    BaseModel,
-    computed_field,
-    field_serializer,
-    model_validator,
-)
+from pydantic import BaseModel, computed_field, field_serializer, model_validator
 
 
 def non_negative_float(v: float):
@@ -31,10 +26,15 @@ class MessageQueueEventType(str, Enum):
     GRID_CREATED = "grid.created"
     GRID_UPDATED = "grid.updated"
     GRID_DELETED = "grid.deleted"
+    GRID_REGISTERED = "grid.registered"
 
     GRIDSQUARE_CREATED = "gridsquare.created"
     GRIDSQUARE_UPDATED = "gridsquare.updated"
     GRIDSQUARE_DELETED = "gridsquare.deleted"
+
+    GRIDSQUARE_LOWMAG_CREATED = "gridsquare_lowmag.created"
+    GRIDSQUARE_LOWMAG_UPDATED = "gridsquare_lowmag.updated"
+    GRIDSQUARE_LOWMAG_DELETED = "gridsquare_lowmag.deleted"
 
     FOILHOLE_CREATED = "foilhole.created"
     FOILHOLE_UPDATED = "foilhole.updated"
@@ -64,6 +64,10 @@ class MessageQueueEventType(str, Enum):
     PARTICLE_PICKING_COMPLETE = "particle_picking.completed"
     # PARTICLE_SELECTION_START = "particle_selection.started"
     PARTICLE_SELECTION_COMPLETE = "particle_selection.completed"
+
+    GRIDSQUARE_MODEL_PREDICTION = "gridsquare.model_prediction"
+    FOILHOLE_MODEL_PREDICTION = "foilhole.model_prediction"
+    MODEL_PARAMETER_UPDATE = "gridsquare.model_parameter_update"
 
 
 class GenericEventMessageBody(BaseModel):
@@ -196,6 +200,12 @@ class GridDeletedEvent(GridEventBase):
     """Event emitted when a grid is deleted"""
 
     uuid: str
+
+
+class GridRegisteredEvent(GridEventBase):
+    """Event emitted when all squares at atlas mag have been registered for a grid"""
+
+    grid_uuid: str
 
 
 # ============ Grid Square Events ============
@@ -381,3 +391,16 @@ class ParticleSelectionCompleteBody(GenericEventMessageBody):
         if self.number_of_particles_rejected < 0:
             raise ValueError("Number of Particles Rejected should be a non-negative int")
         return self
+
+
+class GridSquareModelPredictioEvent(GenericEventMessageBody):
+    gridsquare_uuid: str
+    prediction_model_name: str
+    prediction_value: float
+
+
+class ModelParameterUpdateEvent(GenericEventMessageBody):
+    grid_uuid: str
+    prediction_model_name: str
+    ket: str
+    value: float
