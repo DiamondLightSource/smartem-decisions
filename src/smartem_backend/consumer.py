@@ -676,6 +676,7 @@ def on_message(ch, method, properties, body):
             MessageQueueEventType.GRID_CREATED.value,
             MessageQueueEventType.FOILHOLE_CREATED.value,
             MessageQueueEventType.GRIDSQUARE_CREATED.value,
+            MessageQueueEventType.GRIDSQUARE_LOWMAG_CREATED.value,
             MessageQueueEventType.MICROGRAPH_CREATED.value,
         ]:
             success = handler(message, ch, method.delivery_tag)
