@@ -393,7 +393,7 @@ class ParticleSelectionCompleteBody(GenericEventMessageBody):
         return self
 
 
-class GridSquareModelPredictioEvent(GenericEventMessageBody):
+class GridSquareModelPredictionEvent(GenericEventMessageBody):
     gridsquare_uuid: str
     prediction_model_name: str
     prediction_value: float
