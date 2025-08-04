@@ -15,7 +15,7 @@ case "${ROLE:-api}" in
         echo "Starting HTTP API..."
         # TODO we don't want to do it indiscriminately on every container launch:
         python -m smartem_backend.model.database
-        exec python -m smartem_backend.run_api --host 0.0.0.0 --port ${HTTP_API_PORT:-8000}
+        exec uvicorn smartem_backend.http_api:app --host 0.0.0.0 --port ${HTTP_API_PORT:-8000}
         ;;
     worker)
         echo "Starting RabbitMQ consumer..."

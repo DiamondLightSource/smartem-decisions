@@ -298,8 +298,8 @@ def _create_db_and_tables(engine):
             sess.execute(text("CREATE INDEX IF NOT EXISTS idx_atlas_grid_uuid ON atlas (grid_uuid);"))
 
             # grid indexes
-            sess.execute(text("CREATE INDEX IF NOT EXISTS idx_grid_id_pattern ON grid (uuid text_pattern_ops);"))
-            sess.execute(text("CREATE INDEX IF NOT EXISTS idx_grid_id_hash ON grid USING hash (uuid);"))
+            sess.execute(text("CREATE INDEX IF NOT EXISTS idx_grid_uuid_pattern ON grid (uuid text_pattern_ops);"))
+            sess.execute(text("CREATE INDEX IF NOT EXISTS idx_grid_uuid_hash ON grid USING hash (uuid);"))
             sess.execute(text("CREATE INDEX IF NOT EXISTS idx_grid_acquisition_id ON grid (acquisition_uuid);"))
             sess.execute(text("CREATE INDEX IF NOT EXISTS idx_grid_name ON grid (name);"))
 
@@ -308,7 +308,7 @@ def _create_db_and_tables(engine):
                 text("CREATE INDEX IF NOT EXISTS idx_gridsquare_id_pattern ON gridsquare (uuid text_pattern_ops);")
             )
             sess.execute(text("CREATE INDEX IF NOT EXISTS idx_gridsquare_id_hash ON gridsquare USING hash (uuid);"))
-            sess.execute(text("CREATE INDEX IF NOT EXISTS idx_gridsquare_grid_id ON gridsquare (grid_uuid);"))
+            sess.execute(text("CREATE INDEX IF NOT EXISTS idx_gridsquare_grid_uuid ON gridsquare (grid_uuid);"))
 
             # foilhole indexes
             sess.execute(
