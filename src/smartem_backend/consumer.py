@@ -265,7 +265,6 @@ def handle_gridsquare_lowmag_created(event_data: dict[str, Any], channel, delive
     try:
         event = GridSquareCreatedEvent(**event_data)
         logger.info(f"GridSquare low mag created event: {event.model_dump()}")
-        channel.basic_ack(delivery_tag=delivery_tag)
     except ValidationError as e:
         logger.error(f"Validation error processing gridsquare created event: {e}")
         channel.basic_nack(delivery_tag=delivery_tag, requeue=False)
