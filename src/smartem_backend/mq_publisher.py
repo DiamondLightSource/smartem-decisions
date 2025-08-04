@@ -10,6 +10,7 @@ from smartem_backend.model.mq_event import (
     AtlasUpdatedEvent,
     FoilHoleCreatedEvent,
     FoilHoleDeletedEvent,
+    FoilHoleModelPredictionEvent,
     FoilHoleUpdatedEvent,
     GridCreatedEvent,
     GridDeletedEvent,
@@ -243,6 +244,17 @@ def publish_gridsquare_model_prediction(gridsquare_uuid: str, model_name: str, p
         prediction_value=prediction_value,
     )
     return rmq_publisher.publish_event(MessageQueueEventType.GRIDSQUARE_MODEL_PREDICTION, event)
+
+
+def publish_foilhole_model_prediction(foilhole_uuid: str, model_name: str, prediction_value: float):
+    """Publish model prediction event for a foil hole to RabbitMQ"""
+    event = FoilHoleModelPredictionEvent(
+        event_type=MessageQueueEventType.FOILHOLE_MODEL_PREDICTION,
+        foilhole_uuid=foilhole_uuid,
+        prediction_model_name=model_name,
+        prediction_value=prediction_value,
+    )
+    return rmq_publisher.publish_event(MessageQueueEventType.FOILHOLE_MODEL_PREDICTION, event)
 
 
 def publish_model_parameter_update(grid_uuid: str, model_name: str, key: str, value: float):
