@@ -80,7 +80,7 @@ class EntityConverter:
         )
 
     @staticmethod
-    def gridsquare_to_request(entity: GridSquareData) -> GridSquareCreateRequest:
+    def gridsquare_to_request(entity: GridSquareData, lowmag: bool = False) -> GridSquareCreateRequest:
         """Convert GridSquareData to grid square request model"""
         metadata = entity.metadata
         manifest = entity.manifest
@@ -109,6 +109,7 @@ class EntityConverter:
             pixel_size=manifest.pixel_size if manifest else None,
             detector_name=manifest.detector_name if manifest else None,
             applied_defocus=manifest.applied_defocus if manifest else None,
+            lowmag=lowmag,
         )
 
     @staticmethod

@@ -901,7 +901,7 @@ class EpuParser:
             return None
 
     @staticmethod
-    def parse_epu_output_dir(datastore: InMemoryDataStore):
+    def parse_epu_output_dir(datastore: InMemoryDataStore, path_mapper: Callable[[Path], Path] = lambda p: p):
         """Parse the entire EPU output directory, containing one or more grids/samples
         collected over the duration of a given microscopy session.
 
@@ -914,7 +914,7 @@ class EpuParser:
 
         # Start with locating all EpuSession.dm files - init a grid for each found
         for epu_session_manifest in list(datastore.root_dir.glob("**/*EpuSession.dm")):
-            EpuParser.parse_grid_dir(str(Path(epu_session_manifest).parent), datastore)
+            EpuParser.parse_grid_dir(str(Path(epu_session_manifest).parent), datastore, path_mapper=path_mapper)
 
         return datastore
 

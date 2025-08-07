@@ -150,7 +150,7 @@ def publish_gridsquare_registered(uuid: str):
     """Publish grid square updated event to RabbitMQ"""
     event = GridSquareRegisteredEvent(
         event_type=MessageQueueEventType.GRIDSQUARE_REGISTERED,
-        grid_uuid=uuid,
+        uuid=uuid,
     )
     return rmq_publisher.publish_event(MessageQueueEventType.GRIDSQUARE_REGISTERED, event)
 
