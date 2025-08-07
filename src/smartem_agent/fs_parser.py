@@ -1051,6 +1051,7 @@ class EpuParser:
                     is_near_grid_bar=fh_position.is_near_grid_bar,
                 )
                 datastore.create_foilhole(fh)
+            datastore.gridsquare_registered(gridsquare.uuid)
 
         # 3. Parse gridsquare manifests and associated data
         instrument_extracted = False  # Track if we've already extracted instrument info for this grid
