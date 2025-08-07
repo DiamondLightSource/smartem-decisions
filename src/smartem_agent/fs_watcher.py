@@ -3,6 +3,7 @@ import os
 import re
 import sys
 import time
+from collections.abc import Callable
 from datetime import datetime
 from fnmatch import fnmatch
 from pathlib import Path
@@ -90,11 +91,13 @@ class RateLimitedFilesystemEventHandler(FileSystemEventHandler):
         api_url: str | None = None,
         log_interval: float = 10.0,
         patterns: list[str] | None = None,
+        path_mapper: Callable[[Path], Path] = lambda p: p,
     ):
         self.last_log_time = time.time()
         self.log_interval = log_interval
         self.patterns = patterns if patterns is not None else DEFAULT_PATTERNS.copy()
         self.verbose = logging.getLogger().level <= logging.INFO
+        self.path_mapper = path_mapper
         # Distinguish between new and previously seen files.
         self.changed_files = {}
 
@@ -234,7 +237,7 @@ class RateLimitedFilesystemEventHandler(FileSystemEventHandler):
             assert self.datastore.get_grid_by_path(event.src_path) is None  # guaranteed because is a new file
             grid = GridData(data_dir=Path(event.src_path).parent.resolve())
             grid.acquisition_data = EpuParser.parse_epu_session_manifest(event.src_path)
-            self.datastore.create_grid(grid)
+            self.datastore.create_grid(grid, path_mapper=self.path_mapper)
 
         # try to work out which grid the touched file relates to
         grid_uuid = self.datastore.get_grid_by_path(event.src_path)
@@ -348,7 +351,7 @@ class RateLimitedFilesystemEventHandler(FileSystemEventHandler):
         gridsquare_id = EpuParser.gridsquare_dm_file_pattern.search(path).group(1)
         assert gridsquare_id is not None, f"gridsquare_id should not be None: {gridsquare_id}"
 
-        gridsquare_metadata = EpuParser.parse_gridsquare_metadata(path)
+        gridsquare_metadata = EpuParser.parse_gridsquare_metadata(path, path_mapper=self.path_mapper)
         grid = self.datastore.get_grid(grid_uuid)
 
         # Check if this is a new gridsquare or an update to an existing one

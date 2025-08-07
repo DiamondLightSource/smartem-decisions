@@ -1,5 +1,6 @@
 import json
 import time
+from collections.abc import Callable
 from pathlib import Path
 
 import requests
@@ -113,7 +114,7 @@ class InMemoryDataStore:
         return None
 
     # Grid methods
-    def create_grid(self, grid):
+    def create_grid(self, grid, path_mapper: Callable[[Path], Path] = lambda p: p):
         self.grids[grid.uuid] = grid
         self.acquisition_rels[self.acquisition.uuid].add(grid.uuid)
         self.grid_rels[grid.uuid] = set()
@@ -358,9 +359,10 @@ class PersistentDataStore(InMemoryDataStore):
 
             sys.exit(1)
 
-    def create_grid(self, grid):
+    def create_grid(self, grid, path_mapper: Callable[[Path], Path] = lambda p: p):
         try:
-            super().create_grid(grid)
+            super().create_grid(grid, path_mapper=path_mapper)
+            grid.atlas_dir = path_mapper(grid.atlas_dir) if grid.atlas_dir else grid.atlas_dir
             result = self.api_client.create_acquisition_grid(grid)
             if not result:
                 logger.error(f"API call to create grid UUID {grid.uuid} failed, local store changes rolled back")
