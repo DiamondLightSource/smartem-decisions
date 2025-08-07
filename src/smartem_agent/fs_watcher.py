@@ -14,6 +14,7 @@ from smartem_agent.fs_parser import EpuParser
 from smartem_agent.model.store import InMemoryDataStore, PersistentDataStore
 from smartem_common.schemas import (
     AtlasTileGridSquarePositionData,
+    FoilHoleData,
     GridData,
     GridSquareData,
     MicrographData,
@@ -329,6 +330,7 @@ class RateLimitedFilesystemEventHandler(FileSystemEventHandler):
                             self.datastore.create_gridsquare(gridsquare, lowmag=True)
                             gs_uuid_map[str(gsid)] = gridsquare.uuid
                     logging.debug(f"Registered all squares for grid: {grid_uuid}")
+                    self.datastore.grid_registered(grid_uuid)
 
                 # Process atlas tiles only if atlas data and tiles exist
                 if atlas_data.tiles:
@@ -368,6 +370,20 @@ class RateLimitedFilesystemEventHandler(FileSystemEventHandler):
             logging.info(f"Updating existing GridSquare: {gridsquare_id} of Grid {grid.uuid}")
             gridsquare.metadata = gridsquare_metadata
             self.datastore.update_gridsquare(gridsquare)
+        for fh_id, fh_position in gridsquare_metadata.foilhole_positions.items():
+            fh = FoilHoleData(
+                id=str(fh_id),
+                gridsquare_id=gridsquare_id,
+                gridsquare_uuid=gridsquare.uuid,
+                x_location=fh_position.x_location,
+                y_location=fh_position.y_location,
+                x_stage_position=fh_position.x_stage_position,
+                y_stage_position=fh_position.y_stage_position,
+                diameter=fh_position.diameter,
+                is_near_grid_bar=fh_position.is_near_grid_bar,
+            )
+            self.datastore.create_foilhole(fh)
+        self.datastore.gridsquare_registered(gridsquare.uuid)
 
     def _on_gridsquare_manifest_detected(self, path: str, grid_uuid, is_new_file: bool = True):
         logging.info(f"Gridsquare manifest {'detected' if is_new_file else 'updated'}: {path}")

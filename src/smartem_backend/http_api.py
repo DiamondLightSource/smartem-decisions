@@ -74,6 +74,7 @@ from smartem_backend.mq_publisher import (
     publish_gridsquare_deleted,
     publish_gridsquare_lowmag_created,
     publish_gridsquare_lowmag_updated,
+    publish_gridsquare_registered,
     publish_gridsquare_updated,
     publish_micrograph_created,
     publish_micrograph_deleted,
@@ -861,6 +862,15 @@ def create_grid_gridsquare(grid_uuid: str, gridsquare: GridSquareCreateRequest, 
         response_data["status"] = GridSquareStatus.NONE
 
     return GridSquareResponse(**response_data)
+
+
+@app.post("/gridsquares/{gridsquare_uuid}/registered")
+def gridsquare_registered(gridsquare_uuid: str) -> bool:
+    """All holes on a grid square have been registered at square mag"""
+    success = publish_gridsquare_registered(gridsquare_uuid)
+    if not success:
+        logger.error(f"Failed to publish grid square created event for UUID: {gridsquare_uuid}")
+    return success
 
 
 # ============ FoilHole CRUD Operations ============
