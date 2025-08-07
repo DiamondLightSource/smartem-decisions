@@ -20,7 +20,7 @@ WORKDIR /app
 COPY . .
 # Install the package using pyproject.toml and setup.py
 # This will also handle copying _version.py files and .env.example → .env
-RUN pip install --no-cache-dir -e ".[backend]" && \
+RUN pip install --no-cache-dir ".[backend]" && \
     rm -rf .git
 
 # The runtime stage copies the built venv into a slim runtime container
