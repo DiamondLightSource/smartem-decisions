@@ -8,6 +8,7 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session as SqlAlchemySession
 from sqlalchemy.orm import sessionmaker
 
+from _version import __version__
 from smartem_backend.model.database import (
     Acquisition,
     Atlas,
@@ -79,7 +80,6 @@ from smartem_backend.mq_publisher import (
     publish_micrograph_updated,
 )
 from smartem_backend.utils import setup_postgres_connection, setup_rabbitmq
-from src._version import __version__
 
 db_engine = setup_postgres_connection()
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=db_engine)
