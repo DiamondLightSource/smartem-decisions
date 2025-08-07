@@ -18,6 +18,7 @@ from smartem_backend.model.mq_event import (
     GridSquareCreatedEvent,
     GridSquareDeletedEvent,
     GridSquareModelPredictionEvent,
+    GridSquareRegisteredEvent,
     GridSquareUpdatedEvent,
     GridUpdatedEvent,
     MessageQueueEventType,
@@ -143,6 +144,15 @@ def publish_gridsquare_deleted(uuid):
     """Publish grid square deleted event to RabbitMQ"""
     event = GridSquareDeletedEvent(event_type=MessageQueueEventType.GRIDSQUARE_DELETED, uuid=uuid)
     return rmq_publisher.publish_event(MessageQueueEventType.GRIDSQUARE_DELETED, event)
+
+
+def publish_gridsquare_registered(uuid: str):
+    """Publish grid square updated event to RabbitMQ"""
+    event = GridSquareRegisteredEvent(
+        event_type=MessageQueueEventType.GRIDSQUARE_REGISTERED,
+        grid_uuid=uuid,
+    )
+    return rmq_publisher.publish_event(MessageQueueEventType.GRIDSQUARE_REGISTERED, event)
 
 
 def publish_gridsquare_lowmag_created(uuid, grid_uuid=None, gridsquare_id=None):

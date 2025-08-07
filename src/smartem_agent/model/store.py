@@ -191,6 +191,9 @@ class InMemoryDataStore:
                 children.remove(uuid)
                 break
 
+    def gridsquare_registered(self, uuid: str):
+        return None
+
     def get_gridsquare(self, uuid: str):
         return self.gridsquares.get(uuid)
 
@@ -522,6 +525,12 @@ class PersistentDataStore(InMemoryDataStore):
             self.api_client.delete_gridsquare(uuid)  # TODO not tested
         except Exception as e:
             logger.error(f"Error removing gridsquare UUID {uuid}: {e}")
+
+    def gridsquare_registered(self, uuid: str):
+        try:
+            self.api_client.gridsquare_registered(uuid)
+        except Exception as e:
+            logger.error(f"Error notifying of registration of grid square UUID {uuid}: {e}")
 
     def create_foilhole(self, foilhole: FoilHoleData):
         try:

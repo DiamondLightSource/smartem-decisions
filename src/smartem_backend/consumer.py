@@ -39,6 +39,7 @@ from smartem_backend.model.mq_event import (
     GridSquareCreatedEvent,
     GridSquareDeletedEvent,
     GridSquareModelPredictionEvent,
+    GridSquareRegisteredEvent,
     GridSquareUpdatedEvent,
     GridUpdatedEvent,
     MessageQueueEventType,
@@ -379,6 +380,23 @@ def handle_gridsquare_deleted(event_data: dict[str, Any]) -> None:
         logger.error(f"Validation error processing gridsquare deleted event: {e}")
     except Exception as e:
         logger.error(f"Error processing gridsquare deleted event: {e}")
+
+
+def handle_gridsquare_registered(event_data: dict[str, Any]) -> None:
+    """
+    Handle grid square registered event by logging the event payload
+
+    Args:
+        event_data: Event data for grid square registered
+    """
+    try:
+        event = GridSquareRegisteredEvent(**event_data)
+        logger.info(f"Grid square registered event: {event.model_dump()}")
+
+    except ValidationError as e:
+        logger.error(f"Validation error processing grid square registered event: {e}")
+    except Exception as e:
+        logger.error(f"Error processing grid square registered event: {e}")
 
 
 def handle_foilhole_created(event_data: dict[str, Any], channel, delivery_tag) -> bool:

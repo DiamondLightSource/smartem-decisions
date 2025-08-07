@@ -26,11 +26,12 @@ class MessageQueueEventType(str, Enum):
     GRID_CREATED = "grid.created"
     GRID_UPDATED = "grid.updated"
     GRID_DELETED = "grid.deleted"
-    GRID_REGISTERED = "grid.registered"
+    GRID_REGISTERED = "grid.registered"  # all grid squares on grid have been registered
 
     GRIDSQUARE_CREATED = "gridsquare.created"
     GRIDSQUARE_UPDATED = "gridsquare.updated"
     GRIDSQUARE_DELETED = "gridsquare.deleted"
+    GRIDSQUARE_REGISTERED = "gridsquare.registered"  # all foil holes on gridsquare have been registered
 
     GRIDSQUARE_LOWMAG_CREATED = "gridsquare_lowmag.created"
     GRIDSQUARE_LOWMAG_UPDATED = "gridsquare_lowmag.updated"
@@ -235,6 +236,13 @@ class GridSquareDeletedEvent(GridSquareEventBase):
     """Event emitted when a grid square is deleted"""
 
     uuid: str
+
+
+class GridSquareRegisteredEvent(GridSquareEventBase):
+    """Event emitted when all holes at square mag have been registered for a grid square"""
+
+    uuid: str
+    grid_uuid: str | None = None
 
 
 # ============ Foil Hole Events ============

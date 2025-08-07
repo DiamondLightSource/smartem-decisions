@@ -515,6 +515,9 @@ class SmartEMAPIClient:
         response = self._request("post", f"grids/{gridsquare.grid_uuid}/gridsquares", gridsquare, GridSquareResponse)
         return response
 
+    def gridsquare_registered(self, gridsquare_uuid: str) -> bool:
+        return self._request("post", f"gridsquares/{gridsquare_uuid}/registered")
+
     # FoilHoles
     def get_foilholes(self) -> list[FoilHoleResponse]:
         """Get all foil holes"""
