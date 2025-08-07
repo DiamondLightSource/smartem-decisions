@@ -2,6 +2,7 @@ import logging
 import os
 import re
 import sys
+from collections.abc import Callable
 from datetime import datetime
 from pathlib import Path
 
@@ -481,7 +482,9 @@ class EpuParser:
         return sorted(result)
 
     @staticmethod
-    def parse_gridsquare_metadata(path: str) -> GridSquareMetadata | None:
+    def parse_gridsquare_metadata(
+        path: str, path_mapper: Callable[[Path], Path] = lambda p: p
+    ) -> GridSquareMetadata | None:
         """Parse a GridSquare metadata file and extract both basic metadata and foil hole positions."""
         try:
             namespaces = {
@@ -630,7 +633,7 @@ class EpuParser:
                 stage_position=stage_position,
                 state=get_element_text("//def:State"),
                 rotation=safe_float(get_element_text("//def:Rotation")),
-                image_path=image_path,
+                image_path=path_mapper(image_path) if image_path else image_path,
                 selected=selected,
                 unusable=unusable,
                 foilhole_positions=foilhole_positions,
@@ -916,7 +919,9 @@ class EpuParser:
         return datastore
 
     @staticmethod
-    def parse_grid_dir(grid_data_dir: str, datastore: InMemoryDataStore) -> str:
+    def parse_grid_dir(
+        grid_data_dir: str, datastore: InMemoryDataStore, path_mapper: Callable[[Path], Path] = lambda p: p
+    ) -> str:
         """
         Parse an EPU grid directory and populate the provided datastore.
 
@@ -959,7 +964,7 @@ class EpuParser:
                 grid.atlas_data = None
 
         # Add grid to datastore
-        datastore.create_grid(grid)
+        datastore.create_grid(grid, path_mapper=path_mapper)
 
         if grid.atlas_data is not None:
             datastore.create_atlas(grid.atlas_data)
@@ -993,7 +998,7 @@ class EpuParser:
         metadata_dir_path = str(grid.data_dir / "Metadata")
         for gridsquare_id, filename in EpuParser.parse_gridsquares_metadata_dir(metadata_dir_path):
             logging.debug(f"Discovered gridsquare ID: {gridsquare_id} from file {filename}")
-            gridsquare_metadata = EpuParser.parse_gridsquare_metadata(filename)
+            gridsquare_metadata = EpuParser.parse_gridsquare_metadata(filename, path_mapper=path_mapper)
 
             # Create GridSquareData with ID and metadata
             if grid.atlas_data is not None:
