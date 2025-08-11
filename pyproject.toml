@@ -65,6 +65,7 @@ backend = [
     "uvicorn[standard]>=0.30.0,<1.0.0",
     "psycopg2-binary>=2.9.10,<3.0.0",
     "sqlmodel>=0.0.24,<1.0.0",
+    "alembic>=1.13.0,<2.0.0",
 ]
 
 # Agent component dependencies
