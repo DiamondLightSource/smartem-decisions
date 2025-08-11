@@ -113,7 +113,7 @@ packages = [
 package-dir = {"" = "src"}
 
 [tool.setuptools_scm]
-version_file = "src/_version.py"
+version_file = "src/smartem_common/_version.py"
 
 [tool.pyright]
 typeCheckingMode = "standard"
