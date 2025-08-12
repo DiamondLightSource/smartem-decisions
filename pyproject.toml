@@ -131,6 +131,8 @@ filterwarnings = [
 ]
 # Doctest python code in docs, python code in src docstrings, test functions in tests
 testpaths = "docs src tests"
+# Exclude Alembic migration files from pytest collection (they're not meant to be imported directly)
+norecursedirs = "src/smartem_backend/migrations"
 
 [tool.coverage.run]
 data_file = "/tmp/core.coverage"
