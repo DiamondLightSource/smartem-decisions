@@ -166,3 +166,24 @@ class MicrographResponse(BaseModel):
     model_config = ConfigDict(
         from_attributes=True, use_enum_values=True, json_encoders={datetime: lambda v: v.isoformat() if v else None}
     )
+
+
+class QualityPredictionModelResponse(BaseModel):
+    name: str
+    description: str
+
+
+class QualityPredictionResponse(BaseModel):
+    id: int
+    prediction_model_name: str
+    value: float
+    timestamp: datetime
+    gridsquare_uuid: str | None = None
+    foilhole_uuid: str | None = None
+
+
+class LatentRepresentationResponse(BaseModel):
+    gridsquare_uuid: str
+    x: float
+    y: float
+    index: int
