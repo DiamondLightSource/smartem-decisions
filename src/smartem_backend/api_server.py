@@ -7,7 +7,12 @@ from contextlib import asynccontextmanager
 from datetime import datetime, timedelta
 
 from fastapi import Depends, FastAPI, HTTPException, Request, status
+<<<<<<< HEAD:src/smartem_backend/api_server.py
 from sqlalchemy import and_, desc, or_, text
+=======
+from pydantic import BaseModel
+from sqlalchemy import text
+>>>>>>> 613abb5 (some quality prediction model related endpoints):src/smartem_api/server.py
 from sqlalchemy.orm import Session as SqlAlchemySession
 from sqlalchemy.orm import sessionmaker
 from sse_starlette.sse import EventSourceResponse
@@ -26,6 +31,9 @@ from smartem_backend.model.database import (
     Grid,
     GridSquare,
     Micrograph,
+    QualityPrediction,
+    QualityPredictionModel,
+    QualityPredictionModelParameter,
 )
 from smartem_backend.model.entity_status import (
     AcquisitionStatus,
@@ -63,7 +71,10 @@ from smartem_backend.model.http_response import (
     FoilHoleResponse,
     GridResponse,
     GridSquareResponse,
+    LatentRepresentationResponse,
     MicrographResponse,
+    QualityPredictionModelResponse,
+    QualityPredictionResponse,
 )
 from smartem_backend.mq_publisher import (
     publish_acquisition_created,
@@ -1779,3 +1790,76 @@ if __name__ == "__main__":
     host = os.getenv("HTTP_API_HOST", "127.0.0.1")
 
     uvicorn.run("smartem_backend.api_server:app", host=host, port=port, reload=False, log_level="info")
+# ============ Quality Prediction Model CRUD Operations ============
+
+
+@app.get("/prediction_models", response_model=list[QualityPredictionModelResponse])
+def get_prediction_models(db: SqlAlchemySession = DB_DEPENDENCY):
+    """Get all prediction model"""
+    return db.query(QualityPredictionModel).all()
+
+
+@app.get(
+    "/prediction_model/{prediction_model_name}/grid/{grid_uuid}/prediction",
+    response_model=list[QualityPredictionResponse],
+)
+def get_prediction_for_grid(prediction_model_name: str, grid_uuid: str, db: SqlAlchemySession = DB_DEPENDENCY):
+    squares = db.query(GridSquare).filter(GridSquare.grid_uuid == grid_uuid).all()
+    predictions = [
+        db.query(QualityPrediction)
+        .filter(QualityPrediction.gridsquare_uuid == gs.uuid)
+        .filter(QualityPrediction.prediction_model_name == prediction_model_name)
+        .order_by(QualityPrediction.timestamp.desc())
+        .all()
+        for gs in squares
+    ]
+    predictions = [p[0] for p in predictions if p]
+    return predictions
+
+
+@app.get(
+    "/prediction_model/{prediction_model_name}/grid/{grid_uuid}/latent_representation",
+    response_model=list[LatentRepresentationResponse],
+)
+def get_latent_rep(prediction_model_name: str, grid_uuid: str, db: SqlAlchemySession = DB_DEPENDENCY):
+    model_parameters = (
+        db.query(QualityPredictionModelParameter)
+        .filter(QualityPredictionModelParameter.prediction_model_name == prediction_model_name)
+        .filter(QualityPredictionModelParameter.grid_uuid == grid_uuid)
+        .filter(QualityPredictionModelParameter.group.like("coordinates:%"))
+        .order_by(QualityPredictionModelParameter.timestamp.desc())
+        .all()
+    )
+    cluster_indices = (
+        db.query(QualityPredictionModelParameter)
+        .filter(QualityPredictionModelParameter.prediction_model_name == prediction_model_name)
+        .filter(QualityPredictionModelParameter.grid_uuid == grid_uuid)
+        .filter(QualityPredictionModelParameter.group == "cluster_indices")
+        .order_by(QualityPredictionModelParameter.timestamp.desc())
+        .all()
+    )
+
+    class LatentRep(BaseModel):
+        x: float | None = None
+        y: float | None = None
+        index: int | None = None
+
+        def complete(self):
+            return all(a is not None for a in (self.x, self.y, self.index))
+
+    rep = {p.uuid: LatentRep() for p in db.query(GridSquare).filter(GridSquare.grid_uuid == grid_uuid).all()}
+    for p in cluster_indices + model_parameters:
+        if p.group == "cluster_indices":
+            square_uuid = p.key
+            if rep[square_uuid].index is None:
+                rep[square_uuid].index = p.value
+            continue
+        else:
+            square_uuid = p.group.replace("coordinates:", "")
+        if rep.get(square_uuid, LatentRep()).complete():
+            break
+        if p.key == "x":
+            rep[square_uuid].x = p.value
+        else:
+            rep[square_uuid].y = p.value
+    return [LatentRepresentationResponse(gridsquare_uuid=k, x=v.x, y=v.y, index=v.index) for k, v in rep.items() if v]
