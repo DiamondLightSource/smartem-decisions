@@ -71,13 +71,13 @@ backend = [
 # Agent component dependencies
 agent = [
     "smartem-decisions[common,api,cli]",
-    "lxml>=5.0.0,<6.0.0",
-    "watchdog>=4.0.0,<5.0.0",
+    "lxml>=5.0.0,<7.0.0",
+    "watchdog>=4.0.0,<7.0.0",
 ]
 
 # FSRecorder tool dependencies
 fsrecorder = [
-    "watchdog>=4.0.0,<5.0.0",
+    "watchdog>=4.0.0,<7.0.0",
 ]
 
 # Combined dependencies (for convenience)
