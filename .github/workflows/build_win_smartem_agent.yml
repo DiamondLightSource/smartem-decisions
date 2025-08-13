@@ -22,6 +22,10 @@ jobs:
     - uses: actions/checkout@v5
       with:
         ref: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.branch || github.ref }}
+        sparse-checkout: |
+          src
+          pyproject.toml
+          README.md
 
     - name: Set up Python 3.12
       uses: actions/setup-python@v5
@@ -32,7 +36,7 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install pyinstaller
-        pip install -e .[agent]
+        pip install .[agent]
 
     - name: Build SmartEM Agent tools with PyInstaller
       run: >-
@@ -40,10 +44,6 @@ jobs:
         --name smartem_smartem_agent_tools
         --paths src/smartem_agent
         src/smartem_agent/__main__.py
-
-    - name: Copy README to dist directory
-      run: |
-        copy src/smartem_agent/README.md dist/
 
     - name: Smoke test
       run: |
