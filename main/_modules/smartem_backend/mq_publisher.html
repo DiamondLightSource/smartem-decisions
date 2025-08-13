@@ -7,7 +7,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>smartem_backend.mq_publisher &#8212; smartem-decisions 0.1.dev248+g8c43e6681 documentation</title>
+    <title>smartem_backend.mq_publisher &#8212; smartem-decisions 0.1.dev261+ga89d1b3 documentation</title>
   
   
   
@@ -40,7 +40,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../../_static/documentation_options.js?v=85a66094"></script>
+    <script src="../../_static/documentation_options.js?v=6f89b022"></script>
     <script src="../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -454,17 +454,22 @@
     <span class="n">AtlasUpdatedEvent</span><span class="p">,</span>
     <span class="n">FoilHoleCreatedEvent</span><span class="p">,</span>
     <span class="n">FoilHoleDeletedEvent</span><span class="p">,</span>
+    <span class="n">FoilHoleModelPredictionEvent</span><span class="p">,</span>
     <span class="n">FoilHoleUpdatedEvent</span><span class="p">,</span>
     <span class="n">GridCreatedEvent</span><span class="p">,</span>
     <span class="n">GridDeletedEvent</span><span class="p">,</span>
+    <span class="n">GridRegisteredEvent</span><span class="p">,</span>
     <span class="n">GridSquareCreatedEvent</span><span class="p">,</span>
     <span class="n">GridSquareDeletedEvent</span><span class="p">,</span>
+    <span class="n">GridSquareModelPredictionEvent</span><span class="p">,</span>
+    <span class="n">GridSquareRegisteredEvent</span><span class="p">,</span>
     <span class="n">GridSquareUpdatedEvent</span><span class="p">,</span>
     <span class="n">GridUpdatedEvent</span><span class="p">,</span>
     <span class="n">MessageQueueEventType</span><span class="p">,</span>
     <span class="n">MicrographCreatedEvent</span><span class="p">,</span>
     <span class="n">MicrographDeletedEvent</span><span class="p">,</span>
     <span class="n">MicrographUpdatedEvent</span><span class="p">,</span>
+    <span class="n">ModelParameterUpdateEvent</span><span class="p">,</span>
 <span class="p">)</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">smartem_backend.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">rmq_publisher</span>
 
@@ -589,6 +594,18 @@
 
 
 
+<div class="viewcode-block" id="publish_grid_registered">
+<a class="viewcode-back" href="../../_api/smartem_backend.mq_publisher.html#smartem_backend.mq_publisher.publish_grid_registered">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">publish_grid_registered</span><span class="p">(</span><span class="n">uuid</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Publish grid updated event to RabbitMQ&quot;&quot;&quot;</span>
+    <span class="n">event</span> <span class="o">=</span> <span class="n">GridRegisteredEvent</span><span class="p">(</span>
+        <span class="n">event_type</span><span class="o">=</span><span class="n">MessageQueueEventType</span><span class="o">.</span><span class="n">GRID_REGISTERED</span><span class="p">,</span>
+        <span class="n">grid_uuid</span><span class="o">=</span><span class="n">uuid</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="n">rmq_publisher</span><span class="o">.</span><span class="n">publish_event</span><span class="p">(</span><span class="n">MessageQueueEventType</span><span class="o">.</span><span class="n">GRID_REGISTERED</span><span class="p">,</span> <span class="n">event</span><span class="p">)</span></div>
+
+
+
 <span class="c1"># ========== Grid Square DB Entity Mutations ==========</span>
 <div class="viewcode-block" id="publish_gridsquare_created">
 <a class="viewcode-back" href="../../_api/smartem_backend.mq_publisher.html#smartem_backend.mq_publisher.publish_gridsquare_created">[docs]</a>
@@ -618,6 +635,55 @@
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Publish grid square deleted event to RabbitMQ&quot;&quot;&quot;</span>
     <span class="n">event</span> <span class="o">=</span> <span class="n">GridSquareDeletedEvent</span><span class="p">(</span><span class="n">event_type</span><span class="o">=</span><span class="n">MessageQueueEventType</span><span class="o">.</span><span class="n">GRIDSQUARE_DELETED</span><span class="p">,</span> <span class="n">uuid</span><span class="o">=</span><span class="n">uuid</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">rmq_publisher</span><span class="o">.</span><span class="n">publish_event</span><span class="p">(</span><span class="n">MessageQueueEventType</span><span class="o">.</span><span class="n">GRIDSQUARE_DELETED</span><span class="p">,</span> <span class="n">event</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="publish_gridsquare_registered">
+<a class="viewcode-back" href="../../_api/smartem_backend.mq_publisher.html#smartem_backend.mq_publisher.publish_gridsquare_registered">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">publish_gridsquare_registered</span><span class="p">(</span><span class="n">uuid</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Publish grid square updated event to RabbitMQ&quot;&quot;&quot;</span>
+    <span class="n">event</span> <span class="o">=</span> <span class="n">GridSquareRegisteredEvent</span><span class="p">(</span>
+        <span class="n">event_type</span><span class="o">=</span><span class="n">MessageQueueEventType</span><span class="o">.</span><span class="n">GRIDSQUARE_REGISTERED</span><span class="p">,</span>
+        <span class="n">uuid</span><span class="o">=</span><span class="n">uuid</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="n">rmq_publisher</span><span class="o">.</span><span class="n">publish_event</span><span class="p">(</span><span class="n">MessageQueueEventType</span><span class="o">.</span><span class="n">GRIDSQUARE_REGISTERED</span><span class="p">,</span> <span class="n">event</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="publish_gridsquare_lowmag_created">
+<a class="viewcode-back" href="../../_api/smartem_backend.mq_publisher.html#smartem_backend.mq_publisher.publish_gridsquare_lowmag_created">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">publish_gridsquare_lowmag_created</span><span class="p">(</span><span class="n">uuid</span><span class="p">,</span> <span class="n">grid_uuid</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">gridsquare_id</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Publish low mag grid square created event to RabbitMQ&quot;&quot;&quot;</span>
+    <span class="n">event</span> <span class="o">=</span> <span class="n">GridSquareCreatedEvent</span><span class="p">(</span>
+        <span class="n">event_type</span><span class="o">=</span><span class="n">MessageQueueEventType</span><span class="o">.</span><span class="n">GRIDSQUARE_LOWMAG_CREATED</span><span class="p">,</span>
+        <span class="n">uuid</span><span class="o">=</span><span class="n">uuid</span><span class="p">,</span>
+        <span class="n">grid_uuid</span><span class="o">=</span><span class="n">grid_uuid</span><span class="p">,</span>
+        <span class="n">gridsquare_id</span><span class="o">=</span><span class="n">gridsquare_id</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="n">rmq_publisher</span><span class="o">.</span><span class="n">publish_event</span><span class="p">(</span><span class="n">MessageQueueEventType</span><span class="o">.</span><span class="n">GRIDSQUARE_LOWMAG_CREATED</span><span class="p">,</span> <span class="n">event</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="publish_gridsquare_lowmag_updated">
+<a class="viewcode-back" href="../../_api/smartem_backend.mq_publisher.html#smartem_backend.mq_publisher.publish_gridsquare_lowmag_updated">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">publish_gridsquare_lowmag_updated</span><span class="p">(</span><span class="n">uuid</span><span class="p">,</span> <span class="n">grid_uuid</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">gridsquare_id</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Publish low mag grid square updated event to RabbitMQ&quot;&quot;&quot;</span>
+    <span class="n">event</span> <span class="o">=</span> <span class="n">GridSquareUpdatedEvent</span><span class="p">(</span>
+        <span class="n">event_type</span><span class="o">=</span><span class="n">MessageQueueEventType</span><span class="o">.</span><span class="n">GRIDSQUARE_LOWMAG_UPDATED</span><span class="p">,</span>
+        <span class="n">uuid</span><span class="o">=</span><span class="n">uuid</span><span class="p">,</span>
+        <span class="n">grid_uuid</span><span class="o">=</span><span class="n">grid_uuid</span><span class="p">,</span>
+        <span class="n">gridsquare_id</span><span class="o">=</span><span class="n">gridsquare_id</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="n">rmq_publisher</span><span class="o">.</span><span class="n">publish_event</span><span class="p">(</span><span class="n">MessageQueueEventType</span><span class="o">.</span><span class="n">GRIDSQUARE_LOWMAG_UPDATED</span><span class="p">,</span> <span class="n">event</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="publish_gridsquare_lowmag_deleted">
+<a class="viewcode-back" href="../../_api/smartem_backend.mq_publisher.html#smartem_backend.mq_publisher.publish_gridsquare_lowmag_deleted">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">publish_gridsquare_lowmag_deleted</span><span class="p">(</span><span class="n">uuid</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Publish low mag grid square deleted event to RabbitMQ&quot;&quot;&quot;</span>
+    <span class="n">event</span> <span class="o">=</span> <span class="n">GridSquareDeletedEvent</span><span class="p">(</span><span class="n">event_type</span><span class="o">=</span><span class="n">MessageQueueEventType</span><span class="o">.</span><span class="n">GRIDSQUARE_LOWMAG_DELETED</span><span class="p">,</span> <span class="n">uuid</span><span class="o">=</span><span class="n">uuid</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">rmq_publisher</span><span class="o">.</span><span class="n">publish_event</span><span class="p">(</span><span class="n">MessageQueueEventType</span><span class="o">.</span><span class="n">GRIDSQUARE_LOWMAG_DELETED</span><span class="p">,</span> <span class="n">event</span><span class="p">)</span></div>
 
 
 
@@ -698,6 +764,49 @@
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Publish micrograph deleted event to RabbitMQ&quot;&quot;&quot;</span>
     <span class="n">event</span> <span class="o">=</span> <span class="n">MicrographDeletedEvent</span><span class="p">(</span><span class="n">event_type</span><span class="o">=</span><span class="n">MessageQueueEventType</span><span class="o">.</span><span class="n">MICROGRAPH_DELETED</span><span class="p">,</span> <span class="n">uuid</span><span class="o">=</span><span class="n">uuid</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">rmq_publisher</span><span class="o">.</span><span class="n">publish_event</span><span class="p">(</span><span class="n">MessageQueueEventType</span><span class="o">.</span><span class="n">MICROGRAPH_DELETED</span><span class="p">,</span> <span class="n">event</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="publish_gridsquare_model_prediction">
+<a class="viewcode-back" href="../../_api/smartem_backend.mq_publisher.html#smartem_backend.mq_publisher.publish_gridsquare_model_prediction">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">publish_gridsquare_model_prediction</span><span class="p">(</span><span class="n">gridsquare_uuid</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">model_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">prediction_value</span><span class="p">:</span> <span class="nb">float</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Publish model prediction event for a grid square to RabbitMQ&quot;&quot;&quot;</span>
+    <span class="n">event</span> <span class="o">=</span> <span class="n">GridSquareModelPredictionEvent</span><span class="p">(</span>
+        <span class="n">event_type</span><span class="o">=</span><span class="n">MessageQueueEventType</span><span class="o">.</span><span class="n">GRIDSQUARE_MODEL_PREDICTION</span><span class="p">,</span>
+        <span class="n">gridsquare_uuid</span><span class="o">=</span><span class="n">gridsquare_uuid</span><span class="p">,</span>
+        <span class="n">prediction_model_name</span><span class="o">=</span><span class="n">model_name</span><span class="p">,</span>
+        <span class="n">prediction_value</span><span class="o">=</span><span class="n">prediction_value</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="n">rmq_publisher</span><span class="o">.</span><span class="n">publish_event</span><span class="p">(</span><span class="n">MessageQueueEventType</span><span class="o">.</span><span class="n">GRIDSQUARE_MODEL_PREDICTION</span><span class="p">,</span> <span class="n">event</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="publish_foilhole_model_prediction">
+<a class="viewcode-back" href="../../_api/smartem_backend.mq_publisher.html#smartem_backend.mq_publisher.publish_foilhole_model_prediction">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">publish_foilhole_model_prediction</span><span class="p">(</span><span class="n">foilhole_uuid</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">model_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">prediction_value</span><span class="p">:</span> <span class="nb">float</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Publish model prediction event for a foil hole to RabbitMQ&quot;&quot;&quot;</span>
+    <span class="n">event</span> <span class="o">=</span> <span class="n">FoilHoleModelPredictionEvent</span><span class="p">(</span>
+        <span class="n">event_type</span><span class="o">=</span><span class="n">MessageQueueEventType</span><span class="o">.</span><span class="n">FOILHOLE_MODEL_PREDICTION</span><span class="p">,</span>
+        <span class="n">foilhole_uuid</span><span class="o">=</span><span class="n">foilhole_uuid</span><span class="p">,</span>
+        <span class="n">prediction_model_name</span><span class="o">=</span><span class="n">model_name</span><span class="p">,</span>
+        <span class="n">prediction_value</span><span class="o">=</span><span class="n">prediction_value</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="n">rmq_publisher</span><span class="o">.</span><span class="n">publish_event</span><span class="p">(</span><span class="n">MessageQueueEventType</span><span class="o">.</span><span class="n">FOILHOLE_MODEL_PREDICTION</span><span class="p">,</span> <span class="n">event</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="publish_model_parameter_update">
+<a class="viewcode-back" href="../../_api/smartem_backend.mq_publisher.html#smartem_backend.mq_publisher.publish_model_parameter_update">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">publish_model_parameter_update</span><span class="p">(</span><span class="n">grid_uuid</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">model_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="nb">float</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Publish model parameter update event to RabbitMQ&quot;&quot;&quot;</span>
+    <span class="n">event</span> <span class="o">=</span> <span class="n">ModelParameterUpdateEvent</span><span class="p">(</span>
+        <span class="n">event_type</span><span class="o">=</span><span class="n">MessageQueueEventType</span><span class="o">.</span><span class="n">MODEL_PARAMETER_UPDATE</span><span class="p">,</span>
+        <span class="n">grid_uuid</span><span class="o">=</span><span class="n">grid_uuid</span><span class="p">,</span>
+        <span class="n">prediction_model_name</span><span class="o">=</span><span class="n">model_name</span><span class="p">,</span>
+        <span class="n">key</span><span class="o">=</span><span class="n">key</span><span class="p">,</span>
+        <span class="n">value</span><span class="o">=</span><span class="n">value</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="n">rmq_publisher</span><span class="o">.</span><span class="n">publish_event</span><span class="p">(</span><span class="n">MessageQueueEventType</span><span class="o">.</span><span class="n">MODEL_PARAMETER_UPDATE</span><span class="p">,</span> <span class="n">event</span><span class="p">)</span></div>
 
 </pre></div>
 

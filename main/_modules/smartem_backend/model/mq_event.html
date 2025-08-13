@@ -7,7 +7,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>smartem_backend.model.mq_event &#8212; smartem-decisions 0.1.dev248+g8c43e6681 documentation</title>
+    <title>smartem_backend.model.mq_event &#8212; smartem-decisions 0.1.dev261+ga89d1b3 documentation</title>
   
   
   
@@ -40,7 +40,7 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../../../_static/documentation_options.js?v=85a66094"></script>
+    <script src="../../../_static/documentation_options.js?v=6f89b022"></script>
     <script src="../../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -445,12 +445,7 @@
 <span></span><span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">datetime</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">enum</span><span class="w"> </span><span class="kn">import</span> <span class="n">Enum</span>
 
-<span class="kn">from</span><span class="w"> </span><span class="nn">pydantic</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
-    <span class="n">BaseModel</span><span class="p">,</span>
-    <span class="n">computed_field</span><span class="p">,</span>
-    <span class="n">field_serializer</span><span class="p">,</span>
-    <span class="n">model_validator</span><span class="p">,</span>
-<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pydantic</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseModel</span><span class="p">,</span> <span class="n">computed_field</span><span class="p">,</span> <span class="n">field_serializer</span><span class="p">,</span> <span class="n">model_validator</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">non_negative_float</span><span class="p">(</span><span class="n">v</span><span class="p">:</span> <span class="nb">float</span><span class="p">):</span>
@@ -477,10 +472,16 @@
     <span class="n">GRID_CREATED</span> <span class="o">=</span> <span class="s2">&quot;grid.created&quot;</span>
     <span class="n">GRID_UPDATED</span> <span class="o">=</span> <span class="s2">&quot;grid.updated&quot;</span>
     <span class="n">GRID_DELETED</span> <span class="o">=</span> <span class="s2">&quot;grid.deleted&quot;</span>
+    <span class="n">GRID_REGISTERED</span> <span class="o">=</span> <span class="s2">&quot;grid.registered&quot;</span>  <span class="c1"># all grid squares on grid have been registered</span>
 
     <span class="n">GRIDSQUARE_CREATED</span> <span class="o">=</span> <span class="s2">&quot;gridsquare.created&quot;</span>
     <span class="n">GRIDSQUARE_UPDATED</span> <span class="o">=</span> <span class="s2">&quot;gridsquare.updated&quot;</span>
     <span class="n">GRIDSQUARE_DELETED</span> <span class="o">=</span> <span class="s2">&quot;gridsquare.deleted&quot;</span>
+    <span class="n">GRIDSQUARE_REGISTERED</span> <span class="o">=</span> <span class="s2">&quot;gridsquare.registered&quot;</span>  <span class="c1"># all foil holes on gridsquare have been registered</span>
+
+    <span class="n">GRIDSQUARE_LOWMAG_CREATED</span> <span class="o">=</span> <span class="s2">&quot;gridsquare_lowmag.created&quot;</span>
+    <span class="n">GRIDSQUARE_LOWMAG_UPDATED</span> <span class="o">=</span> <span class="s2">&quot;gridsquare_lowmag.updated&quot;</span>
+    <span class="n">GRIDSQUARE_LOWMAG_DELETED</span> <span class="o">=</span> <span class="s2">&quot;gridsquare_lowmag.deleted&quot;</span>
 
     <span class="n">FOILHOLE_CREATED</span> <span class="o">=</span> <span class="s2">&quot;foilhole.created&quot;</span>
     <span class="n">FOILHOLE_UPDATED</span> <span class="o">=</span> <span class="s2">&quot;foilhole.updated&quot;</span>
@@ -509,7 +510,11 @@
     <span class="c1"># PARTICLE_PICKING_START = &quot;particle_picking.started&quot;</span>
     <span class="n">PARTICLE_PICKING_COMPLETE</span> <span class="o">=</span> <span class="s2">&quot;particle_picking.completed&quot;</span>
     <span class="c1"># PARTICLE_SELECTION_START = &quot;particle_selection.started&quot;</span>
-    <span class="n">PARTICLE_SELECTION_COMPLETE</span> <span class="o">=</span> <span class="s2">&quot;particle_selection.completed&quot;</span></div>
+    <span class="n">PARTICLE_SELECTION_COMPLETE</span> <span class="o">=</span> <span class="s2">&quot;particle_selection.completed&quot;</span>
+
+    <span class="n">GRIDSQUARE_MODEL_PREDICTION</span> <span class="o">=</span> <span class="s2">&quot;gridsquare.model_prediction&quot;</span>
+    <span class="n">FOILHOLE_MODEL_PREDICTION</span> <span class="o">=</span> <span class="s2">&quot;foilhole.model_prediction&quot;</span>
+    <span class="n">MODEL_PARAMETER_UPDATE</span> <span class="o">=</span> <span class="s2">&quot;gridsquare.model_parameter_update&quot;</span></div>
 
 
 
@@ -693,6 +698,15 @@
 
 
 
+<div class="viewcode-block" id="GridRegisteredEvent">
+<a class="viewcode-back" href="../../../_api/smartem_backend.model.mq_event.html#smartem_backend.model.mq_event.GridRegisteredEvent">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">GridRegisteredEvent</span><span class="p">(</span><span class="n">GridEventBase</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Event emitted when all squares at atlas mag have been registered for a grid&quot;&quot;&quot;</span>
+
+    <span class="n">grid_uuid</span><span class="p">:</span> <span class="nb">str</span></div>
+
+
+
 <span class="c1"># ============ Grid Square Events ============</span>
 <div class="viewcode-block" id="GridSquareEventBase">
 <a class="viewcode-back" href="../../../_api/smartem_backend.model.mq_event.html#smartem_backend.model.mq_event.GridSquareEventBase">[docs]</a>
@@ -731,6 +745,16 @@
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Event emitted when a grid square is deleted&quot;&quot;&quot;</span>
 
     <span class="n">uuid</span><span class="p">:</span> <span class="nb">str</span></div>
+
+
+
+<div class="viewcode-block" id="GridSquareRegisteredEvent">
+<a class="viewcode-back" href="../../../_api/smartem_backend.model.mq_event.html#smartem_backend.model.mq_event.GridSquareRegisteredEvent">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">GridSquareRegisteredEvent</span><span class="p">(</span><span class="n">GridSquareEventBase</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Event emitted when all holes at square mag have been registered for a grid square&quot;&quot;&quot;</span>
+
+    <span class="n">uuid</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">grid_uuid</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span></div>
 
 
 
@@ -915,6 +939,25 @@
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">number_of_particles_rejected</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Number of Particles Rejected should be a non-negative int&quot;</span><span class="p">)</span>
         <span class="k">return</span> <span class="bp">self</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">GridSquareModelPredictionEvent</span><span class="p">(</span><span class="n">GenericEventMessageBody</span><span class="p">):</span>
+    <span class="n">gridsquare_uuid</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">prediction_model_name</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">prediction_value</span><span class="p">:</span> <span class="nb">float</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">FoilHoleModelPredictionEvent</span><span class="p">(</span><span class="n">GenericEventMessageBody</span><span class="p">):</span>
+    <span class="n">foilhole_uuid</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">prediction_model_name</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">prediction_value</span><span class="p">:</span> <span class="nb">float</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">ModelParameterUpdateEvent</span><span class="p">(</span><span class="n">GenericEventMessageBody</span><span class="p">):</span>
+    <span class="n">grid_uuid</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">prediction_model_name</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">ket</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">value</span><span class="p">:</span> <span class="nb">float</span>
 </pre></div>
 
                 </article>

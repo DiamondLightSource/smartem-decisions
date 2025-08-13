@@ -22,6 +22,14 @@
         
         
         
+        
+        
+        
+        
+        
+        
+        
+        
 
 .. automodule:: smartem_backend.consumer
     :members:
@@ -46,16 +54,24 @@
         handle_atlas_updated
         handle_foilhole_created
         handle_foilhole_deleted
+        handle_foilhole_model_prediction
         handle_foilhole_updated
         handle_grid_created
         handle_grid_deleted
+        handle_grid_registered
         handle_grid_updated
         handle_gridsquare_created
         handle_gridsquare_deleted
+        handle_gridsquare_lowmag_created
+        handle_gridsquare_lowmag_deleted
+        handle_gridsquare_lowmag_updated
+        handle_gridsquare_model_prediction
+        handle_gridsquare_registered
         handle_gridsquare_updated
         handle_micrograph_created
         handle_micrograph_deleted
         handle_micrograph_updated
+        handle_model_parameter_update
         main
         on_message
         signal_handler

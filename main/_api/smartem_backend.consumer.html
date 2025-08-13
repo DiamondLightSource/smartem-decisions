@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>smartem_backend.consumer &#8212; smartem-decisions 0.1.dev248+g8c43e6681 documentation</title>
+    <title>smartem_backend.consumer &#8212; smartem-decisions 0.1.dev261+ga89d1b3 documentation</title>
   
   
   
@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../_static/documentation_options.js?v=85a66094"></script>
+    <script src="../_static/documentation_options.js?v=6f89b022"></script>
     <script src="../_static/doctools.js?v=9bcbadda"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -58,7 +58,7 @@
     <link rel="icon" href="../_static/dls-logo.svg"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="smartem_backend.log_manager" href="smartem_backend.log_manager.html" />
+    <link rel="next" title="smartem_backend.http_api" href="smartem_backend.http_api.html" />
     <link rel="prev" title="smartem_backend.cli.register_quality_prediction_model" href="smartem_backend.cli.register_quality_prediction_model.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
@@ -406,6 +406,7 @@
 </ul>
 </details></li>
 <li class="toctree-l2 current active"><a class="current reference internal" href="#"><code class="docutils literal notranslate"><span class="pre">smartem_backend.consumer</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="smartem_backend.http_api.html"><code class="docutils literal notranslate"><span class="pre">smartem_backend.http_api</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="smartem_backend.log_manager.html"><code class="docutils literal notranslate"><span class="pre">smartem_backend.log_manager</span></code></a></li>
 <li class="toctree-l2 has-children"><a class="reference internal" href="smartem_backend.model.html"><code class="docutils literal notranslate"><span class="pre">smartem_backend.model</span></code></a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
 <li class="toctree-l3"><a class="reference internal" href="smartem_backend.model.database.html"><code class="docutils literal notranslate"><span class="pre">smartem_backend.model.database</span></code></a></li>
@@ -521,14 +522,20 @@
 <tr class="row-odd"><td><p><a class="reference internal" href="#smartem_backend.consumer.handle_foilhole_deleted" title="smartem_backend.consumer.handle_foilhole_deleted"><code class="xref py py-obj docutils literal notranslate"><span class="pre">handle_foilhole_deleted</span></code></a></p></td>
 <td><p>Handle foilhole deleted event by logging the event payload</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#smartem_backend.consumer.handle_foilhole_updated" title="smartem_backend.consumer.handle_foilhole_updated"><code class="xref py py-obj docutils literal notranslate"><span class="pre">handle_foilhole_updated</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#smartem_backend.consumer.handle_foilhole_model_prediction" title="smartem_backend.consumer.handle_foilhole_model_prediction"><code class="xref py py-obj docutils literal notranslate"><span class="pre">handle_foilhole_model_prediction</span></code></a></p></td>
+<td><p>Handle foil hole model prediction event by inserting the result into the database</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#smartem_backend.consumer.handle_foilhole_updated" title="smartem_backend.consumer.handle_foilhole_updated"><code class="xref py py-obj docutils literal notranslate"><span class="pre">handle_foilhole_updated</span></code></a></p></td>
 <td><p>Handle foilhole updated event by logging the event payload</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#smartem_backend.consumer.handle_grid_created" title="smartem_backend.consumer.handle_grid_created"><code class="xref py py-obj docutils literal notranslate"><span class="pre">handle_grid_created</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#smartem_backend.consumer.handle_grid_created" title="smartem_backend.consumer.handle_grid_created"><code class="xref py py-obj docutils literal notranslate"><span class="pre">handle_grid_created</span></code></a></p></td>
 <td><p>Handle grid created event by logging the event payload and initialising prediction model weights</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#smartem_backend.consumer.handle_grid_deleted" title="smartem_backend.consumer.handle_grid_deleted"><code class="xref py py-obj docutils literal notranslate"><span class="pre">handle_grid_deleted</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#smartem_backend.consumer.handle_grid_deleted" title="smartem_backend.consumer.handle_grid_deleted"><code class="xref py py-obj docutils literal notranslate"><span class="pre">handle_grid_deleted</span></code></a></p></td>
 <td><p>Handle grid deleted event by logging the event payload</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#smartem_backend.consumer.handle_grid_registered" title="smartem_backend.consumer.handle_grid_registered"><code class="xref py py-obj docutils literal notranslate"><span class="pre">handle_grid_registered</span></code></a></p></td>
+<td><p>Handle grid registered event by logging the event payload</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#smartem_backend.consumer.handle_grid_updated" title="smartem_backend.consumer.handle_grid_updated"><code class="xref py py-obj docutils literal notranslate"><span class="pre">handle_grid_updated</span></code></a></p></td>
 <td><p>Handle grid updated event by logging the event payload</p></td>
@@ -539,17 +546,35 @@
 <tr class="row-odd"><td><p><a class="reference internal" href="#smartem_backend.consumer.handle_gridsquare_deleted" title="smartem_backend.consumer.handle_gridsquare_deleted"><code class="xref py py-obj docutils literal notranslate"><span class="pre">handle_gridsquare_deleted</span></code></a></p></td>
 <td><p>Handle gridsquare deleted event by logging the event payload</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#smartem_backend.consumer.handle_gridsquare_updated" title="smartem_backend.consumer.handle_gridsquare_updated"><code class="xref py py-obj docutils literal notranslate"><span class="pre">handle_gridsquare_updated</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#smartem_backend.consumer.handle_gridsquare_lowmag_created" title="smartem_backend.consumer.handle_gridsquare_lowmag_created"><code class="xref py py-obj docutils literal notranslate"><span class="pre">handle_gridsquare_lowmag_created</span></code></a></p></td>
+<td><p>Handle low mag gridsquare created event by logging the event payload and generating predictions</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#smartem_backend.consumer.handle_gridsquare_lowmag_deleted" title="smartem_backend.consumer.handle_gridsquare_lowmag_deleted"><code class="xref py py-obj docutils literal notranslate"><span class="pre">handle_gridsquare_lowmag_deleted</span></code></a></p></td>
+<td><p>Handle low mag gridsquare deleted event by logging the event payload</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#smartem_backend.consumer.handle_gridsquare_lowmag_updated" title="smartem_backend.consumer.handle_gridsquare_lowmag_updated"><code class="xref py py-obj docutils literal notranslate"><span class="pre">handle_gridsquare_lowmag_updated</span></code></a></p></td>
+<td><p>Handle gridsquare low mag updated event by logging the event payload</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#smartem_backend.consumer.handle_gridsquare_model_prediction" title="smartem_backend.consumer.handle_gridsquare_model_prediction"><code class="xref py py-obj docutils literal notranslate"><span class="pre">handle_gridsquare_model_prediction</span></code></a></p></td>
+<td><p>Handle grid square model prediction event by inserting the result into the database</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#smartem_backend.consumer.handle_gridsquare_registered" title="smartem_backend.consumer.handle_gridsquare_registered"><code class="xref py py-obj docutils literal notranslate"><span class="pre">handle_gridsquare_registered</span></code></a></p></td>
+<td><p>Handle grid square registered event by logging the event payload</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#smartem_backend.consumer.handle_gridsquare_updated" title="smartem_backend.consumer.handle_gridsquare_updated"><code class="xref py py-obj docutils literal notranslate"><span class="pre">handle_gridsquare_updated</span></code></a></p></td>
 <td><p>Handle gridsquare updated event by logging the event payload</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#smartem_backend.consumer.handle_micrograph_created" title="smartem_backend.consumer.handle_micrograph_created"><code class="xref py py-obj docutils literal notranslate"><span class="pre">handle_micrograph_created</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#smartem_backend.consumer.handle_micrograph_created" title="smartem_backend.consumer.handle_micrograph_created"><code class="xref py py-obj docutils literal notranslate"><span class="pre">handle_micrograph_created</span></code></a></p></td>
 <td><p>Handle micrograph created event by logging the event payload and starting processing simulation</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#smartem_backend.consumer.handle_micrograph_deleted" title="smartem_backend.consumer.handle_micrograph_deleted"><code class="xref py py-obj docutils literal notranslate"><span class="pre">handle_micrograph_deleted</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#smartem_backend.consumer.handle_micrograph_deleted" title="smartem_backend.consumer.handle_micrograph_deleted"><code class="xref py py-obj docutils literal notranslate"><span class="pre">handle_micrograph_deleted</span></code></a></p></td>
 <td><p>Handle micrograph deleted event by logging the event payload</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#smartem_backend.consumer.handle_micrograph_updated" title="smartem_backend.consumer.handle_micrograph_updated"><code class="xref py py-obj docutils literal notranslate"><span class="pre">handle_micrograph_updated</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#smartem_backend.consumer.handle_micrograph_updated" title="smartem_backend.consumer.handle_micrograph_updated"><code class="xref py py-obj docutils literal notranslate"><span class="pre">handle_micrograph_updated</span></code></a></p></td>
 <td><p>Handle micrograph updated event by logging the event payload</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#smartem_backend.consumer.handle_model_parameter_update" title="smartem_backend.consumer.handle_model_parameter_update"><code class="xref py py-obj docutils literal notranslate"><span class="pre">handle_model_parameter_update</span></code></a></p></td>
+<td><p>Handle model parameter update event by inserting the result into the database</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#smartem_backend.consumer.main" title="smartem_backend.consumer.main"><code class="xref py py-obj docutils literal notranslate"><span class="pre">main</span></code></a></p></td>
 <td><p>Main function to run the consumer</p></td>
@@ -673,6 +698,38 @@
 </dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="smartem_backend.consumer.handle_grid_registered">
+<span class="sig-prename descclassname"><span class="pre">smartem_backend.consumer.</span></span><span class="sig-name descname"><span class="pre">handle_grid_registered</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">event_data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.13)"><span class="pre">dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.13)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.13)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../_modules/smartem_backend/consumer.html#handle_grid_registered"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#smartem_backend.consumer.handle_grid_registered" title="Link to this definition">#</a></dt>
+<dd><p>Handle grid registered event by logging the event payload</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>event_data</strong> – Event data for grid registered</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="smartem_backend.consumer.handle_gridsquare_lowmag_created">
+<span class="sig-prename descclassname"><span class="pre">smartem_backend.consumer.</span></span><span class="sig-name descname"><span class="pre">handle_gridsquare_lowmag_created</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">event_data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.13)"><span class="pre">dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.13)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">channel</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">delivery_tag</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.13)"><span class="pre">bool</span></a></span></span><a class="reference internal" href="../_modules/smartem_backend/consumer.html#handle_gridsquare_lowmag_created"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#smartem_backend.consumer.handle_gridsquare_lowmag_created" title="Link to this definition">#</a></dt>
+<dd><p>Handle low mag gridsquare created event by logging the event payload and generating predictions</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>event_data</strong> – Event data for low mag gridsquare created</p></li>
+<li><p><strong>channel</strong> – RabbitMQ channel</p></li>
+<li><p><strong>delivery_tag</strong> – Message delivery tag</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>True if successful, False if failed (already NACKed)</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.13)">bool</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="smartem_backend.consumer.handle_gridsquare_created">
 <span class="sig-prename descclassname"><span class="pre">smartem_backend.consumer.</span></span><span class="sig-name descname"><span class="pre">handle_gridsquare_created</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">event_data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.13)"><span class="pre">dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.13)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">channel</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">delivery_tag</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.13)"><span class="pre">bool</span></a></span></span><a class="reference internal" href="../_modules/smartem_backend/consumer.html#handle_gridsquare_created"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#smartem_backend.consumer.handle_gridsquare_created" title="Link to this definition">#</a></dt>
 <dd><p>Handle gridsquare created event by logging the event payload and generating predictions</p>
@@ -694,6 +751,17 @@
 </dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="smartem_backend.consumer.handle_gridsquare_lowmag_updated">
+<span class="sig-prename descclassname"><span class="pre">smartem_backend.consumer.</span></span><span class="sig-name descname"><span class="pre">handle_gridsquare_lowmag_updated</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">event_data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.13)"><span class="pre">dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.13)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.13)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../_modules/smartem_backend/consumer.html#handle_gridsquare_lowmag_updated"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#smartem_backend.consumer.handle_gridsquare_lowmag_updated" title="Link to this definition">#</a></dt>
+<dd><p>Handle gridsquare low mag updated event by logging the event payload</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>event_data</strong> – Event data for low mag gridsquare updated</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="smartem_backend.consumer.handle_gridsquare_updated">
 <span class="sig-prename descclassname"><span class="pre">smartem_backend.consumer.</span></span><span class="sig-name descname"><span class="pre">handle_gridsquare_updated</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">event_data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.13)"><span class="pre">dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.13)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.13)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../_modules/smartem_backend/consumer.html#handle_gridsquare_updated"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#smartem_backend.consumer.handle_gridsquare_updated" title="Link to this definition">#</a></dt>
 <dd><p>Handle gridsquare updated event by logging the event payload</p>
@@ -705,12 +773,34 @@
 </dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="smartem_backend.consumer.handle_gridsquare_lowmag_deleted">
+<span class="sig-prename descclassname"><span class="pre">smartem_backend.consumer.</span></span><span class="sig-name descname"><span class="pre">handle_gridsquare_lowmag_deleted</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">event_data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.13)"><span class="pre">dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.13)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.13)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../_modules/smartem_backend/consumer.html#handle_gridsquare_lowmag_deleted"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#smartem_backend.consumer.handle_gridsquare_lowmag_deleted" title="Link to this definition">#</a></dt>
+<dd><p>Handle low mag gridsquare deleted event by logging the event payload</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>event_data</strong> – Event data for low mag gridsquare deleted</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="smartem_backend.consumer.handle_gridsquare_deleted">
 <span class="sig-prename descclassname"><span class="pre">smartem_backend.consumer.</span></span><span class="sig-name descname"><span class="pre">handle_gridsquare_deleted</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">event_data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.13)"><span class="pre">dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.13)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.13)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../_modules/smartem_backend/consumer.html#handle_gridsquare_deleted"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#smartem_backend.consumer.handle_gridsquare_deleted" title="Link to this definition">#</a></dt>
 <dd><p>Handle gridsquare deleted event by logging the event payload</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><p><strong>event_data</strong> – Event data for gridsquare deleted</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="smartem_backend.consumer.handle_gridsquare_registered">
+<span class="sig-prename descclassname"><span class="pre">smartem_backend.consumer.</span></span><span class="sig-name descname"><span class="pre">handle_gridsquare_registered</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">event_data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.13)"><span class="pre">dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.13)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.13)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../_modules/smartem_backend/consumer.html#handle_gridsquare_registered"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#smartem_backend.consumer.handle_gridsquare_registered" title="Link to this definition">#</a></dt>
+<dd><p>Handle grid square registered event by logging the event payload</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>event_data</strong> – Event data for grid square registered</p>
 </dd>
 </dl>
 </dd></dl>
@@ -802,6 +892,39 @@
 </dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="smartem_backend.consumer.handle_gridsquare_model_prediction">
+<span class="sig-prename descclassname"><span class="pre">smartem_backend.consumer.</span></span><span class="sig-name descname"><span class="pre">handle_gridsquare_model_prediction</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">event_data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.13)"><span class="pre">dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.13)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.13)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../_modules/smartem_backend/consumer.html#handle_gridsquare_model_prediction"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#smartem_backend.consumer.handle_gridsquare_model_prediction" title="Link to this definition">#</a></dt>
+<dd><p>Handle grid square model prediction event by inserting the result into the database</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>event_data</strong> – Event data for grid square model prediction</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="smartem_backend.consumer.handle_foilhole_model_prediction">
+<span class="sig-prename descclassname"><span class="pre">smartem_backend.consumer.</span></span><span class="sig-name descname"><span class="pre">handle_foilhole_model_prediction</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">event_data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.13)"><span class="pre">dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.13)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.13)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../_modules/smartem_backend/consumer.html#handle_foilhole_model_prediction"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#smartem_backend.consumer.handle_foilhole_model_prediction" title="Link to this definition">#</a></dt>
+<dd><p>Handle foil hole model prediction event by inserting the result into the database</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>event_data</strong> – Event data for foil hole model prediction</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="smartem_backend.consumer.handle_model_parameter_update">
+<span class="sig-prename descclassname"><span class="pre">smartem_backend.consumer.</span></span><span class="sig-name descname"><span class="pre">handle_model_parameter_update</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">event_data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.13)"><span class="pre">dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.13)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.13)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../_modules/smartem_backend/consumer.html#handle_model_parameter_update"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#smartem_backend.consumer.handle_model_parameter_update" title="Link to this definition">#</a></dt>
+<dd><p>Handle model parameter update event by inserting the result into the database</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>event_data</strong> – Event data for model parameter update</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="smartem_backend.consumer.get_event_handlers">
 <span class="sig-prename descclassname"><span class="pre">smartem_backend.consumer.</span></span><span class="sig-name descname"><span class="pre">get_event_handlers</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.13)"><span class="pre">dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Callable" title="(in Python v3.13)"><span class="pre">Callable</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../_modules/smartem_backend/consumer.html#get_event_handlers"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#smartem_backend.consumer.get_event_handlers" title="Link to this definition">#</a></dt>
 <dd><p>Get a mapping of event types to their handler functions</p>
@@ -865,11 +988,11 @@
       </div>
     </a>
     <a class="right-next"
-       href="smartem_backend.log_manager.html"
+       href="smartem_backend.http_api.html"
        title="next page">
       <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title"><code class="docutils literal notranslate"><span class="pre">smartem_backend.log_manager</span></code></p>
+        <p class="prev-next-title"><code class="docutils literal notranslate"><span class="pre">smartem_backend.http_api</span></code></p>
       </div>
       <i class="fa-solid fa-angle-right"></i>
     </a>
@@ -901,15 +1024,23 @@
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#smartem_backend.consumer.handle_grid_created"><code class="docutils literal notranslate"><span class="pre">handle_grid_created()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#smartem_backend.consumer.handle_grid_updated"><code class="docutils literal notranslate"><span class="pre">handle_grid_updated()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#smartem_backend.consumer.handle_grid_deleted"><code class="docutils literal notranslate"><span class="pre">handle_grid_deleted()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#smartem_backend.consumer.handle_grid_registered"><code class="docutils literal notranslate"><span class="pre">handle_grid_registered()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#smartem_backend.consumer.handle_gridsquare_lowmag_created"><code class="docutils literal notranslate"><span class="pre">handle_gridsquare_lowmag_created()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#smartem_backend.consumer.handle_gridsquare_created"><code class="docutils literal notranslate"><span class="pre">handle_gridsquare_created()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#smartem_backend.consumer.handle_gridsquare_lowmag_updated"><code class="docutils literal notranslate"><span class="pre">handle_gridsquare_lowmag_updated()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#smartem_backend.consumer.handle_gridsquare_updated"><code class="docutils literal notranslate"><span class="pre">handle_gridsquare_updated()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#smartem_backend.consumer.handle_gridsquare_lowmag_deleted"><code class="docutils literal notranslate"><span class="pre">handle_gridsquare_lowmag_deleted()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#smartem_backend.consumer.handle_gridsquare_deleted"><code class="docutils literal notranslate"><span class="pre">handle_gridsquare_deleted()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#smartem_backend.consumer.handle_gridsquare_registered"><code class="docutils literal notranslate"><span class="pre">handle_gridsquare_registered()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#smartem_backend.consumer.handle_foilhole_created"><code class="docutils literal notranslate"><span class="pre">handle_foilhole_created()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#smartem_backend.consumer.handle_foilhole_updated"><code class="docutils literal notranslate"><span class="pre">handle_foilhole_updated()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#smartem_backend.consumer.handle_foilhole_deleted"><code class="docutils literal notranslate"><span class="pre">handle_foilhole_deleted()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#smartem_backend.consumer.handle_micrograph_created"><code class="docutils literal notranslate"><span class="pre">handle_micrograph_created()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#smartem_backend.consumer.handle_micrograph_updated"><code class="docutils literal notranslate"><span class="pre">handle_micrograph_updated()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#smartem_backend.consumer.handle_micrograph_deleted"><code class="docutils literal notranslate"><span class="pre">handle_micrograph_deleted()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#smartem_backend.consumer.handle_gridsquare_model_prediction"><code class="docutils literal notranslate"><span class="pre">handle_gridsquare_model_prediction()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#smartem_backend.consumer.handle_foilhole_model_prediction"><code class="docutils literal notranslate"><span class="pre">handle_foilhole_model_prediction()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#smartem_backend.consumer.handle_model_parameter_update"><code class="docutils literal notranslate"><span class="pre">handle_model_parameter_update()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#smartem_backend.consumer.get_event_handlers"><code class="docutils literal notranslate"><span class="pre">get_event_handlers()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#smartem_backend.consumer.on_message"><code class="docutils literal notranslate"><span class="pre">on_message()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#smartem_backend.consumer.signal_handler"><code class="docutils literal notranslate"><span class="pre">signal_handler()</span></code></a></li>

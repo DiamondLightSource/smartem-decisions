@@ -21,6 +21,14 @@
         
         
         
+        
+        
+        
+        
+        
+        
+        
+        
 
 .. automodule:: smartem_backend.mq_publisher
     :members:
@@ -47,15 +55,23 @@
         publish_atlas_updated
         publish_foilhole_created
         publish_foilhole_deleted
+        publish_foilhole_model_prediction
         publish_foilhole_updated
         publish_grid_created
         publish_grid_deleted
+        publish_grid_registered
         publish_grid_updated
         publish_gridsquare_created
         publish_gridsquare_deleted
+        publish_gridsquare_lowmag_created
+        publish_gridsquare_lowmag_deleted
+        publish_gridsquare_lowmag_updated
+        publish_gridsquare_model_prediction
+        publish_gridsquare_registered
         publish_gridsquare_updated
         publish_micrograph_created
         publish_micrograph_deleted
         publish_micrograph_updated
+        publish_model_parameter_update
     
     

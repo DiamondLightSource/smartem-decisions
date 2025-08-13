@@ -7,7 +7,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>smartem_backend.utils &#8212; smartem-decisions 0.1.dev248+g8c43e6681 documentation</title>
+    <title>smartem_backend.utils &#8212; smartem-decisions 0.1.dev261+ga89d1b3 documentation</title>
   
   
   
@@ -40,7 +40,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../../_static/documentation_options.js?v=85a66094"></script>
+    <script src="../../_static/documentation_options.js?v=6f89b022"></script>
     <script src="../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -761,7 +761,7 @@
 
             <span class="c1"># Convert Pydantic model to dict if needed</span>
             <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">payload</span><span class="p">,</span> <span class="n">BaseModel</span><span class="p">):</span>
-                <span class="n">payload_dict</span> <span class="o">=</span> <span class="n">payload</span><span class="o">.</span><span class="n">model_dump</span><span class="p">()</span>
+                <span class="n">payload_dict</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">payload</span><span class="o">.</span><span class="n">json</span><span class="p">())</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="n">payload_dict</span> <span class="o">=</span> <span class="n">payload</span>
 
@@ -882,7 +882,7 @@
 <span class="c1"># Create RabbitMQ connections (available as singletons throughout the application)</span>
 <span class="n">rmq_publisher</span><span class="p">,</span> <span class="n">rmq_consumer</span> <span class="o">=</span> <span class="n">setup_rabbitmq</span><span class="p">(</span>
     <span class="n">queue_name</span><span class="o">=</span><span class="n">app_config</span><span class="p">[</span><span class="s2">&quot;rabbitmq&quot;</span><span class="p">][</span><span class="s2">&quot;queue_name&quot;</span><span class="p">]</span> <span class="k">if</span> <span class="n">app_config</span> <span class="ow">and</span> <span class="s2">&quot;rabbitmq&quot;</span> <span class="ow">in</span> <span class="n">app_config</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">exchange</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>  <span class="c1"># Using default direct exchange</span>
+    <span class="n">exchange</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;RABBITMQ_EXCHANGE&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
 <span class="p">)</span>
 </pre></div>
 

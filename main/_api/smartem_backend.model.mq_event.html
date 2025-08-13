@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>smartem_backend.model.mq_event &#8212; smartem-decisions 0.1.dev248+g8c43e6681 documentation</title>
+    <title>smartem_backend.model.mq_event &#8212; smartem-decisions 0.1.dev261+ga89d1b3 documentation</title>
   
   
   
@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../_static/documentation_options.js?v=85a66094"></script>
+    <script src="../_static/documentation_options.js?v=6f89b022"></script>
     <script src="../_static/doctools.js?v=9bcbadda"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -406,6 +406,7 @@
 </ul>
 </details></li>
 <li class="toctree-l2"><a class="reference internal" href="smartem_backend.consumer.html"><code class="docutils literal notranslate"><span class="pre">smartem_backend.consumer</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="smartem_backend.http_api.html"><code class="docutils literal notranslate"><span class="pre">smartem_backend.http_api</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="smartem_backend.log_manager.html"><code class="docutils literal notranslate"><span class="pre">smartem_backend.log_manager</span></code></a></li>
 <li class="toctree-l2 current active has-children"><a class="reference internal" href="smartem_backend.model.html"><code class="docutils literal notranslate"><span class="pre">smartem_backend.model</span></code></a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
 <li class="toctree-l3"><a class="reference internal" href="smartem_backend.model.database.html"><code class="docutils literal notranslate"><span class="pre">smartem_backend.model.database</span></code></a></li>
@@ -548,20 +549,26 @@
 <tr class="row-odd"><td><p><a class="reference internal" href="#smartem_backend.model.mq_event.FoilHoleEventBase" title="smartem_backend.model.mq_event.FoilHoleEventBase"><code class="xref py py-obj docutils literal notranslate"><span class="pre">FoilHoleEventBase</span></code></a></p></td>
 <td><p>Base model for foil hole events</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#smartem_backend.model.mq_event.FoilHoleUpdatedEvent" title="smartem_backend.model.mq_event.FoilHoleUpdatedEvent"><code class="xref py py-obj docutils literal notranslate"><span class="pre">FoilHoleUpdatedEvent</span></code></a></p></td>
-<td><p>Event emitted when a foil hole is updated</p></td>
-</tr>
-<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">GenericEventMessageBody</span></code></p></td>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">FoilHoleModelPredictionEvent</span></code></p></td>
 <td><p>Create a new model by parsing and validating input data from keyword arguments.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#smartem_backend.model.mq_event.GridCreatedEvent" title="smartem_backend.model.mq_event.GridCreatedEvent"><code class="xref py py-obj docutils literal notranslate"><span class="pre">GridCreatedEvent</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#smartem_backend.model.mq_event.FoilHoleUpdatedEvent" title="smartem_backend.model.mq_event.FoilHoleUpdatedEvent"><code class="xref py py-obj docutils literal notranslate"><span class="pre">FoilHoleUpdatedEvent</span></code></a></p></td>
+<td><p>Event emitted when a foil hole is updated</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">GenericEventMessageBody</span></code></p></td>
+<td><p>Create a new model by parsing and validating input data from keyword arguments.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#smartem_backend.model.mq_event.GridCreatedEvent" title="smartem_backend.model.mq_event.GridCreatedEvent"><code class="xref py py-obj docutils literal notranslate"><span class="pre">GridCreatedEvent</span></code></a></p></td>
 <td><p>Event emitted when a grid is created</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#smartem_backend.model.mq_event.GridDeletedEvent" title="smartem_backend.model.mq_event.GridDeletedEvent"><code class="xref py py-obj docutils literal notranslate"><span class="pre">GridDeletedEvent</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#smartem_backend.model.mq_event.GridDeletedEvent" title="smartem_backend.model.mq_event.GridDeletedEvent"><code class="xref py py-obj docutils literal notranslate"><span class="pre">GridDeletedEvent</span></code></a></p></td>
 <td><p>Event emitted when a grid is deleted</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#smartem_backend.model.mq_event.GridEventBase" title="smartem_backend.model.mq_event.GridEventBase"><code class="xref py py-obj docutils literal notranslate"><span class="pre">GridEventBase</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#smartem_backend.model.mq_event.GridEventBase" title="smartem_backend.model.mq_event.GridEventBase"><code class="xref py py-obj docutils literal notranslate"><span class="pre">GridEventBase</span></code></a></p></td>
 <td><p>Base model for grid events</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#smartem_backend.model.mq_event.GridRegisteredEvent" title="smartem_backend.model.mq_event.GridRegisteredEvent"><code class="xref py py-obj docutils literal notranslate"><span class="pre">GridRegisteredEvent</span></code></a></p></td>
+<td><p>Event emitted when all squares at atlas mag have been registered for a grid</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#smartem_backend.model.mq_event.GridSquareCreatedEvent" title="smartem_backend.model.mq_event.GridSquareCreatedEvent"><code class="xref py py-obj docutils literal notranslate"><span class="pre">GridSquareCreatedEvent</span></code></a></p></td>
 <td><p>Event emitted when a grid square is created</p></td>
@@ -571,6 +578,12 @@
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#smartem_backend.model.mq_event.GridSquareEventBase" title="smartem_backend.model.mq_event.GridSquareEventBase"><code class="xref py py-obj docutils literal notranslate"><span class="pre">GridSquareEventBase</span></code></a></p></td>
 <td><p>Base model for grid square events</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">GridSquareModelPredictionEvent</span></code></p></td>
+<td><p>Create a new model by parsing and validating input data from keyword arguments.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#smartem_backend.model.mq_event.GridSquareRegisteredEvent" title="smartem_backend.model.mq_event.GridSquareRegisteredEvent"><code class="xref py py-obj docutils literal notranslate"><span class="pre">GridSquareRegisteredEvent</span></code></a></p></td>
+<td><p>Event emitted when all holes at square mag have been registered for a grid square</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#smartem_backend.model.mq_event.GridSquareUpdatedEvent" title="smartem_backend.model.mq_event.GridSquareUpdatedEvent"><code class="xref py py-obj docutils literal notranslate"><span class="pre">GridSquareUpdatedEvent</span></code></a></p></td>
 <td><p>Event emitted when a grid square is updated</p></td>
@@ -593,25 +606,28 @@
 <tr class="row-even"><td><p><a class="reference internal" href="#smartem_backend.model.mq_event.MicrographUpdatedEvent" title="smartem_backend.model.mq_event.MicrographUpdatedEvent"><code class="xref py py-obj docutils literal notranslate"><span class="pre">MicrographUpdatedEvent</span></code></a></p></td>
 <td><p>Event emitted when a micrograph is updated</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">MotionCorrectionCompleteBody</span></code></p></td>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">ModelParameterUpdateEvent</span></code></p></td>
 <td><p>Create a new model by parsing and validating input data from keyword arguments.</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">MotionCorrectionStartBody</span></code></p></td>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">MotionCorrectionCompleteBody</span></code></p></td>
 <td><p>Create a new model by parsing and validating input data from keyword arguments.</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">ParticlePickingCompleteBody</span></code></p></td>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">MotionCorrectionStartBody</span></code></p></td>
 <td><p>Create a new model by parsing and validating input data from keyword arguments.</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">ParticlePickingStartBody</span></code></p></td>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">ParticlePickingCompleteBody</span></code></p></td>
 <td><p>Create a new model by parsing and validating input data from keyword arguments.</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">ParticleSelectionCompleteBody</span></code></p></td>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">ParticlePickingStartBody</span></code></p></td>
 <td><p>Create a new model by parsing and validating input data from keyword arguments.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#smartem_backend.model.mq_event.ParticleSelectionStartBody" title="smartem_backend.model.mq_event.ParticleSelectionStartBody"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ParticleSelectionStartBody</span></code></a></p></td>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">ParticleSelectionCompleteBody</span></code></p></td>
+<td><p>Create a new model by parsing and validating input data from keyword arguments.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#smartem_backend.model.mq_event.ParticleSelectionStartBody" title="smartem_backend.model.mq_event.ParticleSelectionStartBody"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ParticleSelectionStartBody</span></code></a></p></td>
 <td><p>TODO For particle selection start see: <a class="github reference external" href="https://github.com/DiamondLightSource/cryoem-services/blob/main/src/cryoemservices/services/select_particles.py#L16C1-L21C41">DiamondLightSource/cryoem-services</a> class ParticleSelectionStart(BaseModel):     input_file: str = Field(..., min_length=1)     batch_size: int     image_size: int     incomplete_batch_size: int = 10000     relion_options: RelionServiceOptions</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">non_negative_float</span></code></p></td>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">non_negative_float</span></code></p></td>
 <td><p></p></td>
 </tr>
 </tbody>
@@ -784,6 +800,16 @@ validated to form a valid model.</p>
 </dd></dl>
 
 <dl class="py class">
+<dt class="sig sig-object py" id="smartem_backend.model.mq_event.GridRegisteredEvent">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">smartem_backend.model.mq_event.</span></span><span class="sig-name descname"><span class="pre">GridRegisteredEvent</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">event_type</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#smartem_backend.model.mq_event.MessageQueueEventType" title="smartem_backend.model.mq_event.MessageQueueEventType"><span class="pre">MessageQueueEventType</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">grid_uuid</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/smartem_backend/model/mq_event.html#GridRegisteredEvent"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#smartem_backend.model.mq_event.GridRegisteredEvent" title="Link to this definition">#</a></dt>
+<dd><p>Event emitted when all squares at atlas mag have been registered for a grid</p>
+<p>Create a new model by parsing and validating input data from keyword arguments.</p>
+<p>Raises [<code class="xref any docutils literal notranslate"><span class="pre">ValidationError</span></code>][pydantic_core.ValidationError] if the input data cannot be
+validated to form a valid model.</p>
+<p><code class="xref any docutils literal notranslate"><span class="pre">self</span></code> is explicitly positional-only to allow <code class="xref any docutils literal notranslate"><span class="pre">self</span></code> as a field name.</p>
+</dd></dl>
+
+<dl class="py class">
 <dt class="sig sig-object py" id="smartem_backend.model.mq_event.GridSquareEventBase">
 <em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">smartem_backend.model.mq_event.</span></span><span class="sig-name descname"><span class="pre">GridSquareEventBase</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">event_type</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#smartem_backend.model.mq_event.MessageQueueEventType" title="smartem_backend.model.mq_event.MessageQueueEventType"><span class="pre">MessageQueueEventType</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/smartem_backend/model/mq_event.html#GridSquareEventBase"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#smartem_backend.model.mq_event.GridSquareEventBase" title="Link to this definition">#</a></dt>
 <dd><p>Base model for grid square events</p>
@@ -817,6 +843,16 @@ validated to form a valid model.</p>
 <dt class="sig sig-object py" id="smartem_backend.model.mq_event.GridSquareDeletedEvent">
 <em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">smartem_backend.model.mq_event.</span></span><span class="sig-name descname"><span class="pre">GridSquareDeletedEvent</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">event_type</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#smartem_backend.model.mq_event.MessageQueueEventType" title="smartem_backend.model.mq_event.MessageQueueEventType"><span class="pre">MessageQueueEventType</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">uuid</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/smartem_backend/model/mq_event.html#GridSquareDeletedEvent"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#smartem_backend.model.mq_event.GridSquareDeletedEvent" title="Link to this definition">#</a></dt>
 <dd><p>Event emitted when a grid square is deleted</p>
+<p>Create a new model by parsing and validating input data from keyword arguments.</p>
+<p>Raises [<code class="xref any docutils literal notranslate"><span class="pre">ValidationError</span></code>][pydantic_core.ValidationError] if the input data cannot be
+validated to form a valid model.</p>
+<p><code class="xref any docutils literal notranslate"><span class="pre">self</span></code> is explicitly positional-only to allow <code class="xref any docutils literal notranslate"><span class="pre">self</span></code> as a field name.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="smartem_backend.model.mq_event.GridSquareRegisteredEvent">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">smartem_backend.model.mq_event.</span></span><span class="sig-name descname"><span class="pre">GridSquareRegisteredEvent</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">event_type</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#smartem_backend.model.mq_event.MessageQueueEventType" title="smartem_backend.model.mq_event.MessageQueueEventType"><span class="pre">MessageQueueEventType</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">uuid</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">grid_uuid</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.13)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/smartem_backend/model/mq_event.html#GridSquareRegisteredEvent"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#smartem_backend.model.mq_event.GridSquareRegisteredEvent" title="Link to this definition">#</a></dt>
+<dd><p>Event emitted when all holes at square mag have been registered for a grid square</p>
 <p>Create a new model by parsing and validating input data from keyword arguments.</p>
 <p>Raises [<code class="xref any docutils literal notranslate"><span class="pre">ValidationError</span></code>][pydantic_core.ValidationError] if the input data cannot be
 validated to form a valid model.</p>
@@ -988,10 +1024,12 @@ validated to form a valid model.</p>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#smartem_backend.model.mq_event.GridCreatedEvent"><code class="docutils literal notranslate"><span class="pre">GridCreatedEvent</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#smartem_backend.model.mq_event.GridUpdatedEvent"><code class="docutils literal notranslate"><span class="pre">GridUpdatedEvent</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#smartem_backend.model.mq_event.GridDeletedEvent"><code class="docutils literal notranslate"><span class="pre">GridDeletedEvent</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#smartem_backend.model.mq_event.GridRegisteredEvent"><code class="docutils literal notranslate"><span class="pre">GridRegisteredEvent</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#smartem_backend.model.mq_event.GridSquareEventBase"><code class="docutils literal notranslate"><span class="pre">GridSquareEventBase</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#smartem_backend.model.mq_event.GridSquareCreatedEvent"><code class="docutils literal notranslate"><span class="pre">GridSquareCreatedEvent</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#smartem_backend.model.mq_event.GridSquareUpdatedEvent"><code class="docutils literal notranslate"><span class="pre">GridSquareUpdatedEvent</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#smartem_backend.model.mq_event.GridSquareDeletedEvent"><code class="docutils literal notranslate"><span class="pre">GridSquareDeletedEvent</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#smartem_backend.model.mq_event.GridSquareRegisteredEvent"><code class="docutils literal notranslate"><span class="pre">GridSquareRegisteredEvent</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#smartem_backend.model.mq_event.FoilHoleEventBase"><code class="docutils literal notranslate"><span class="pre">FoilHoleEventBase</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#smartem_backend.model.mq_event.FoilHoleCreatedEvent"><code class="docutils literal notranslate"><span class="pre">FoilHoleCreatedEvent</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#smartem_backend.model.mq_event.FoilHoleUpdatedEvent"><code class="docutils literal notranslate"><span class="pre">FoilHoleUpdatedEvent</span></code></a></li>

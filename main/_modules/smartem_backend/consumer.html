@@ -7,7 +7,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>smartem_backend.consumer &#8212; smartem-decisions 0.1.dev248+g8c43e6681 documentation</title>
+    <title>smartem_backend.consumer &#8212; smartem-decisions 0.1.dev261+ga89d1b3 documentation</title>
   
   
   
@@ -40,7 +40,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../../_static/documentation_options.js?v=85a66094"></script>
+    <script src="../../_static/documentation_options.js?v=6f89b022"></script>
     <script src="../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -456,6 +456,7 @@
 <span class="kn">import</span><span class="w"> </span><span class="nn">pika</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">dotenv</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_dotenv</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">pydantic</span><span class="w"> </span><span class="kn">import</span> <span class="n">ValidationError</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sqlmodel</span><span class="w"> </span><span class="kn">import</span> <span class="n">Session</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">smartem_backend.cli.initialise_prediction_model_weights</span><span class="w"> </span><span class="kn">import</span> <span class="n">initialise_all_models_for_grid</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">smartem_backend.cli.random_model_predictions</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
@@ -464,6 +465,7 @@
 <span class="p">)</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">smartem_backend.cli.random_prior_updates</span><span class="w"> </span><span class="kn">import</span> <span class="n">simulate_processing_pipeline_async</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">smartem_backend.log_manager</span><span class="w"> </span><span class="kn">import</span> <span class="n">LogConfig</span><span class="p">,</span> <span class="n">LogManager</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">smartem_backend.model.database</span><span class="w"> </span><span class="kn">import</span> <span class="n">QualityPrediction</span><span class="p">,</span> <span class="n">QualityPredictionModelParameter</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">smartem_backend.model.mq_event</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">AcquisitionCreatedEvent</span><span class="p">,</span>
     <span class="n">AcquisitionDeletedEvent</span><span class="p">,</span>
@@ -473,17 +475,22 @@
     <span class="n">AtlasUpdatedEvent</span><span class="p">,</span>
     <span class="n">FoilHoleCreatedEvent</span><span class="p">,</span>
     <span class="n">FoilHoleDeletedEvent</span><span class="p">,</span>
+    <span class="n">FoilHoleModelPredictionEvent</span><span class="p">,</span>
     <span class="n">FoilHoleUpdatedEvent</span><span class="p">,</span>
     <span class="n">GridCreatedEvent</span><span class="p">,</span>
     <span class="n">GridDeletedEvent</span><span class="p">,</span>
+    <span class="n">GridRegisteredEvent</span><span class="p">,</span>
     <span class="n">GridSquareCreatedEvent</span><span class="p">,</span>
     <span class="n">GridSquareDeletedEvent</span><span class="p">,</span>
+    <span class="n">GridSquareModelPredictionEvent</span><span class="p">,</span>
+    <span class="n">GridSquareRegisteredEvent</span><span class="p">,</span>
     <span class="n">GridSquareUpdatedEvent</span><span class="p">,</span>
     <span class="n">GridUpdatedEvent</span><span class="p">,</span>
     <span class="n">MessageQueueEventType</span><span class="p">,</span>
     <span class="n">MicrographCreatedEvent</span><span class="p">,</span>
     <span class="n">MicrographDeletedEvent</span><span class="p">,</span>
     <span class="n">MicrographUpdatedEvent</span><span class="p">,</span>
+    <span class="n">ModelParameterUpdateEvent</span><span class="p">,</span>
 <span class="p">)</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">smartem_backend.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_db_engine</span><span class="p">,</span> <span class="n">load_conf</span><span class="p">,</span> <span class="n">rmq_consumer</span><span class="p">,</span> <span class="n">setup_logger</span>
 
@@ -698,6 +705,55 @@
 
 
 
+<div class="viewcode-block" id="handle_grid_registered">
+<a class="viewcode-back" href="../../_api/smartem_backend.consumer.html#smartem_backend.consumer.handle_grid_registered">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">handle_grid_registered</span><span class="p">(</span><span class="n">event_data</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Handle grid registered event by logging the event payload</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        event_data: Event data for grid registered</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">event</span> <span class="o">=</span> <span class="n">GridRegisteredEvent</span><span class="p">(</span><span class="o">**</span><span class="n">event_data</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Grid registered event: </span><span class="si">{</span><span class="n">event</span><span class="o">.</span><span class="n">model_dump</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+    <span class="k">except</span> <span class="n">ValidationError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Validation error processing grid registered event: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error processing grid registered event: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="handle_gridsquare_lowmag_created">
+<a class="viewcode-back" href="../../_api/smartem_backend.consumer.html#smartem_backend.consumer.handle_gridsquare_lowmag_created">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">handle_gridsquare_lowmag_created</span><span class="p">(</span><span class="n">event_data</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="n">channel</span><span class="p">,</span> <span class="n">delivery_tag</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Handle low mag gridsquare created event by logging the event payload and generating predictions</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        event_data: Event data for low mag gridsquare created</span>
+<span class="sd">        channel: RabbitMQ channel</span>
+<span class="sd">        delivery_tag: Message delivery tag</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        bool: True if successful, False if failed (already NACKed)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">event</span> <span class="o">=</span> <span class="n">GridSquareCreatedEvent</span><span class="p">(</span><span class="o">**</span><span class="n">event_data</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;GridSquare low mag created event: </span><span class="si">{</span><span class="n">event</span><span class="o">.</span><span class="n">model_dump</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="k">except</span> <span class="n">ValidationError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Validation error processing gridsquare created event: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="n">channel</span><span class="o">.</span><span class="n">basic_nack</span><span class="p">(</span><span class="n">delivery_tag</span><span class="o">=</span><span class="n">delivery_tag</span><span class="p">,</span> <span class="n">requeue</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="k">return</span> <span class="kc">False</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error processing gridsquare created event: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="n">channel</span><span class="o">.</span><span class="n">basic_nack</span><span class="p">(</span><span class="n">delivery_tag</span><span class="o">=</span><span class="n">delivery_tag</span><span class="p">,</span> <span class="n">requeue</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="k">return</span> <span class="kc">False</span>
+    <span class="k">return</span> <span class="kc">True</span></div>
+
+
+
 <div class="viewcode-block" id="handle_gridsquare_created">
 <a class="viewcode-back" href="../../_api/smartem_backend.consumer.html#smartem_backend.consumer.handle_gridsquare_created">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">handle_gridsquare_created</span><span class="p">(</span><span class="n">event_data</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="n">channel</span><span class="p">,</span> <span class="n">delivery_tag</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
@@ -738,6 +794,26 @@
 
 
 
+<div class="viewcode-block" id="handle_gridsquare_lowmag_updated">
+<a class="viewcode-back" href="../../_api/smartem_backend.consumer.html#smartem_backend.consumer.handle_gridsquare_lowmag_updated">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">handle_gridsquare_lowmag_updated</span><span class="p">(</span><span class="n">event_data</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Handle gridsquare low mag updated event by logging the event payload</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        event_data: Event data for low mag gridsquare updated</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">event</span> <span class="o">=</span> <span class="n">GridSquareUpdatedEvent</span><span class="p">(</span><span class="o">**</span><span class="n">event_data</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;GridSquare low mag updated event: </span><span class="si">{</span><span class="n">event</span><span class="o">.</span><span class="n">model_dump</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+    <span class="k">except</span> <span class="n">ValidationError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Validation error processing gridsquare low mag updated event: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error processing gridsquare low mag updated event: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span></div>
+
+
+
 <div class="viewcode-block" id="handle_gridsquare_updated">
 <a class="viewcode-back" href="../../_api/smartem_backend.consumer.html#smartem_backend.consumer.handle_gridsquare_updated">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">handle_gridsquare_updated</span><span class="p">(</span><span class="n">event_data</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
@@ -758,6 +834,26 @@
 
 
 
+<div class="viewcode-block" id="handle_gridsquare_lowmag_deleted">
+<a class="viewcode-back" href="../../_api/smartem_backend.consumer.html#smartem_backend.consumer.handle_gridsquare_lowmag_deleted">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">handle_gridsquare_lowmag_deleted</span><span class="p">(</span><span class="n">event_data</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Handle low mag gridsquare deleted event by logging the event payload</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        event_data: Event data for low mag gridsquare deleted</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">event</span> <span class="o">=</span> <span class="n">GridSquareDeletedEvent</span><span class="p">(</span><span class="o">**</span><span class="n">event_data</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;GridSquare low mag deleted event: </span><span class="si">{</span><span class="n">event</span><span class="o">.</span><span class="n">model_dump</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+    <span class="k">except</span> <span class="n">ValidationError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Validation error processing low mag gridsquare deleted event: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error processing low mag gridsquare deleted event: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span></div>
+
+
+
 <div class="viewcode-block" id="handle_gridsquare_deleted">
 <a class="viewcode-back" href="../../_api/smartem_backend.consumer.html#smartem_backend.consumer.handle_gridsquare_deleted">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">handle_gridsquare_deleted</span><span class="p">(</span><span class="n">event_data</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
@@ -775,6 +871,26 @@
         <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Validation error processing gridsquare deleted event: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
     <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error processing gridsquare deleted event: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="handle_gridsquare_registered">
+<a class="viewcode-back" href="../../_api/smartem_backend.consumer.html#smartem_backend.consumer.handle_gridsquare_registered">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">handle_gridsquare_registered</span><span class="p">(</span><span class="n">event_data</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Handle grid square registered event by logging the event payload</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        event_data: Event data for grid square registered</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">event</span> <span class="o">=</span> <span class="n">GridSquareRegisteredEvent</span><span class="p">(</span><span class="o">**</span><span class="n">event_data</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Grid square registered event: </span><span class="si">{</span><span class="n">event</span><span class="o">.</span><span class="n">model_dump</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+    <span class="k">except</span> <span class="n">ValidationError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Validation error processing grid square registered event: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error processing grid square registered event: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span></div>
 
 
 
@@ -938,6 +1054,88 @@
 
 
 
+<div class="viewcode-block" id="handle_gridsquare_model_prediction">
+<a class="viewcode-back" href="../../_api/smartem_backend.consumer.html#smartem_backend.consumer.handle_gridsquare_model_prediction">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">handle_gridsquare_model_prediction</span><span class="p">(</span><span class="n">event_data</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Handle grid square model prediction event by inserting the result into the database</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        event_data: Event data for grid square model prediction</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">event</span> <span class="o">=</span> <span class="n">GridSquareModelPredictionEvent</span><span class="p">(</span><span class="o">**</span><span class="n">event_data</span><span class="p">)</span>
+        <span class="n">quality_prediction</span> <span class="o">=</span> <span class="n">QualityPrediction</span><span class="p">(</span>
+            <span class="n">gridsquare_uuid</span><span class="o">=</span><span class="n">event</span><span class="o">.</span><span class="n">gridsquare_uuid</span><span class="p">,</span>
+            <span class="n">prediction_model_name</span><span class="o">=</span><span class="n">event</span><span class="o">.</span><span class="n">prediction_model_name</span><span class="p">,</span>
+            <span class="n">value</span><span class="o">=</span><span class="n">event</span><span class="o">.</span><span class="n">prediction_value</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">with</span> <span class="n">Session</span><span class="p">(</span><span class="n">db_engine</span><span class="p">)</span> <span class="k">as</span> <span class="n">session</span><span class="p">:</span>
+            <span class="n">session</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">quality_prediction</span><span class="p">)</span>
+            <span class="n">session</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span>
+
+    <span class="k">except</span> <span class="n">ValidationError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Validation error processing grid square model prediction event: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error processing grid square model prediction event: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="handle_foilhole_model_prediction">
+<a class="viewcode-back" href="../../_api/smartem_backend.consumer.html#smartem_backend.consumer.handle_foilhole_model_prediction">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">handle_foilhole_model_prediction</span><span class="p">(</span><span class="n">event_data</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Handle foil hole model prediction event by inserting the result into the database</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        event_data: Event data for foil hole model prediction</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">event</span> <span class="o">=</span> <span class="n">FoilHoleModelPredictionEvent</span><span class="p">(</span><span class="o">**</span><span class="n">event_data</span><span class="p">)</span>
+        <span class="n">quality_prediction</span> <span class="o">=</span> <span class="n">QualityPrediction</span><span class="p">(</span>
+            <span class="n">foilhole_uuid</span><span class="o">=</span><span class="n">event</span><span class="o">.</span><span class="n">foilhole_uuid</span><span class="p">,</span>
+            <span class="n">prediction_model_name</span><span class="o">=</span><span class="n">event</span><span class="o">.</span><span class="n">prediction_model_name</span><span class="p">,</span>
+            <span class="n">value</span><span class="o">=</span><span class="n">event</span><span class="o">.</span><span class="n">prediction_value</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">with</span> <span class="n">Session</span><span class="p">(</span><span class="n">db_engine</span><span class="p">)</span> <span class="k">as</span> <span class="n">session</span><span class="p">:</span>
+            <span class="n">session</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">quality_prediction</span><span class="p">)</span>
+            <span class="n">session</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span>
+
+    <span class="k">except</span> <span class="n">ValidationError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Validation error processing grid square model prediction event: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error processing grid square model prediction event: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="handle_model_parameter_update">
+<a class="viewcode-back" href="../../_api/smartem_backend.consumer.html#smartem_backend.consumer.handle_model_parameter_update">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">handle_model_parameter_update</span><span class="p">(</span><span class="n">event_data</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Handle model parameter update event by inserting the result into the database</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        event_data: Event data for model parameter update</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">event</span> <span class="o">=</span> <span class="n">ModelParameterUpdateEvent</span><span class="p">(</span><span class="o">**</span><span class="n">event_data</span><span class="p">)</span>
+        <span class="n">model_parameter</span> <span class="o">=</span> <span class="n">QualityPredictionModelParameter</span><span class="p">(</span>
+            <span class="n">grid_uuid</span><span class="o">=</span><span class="n">event</span><span class="o">.</span><span class="n">grid_uuid</span><span class="p">,</span>
+            <span class="n">prediction_model_name</span><span class="o">=</span><span class="n">event</span><span class="o">.</span><span class="n">prediction_model_name</span><span class="p">,</span>
+            <span class="n">key</span><span class="o">=</span><span class="n">event</span><span class="o">.</span><span class="n">key</span><span class="p">,</span>
+            <span class="n">value</span><span class="o">=</span><span class="n">event</span><span class="o">.</span><span class="n">value</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">with</span> <span class="n">Session</span><span class="p">(</span><span class="n">db_engine</span><span class="p">)</span> <span class="k">as</span> <span class="n">session</span><span class="p">:</span>
+            <span class="n">session</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">model_parameter</span><span class="p">)</span>
+            <span class="n">session</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span>
+
+    <span class="k">except</span> <span class="n">ValidationError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Validation error processing model parameter update event: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error processing model parameter update event: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span></div>
+
+
+
 <span class="c1"># Create a mapping from event types to their handler functions</span>
 <div class="viewcode-block" id="get_event_handlers">
 <a class="viewcode-back" href="../../_api/smartem_backend.consumer.html#smartem_backend.consumer.get_event_handlers">[docs]</a>
@@ -961,12 +1159,18 @@
         <span class="n">MessageQueueEventType</span><span class="o">.</span><span class="n">GRIDSQUARE_CREATED</span><span class="o">.</span><span class="n">value</span><span class="p">:</span> <span class="n">handle_gridsquare_created</span><span class="p">,</span>
         <span class="n">MessageQueueEventType</span><span class="o">.</span><span class="n">GRIDSQUARE_UPDATED</span><span class="o">.</span><span class="n">value</span><span class="p">:</span> <span class="n">handle_gridsquare_updated</span><span class="p">,</span>
         <span class="n">MessageQueueEventType</span><span class="o">.</span><span class="n">GRIDSQUARE_DELETED</span><span class="o">.</span><span class="n">value</span><span class="p">:</span> <span class="n">handle_gridsquare_deleted</span><span class="p">,</span>
+        <span class="n">MessageQueueEventType</span><span class="o">.</span><span class="n">GRIDSQUARE_LOWMAG_CREATED</span><span class="o">.</span><span class="n">value</span><span class="p">:</span> <span class="n">handle_gridsquare_lowmag_created</span><span class="p">,</span>
+        <span class="n">MessageQueueEventType</span><span class="o">.</span><span class="n">GRIDSQUARE_LOWMAG_UPDATED</span><span class="o">.</span><span class="n">value</span><span class="p">:</span> <span class="n">handle_gridsquare_lowmag_updated</span><span class="p">,</span>
+        <span class="n">MessageQueueEventType</span><span class="o">.</span><span class="n">GRIDSQUARE_LOWMAG_DELETED</span><span class="o">.</span><span class="n">value</span><span class="p">:</span> <span class="n">handle_gridsquare_lowmag_deleted</span><span class="p">,</span>
         <span class="n">MessageQueueEventType</span><span class="o">.</span><span class="n">FOILHOLE_CREATED</span><span class="o">.</span><span class="n">value</span><span class="p">:</span> <span class="n">handle_foilhole_created</span><span class="p">,</span>
         <span class="n">MessageQueueEventType</span><span class="o">.</span><span class="n">FOILHOLE_UPDATED</span><span class="o">.</span><span class="n">value</span><span class="p">:</span> <span class="n">handle_foilhole_updated</span><span class="p">,</span>
         <span class="n">MessageQueueEventType</span><span class="o">.</span><span class="n">FOILHOLE_DELETED</span><span class="o">.</span><span class="n">value</span><span class="p">:</span> <span class="n">handle_foilhole_deleted</span><span class="p">,</span>
         <span class="n">MessageQueueEventType</span><span class="o">.</span><span class="n">MICROGRAPH_CREATED</span><span class="o">.</span><span class="n">value</span><span class="p">:</span> <span class="n">handle_micrograph_created</span><span class="p">,</span>
         <span class="n">MessageQueueEventType</span><span class="o">.</span><span class="n">MICROGRAPH_UPDATED</span><span class="o">.</span><span class="n">value</span><span class="p">:</span> <span class="n">handle_micrograph_updated</span><span class="p">,</span>
         <span class="n">MessageQueueEventType</span><span class="o">.</span><span class="n">MICROGRAPH_DELETED</span><span class="o">.</span><span class="n">value</span><span class="p">:</span> <span class="n">handle_micrograph_deleted</span><span class="p">,</span>
+        <span class="n">MessageQueueEventType</span><span class="o">.</span><span class="n">GRIDSQUARE_MODEL_PREDICTION</span><span class="o">.</span><span class="n">value</span><span class="p">:</span> <span class="n">handle_gridsquare_model_prediction</span><span class="p">,</span>
+        <span class="n">MessageQueueEventType</span><span class="o">.</span><span class="n">FOILHOLE_MODEL_PREDICTION</span><span class="o">.</span><span class="n">value</span><span class="p">:</span> <span class="n">handle_foilhole_model_prediction</span><span class="p">,</span>
+        <span class="n">MessageQueueEventType</span><span class="o">.</span><span class="n">MODEL_PARAMETER_UPDATE</span><span class="o">.</span><span class="n">value</span><span class="p">:</span> <span class="n">handle_model_parameter_update</span><span class="p">,</span>
         <span class="c1"># TODO: Add handlers for all other event types as needed</span>
     <span class="p">}</span></div>
 
@@ -1016,6 +1220,7 @@
             <span class="n">MessageQueueEventType</span><span class="o">.</span><span class="n">GRID_CREATED</span><span class="o">.</span><span class="n">value</span><span class="p">,</span>
             <span class="n">MessageQueueEventType</span><span class="o">.</span><span class="n">FOILHOLE_CREATED</span><span class="o">.</span><span class="n">value</span><span class="p">,</span>
             <span class="n">MessageQueueEventType</span><span class="o">.</span><span class="n">GRIDSQUARE_CREATED</span><span class="o">.</span><span class="n">value</span><span class="p">,</span>
+            <span class="n">MessageQueueEventType</span><span class="o">.</span><span class="n">GRIDSQUARE_LOWMAG_CREATED</span><span class="o">.</span><span class="n">value</span><span class="p">,</span>
             <span class="n">MessageQueueEventType</span><span class="o">.</span><span class="n">MICROGRAPH_CREATED</span><span class="o">.</span><span class="n">value</span><span class="p">,</span>
         <span class="p">]:</span>
             <span class="n">success</span> <span class="o">=</span> <span class="n">handler</span><span class="p">(</span><span class="n">message</span><span class="p">,</span> <span class="n">ch</span><span class="p">,</span> <span class="n">method</span><span class="o">.</span><span class="n">delivery_tag</span><span class="p">)</span>

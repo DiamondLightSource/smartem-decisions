@@ -1,0 +1,119 @@
+``smartem_backend.http_api``
+============================
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+
+.. automodule:: smartem_backend.http_api
+    :members:
+
+    
+    
+    
+
+    
+    
+    .. rubric:: Members
+
+    .. autosummary::
+        :nosignatures:
+    
+        check_database_health
+        check_rabbitmq_health
+        create_acquisition
+        create_acquisition_grid
+        create_atlas_tile_for_atlas
+        create_foilhole_micrograph
+        create_grid_atlas
+        create_grid_gridsquare
+        create_gridsquare_foilhole
+        delete_acquisition
+        delete_atlas
+        delete_atlas_tile
+        delete_foilhole
+        delete_grid
+        delete_gridsquare
+        delete_micrograph
+        get_acquisition
+        get_acquisition_grids
+        get_acquisitions
+        get_atlas
+        get_atlas_tile
+        get_atlas_tiles
+        get_atlas_tiles_by_atlas
+        get_atlases
+        get_db
+        get_foilhole
+        get_foilhole_micrographs
+        get_foilholes
+        get_grid
+        get_grid_atlas
+        get_grid_gridsquares
+        get_grids
+        get_gridsquare
+        get_gridsquare_foilholes
+        get_gridsquares
+        get_health
+        get_micrograph
+        get_micrographs
+        get_status
+        grid_registered
+        gridsquare_registered
+        link_atlas_tile_to_gridsquare
+        log_requests
+        update_acquisition
+        update_atlas
+        update_atlas_tile
+        update_foilhole
+        update_grid
+        update_gridsquare
+        update_micrograph
+    
+    

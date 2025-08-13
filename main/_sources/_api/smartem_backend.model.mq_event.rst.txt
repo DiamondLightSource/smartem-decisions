@@ -39,6 +39,11 @@
         
         
         
+        
+        
+        
+        
+        
 
 .. automodule:: smartem_backend.model.mq_event
     :members:
@@ -71,14 +76,18 @@
         FoilHoleCreatedEvent
         FoilHoleDeletedEvent
         FoilHoleEventBase
+        FoilHoleModelPredictionEvent
         FoilHoleUpdatedEvent
         GenericEventMessageBody
         GridCreatedEvent
         GridDeletedEvent
         GridEventBase
+        GridRegisteredEvent
         GridSquareCreatedEvent
         GridSquareDeletedEvent
         GridSquareEventBase
+        GridSquareModelPredictionEvent
+        GridSquareRegisteredEvent
         GridSquareUpdatedEvent
         GridUpdatedEvent
         MessageQueueEventType
@@ -86,6 +95,7 @@
         MicrographDeletedEvent
         MicrographEventBase
         MicrographUpdatedEvent
+        ModelParameterUpdateEvent
         MotionCorrectionCompleteBody
         MotionCorrectionStartBody
         ParticlePickingCompleteBody

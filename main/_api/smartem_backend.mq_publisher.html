@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>smartem_backend.mq_publisher &#8212; smartem-decisions 0.1.dev248+g8c43e6681 documentation</title>
+    <title>smartem_backend.mq_publisher &#8212; smartem-decisions 0.1.dev261+ga89d1b3 documentation</title>
   
   
   
@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../_static/documentation_options.js?v=85a66094"></script>
+    <script src="../_static/documentation_options.js?v=6f89b022"></script>
     <script src="../_static/doctools.js?v=9bcbadda"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -406,6 +406,7 @@
 </ul>
 </details></li>
 <li class="toctree-l2"><a class="reference internal" href="smartem_backend.consumer.html"><code class="docutils literal notranslate"><span class="pre">smartem_backend.consumer</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="smartem_backend.http_api.html"><code class="docutils literal notranslate"><span class="pre">smartem_backend.http_api</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="smartem_backend.log_manager.html"><code class="docutils literal notranslate"><span class="pre">smartem_backend.log_manager</span></code></a></li>
 <li class="toctree-l2 has-children"><a class="reference internal" href="smartem_backend.model.html"><code class="docutils literal notranslate"><span class="pre">smartem_backend.model</span></code></a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
 <li class="toctree-l3"><a class="reference internal" href="smartem_backend.model.database.html"><code class="docutils literal notranslate"><span class="pre">smartem_backend.model.database</span></code></a></li>
@@ -527,14 +528,20 @@
 <tr class="row-odd"><td><p><a class="reference internal" href="#smartem_backend.mq_publisher.publish_foilhole_deleted" title="smartem_backend.mq_publisher.publish_foilhole_deleted"><code class="xref py py-obj docutils literal notranslate"><span class="pre">publish_foilhole_deleted</span></code></a></p></td>
 <td><p>Publish foil hole deleted event to RabbitMQ</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#smartem_backend.mq_publisher.publish_foilhole_updated" title="smartem_backend.mq_publisher.publish_foilhole_updated"><code class="xref py py-obj docutils literal notranslate"><span class="pre">publish_foilhole_updated</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#smartem_backend.mq_publisher.publish_foilhole_model_prediction" title="smartem_backend.mq_publisher.publish_foilhole_model_prediction"><code class="xref py py-obj docutils literal notranslate"><span class="pre">publish_foilhole_model_prediction</span></code></a></p></td>
+<td><p>Publish model prediction event for a foil hole to RabbitMQ</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#smartem_backend.mq_publisher.publish_foilhole_updated" title="smartem_backend.mq_publisher.publish_foilhole_updated"><code class="xref py py-obj docutils literal notranslate"><span class="pre">publish_foilhole_updated</span></code></a></p></td>
 <td><p>Publish foil hole updated event to RabbitMQ</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#smartem_backend.mq_publisher.publish_grid_created" title="smartem_backend.mq_publisher.publish_grid_created"><code class="xref py py-obj docutils literal notranslate"><span class="pre">publish_grid_created</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#smartem_backend.mq_publisher.publish_grid_created" title="smartem_backend.mq_publisher.publish_grid_created"><code class="xref py py-obj docutils literal notranslate"><span class="pre">publish_grid_created</span></code></a></p></td>
 <td><p>Publish grid created event to RabbitMQ</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#smartem_backend.mq_publisher.publish_grid_deleted" title="smartem_backend.mq_publisher.publish_grid_deleted"><code class="xref py py-obj docutils literal notranslate"><span class="pre">publish_grid_deleted</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#smartem_backend.mq_publisher.publish_grid_deleted" title="smartem_backend.mq_publisher.publish_grid_deleted"><code class="xref py py-obj docutils literal notranslate"><span class="pre">publish_grid_deleted</span></code></a></p></td>
 <td><p>Publish grid deleted event to RabbitMQ</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#smartem_backend.mq_publisher.publish_grid_registered" title="smartem_backend.mq_publisher.publish_grid_registered"><code class="xref py py-obj docutils literal notranslate"><span class="pre">publish_grid_registered</span></code></a></p></td>
+<td><p>Publish grid updated event to RabbitMQ</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#smartem_backend.mq_publisher.publish_grid_updated" title="smartem_backend.mq_publisher.publish_grid_updated"><code class="xref py py-obj docutils literal notranslate"><span class="pre">publish_grid_updated</span></code></a></p></td>
 <td><p>Publish grid updated event to RabbitMQ</p></td>
@@ -545,17 +552,35 @@
 <tr class="row-odd"><td><p><a class="reference internal" href="#smartem_backend.mq_publisher.publish_gridsquare_deleted" title="smartem_backend.mq_publisher.publish_gridsquare_deleted"><code class="xref py py-obj docutils literal notranslate"><span class="pre">publish_gridsquare_deleted</span></code></a></p></td>
 <td><p>Publish grid square deleted event to RabbitMQ</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#smartem_backend.mq_publisher.publish_gridsquare_updated" title="smartem_backend.mq_publisher.publish_gridsquare_updated"><code class="xref py py-obj docutils literal notranslate"><span class="pre">publish_gridsquare_updated</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#smartem_backend.mq_publisher.publish_gridsquare_lowmag_created" title="smartem_backend.mq_publisher.publish_gridsquare_lowmag_created"><code class="xref py py-obj docutils literal notranslate"><span class="pre">publish_gridsquare_lowmag_created</span></code></a></p></td>
+<td><p>Publish low mag grid square created event to RabbitMQ</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#smartem_backend.mq_publisher.publish_gridsquare_lowmag_deleted" title="smartem_backend.mq_publisher.publish_gridsquare_lowmag_deleted"><code class="xref py py-obj docutils literal notranslate"><span class="pre">publish_gridsquare_lowmag_deleted</span></code></a></p></td>
+<td><p>Publish low mag grid square deleted event to RabbitMQ</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#smartem_backend.mq_publisher.publish_gridsquare_lowmag_updated" title="smartem_backend.mq_publisher.publish_gridsquare_lowmag_updated"><code class="xref py py-obj docutils literal notranslate"><span class="pre">publish_gridsquare_lowmag_updated</span></code></a></p></td>
+<td><p>Publish low mag grid square updated event to RabbitMQ</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#smartem_backend.mq_publisher.publish_gridsquare_model_prediction" title="smartem_backend.mq_publisher.publish_gridsquare_model_prediction"><code class="xref py py-obj docutils literal notranslate"><span class="pre">publish_gridsquare_model_prediction</span></code></a></p></td>
+<td><p>Publish model prediction event for a grid square to RabbitMQ</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#smartem_backend.mq_publisher.publish_gridsquare_registered" title="smartem_backend.mq_publisher.publish_gridsquare_registered"><code class="xref py py-obj docutils literal notranslate"><span class="pre">publish_gridsquare_registered</span></code></a></p></td>
 <td><p>Publish grid square updated event to RabbitMQ</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#smartem_backend.mq_publisher.publish_micrograph_created" title="smartem_backend.mq_publisher.publish_micrograph_created"><code class="xref py py-obj docutils literal notranslate"><span class="pre">publish_micrograph_created</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#smartem_backend.mq_publisher.publish_gridsquare_updated" title="smartem_backend.mq_publisher.publish_gridsquare_updated"><code class="xref py py-obj docutils literal notranslate"><span class="pre">publish_gridsquare_updated</span></code></a></p></td>
+<td><p>Publish grid square updated event to RabbitMQ</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#smartem_backend.mq_publisher.publish_micrograph_created" title="smartem_backend.mq_publisher.publish_micrograph_created"><code class="xref py py-obj docutils literal notranslate"><span class="pre">publish_micrograph_created</span></code></a></p></td>
 <td><p>Publish micrograph created event to RabbitMQ</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#smartem_backend.mq_publisher.publish_micrograph_deleted" title="smartem_backend.mq_publisher.publish_micrograph_deleted"><code class="xref py py-obj docutils literal notranslate"><span class="pre">publish_micrograph_deleted</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#smartem_backend.mq_publisher.publish_micrograph_deleted" title="smartem_backend.mq_publisher.publish_micrograph_deleted"><code class="xref py py-obj docutils literal notranslate"><span class="pre">publish_micrograph_deleted</span></code></a></p></td>
 <td><p>Publish micrograph deleted event to RabbitMQ</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#smartem_backend.mq_publisher.publish_micrograph_updated" title="smartem_backend.mq_publisher.publish_micrograph_updated"><code class="xref py py-obj docutils literal notranslate"><span class="pre">publish_micrograph_updated</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#smartem_backend.mq_publisher.publish_micrograph_updated" title="smartem_backend.mq_publisher.publish_micrograph_updated"><code class="xref py py-obj docutils literal notranslate"><span class="pre">publish_micrograph_updated</span></code></a></p></td>
 <td><p>Publish micrograph updated event to RabbitMQ</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#smartem_backend.mq_publisher.publish_model_parameter_update" title="smartem_backend.mq_publisher.publish_model_parameter_update"><code class="xref py py-obj docutils literal notranslate"><span class="pre">publish_model_parameter_update</span></code></a></p></td>
+<td><p>Publish model parameter update event to RabbitMQ</p></td>
 </tr>
 </tbody>
 </table>
@@ -633,6 +658,12 @@
 </dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="smartem_backend.mq_publisher.publish_grid_registered">
+<span class="sig-prename descclassname"><span class="pre">smartem_backend.mq_publisher.</span></span><span class="sig-name descname"><span class="pre">publish_grid_registered</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">uuid</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/smartem_backend/mq_publisher.html#publish_grid_registered"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#smartem_backend.mq_publisher.publish_grid_registered" title="Link to this definition">#</a></dt>
+<dd><p>Publish grid updated event to RabbitMQ</p>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="smartem_backend.mq_publisher.publish_gridsquare_created">
 <span class="sig-prename descclassname"><span class="pre">smartem_backend.mq_publisher.</span></span><span class="sig-name descname"><span class="pre">publish_gridsquare_created</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">uuid</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">grid_uuid</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gridsquare_id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/smartem_backend/mq_publisher.html#publish_gridsquare_created"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#smartem_backend.mq_publisher.publish_gridsquare_created" title="Link to this definition">#</a></dt>
 <dd><p>Publish grid square created event to RabbitMQ</p>
@@ -648,6 +679,30 @@
 <dt class="sig sig-object py" id="smartem_backend.mq_publisher.publish_gridsquare_deleted">
 <span class="sig-prename descclassname"><span class="pre">smartem_backend.mq_publisher.</span></span><span class="sig-name descname"><span class="pre">publish_gridsquare_deleted</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">uuid</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/smartem_backend/mq_publisher.html#publish_gridsquare_deleted"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#smartem_backend.mq_publisher.publish_gridsquare_deleted" title="Link to this definition">#</a></dt>
 <dd><p>Publish grid square deleted event to RabbitMQ</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="smartem_backend.mq_publisher.publish_gridsquare_registered">
+<span class="sig-prename descclassname"><span class="pre">smartem_backend.mq_publisher.</span></span><span class="sig-name descname"><span class="pre">publish_gridsquare_registered</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">uuid</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/smartem_backend/mq_publisher.html#publish_gridsquare_registered"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#smartem_backend.mq_publisher.publish_gridsquare_registered" title="Link to this definition">#</a></dt>
+<dd><p>Publish grid square updated event to RabbitMQ</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="smartem_backend.mq_publisher.publish_gridsquare_lowmag_created">
+<span class="sig-prename descclassname"><span class="pre">smartem_backend.mq_publisher.</span></span><span class="sig-name descname"><span class="pre">publish_gridsquare_lowmag_created</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">uuid</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">grid_uuid</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gridsquare_id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/smartem_backend/mq_publisher.html#publish_gridsquare_lowmag_created"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#smartem_backend.mq_publisher.publish_gridsquare_lowmag_created" title="Link to this definition">#</a></dt>
+<dd><p>Publish low mag grid square created event to RabbitMQ</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="smartem_backend.mq_publisher.publish_gridsquare_lowmag_updated">
+<span class="sig-prename descclassname"><span class="pre">smartem_backend.mq_publisher.</span></span><span class="sig-name descname"><span class="pre">publish_gridsquare_lowmag_updated</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">uuid</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">grid_uuid</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gridsquare_id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/smartem_backend/mq_publisher.html#publish_gridsquare_lowmag_updated"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#smartem_backend.mq_publisher.publish_gridsquare_lowmag_updated" title="Link to this definition">#</a></dt>
+<dd><p>Publish low mag grid square updated event to RabbitMQ</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="smartem_backend.mq_publisher.publish_gridsquare_lowmag_deleted">
+<span class="sig-prename descclassname"><span class="pre">smartem_backend.mq_publisher.</span></span><span class="sig-name descname"><span class="pre">publish_gridsquare_lowmag_deleted</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">uuid</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/smartem_backend/mq_publisher.html#publish_gridsquare_lowmag_deleted"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#smartem_backend.mq_publisher.publish_gridsquare_lowmag_deleted" title="Link to this definition">#</a></dt>
+<dd><p>Publish low mag grid square deleted event to RabbitMQ</p>
 </dd></dl>
 
 <dl class="py function">
@@ -684,6 +739,24 @@
 <dt class="sig sig-object py" id="smartem_backend.mq_publisher.publish_micrograph_deleted">
 <span class="sig-prename descclassname"><span class="pre">smartem_backend.mq_publisher.</span></span><span class="sig-name descname"><span class="pre">publish_micrograph_deleted</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">uuid</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/smartem_backend/mq_publisher.html#publish_micrograph_deleted"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#smartem_backend.mq_publisher.publish_micrograph_deleted" title="Link to this definition">#</a></dt>
 <dd><p>Publish micrograph deleted event to RabbitMQ</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="smartem_backend.mq_publisher.publish_gridsquare_model_prediction">
+<span class="sig-prename descclassname"><span class="pre">smartem_backend.mq_publisher.</span></span><span class="sig-name descname"><span class="pre">publish_gridsquare_model_prediction</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">gridsquare_uuid</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">model_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">prediction_value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><span class="pre">float</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/smartem_backend/mq_publisher.html#publish_gridsquare_model_prediction"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#smartem_backend.mq_publisher.publish_gridsquare_model_prediction" title="Link to this definition">#</a></dt>
+<dd><p>Publish model prediction event for a grid square to RabbitMQ</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="smartem_backend.mq_publisher.publish_foilhole_model_prediction">
+<span class="sig-prename descclassname"><span class="pre">smartem_backend.mq_publisher.</span></span><span class="sig-name descname"><span class="pre">publish_foilhole_model_prediction</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">foilhole_uuid</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">model_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">prediction_value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><span class="pre">float</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/smartem_backend/mq_publisher.html#publish_foilhole_model_prediction"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#smartem_backend.mq_publisher.publish_foilhole_model_prediction" title="Link to this definition">#</a></dt>
+<dd><p>Publish model prediction event for a foil hole to RabbitMQ</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="smartem_backend.mq_publisher.publish_model_parameter_update">
+<span class="sig-prename descclassname"><span class="pre">smartem_backend.mq_publisher.</span></span><span class="sig-name descname"><span class="pre">publish_model_parameter_update</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">grid_uuid</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">model_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><span class="pre">float</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/smartem_backend/mq_publisher.html#publish_model_parameter_update"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#smartem_backend.mq_publisher.publish_model_parameter_update" title="Link to this definition">#</a></dt>
+<dd><p>Publish model parameter update event to RabbitMQ</p>
 </dd></dl>
 
 </section>
@@ -747,15 +820,23 @@
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#smartem_backend.mq_publisher.publish_grid_created"><code class="docutils literal notranslate"><span class="pre">publish_grid_created()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#smartem_backend.mq_publisher.publish_grid_updated"><code class="docutils literal notranslate"><span class="pre">publish_grid_updated()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#smartem_backend.mq_publisher.publish_grid_deleted"><code class="docutils literal notranslate"><span class="pre">publish_grid_deleted()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#smartem_backend.mq_publisher.publish_grid_registered"><code class="docutils literal notranslate"><span class="pre">publish_grid_registered()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#smartem_backend.mq_publisher.publish_gridsquare_created"><code class="docutils literal notranslate"><span class="pre">publish_gridsquare_created()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#smartem_backend.mq_publisher.publish_gridsquare_updated"><code class="docutils literal notranslate"><span class="pre">publish_gridsquare_updated()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#smartem_backend.mq_publisher.publish_gridsquare_deleted"><code class="docutils literal notranslate"><span class="pre">publish_gridsquare_deleted()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#smartem_backend.mq_publisher.publish_gridsquare_registered"><code class="docutils literal notranslate"><span class="pre">publish_gridsquare_registered()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#smartem_backend.mq_publisher.publish_gridsquare_lowmag_created"><code class="docutils literal notranslate"><span class="pre">publish_gridsquare_lowmag_created()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#smartem_backend.mq_publisher.publish_gridsquare_lowmag_updated"><code class="docutils literal notranslate"><span class="pre">publish_gridsquare_lowmag_updated()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#smartem_backend.mq_publisher.publish_gridsquare_lowmag_deleted"><code class="docutils literal notranslate"><span class="pre">publish_gridsquare_lowmag_deleted()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#smartem_backend.mq_publisher.publish_foilhole_created"><code class="docutils literal notranslate"><span class="pre">publish_foilhole_created()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#smartem_backend.mq_publisher.publish_foilhole_updated"><code class="docutils literal notranslate"><span class="pre">publish_foilhole_updated()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#smartem_backend.mq_publisher.publish_foilhole_deleted"><code class="docutils literal notranslate"><span class="pre">publish_foilhole_deleted()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#smartem_backend.mq_publisher.publish_micrograph_created"><code class="docutils literal notranslate"><span class="pre">publish_micrograph_created()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#smartem_backend.mq_publisher.publish_micrograph_updated"><code class="docutils literal notranslate"><span class="pre">publish_micrograph_updated()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#smartem_backend.mq_publisher.publish_micrograph_deleted"><code class="docutils literal notranslate"><span class="pre">publish_micrograph_deleted()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#smartem_backend.mq_publisher.publish_gridsquare_model_prediction"><code class="docutils literal notranslate"><span class="pre">publish_gridsquare_model_prediction()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#smartem_backend.mq_publisher.publish_foilhole_model_prediction"><code class="docutils literal notranslate"><span class="pre">publish_foilhole_model_prediction()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#smartem_backend.mq_publisher.publish_model_parameter_update"><code class="docutils literal notranslate"><span class="pre">publish_model_parameter_update()</span></code></a></li>
 </ul>
   </nav></div>
 
