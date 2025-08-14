@@ -80,9 +80,16 @@ fsrecorder = [
     "watchdog>=4.0.0,<7.0.0",
 ]
 
+# Athena API mock server dependencies (optional)
+mock = [
+    "smartem-decisions[api]",
+    "fastapi>=0.116.1,<1.0.0",
+    "uvicorn[standard]>=0.30.0,<1.0.0",
+]
+
 # Combined dependencies (for convenience)
 all = [
-    "smartem-decisions[dev,common,api,cli,backend,agent,fsrecorder]",
+    "smartem-decisions[dev,common,api,cli,backend,agent,fsrecorder,mock]",
 ]
 
 [project.scripts]
@@ -108,7 +115,8 @@ packages = [
     "smartem_backend",
     "smartem_agent",
     "smartem_common",
-    "smartem_api"
+    "smartem_api",
+    "athena_api"
 ]
 package-dir = {"" = "src"}
 
