@@ -92,6 +92,12 @@ def generate_smartem_from_implementation():
     try:
         print("Generating SmartEM API spec from FastAPI implementation...")
 
+        # Set up minimal environment for FastAPI import
+        import os
+
+        os.environ.setdefault("DATABASE_URL", "sqlite:///:memory:")
+        os.environ.setdefault("SMARTEM_LOG_LEVEL", "ERROR")
+
         # Import the FastAPI app from SmartEM backend
         from smartem_backend.http_api import app
 
