@@ -54,3 +54,38 @@ Technical reference material including APIs and release notes.
 :::
 
 ::::
+
+## API Documentation
+
+Interactive API documentation is available for all SmartEM Decisions services:
+
+::::{grid} 2
+:gutter: 4
+
+:::{grid-item-card} {material-regular}`psychology;2em` Athena Decision Service API
+:link: api/athena/index.html
+:link-type: url
+
+Complete interactive documentation for the Athena Decision Service API, including session management, decision recording, and algorithm results.
+
+**Features:** Sessions • Decisions • Algorithm Results • Area Management • Configuration
+:::
+
+:::{grid-item-card} {material-regular}`smart_toy;2em` SmartEM Core API  
+:link: api/smartem/index.html
+:link-type: url
+
+Documentation for the SmartEM Core API covering data management, acquisition control, and processing workflows.
+
+**Status:** Coming Soon • **Features:** Acquisitions • Quality Control • Processing • Monitoring
+:::
+
+:::{grid-item-card} {material-regular}`api;2em` API Overview
+:link: api/index.html
+:link-type: url
+:columns: 12
+
+Browse all available APIs, download OpenAPI specifications, and access interactive documentation in one convenient location.
+:::
+
+::::

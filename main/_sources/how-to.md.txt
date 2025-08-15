@@ -6,5 +6,6 @@ Practical step-by-step guides for the more experienced user.
 :maxdepth: 1
 :glob:
 
+how-to/use-api-documentation
 how-to/*
 ```
