@@ -5,6 +5,7 @@ list see the documentation:
 https://www.sphinx-doc.org/en/master/usage/configuration.html
 """
 
+import shutil
 import sys
 from pathlib import Path
 from subprocess import check_output
@@ -189,3 +190,20 @@ html_show_copyright = False
 # Logo
 html_logo = "images/dls-logo.svg"
 html_favicon = html_logo
+
+
+# Copy API documentation to build output - preserve directory structure
+def copy_api_docs(app, exception):
+    """Copy API documentation preserving directory structure."""
+    if exception is None:  # Build succeeded
+        api_source = Path(app.srcdir) / "api"
+        api_dest = Path(app.outdir) / "api"
+        if api_source.exists():
+            if api_dest.exists():
+                shutil.rmtree(api_dest)
+            shutil.copytree(api_source, api_dest)
+
+
+def setup(app):
+    app.connect("build-finished", copy_api_docs)
+    return {"version": "1.0"}
