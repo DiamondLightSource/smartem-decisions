@@ -603,6 +603,7 @@ def handle_model_parameter_update(event_data: dict[str, Any]) -> None:
             prediction_model_name=event.prediction_model_name,
             key=event.key,
             value=event.value,
+            group=event.group,
         )
         with Session(db_engine) as session:
             session.add(model_parameter)
