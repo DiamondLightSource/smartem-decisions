@@ -222,6 +222,7 @@ class QualityPredictionModelParameter(SQLModel, table=True):
     prediction_model_name: str = Field(foreign_key="qualitypredictionmodel.name")
     key: str
     value: float
+    group: str = ""
     model: QualityPredictionModel | None = Relationship(back_populates="parameters")
     grid: Grid | None = Relationship(back_populates="quality_model_parameters")
 
