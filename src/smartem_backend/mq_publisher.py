@@ -267,7 +267,7 @@ def publish_foilhole_model_prediction(foilhole_uuid: str, model_name: str, predi
     return rmq_publisher.publish_event(MessageQueueEventType.FOILHOLE_MODEL_PREDICTION, event)
 
 
-def publish_model_parameter_update(grid_uuid: str, model_name: str, key: str, value: float):
+def publish_model_parameter_update(grid_uuid: str, model_name: str, key: str, value: float, group: str = ""):
     """Publish model parameter update event to RabbitMQ"""
     event = ModelParameterUpdateEvent(
         event_type=MessageQueueEventType.MODEL_PARAMETER_UPDATE,
@@ -275,5 +275,6 @@ def publish_model_parameter_update(grid_uuid: str, model_name: str, key: str, va
         prediction_model_name=model_name,
         key=key,
         value=value,
+        group=group,
     )
     return rmq_publisher.publish_event(MessageQueueEventType.MODEL_PARAMETER_UPDATE, event)

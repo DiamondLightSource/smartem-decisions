@@ -416,5 +416,6 @@ class FoilHoleModelPredictionEvent(GenericEventMessageBody):
 class ModelParameterUpdateEvent(GenericEventMessageBody):
     grid_uuid: str
     prediction_model_name: str
-    ket: str
+    key: str
     value: float
+    group: str = ""
