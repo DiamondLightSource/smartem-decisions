@@ -88,16 +88,39 @@ def create_smartem_placeholder():
 
 
 def generate_smartem_from_implementation():
-    """Generate SmartEM API spec from implementation (when available)."""
+    """Generate SmartEM API spec from SmartEM FastAPI implementation."""
     try:
-        # TODO: When SmartEM backend has OpenAPI support, generate from it
-        print("SmartEM API generation from implementation - not yet implemented")
-        print("Using placeholder until SmartEM backend has OpenAPI integration")
+        print("Generating SmartEM API spec from FastAPI implementation...")
+
+        # Import the FastAPI app from SmartEM backend
+        from smartem_backend.http_api import app
+
+        # Get the OpenAPI spec from the FastAPI app
+        openapi_spec = app.openapi()
+
+        # Enhance the spec with development server info
+        if "servers" not in openapi_spec or not openapi_spec["servers"]:
+            openapi_spec["servers"] = [{"url": "http://localhost:8001", "description": "Local development server"}]
+
+        # Save the spec to the docs directory
+        docs_path = Path("docs/api/smartem/swagger.json")
+        docs_path.parent.mkdir(parents=True, exist_ok=True)
+
+        with open(docs_path, "w") as f:
+            json.dump(openapi_spec, f, indent=2)
+
+        print(f"✅ SmartEM API spec (from implementation) saved to {docs_path}")
+        return True
+
+    except ImportError as e:
+        print(f"⚠️  Could not import SmartEM FastAPI app: {e}")
+        print("Falling back to placeholder...")
         return create_smartem_placeholder()
 
     except Exception as e:
         print(f"❌ Error generating SmartEM spec: {e}")
-        return False
+        print("Falling back to placeholder...")
+        return create_smartem_placeholder()
 
 
 if __name__ == "__main__":
@@ -116,6 +139,6 @@ if __name__ == "__main__":
         print("")
         print("📋 Documentation structure:")
         print("  • Athena API: Uses external spec as source of truth")
-        print("  • SmartEM API: Generated from implementation (placeholder)")
+        print("  • SmartEM API: Generated from implementation")
     else:
         print("⚠️  Some API documentation generation failed. Check errors above.")
