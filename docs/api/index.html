@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>SmartEM Decisions - API Documentation</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background: #f8f9fa;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px 20px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            margin: 0;
+            font-size: 3em;
+            font-weight: 300;
+        }
+        
+        .header p {
+            margin: 15px 0 0 0;
+            font-size: 1.3em;
+            opacity: 0.9;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+        
+        .nav-back {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        
+        .nav-back a {
+            color: #6c757d;
+            text-decoration: none;
+            font-size: 1.1em;
+            padding: 10px 20px;
+            border-radius: 25px;
+            transition: all 0.2s;
+        }
+        
+        .nav-back a:hover {
+            background-color: #e9ecef;
+            color: #495057;
+        }
+        
+        .api-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+        
+        .api-card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        .api-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+        }
+        
+        .api-card-header {
+            padding: 25px;
+            color: white;
+        }
+        
+        .athena-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        .smartem-header {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+        }
+        
+        .api-card-header h2 {
+            margin: 0 0 10px 0;
+            font-size: 2em;
+            font-weight: 500;
+        }
+        
+        .api-card-header p {
+            margin: 0;
+            opacity: 0.9;
+            font-size: 1.1em;
+        }
+        
+        .api-card-body {
+            padding: 25px;
+        }
+        
+        .api-card-body h3 {
+            margin: 0 0 15px 0;
+            color: #333;
+            font-size: 1.3em;
+        }
+        
+        .api-card-body ul {
+            margin: 0 0 20px 0;
+            padding-left: 20px;
+        }
+        
+        .api-card-body li {
+            margin-bottom: 8px;
+            color: #555;
+            line-height: 1.5;
+        }
+        
+        .api-card-footer {
+            padding: 0 25px 25px 25px;
+        }
+        
+        .btn {
+            display: inline-block;
+            padding: 12px 24px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.2s;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        
+        .btn-primary {
+            background-color: #007bff;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background-color: #0056b3;
+        }
+        
+        .btn-outline {
+            border: 2px solid #6c757d;
+            color: #6c757d;
+        }
+        
+        .btn-outline:hover {
+            background-color: #6c757d;
+            color: white;
+        }
+        
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: 500;
+            margin-left: 10px;
+        }
+        
+        .status-ready {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        
+        .status-coming-soon {
+            background-color: #fff3cd;
+            color: #856404;
+        }
+        
+        .footer {
+            text-align: center;
+            padding: 40px;
+            color: #6c757d;
+            border-top: 1px solid #dee2e6;
+            margin-top: 40px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🚀 API Documentation</h1>
+        <p>Interactive documentation for SmartEM Decisions APIs</p>
+    </div>
+    
+    <div class="container">
+        <div class="nav-back">
+            <a href="../index.html">← Back to Main Documentation</a>
+        </div>
+        
+        <div class="api-grid">
+            <!-- Athena Decision Service API -->
+            <div class="api-card">
+                <div class="api-card-header athena-header">
+                    <h2>🔮 Athena API <span class="status-badge status-ready">Ready</span></h2>
+                    <p>Decision Service for CryoEM Automation</p>
+                </div>
+                <div class="api-card-body">
+                    <h3>Features</h3>
+                    <ul>
+                        <li><strong>Session Management</strong> - Create and track acquisition sessions</li>
+                        <li><strong>Decision Recording</strong> - Log automated decision processes</li>
+                        <li><strong>Algorithm Results</strong> - Store and retrieve processing outcomes</li>
+                        <li><strong>Area Management</strong> - Handle grid squares and foil holes</li>
+                        <li><strong>Configuration</strong> - Manage decision service settings</li>
+                    </ul>
+                    <div style="background: #f8f9fa; padding: 12px; border-radius: 6px; margin-top: 15px; font-size: 0.9em; color: #666;">
+                        <strong>📝 Note:</strong> External service - our Python client and mock server are generated from the official Athena API specification.
+                    </div>
+                </div>
+                <div class="api-card-footer">
+                    <a href="athena/index.html" class="btn btn-primary">📖 View Documentation</a>
+                    <a href="athena/swagger.json" class="btn btn-outline" target="_blank">📄 Download Spec</a>
+                </div>
+            </div>
+            
+            <!-- SmartEM Core API -->
+            <div class="api-card">
+                <div class="api-card-header smartem-header">
+                    <h2>🧠 SmartEM API <span class="status-badge status-coming-soon">Coming Soon</span></h2>
+                    <p>Core Data Management & Processing</p>
+                </div>
+                <div class="api-card-body">
+                    <h3>Planned Features</h3>
+                    <ul>
+                        <li><strong>Acquisition Control</strong> - Session and grid lifecycle management</li>
+                        <li><strong>Data Processing</strong> - Atlas, micrograph, and metadata handling</li>
+                        <li><strong>Quality Assessment</strong> - Automated quality control workflows</li>
+                        <li><strong>Status Monitoring</strong> - Real-time acquisition tracking</li>
+                        <li><strong>Integration Points</strong> - Connect with external systems</li>
+                    </ul>
+                </div>
+                <div class="api-card-footer">
+                    <a href="smartem/index.html" class="btn btn-primary">📖 View Placeholder</a>
+                    <a href="smartem/swagger.json" class="btn btn-outline" target="_blank">📄 Preview Spec</a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p>Built with ❤️ for the CryoEM community | Generated from OpenAPI specifications</p>
+        </div>
+    </div>
+</body>
+</html>

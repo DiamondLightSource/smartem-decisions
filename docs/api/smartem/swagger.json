@@ -1,0 +1,26 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "SmartEM Core API",
+    "version": "v1",
+    "description": "API for SmartEM core functionality and data management"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:8001",
+      "description": "Local development server"
+    }
+  ],
+  "paths": {
+    "/status": {
+      "get": {
+        "summary": "Get API status",
+        "responses": {
+          "200": {
+            "description": "API is running"
+          }
+        }
+      }
+    }
+  }
+}

@@ -22,6 +22,10 @@ jobs:
       - name: Install python packages
         uses: ./.github/actions/install_requirements
 
+      - name: Generate API documentation
+        run: |
+          python tools/generate_api_docs.py
+
       - name: Build docs
         run: tox -e docs
 
