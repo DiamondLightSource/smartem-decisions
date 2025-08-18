@@ -95,6 +95,9 @@ def generate_smartem_from_implementation():
         os.environ.setdefault("DATABASE_URL", "sqlite:///:memory:")
         os.environ.setdefault("SMARTEM_LOG_LEVEL", "ERROR")
 
+        # Skip database initialization in CI environments
+        os.environ.setdefault("SKIP_DB_INIT", "true")
+
         # Import the FastAPI app from SmartEM API
         from smartem_api.server import app
 
@@ -118,17 +121,11 @@ def generate_smartem_from_implementation():
     except ImportError as e:
         print(f"⚠️  Could not import SmartEM FastAPI app: {e}")
         print("Falling back to placeholder...")
-        import traceback
-
-        traceback.print_exc()
         return create_smartem_placeholder()
 
     except Exception as e:
         print(f"❌ Error generating SmartEM spec: {e}")
         print("Falling back to placeholder...")
-        import traceback
-
-        traceback.print_exc()
         return create_smartem_placeholder()
 
 

@@ -82,24 +82,38 @@ from smartem_backend.mq_publisher import (
 from smartem_backend.utils import setup_postgres_connection, setup_rabbitmq
 from smartem_common._version import __version__
 
-db_engine = setup_postgres_connection()
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=db_engine)
+# Initialize database connection (skip in documentation generation mode)
+if os.getenv("SKIP_DB_INIT", "false").lower() != "true":
+    db_engine = setup_postgres_connection()
+    SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=db_engine)
+else:
+    # Mock objects for documentation generation
+    db_engine = None
+    SessionLocal = None
 
-# Set up RabbitMQ connections for health checks
-try:
-    rmq_publisher, rmq_consumer = setup_rabbitmq()
-except Exception as e:
-    # Logger is defined later, so we'll use print for early initialization errors
-    print(f"Failed to initialize RabbitMQ connections for health checks: {e}")
+# Set up RabbitMQ connections for health checks (skip in documentation generation mode)
+if os.getenv("SKIP_DB_INIT", "false").lower() != "true":
+    try:
+        rmq_publisher, rmq_consumer = setup_rabbitmq()
+    except Exception as e:
+        # Logger is defined later, so we'll use print for early initialization errors
+        print(f"Failed to initialize RabbitMQ connections for health checks: {e}")
+        rmq_publisher, rmq_consumer = None, None
+else:
+    # Mock objects for documentation generation
     rmq_publisher, rmq_consumer = None, None
 
 
 def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
+    if SessionLocal is None:
+        # Mock for documentation generation
+        yield None
+    else:
+        db = SessionLocal()
+        try:
+            yield db
+        finally:
+            db.close()
 
 
 # Create a dependency object at module level to avoid B008 linting errors
