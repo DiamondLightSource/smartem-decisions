@@ -1,108 +1,85 @@
 import asyncio
+import io
 import json
 import logging
 import os
 import uuid
 from contextlib import asynccontextmanager
 from datetime import datetime, timedelta
+from pathlib import Path
 
+import mrcfile
 from fastapi import Depends, FastAPI, HTTPException, Request, status
-<<<<<<< HEAD:src/smartem_backend/api_server.py
-from sqlalchemy import and_, desc, or_, text
-=======
+from fastapi.responses import Response
+from PIL import Image
 from pydantic import BaseModel
-from sqlalchemy import text
->>>>>>> 613abb5 (some quality prediction model related endpoints):src/smartem_api/server.py
+from sqlalchemy import and_, desc, or_, text
 from sqlalchemy.orm import Session as SqlAlchemySession
 from sqlalchemy.orm import sessionmaker
 from sse_starlette.sse import EventSourceResponse
 
 from smartem_backend.agent_connection_manager import get_connection_manager
-from smartem_backend.model.database import (
-    Acquisition,
-    AgentConnection,
-    AgentInstruction,
-    AgentInstructionAcknowledgement,
-    AgentSession,
-    Atlas,
-    AtlasTile,
-    AtlasTileGridSquarePosition,
-    FoilHole,
-    Grid,
-    GridSquare,
-    Micrograph,
-    QualityPrediction,
-    QualityPredictionModel,
-    QualityPredictionModelParameter,
-)
-from smartem_backend.model.entity_status import (
-    AcquisitionStatus,
-    FoilHoleStatus,
-    GridSquareStatus,
-    GridStatus,
-    MicrographStatus,
-)
-from smartem_backend.model.http_request import (
-    AcquisitionCreateRequest,
-    AcquisitionUpdateRequest,
-    AtlasCreateRequest,
-    AtlasTileCreateRequest,
-    AtlasTileUpdateRequest,
-    AtlasUpdateRequest,
-    FoilHoleCreateRequest,
-    FoilHoleUpdateRequest,
-    GridCreateRequest,
-    GridSquareCreateRequest,
-    GridSquarePositionRequest,
-    GridSquareUpdateRequest,
-    GridUpdateRequest,
-    MicrographCreateRequest,
-    MicrographUpdateRequest,
-)
-from smartem_backend.model.http_request import (
-    AgentInstructionAcknowledgement as AgentInstructionAcknowledgementRequest,
-)
+from smartem_backend.model.database import (Acquisition, AgentConnection,
+                                            AgentInstruction,
+                                            AgentInstructionAcknowledgement,
+                                            AgentSession, Atlas, AtlasTile,
+                                            AtlasTileGridSquarePosition,
+                                            FoilHole, Grid, GridSquare,
+                                            Micrograph, QualityPrediction,
+                                            QualityPredictionModel,
+                                            QualityPredictionModelParameter)
+from smartem_backend.model.entity_status import (AcquisitionStatus,
+                                                 FoilHoleStatus,
+                                                 GridSquareStatus, GridStatus,
+                                                 MicrographStatus)
+from smartem_backend.model.http_request import (AcquisitionCreateRequest,
+                                                AcquisitionUpdateRequest)
+from smartem_backend.model.http_request import \
+    AgentInstructionAcknowledgement as AgentInstructionAcknowledgementRequest
+from smartem_backend.model.http_request import (AtlasCreateRequest,
+                                                AtlasTileCreateRequest,
+                                                AtlasTileUpdateRequest,
+                                                AtlasUpdateRequest,
+                                                FoilHoleCreateRequest,
+                                                FoilHoleUpdateRequest,
+                                                GridCreateRequest,
+                                                GridSquareCreateRequest,
+                                                GridSquarePositionRequest,
+                                                GridSquareUpdateRequest,
+                                                GridUpdateRequest,
+                                                MicrographCreateRequest,
+                                                MicrographUpdateRequest)
 from smartem_backend.model.http_response import (
-    AcquisitionResponse,
-    AgentInstructionAcknowledgementResponse,
-    AtlasResponse,
-    AtlasTileGridSquarePositionResponse,
-    AtlasTileResponse,
-    FoilHoleResponse,
-    GridResponse,
-    GridSquareResponse,
-    LatentRepresentationResponse,
-    MicrographResponse,
-    QualityPredictionModelResponse,
-    QualityPredictionResponse,
-)
-from smartem_backend.mq_publisher import (
-    publish_acquisition_created,
-    publish_acquisition_deleted,
-    publish_acquisition_updated,
-    publish_atlas_created,
-    publish_atlas_deleted,
-    publish_atlas_tile_created,
-    publish_atlas_tile_deleted,
-    publish_atlas_tile_updated,
-    publish_atlas_updated,
-    publish_foilhole_created,
-    publish_foilhole_deleted,
-    publish_foilhole_updated,
-    publish_grid_created,
-    publish_grid_deleted,
-    publish_grid_registered,
-    publish_grid_updated,
-    publish_gridsquare_created,
-    publish_gridsquare_deleted,
-    publish_gridsquare_lowmag_created,
-    publish_gridsquare_lowmag_updated,
-    publish_gridsquare_registered,
-    publish_gridsquare_updated,
-    publish_micrograph_created,
-    publish_micrograph_deleted,
-    publish_micrograph_updated,
-)
+    AcquisitionResponse, AgentInstructionAcknowledgementResponse,
+    AtlasResponse, AtlasTileGridSquarePositionResponse, AtlasTileResponse,
+    FoilHoleResponse, GridResponse, GridSquareResponse,
+    LatentRepresentationResponse, MicrographResponse,
+    QualityPredictionModelResponse, QualityPredictionResponse)
+from smartem_backend.mq_publisher import (publish_acquisition_created,
+                                          publish_acquisition_deleted,
+                                          publish_acquisition_updated,
+                                          publish_atlas_created,
+                                          publish_atlas_deleted,
+                                          publish_atlas_tile_created,
+                                          publish_atlas_tile_deleted,
+                                          publish_atlas_tile_updated,
+                                          publish_atlas_updated,
+                                          publish_foilhole_created,
+                                          publish_foilhole_deleted,
+                                          publish_foilhole_updated,
+                                          publish_grid_created,
+                                          publish_grid_deleted,
+                                          publish_grid_registered,
+                                          publish_grid_updated,
+                                          publish_gridsquare_created,
+                                          publish_gridsquare_deleted,
+                                          publish_gridsquare_lowmag_created,
+                                          publish_gridsquare_lowmag_updated,
+                                          publish_gridsquare_registered,
+                                          publish_gridsquare_updated,
+                                          publish_micrograph_created,
+                                          publish_micrograph_deleted,
+                                          publish_micrograph_updated)
 from smartem_backend.utils import setup_postgres_connection, setup_rabbitmq
 from smartem_common._version import __version__
 
@@ -1863,3 +1840,30 @@ def get_latent_rep(prediction_model_name: str, grid_uuid: str, db: SqlAlchemySes
         else:
             rep[square_uuid].y = p.value
     return [LatentRepresentationResponse(gridsquare_uuid=k, x=v.x, y=v.y, index=v.index) for k, v in rep.items() if v]
+
+
+@app.get("/grids/{grid_uuid}/atlas_image")
+def get_grid_atlas_image(
+    grid_uuid: str,
+    x: int | None = None,
+    y: int | None = None,
+    w: int | None = None,
+    h: int | None = None,
+    db: SqlAlchemySession = DB_DEPENDENCY,
+):
+    """Get a single grid by ID"""
+    grid = db.query(Grid).filter(Grid.uuid == grid_uuid).first()
+    if not grid:
+        raise HTTPException(status_code=404, detail="Grid not found")
+    atlas_img_path = list(Path(grid.atlas_dir).parent.glob("Atlas*.mrc"))[0]
+    mrc = mrcfile.read(atlas_img_path)
+    mrc = mrc - mrc.min()
+    mrc = mrc * (255 / mrc.max())
+    mrc = mrc.astype("uint8")
+    if None not in (x, y, w, h):
+        mrc = mrc[y - h // 2 : y + h // 2, x - w // 2 : x + w // 2]
+    im = Image.fromarray(mrc)
+    with io.BytesIO() as buf:
+        im.save(buf, format="PNG")
+        im_bytes = buf.getvalue()
+    return Response(im_bytes, media_type="image/png")
