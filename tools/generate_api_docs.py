@@ -52,9 +52,6 @@ def use_original_athena_spec():
         return False
 
 
-# Removed mock server spec generation - using single source of truth approach
-
-
 def create_smartem_placeholder():
     """Create placeholder for SmartEM API docs."""
     try:
@@ -98,8 +95,8 @@ def generate_smartem_from_implementation():
         os.environ.setdefault("DATABASE_URL", "sqlite:///:memory:")
         os.environ.setdefault("SMARTEM_LOG_LEVEL", "ERROR")
 
-        # Import the FastAPI app from SmartEM backend
-        from smartem_backend.http_api import app
+        # Import the FastAPI app from SmartEM API
+        from smartem_api.server import app
 
         # Get the OpenAPI spec from the FastAPI app
         openapi_spec = app.openapi()
@@ -153,11 +150,9 @@ if __name__ == "__main__":
     print("🚀 Generating API documentation...")
     print("=" * 50)
 
-    results = []
-    # Athena API: Use original spec as source of truth
-    results.append(use_original_athena_spec())
+    # Athena API: Use original spec as a source of truth
     # SmartEM API: Generate from implementation (placeholder for now)
-    results.append(generate_smartem_from_implementation())
+    results = [use_original_athena_spec(), generate_smartem_from_implementation()]
 
     # Try to copy to build directory if it exists
     ensure_api_docs_in_build()
