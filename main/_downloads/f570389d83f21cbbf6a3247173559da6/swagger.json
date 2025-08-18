@@ -3,7 +3,7 @@
   "info": {
     "title": "SmartEM Decisions Backend API",
     "description": "API for accessing and managing electron microscopy data",
-    "version": "0.1.dev276+g1b7ed28d6"
+    "version": "0.1.dev277+gf90b7f3dc"
   },
   "paths": {
     "/status": {
