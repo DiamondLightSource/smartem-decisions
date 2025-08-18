@@ -118,11 +118,17 @@ def generate_smartem_from_implementation():
     except ImportError as e:
         print(f"⚠️  Could not import SmartEM FastAPI app: {e}")
         print("Falling back to placeholder...")
+        import traceback
+
+        traceback.print_exc()
         return create_smartem_placeholder()
 
     except Exception as e:
         print(f"❌ Error generating SmartEM spec: {e}")
         print("Falling back to placeholder...")
+        import traceback
+
+        traceback.print_exc()
         return create_smartem_placeholder()
 
 
