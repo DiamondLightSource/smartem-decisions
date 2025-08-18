@@ -75,17 +75,9 @@ Complete interactive documentation for the Athena Decision Service API, includin
 :link: api/smartem/index.html
 :link-type: url
 
-Documentation for the SmartEM Core API covering data management, acquisition control, and processing workflows.
+Documentation for the SmartEM Core API for recording electron microscopy sessions and experimental data.
 
-**Status:** Coming Soon • **Features:** Acquisitions • Quality Control • Processing • Monitoring
-:::
-
-:::{grid-item-card} {material-regular}`api;2em` API Overview
-:link: api/index.html
-:link-type: url
-:columns: 12
-
-Browse all available APIs, download OpenAPI specifications, and access interactive documentation in one convenient location.
+**Features:** Sessions • Grids • Atlases • Atlas Tiles • Grid Squares • Foil Holes • Micrographs
 :::
 
 ::::
