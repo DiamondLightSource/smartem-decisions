@@ -129,6 +129,26 @@ def generate_smartem_from_implementation():
         return create_smartem_placeholder()
 
 
+def ensure_api_docs_in_build():
+    """Ensure API docs are copied to build directory if it exists."""
+    try:
+        import shutil
+
+        build_dir = Path("build/html")
+        if build_dir.exists():
+            api_source = Path("docs/api")
+            api_dest = build_dir / "api"
+            if api_source.exists():
+                if api_dest.exists():
+                    shutil.rmtree(api_dest)
+                shutil.copytree(api_source, api_dest)
+                print(f"✅ API docs copied to build directory: {api_dest}")
+                return True
+    except Exception as e:
+        print(f"⚠️  Could not copy API docs to build directory: {e}")
+    return False
+
+
 if __name__ == "__main__":
     print("🚀 Generating API documentation...")
     print("=" * 50)
@@ -138,6 +158,9 @@ if __name__ == "__main__":
     results.append(use_original_athena_spec())
     # SmartEM API: Generate from implementation (placeholder for now)
     results.append(generate_smartem_from_implementation())
+
+    # Try to copy to build directory if it exists
+    ensure_api_docs_in_build()
 
     print("=" * 50)
     if all(results):

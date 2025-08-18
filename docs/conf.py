@@ -195,13 +195,14 @@ html_favicon = html_logo
 # Copy API documentation to build output - preserve directory structure
 def copy_api_docs(app, exception):
     """Copy API documentation preserving directory structure."""
-    if exception is None:  # Build succeeded
-        api_source = Path(app.srcdir) / "api"
-        api_dest = Path(app.outdir) / "api"
-        if api_source.exists():
-            if api_dest.exists():
-                shutil.rmtree(api_dest)
-            shutil.copytree(api_source, api_dest)
+    # Always copy API docs regardless of build status
+    api_source = Path(app.srcdir) / "api"
+    api_dest = Path(app.outdir) / "api"
+    if api_source.exists():
+        if api_dest.exists():
+            shutil.rmtree(api_dest)
+        shutil.copytree(api_source, api_dest)
+        print(f"API docs copied from {api_source} to {api_dest}")
 
 
 def setup(app):
