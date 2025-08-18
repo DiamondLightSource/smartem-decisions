@@ -52,38 +52,6 @@ def use_original_athena_spec():
         return False
 
 
-def create_smartem_placeholder():
-    """Create placeholder for SmartEM API docs."""
-    try:
-        placeholder_spec = {
-            "openapi": "3.0.1",
-            "info": {
-                "title": "SmartEM Core API",
-                "version": "v1",
-                "description": "API for SmartEM core functionality and data management",
-            },
-            "servers": [{"url": "http://localhost:8001", "description": "Local development server"}],
-            "paths": {
-                "/status": {
-                    "get": {"summary": "Get API status", "responses": {"200": {"description": "API is running"}}}
-                }
-            },
-        }
-
-        docs_path = Path("docs/api/smartem/swagger.json")
-        docs_path.parent.mkdir(parents=True, exist_ok=True)
-
-        with open(docs_path, "w") as f:
-            json.dump(placeholder_spec, f, indent=2)
-
-        print(f"✅ SmartEM API placeholder created at {docs_path}")
-        return True
-
-    except Exception as e:
-        print(f"❌ Error creating SmartEM placeholder: {e}")
-        return False
-
-
 def generate_smartem_from_implementation():
     """Generate SmartEM API spec from SmartEM FastAPI implementation."""
     try:
@@ -127,8 +95,7 @@ def generate_smartem_from_implementation():
         import traceback
 
         traceback.print_exc()
-        print("Falling back to placeholder...")
-        return create_smartem_placeholder()
+        return False
 
 
 def ensure_api_docs_in_build():
