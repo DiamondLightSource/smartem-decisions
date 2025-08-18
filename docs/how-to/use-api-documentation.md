@@ -16,9 +16,8 @@ SmartEM Decisions provides interactive API documentation built with Swagger UI, 
 ### Online Documentation
 
 Visit the hosted API documentation at:
-- **Main API Hub**: [API Documentation Overview](../api/index.html)
 - **Athena Decision Service**: [Athena API Docs](../api/athena/index.html)
-- **SmartEM Core API**: [SmartEM API Docs](../api/smartem/index.html) *(coming soon)*
+- **SmartEM Core API**: [SmartEM API Docs](../api/smartem/index.html)
 
 ### Local Documentation
 
