@@ -1,9 +1,14 @@
+import io
 import json
 import logging
 import os
 from datetime import datetime
+from pathlib import Path
 
+import mrcfile
 from fastapi import Depends, FastAPI, HTTPException, Request, status
+from fastapi.responses import Response
+from PIL import Image
 from pydantic import BaseModel
 from sqlalchemy import text
 from sqlalchemy.orm import Session as SqlAlchemySession
@@ -1230,3 +1235,30 @@ def get_latent_rep(prediction_model_name: str, grid_uuid: str, db: SqlAlchemySes
         else:
             rep[square_uuid].y = p.value
     return [LatentRepresentationResponse(gridsquare_uuid=k, x=v.x, y=v.y, index=v.index) for k, v in rep.items() if v]
+
+
+@app.get("/grids/{grid_uuid}/atlas_image")
+def get_grid_atlas_image(
+    grid_uuid: str,
+    x: int | None = None,
+    y: int | None = None,
+    w: int | None = None,
+    h: int | None = None,
+    db: SqlAlchemySession = DB_DEPENDENCY,
+):
+    """Get a single grid by ID"""
+    grid = db.query(Grid).filter(Grid.uuid == grid_uuid).first()
+    if not grid:
+        raise HTTPException(status_code=404, detail="Grid not found")
+    atlas_img_path = list(Path(grid.atlas_dir).parent.glob("Atlas*.mrc"))[0]
+    mrc = mrcfile.read(atlas_img_path)
+    mrc = mrc - mrc.min()
+    mrc = mrc * (255 / mrc.max())
+    mrc = mrc.astype("uint8")
+    if None not in (x, y, w, h):
+        mrc = mrc[y - h // 2 : y + h // 2, x - w // 2 : x + w // 2]
+    im = Image.fromarray(mrc)
+    with io.BytesIO() as buf:
+        im.save(buf, format="PNG")
+        im_bytes = buf.getvalue()
+    return Response(im_bytes, media_type="image/png")
