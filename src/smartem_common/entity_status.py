@@ -19,6 +19,7 @@ class GridStatus(str, Enum):
 
 class GridSquareStatus(str, Enum):
     NONE = "none"
+    REGISTERED = "all foil holes registered"
     FOIL_HOLES_DECISION_STARTED = "foil holes decision started"
     FOIL_HOLES_DECISION_COMPLETED = "foil holes decision completed"
 
