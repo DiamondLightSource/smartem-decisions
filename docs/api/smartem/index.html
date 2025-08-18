@@ -3,110 +3,10 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>SmartEM Core API Documentation</title>
+    <title>SmartEM Core API</title>
     <link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist@5.17.14/swagger-ui.css" />
-    <style>
-        body {
-            margin: 0;
-            background: #fafafa;
-        }
-        
-        .swagger-ui .topbar {
-            background-color: #28a745;
-        }
-        
-        .swagger-ui .topbar .topbar-wrapper .link {
-            color: white;
-            font-weight: bold;
-        }
-        
-        .header {
-            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
-            color: white;
-            padding: 20px;
-            text-align: center;
-        }
-        
-        .header h1 {
-            margin: 0;
-            font-size: 2.5em;
-            font-weight: 300;
-        }
-        
-        .header p {
-            margin: 10px 0 0 0;
-            font-size: 1.2em;
-            opacity: 0.9;
-        }
-        
-        .nav-links {
-            background: white;
-            padding: 15px;
-            text-align: center;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        
-        .nav-links a {
-            color: #28a745;
-            text-decoration: none;
-            margin: 0 15px;
-            font-weight: 500;
-            padding: 8px 16px;
-            border-radius: 4px;
-            transition: background-color 0.2s;
-        }
-        
-        .nav-links a:hover {
-            background-color: #f0f8f0;
-        }
-        
-        .nav-links a.active {
-            background-color: #28a745;
-            color: white;
-        }
-        
-        .placeholder {
-            background: white;
-            margin: 20px;
-            padding: 40px;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            text-align: center;
-        }
-        
-        .placeholder h2 {
-            color: #28a745;
-            margin-bottom: 20px;
-        }
-        
-        .placeholder p {
-            color: #666;
-            font-size: 1.1em;
-            margin-bottom: 20px;
-        }
-        
-        .placeholder .note {
-            background: #f8f9fa;
-            border-left: 4px solid #28a745;
-            padding: 15px;
-            margin: 20px 0;
-            border-radius: 4px;
-        }
-    </style>
 </head>
 <body>
-    <div class="header">
-        <h1>🧠 SmartEM Core API</h1>
-        <p>Interactive API documentation for SmartEM data management and processing</p>
-    </div>
-    
-    <div class="nav-links">
-        <a href="../../../index.html">📖 Main Docs</a>
-        <a href="../athena/index.html">🔮 Athena API</a>
-        <a href="index.html" class="active">🧠 SmartEM API</a>
-        <a href="swagger.json" target="_blank">📊 API Spec</a>
-    </div>
-    
     <div id="swagger-ui"></div>
     
     <script src="https://unpkg.com/swagger-ui-dist@5.17.14/swagger-ui-bundle.js" crossorigin></script>
@@ -118,7 +18,7 @@
                 deepLinking: true,
                 presets: [
                     SwaggerUIBundle.presets.apis,
-                    SwaggerUIBundle.presets.standalone,
+                    SwaggerUIBundle.presets.standalone
                 ],
                 plugins: [
                     SwaggerUIBundle.plugins.DownloadUrl
@@ -126,10 +26,7 @@
                 layout: "StandaloneLayout",
                 tryItOutEnabled: true,
                 filter: true,
-                supportedSubmitMethods: ['get', 'post', 'put', 'delete', 'patch'],
-                onComplete: function() {
-                    console.log("SmartEM API documentation loaded successfully!");
-                }
+                supportedSubmitMethods: ['get', 'post', 'put', 'delete', 'patch']
             });
         };
     </script>
