@@ -62,10 +62,7 @@ jobs:
       contents: read
       packages: write
 
-  docs:
-    needs: check
-    if: needs.check.outputs.branch-pr == ''
-    uses: ./.github/workflows/_docs.yml
+# docs job removed - handled by docs-only.yml workflow
 
   dist:
     needs: check
