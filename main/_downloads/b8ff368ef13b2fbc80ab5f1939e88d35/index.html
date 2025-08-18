@@ -3,83 +3,10 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Athena Decision Service API Documentation</title>
+    <title>Athena Decision Service API</title>
     <link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist@5.17.14/swagger-ui.css" />
-    <style>
-        body {
-            margin: 0;
-            background: #fafafa;
-        }
-        
-        .swagger-ui .topbar {
-            background-color: #2b5797;
-        }
-        
-        .swagger-ui .topbar .topbar-wrapper .link {
-            color: white;
-            font-weight: bold;
-        }
-        
-        .header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 20px;
-            text-align: center;
-        }
-        
-        .header h1 {
-            margin: 0;
-            font-size: 2.5em;
-            font-weight: 300;
-        }
-        
-        .header p {
-            margin: 10px 0 0 0;
-            font-size: 1.2em;
-            opacity: 0.9;
-        }
-        
-        .nav-links {
-            background: white;
-            padding: 15px;
-            text-align: center;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        
-        .nav-links a {
-            color: #2b5797;
-            text-decoration: none;
-            margin: 0 15px;
-            font-weight: 500;
-            padding: 8px 16px;
-            border-radius: 4px;
-            transition: background-color 0.2s;
-        }
-        
-        .nav-links a:hover {
-            background-color: #f0f4f8;
-        }
-        
-        .nav-links a.active {
-            background-color: #2b5797;
-            color: white;
-        }
-    </style>
 </head>
 <body>
-    <div class="header">
-        <h1>🔮 Athena Decision Service API</h1>
-        <p>Interactive API documentation for CryoEM decision automation</p>
-    </div>
-    
-    <div class="nav-links">
-        <a href="../../../index.html">📖 Main Docs</a>
-        <a href="index.html" class="active">🔮 Athena API</a>
-        <a href="../smartem/index.html">🧠 SmartEM API</a>
-        <a href="swagger.json" target="_blank">📄 Download Spec</a>
-        <a href="../../../athena-decision-service-api-spec.json" target="_blank">📋 Source Spec</a>
-    </div>
-    
     <div id="swagger-ui"></div>
     
     <script src="https://unpkg.com/swagger-ui-dist@5.17.14/swagger-ui-bundle.js" crossorigin></script>
@@ -91,7 +18,7 @@
                 deepLinking: true,
                 presets: [
                     SwaggerUIBundle.presets.apis,
-                    SwaggerUIBundle.presets.standalone,
+                    SwaggerUIBundle.presets.standalone
                 ],
                 plugins: [
                     SwaggerUIBundle.plugins.DownloadUrl
@@ -99,19 +26,7 @@
                 layout: "StandaloneLayout",
                 tryItOutEnabled: true,
                 filter: true,
-                supportedSubmitMethods: ['get', 'post', 'put', 'delete', 'patch'],
-                onComplete: function() {
-                    console.log("Athena API documentation loaded successfully!");
-                },
-                requestInterceptor: function(request) {
-                    // Add any custom headers or modifications here
-                    request.headers['Accept'] = 'application/json';
-                    return request;
-                },
-                responseInterceptor: function(response) {
-                    // Handle responses if needed
-                    return response;
-                }
+                supportedSubmitMethods: ['get', 'post', 'put', 'delete', 'patch']
             });
         };
     </script>
