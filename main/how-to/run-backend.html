@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Run SmartEM Backend &#8212; smartem-decisions 0.1.dev271+g03107a01d.d20250818 documentation</title>
+    <title>Run SmartEM Backend &#8212; smartem-decisions 0.1.dev272+g01540b994.d20250818 documentation</title>
   
   
   
@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../_static/documentation_options.js?v=dca8102b"></script>
+    <script src="../_static/documentation_options.js?v=e47ff986"></script>
     <script src="../_static/doctools.js?v=9bcbadda"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -486,17 +486,12 @@ python<span class="w"> </span>-m<span class="w"> </span>smartem_backend.consumer
 python<span class="w"> </span>-m<span class="w"> </span>smartem_backend.simulate_msg<span class="w"> </span>--help<span class="w"> </span><span class="c1"># to see a list of options</span>
 ./tools/simulate-messages.sh<span class="w"> </span><span class="c1"># run a simulation, triggering system events in sequence</span>
 
-<span class="c1"># run HTTP API with verbosity controls:</span>
-python<span class="w"> </span>-m<span class="w"> </span>smartem_backend.run_api<span class="w">                  </span><span class="c1"># ERROR level (default)</span>
-python<span class="w"> </span>-m<span class="w"> </span>smartem_backend.run_api<span class="w"> </span>-v<span class="w">               </span><span class="c1"># INFO level</span>
-python<span class="w"> </span>-m<span class="w"> </span>smartem_backend.run_api<span class="w"> </span>-vv<span class="w">              </span><span class="c1"># DEBUG level</span>
-
 <span class="c1"># run HTTP API in development (FastAPI CLI):</span>
-fastapi<span class="w"> </span>dev<span class="w"> </span>src/smartem_backend/http_api.py<span class="w"> </span><span class="c1"># Note: FastAPI CLI gets installed by pip as one of dev dependencies</span>
+fastapi<span class="w"> </span>dev<span class="w"> </span>src/smartem_api/server.py<span class="w"> </span><span class="c1"># Note: FastAPI CLI gets installed by pip as one of dev dependencies</span>
 <span class="c1"># run HTTP API in production (traditional):</span>
-<span class="nb">source</span><span class="w"> </span>.env<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>uvicorn<span class="w"> </span>src.smartem_backend.http_api:app<span class="w"> </span>--host<span class="w"> </span><span class="m">0</span>.0.0.0<span class="w"> </span>--port<span class="w"> </span><span class="nv">$HTTP_API_PORT</span>
+<span class="nb">source</span><span class="w"> </span>.env<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>uvicorn<span class="w"> </span>src.smartem_api.server:app<span class="w"> </span>--host<span class="w"> </span><span class="m">0</span>.0.0.0<span class="w"> </span>--port<span class="w"> </span><span class="nv">$HTTP_API_PORT</span>
 <span class="c1"># run HTTP API with environment variable:</span>
-<span class="nv">SMARTEM_LOG_LEVEL</span><span class="o">=</span>ERROR<span class="w"> </span>uvicorn<span class="w"> </span>src.smartem_backend.http_api:app<span class="w"> </span>--host<span class="w"> </span><span class="m">0</span>.0.0.0<span class="w"> </span>--port<span class="w"> </span><span class="nv">$HTTP_API_PORT</span>
+<span class="nv">SMARTEM_LOG_LEVEL</span><span class="o">=</span>ERROR<span class="w"> </span>uvicorn<span class="w"> </span>src.smartem_api.server:app<span class="w"> </span>--host<span class="w"> </span><span class="m">0</span>.0.0.0<span class="w"> </span>--port<span class="w"> </span><span class="nv">$HTTP_API_PORT</span>
 <span class="c1"># smoke test the API:</span>
 ./tests/check_smartem_core_http_api.py<span class="w"> </span>http://localhost:8000<span class="w"> </span>-v
 

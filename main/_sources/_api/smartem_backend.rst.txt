@@ -15,12 +15,10 @@
     
         cli
         consumer
-        http_api
         log_manager
         model
         mq_publisher
         predictions
-        run_api
         utils
     
     
