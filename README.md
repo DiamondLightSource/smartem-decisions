@@ -22,6 +22,7 @@ Test Datasets   | <https://gitlab.diamond.ac.uk/scisoft/cryoem/smartem-decisions
 - **`smartem_api`**: HTTP API client and server functionality for component communication  
 - **`smartem_backend`**: Core backend service with database operations and message queue processing
 - **`smartem_agent`**: Data collection agent that monitors EPU output and communicates with backend
+- **`src/athena_api`**: Athena HTTP API server integration
 
 ## Quick Start
 
