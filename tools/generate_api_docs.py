@@ -99,7 +99,10 @@ def generate_smartem_from_implementation():
         os.environ.setdefault("SKIP_DB_INIT", "true")
 
         # Import the FastAPI app from SmartEM API
+        print("Attempting to import smartem_api.server...")
         from smartem_api.server import app
+
+        print("Successfully imported smartem_api.server")
 
         # Get the OpenAPI spec from the FastAPI app
         openapi_spec = app.openapi()
@@ -118,13 +121,12 @@ def generate_smartem_from_implementation():
         print(f"✅ SmartEM API spec (from implementation) saved to {docs_path}")
         return True
 
-    except ImportError as e:
-        print(f"⚠️  Could not import SmartEM FastAPI app: {e}")
-        print("Falling back to placeholder...")
-        return create_smartem_placeholder()
-
     except Exception as e:
         print(f"❌ Error generating SmartEM spec: {e}")
+        print("Full error traceback:")
+        import traceback
+
+        traceback.print_exc()
         print("Falling back to placeholder...")
         return create_smartem_placeholder()
 

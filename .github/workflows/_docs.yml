@@ -21,6 +21,8 @@ jobs:
 
       - name: Install python packages
         uses: ./.github/actions/install_requirements
+        with:
+          pip-install: "-e .[dev,api]"
 
       - name: Generate API documentation
         run: |
