@@ -16,8 +16,6 @@ on:
       - ready_for_review  # When a draft PR is marked as ready
       # - edited      # When PR title/description is edited (DISABLED to avoid unnecessary runs)
     paths-ignore:
-      - 'docs/**'                    # Skip when only docs change (handled by docs-only.yml)
-      - '**.md'                      # Skip when only markdown files change (handled by docs-only.yml)
       - '.github/ISSUE_TEMPLATE/**'  # Skip when only issue templates change
       - '.github/PULL_REQUEST_TEMPLATE/**'  # Skip when only PR templates change
 
@@ -62,7 +60,10 @@ jobs:
       contents: read
       packages: write
 
-# docs job removed - handled by docs-only.yml workflow
+  docs:
+    needs: check
+    if: needs.check.outputs.branch-pr == ''
+    uses: ./.github/workflows/_docs.yml
 
   dist:
     needs: check
