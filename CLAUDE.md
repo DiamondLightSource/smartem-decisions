@@ -7,7 +7,7 @@
 - **Code Style**: Ruff (120 char line length) with pyright type checking
 
 ## Code Standards
-- **ALWAYS run pre-commit**: After writing code, automatically run `pre-commit run --files <files>` and fix all issues before completion
+- **MANDATORY PRE-COMMIT WORKFLOW**: After creating or modifying ANY file, immediately run `pre-commit run --files <files>` and fix all issues. This is not optional - no task is complete until pre-commit passes cleanly
 - **New line at end of file**: All files must end with a newline (pre-commit enforces this)
 - **No Comments**: Code should be self-explanatory - avoid explanatory comments
 - **Modern Python**: Use Python 3.12 typing features (no legacy `typing` imports where unnecessary)
@@ -16,6 +16,16 @@
 - **Type Annotations**: Use modern `dict[str, Any]` not `Dict[str, Any]` (UP006, UP007 rules)
 - **XML Parsing**: Use lxml for all XML processing needs
 - **CLI Tools**: Prefer rich/typer for beautiful command-line interfaces
+
+## Claude Workflow Requirements
+Claude must follow this exact sequence for ANY file creation or modification:
+1. Create/modify file using Write, Edit, or MultiEdit tools
+2. IMMEDIATELY run `pre-commit run --files <modified-files>`
+3. Fix any issues found by pre-commit
+4. Re-run pre-commit until all checks pass
+5. Only then consider the task complete
+
+This applies to ALL files: Python code, Markdown documentation, configuration files, agent definitions, etc.
 
 ## Common Commands
 ```bash
@@ -68,6 +78,16 @@ alembic revision --autogenerate -m "Description"
 - **MyST**: Markdown support in documentation
 - **Live development**: Use sphinx-autobuild for real-time doc updates
 - **API documentation**: Swagger/OpenAPI specs auto-generated
+
+## Claude Code Agents
+Available specialised agents in `.claude/agents/`:
+- **project-owner-advisor**: Strategic project guidance, requirements, scientific domain decisions
+- **software-engineer**: Architecture decisions, DevOps, system design, performance optimisation
+- **database-admin**: PostgreSQL expertise, Alembic migrations, scientific data management
+- **kubernetes-ops**: K3s/lightweight Kubernetes, scientific computing workloads
+- **technical-writer**: Documentation, British English, technical writing, Markdown formatting
+
+Claude Code will automatically invoke appropriate agents based on task context. For documentation tasks, the technical-writer agent ensures British English usage and professional formatting.
 
 ## Dependencies of Note
 - **Web**: FastAPI, uvicorn, httpx, requests
