@@ -61,7 +61,7 @@ cli = [
     "python-dotenv==1.1.1",
     "pyyaml",
     "rich",
-    "typer==0.16.0",
+    "typer==0.16.1",
 ]
 
 # Backend system component dependencies (database, messaging, etc.)
