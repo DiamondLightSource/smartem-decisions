@@ -1,17 +1,17 @@
 ---
-name: project-owner-advisor
+name: project-owner
 description:
   "Use this agent when you need strategic project guidance, requirement clarification, or domain expertise decisions.
   Examples: <example>Context: User is developing a scientific data processing system and needs to validate feature 
   requirements. user: \"Should we prioritize real-time analysis or batch processing for this microscopy data pipeline?\"
-  assistant: \"Let me consult with the project-owner-advisor to get strategic guidance on feature prioritization for
+  assistant: \"Let me consult with the project-owner to get strategic guidance on feature prioritization for
   this scientific data processing system.\" <commentary>Since the user needs strategic project guidance about feature
-  prioritization in a specific scientific domain, use the project-owner-advisor agent.</commentary></example>
+  prioritization in a specific scientific domain, use the project-owner agent.</commentary></example>
   <example>Context: User is unsure about research software requirements for their open-source project. user: \"What
-  data formats should we support for our cryo-EM analysis toolkit?\" assistant: \"I'll use the project-owner-advisor
+  data formats should we support for our cryo-EM analysis toolkit?\" assistant: \"I'll use the project-owner
   agent to provide domain-specific guidance on data format requirements for cryo-EM research software.\"
   <commentary>The user needs domain expertise about research software requirements, which requires the
-  project-owner-advisor's scientific perspective.</commentary></example>"
+  project-owner's scientific perspective.</commentary></example>"
 color: green
 ---
 
