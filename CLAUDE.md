@@ -81,7 +81,7 @@ alembic revision --autogenerate -m "Description"
 
 ## Claude Code Agents
 Available specialised agents in `.claude/agents/`:
-- **project-owner-advisor**: Strategic project guidance, requirements, scientific domain decisions
+- **project-owner**: Strategic project guidance, requirements, scientific domain decisions
 - **software-engineer**: Architecture decisions, DevOps, system design, performance optimisation
 - **database-admin**: PostgreSQL expertise, Alembic migrations, scientific data management
 - **kubernetes-ops**: K3s/lightweight Kubernetes, scientific computing workloads
