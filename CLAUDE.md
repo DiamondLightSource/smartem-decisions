@@ -7,9 +7,13 @@
 - **Code Style**: Ruff (120 char line length) with pyright type checking
 
 ## Code Standards
-- **New line at end of file**: don't forget to add these when generating / formatting code
+- **ALWAYS run pre-commit**: After writing code, automatically run `pre-commit run --files <files>` and fix all issues before completion
+- **New line at end of file**: All files must end with a newline (pre-commit enforces this)
 - **No Comments**: Code should be self-explanatory - avoid explanatory comments
 - **Modern Python**: Use Python 3.12 typing features (no legacy `typing` imports where unnecessary)
+- **Line Length**: 120 characters maximum (ruff enforces this)
+- **Import Sorting**: Use ruff's import sorting (I001 rule)
+- **Type Annotations**: Use modern `dict[str, Any]` not `Dict[str, Any]` (UP006, UP007 rules)
 - **XML Parsing**: Use lxml for all XML processing needs
 - **CLI Tools**: Prefer rich/typer for beautiful command-line interfaces
 
