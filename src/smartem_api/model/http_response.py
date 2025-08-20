@@ -117,9 +117,10 @@ class GridSquareResponse(BaseModel):
 
 class FoilHoleResponse(BaseModel):
     uuid: str
+    gridsquare_uuid: str | None
     gridsquare_id: str | None
     foilhole_id: str
-    status: FoilHoleStatus
+    status: FoilHoleStatus | None
     center_x: float | None
     center_y: float | None
     quality: float | None
@@ -183,7 +184,8 @@ class QualityPredictionResponse(BaseModel):
 
 
 class LatentRepresentationResponse(BaseModel):
-    gridsquare_uuid: str
     x: float
     y: float
     index: int
+    gridsquare_uuid: str = ""
+    foilhole_uuid: str = ""
