@@ -1,21 +1,23 @@
 # Using SmartEM MCP Interface
 
-The SmartEM MCP (Model Context Protocol) interface provides natural language querying capabilities for microscopy session data. It supports both filesystem-based parsing and API-based queries for comprehensive data access.
+The SmartEM MCP (Model Context Protocol) interface provides natural language querying capabilities for microscopy session data. Built with FastMCP 2.0, it supports both filesystem-based parsing and API-based queries for comprehensive data access.
 
 ## Overview
 
 The MCP interface consists of:
-- **MCP Server**: Provides natural language query capabilities via MCP protocol
-- **MCP Client**: Python client for programmatic access
+- **FastMCP Server**: Provides natural language query capabilities via MCP protocol using FastMCP framework
+- **MCP Client**: Python client for programmatic access with simplified FastMCP patterns
 - **CLI Interface**: Command-line tools for interactive usage
 
 ## Installation
 
-Install with MCP dependencies:
+Install with MCP dependencies (includes FastMCP 2.0 framework):
 
 ```bash
 pip install -e .[mcp]
 ```
+
+This installs the required FastMCP 2.0 framework and SmartEM MCP components.
 
 ## Quick Start
 
@@ -57,8 +59,8 @@ from smartem_mcp.client import SmartEMMCPClient
 async with SmartEMMCPClient() as client:
     # Parse EPU directory
     result = await client.parse_epu_directory("/path/to/epu")
-    if result.success:
-        print(f"Found {result.data['grid_count']} grids")
+    if result.get("success"):
+        print(f"Found {result['grid_count']} grids")
     
     # Find low quality items
     quality_result = await client.find_low_quality_items(
@@ -94,7 +96,7 @@ The SmartEM MCP server integrates seamlessly with Claude Code, allowing natural 
 
 ### Prerequisites
 
-Ensure MCP dependencies are installed:
+Ensure MCP dependencies are installed (includes FastMCP 2.0):
 
 ```bash
 pip install -e .[mcp]
@@ -218,6 +220,8 @@ You should see the following tools available:
 - `query_acquisitions` - Query recent acquisition sessions
 - `query_grid_status` - Get grid processing status
 
+**Note**: The client provides high-level methods such as `find_low_quality_items()` which internally call the corresponding MCP tools.
+
 #### 3. Test Basic Functionality
 
 Try a simple query in Claude Code:
@@ -323,11 +327,12 @@ All operations return structured results with success indicators:
 
 ```python
 result = await client.parse_epu_directory("/path/to/epu")
-if result.success:
-    # Process result.data
+if result.get("success"):
+    # Process result data
+    data = result.get("data", {})
     pass
 else:
-    print(f"Error: {result.error}")
+    print(f"Error: {result.get('error')}")
 ```
 
 ## Configuration
@@ -351,8 +356,8 @@ client = SmartEMMCPClient(api_token="your_token_here")
 #### 1. MCP Server Registration Problems
 
 **"SmartEM MCP server not found"**
-- Ensure MCP dependencies are installed: `pip install -e .[mcp]`  
-- Verify Python path includes smartem_mcp module
+- Ensure MCP dependencies are installed: `pip install -e .[mcp]` (includes FastMCP 2.0)  
+- Verify Python path includes smartem_mcp module: `python -c "import smartem_mcp; print('OK')"`
 - Check registration with `claude mcp list`
 
 **"Failed to start MCP server"**
@@ -425,11 +430,12 @@ claude mcp logs smartem
 
 Test the server independently of Claude Code:
 ```bash
-# Terminal 1: Start server
+# Start server in stdio mode for testing
 python -m smartem_mcp server --log-level DEBUG
 
-# Terminal 2: Test with echo
-echo '{"jsonrpc": "2.0", "id": 1, "method": "tools/list"}' | python -m smartem_mcp server --log-level DEBUG
+# The server uses FastMCP stdio communication protocol
+# For testing, use interactive mode or programmatic client instead:
+python -m smartem_mcp interactive
 ```
 
 ### Environment-Specific Troubleshooting
