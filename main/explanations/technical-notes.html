@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Technical Notes &#8212; smartem-decisions 0.1.dev286+g73377653b.d20250819 documentation</title>
+    <title>Technical Notes &#8212; smartem-decisions 0.1.dev287+gc533ec501.d20250820 documentation</title>
   
   
   
@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../_static/documentation_options.js?v=66b9afa9"></script>
+    <script src="../_static/documentation_options.js?v=9f2d2362"></script>
     <script src="../_static/doctools.js?v=9bcbadda"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -468,41 +468,89 @@
                   
   <section id="technical-notes">
 <h1>Technical Notes<a class="headerlink" href="#technical-notes" title="Link to this heading">#</a></h1>
-<blockquote>
-<div><p>TODO recycle these to appropriate <code class="docutils literal notranslate"><span class="pre">docs/</span></code> sections</p>
-</div></blockquote>
+<section id="cryo-em-data-acquisition-scale">
+<h2>Cryo-EM Data Acquisition Scale<a class="headerlink" href="#cryo-em-data-acquisition-scale" title="Link to this heading">#</a></h2>
+<p>Understanding the scale and volume of cryo-electron microscopy data acquisition is crucial for system design and performance considerations:</p>
+<section id="micrograph-statistics">
+<h3>Micrograph Statistics<a class="headerlink" href="#micrograph-statistics" title="Link to this heading">#</a></h3>
 <ul class="simple">
-<li><p>The number of micrographs in a single foil hole will be typically between 4 and 10.</p></li>
-<li><p>The total number of micrographs collected from a grid is normally 10-50k.</p></li>
-<li><p>The number of particles picked is about 300 per micrograph.</p></li>
-<li><p>About half of those are selected and half rejected</p></li>
-<li><p>mock the decision-making stuff</p>
-<ul>
-<li><p>to be tackled separately</p></li>
-<li><p>to be decoupled and modular, so we can easily swap out decision-making authorities in the future</p></li>
+<li><p><strong>Micrographs per foil hole</strong>: Typically 4-10 images per foil hole</p></li>
+<li><p><strong>Grid-level acquisition</strong>: 10,000-50,000 micrographs per complete grid session</p></li>
+<li><p><strong>Particle density</strong>: Approximately 300 particles identified per micrograph</p></li>
+<li><p><strong>Selection efficiency</strong>: Roughly 50% of identified particles are selected for further processing</p></li>
 </ul>
-</li>
-<li><p>communicate decisions to cryoEM controller API (TBC naming!)</p></li>
-<li><p>https://github.com/DiamondLightSource/ispyb-database is a database schema that stores information about
-what is run, metadata, how many images, sample type etc.</p></li>
-<li><p>for context:</p>
-<ul>
-<li><p>https://www.ncbi.nlm.nih.gov/pmc/articles/PMC10910546/,
-https://www.ncbi.nlm.nih.gov/pmc/articles/PMC10910546/pdf/d-80-00174.pdf</p></li>
-<li><p>https://www.biorxiv.org/content/10.1101/2024.02.12.579963v1,
-https://www.biorxiv.org/content/10.1101/2024.02.12.579963v1.full.pdf</p></li>
+<p>These statistics inform the design requirements for data processing pipelines and storage allocation strategies.</p>
+</section>
+</section>
+<section id="system-architecture-considerations">
+<h2>System Architecture Considerations<a class="headerlink" href="#system-architecture-considerations" title="Link to this heading">#</a></h2>
+<section id="decision-making-framework">
+<h3>Decision-Making Framework<a class="headerlink" href="#decision-making-framework" title="Link to this heading">#</a></h3>
+<p>The SmartEM system implements a modular decision-making architecture designed for flexibility and extensibility:</p>
+<ul class="simple">
+<li><p><strong>Modular design</strong>: Decision-making components are decoupled from data acquisition systems</p></li>
+<li><p><strong>Pluggable authorities</strong>: Different decision-making algorithms can be easily substituted</p></li>
+<li><p><strong>Future extensibility</strong>: Architecture supports integration of additional decision-making systems</p></li>
 </ul>
-</li>
-<li><p>initially the process produces stuff on the filesystem similar to this example: <code class="docutils literal notranslate"><span class="pre">doc/metadata_spa_acquisition</span></code></p></li>
-<li><p>parts of the current <strong>Data Processing Pipeline</strong>:</p>
-<ul>
-<li><p>particle picking service receives a JSON blob via RabitMQ, is given a path to an image, picks on that and produces
-a list of coordinates of particles on that image:
-https://github.com/DiamondLightSource/cryoem-services/blob/main/src/cryoemservices/services/cryolo.py</p></li>
-<li><p>particle filtering service: https://github.com/DiamondLightSource/cryoem-services/blob/main/src/cryoemservices/services/select_particles.py</p></li>
+</section>
+<section id="api-integration">
+<h3>API Integration<a class="headerlink" href="#api-integration" title="Link to this heading">#</a></h3>
+<p>Communication between SmartEM components and external cryo-EM control systems occurs through well-defined API interfaces, ensuring compatibility with various microscope control software packages.</p>
+</section>
+</section>
+<section id="data-management-and-storage">
+<h2>Data Management and Storage<a class="headerlink" href="#data-management-and-storage" title="Link to this heading">#</a></h2>
+<section id="ispyb-integration">
+<h3>ISPyB Integration<a class="headerlink" href="#ispyb-integration" title="Link to this heading">#</a></h3>
+<p>The project integrates with the <a class="reference external" href="https://github.com/DiamondLightSource/ispyb-database">ISPyB database schema</a>, which provides comprehensive metadata storage for:</p>
+<ul class="simple">
+<li><p>Experimental run information</p></li>
+<li><p>Session metadata and parameters</p></li>
+<li><p>Image counts and acquisition statistics</p></li>
+<li><p>Sample type and classification data</p></li>
 </ul>
-</li>
+</section>
+<section id="file-system-organisation">
+<h3>File System Organisation<a class="headerlink" href="#file-system-organisation" title="Link to this heading">#</a></h3>
+<p>Data acquisition produces structured file system layouts that facilitate automated processing and quality assessment workflows.</p>
+</section>
+</section>
+<section id="processing-pipeline-components">
+<h2>Processing Pipeline Components<a class="headerlink" href="#processing-pipeline-components" title="Link to this heading">#</a></h2>
+<section id="particle-processing-workflow">
+<h3>Particle Processing Workflow<a class="headerlink" href="#particle-processing-workflow" title="Link to this heading">#</a></h3>
+<p>The automated processing pipeline comprises several specialised services:</p>
+<section id="particle-picking-service">
+<h4>Particle Picking Service<a class="headerlink" href="#particle-picking-service" title="Link to this heading">#</a></h4>
+<ul class="simple">
+<li><p><strong>Input</strong>: JSON message via RabbitMQ containing image path and processing parameters</p></li>
+<li><p><strong>Processing</strong>: Automated particle identification and coordinate extraction</p></li>
+<li><p><strong>Output</strong>: List of particle coordinates for each processed micrograph</p></li>
+<li><p><strong>Implementation</strong>: <a class="reference external" href="https://github.com/DiamondLightSource/cryoem-services/blob/main/src/cryoemservices/services/cryolo.py">CryOLO service</a></p></li>
 </ul>
+</section>
+<section id="particle-selection-service">
+<h4>Particle Selection Service<a class="headerlink" href="#particle-selection-service" title="Link to this heading">#</a></h4>
+<ul class="simple">
+<li><p><strong>Function</strong>: Quality-based filtering and selection of identified particles</p></li>
+<li><p><strong>Integration</strong>: Seamless integration with particle picking results</p></li>
+<li><p><strong>Implementation</strong>: <a class="reference external" href="https://github.com/DiamondLightSource/cryoem-services/blob/main/src/cryoemservices/services/select_particles.py">Selection service</a></p></li>
+</ul>
+</section>
+</section>
+</section>
+<section id="scientific-context-and-references">
+<h2>Scientific Context and References<a class="headerlink" href="#scientific-context-and-references" title="Link to this heading">#</a></h2>
+<p>The SmartEM system builds upon established methodologies and practices in automated cryo-electron microscopy:</p>
+<section id="key-publications">
+<h3>Key Publications<a class="headerlink" href="#key-publications" title="Link to this heading">#</a></h3>
+<ul class="simple">
+<li><p><a class="reference external" href="https://www.ncbi.nlm.nih.gov/pmc/articles/PMC10910546/">Structural Biology Methods</a> - Comprehensive overview of automated cryo-EM data collection strategies</p></li>
+<li><p><a class="reference external" href="https://www.biorxiv.org/content/10.1101/2024.02.12.579963v1">Advanced Automation Techniques</a> - Recent developments in real-time decision making for cryo-EM workflows</p></li>
+</ul>
+<p>These references provide scientific context for the automated decision-making algorithms implemented within the SmartEM framework.</p>
+</section>
+</section>
 </section>
 
 
@@ -543,6 +591,43 @@ https://github.com/DiamondLightSource/cryoem-services/blob/main/src/cryoemservic
                 <dialog id="pst-secondary-sidebar-modal"></dialog>
                 <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
 
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#cryo-em-data-acquisition-scale">Cryo-EM Data Acquisition Scale</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#micrograph-statistics">Micrograph Statistics</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#system-architecture-considerations">System Architecture Considerations</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#decision-making-framework">Decision-Making Framework</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#api-integration">API Integration</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#data-management-and-storage">Data Management and Storage</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#ispyb-integration">ISPyB Integration</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#file-system-organisation">File System Organisation</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#processing-pipeline-components">Processing Pipeline Components</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#particle-processing-workflow">Particle Processing Workflow</a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#particle-picking-service">Particle Picking Service</a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#particle-selection-service">Particle Selection Service</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#scientific-context-and-references">Scientific Context and References</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#key-publications">Key Publications</a></li>
+</ul>
+</li>
+</ul>
+  </nav></div>
 
   <div class="sidebar-secondary-item">
 

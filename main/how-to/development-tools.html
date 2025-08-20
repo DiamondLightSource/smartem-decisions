@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Development Tools &#8212; smartem-decisions 0.1.dev286+g73377653b.d20250819 documentation</title>
+    <title>Development Tools &#8212; smartem-decisions 0.1.dev287+gc533ec501.d20250820 documentation</title>
   
   
   
@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../_static/documentation_options.js?v=66b9afa9"></script>
+    <script src="../_static/documentation_options.js?v=9f2d2362"></script>
     <script src="../_static/doctools.js?v=9bcbadda"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -471,60 +471,114 @@
                   
   <section id="development-tools">
 <h1>Development Tools<a class="headerlink" href="#development-tools" title="Link to this heading">#</a></h1>
-<p>Collection of utility tools for development, testing, and maintenance.</p>
-<section id="format-xml-to-make-it-readable-recursively">
-<h2>Format XML to make it readable, recursively<a class="headerlink" href="#format-xml-to-make-it-readable-recursively" title="Link to this heading">#</a></h2>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># To reformat all `.xml` and `.dm` files in a given directory recursively, rewriting in-place</span>
-<span class="c1"># from single-line to human-readable:</span>
-python<span class="w"> </span>tools/format_xml.py<span class="w"> </span>&lt;some_dir&gt;<span class="w"> </span>-r
+<p>Collection of utility tools for development, testing, and maintenance of the SmartEM Decisions project.</p>
+<section id="xml-formatting-tools">
+<h2>XML Formatting Tools<a class="headerlink" href="#xml-formatting-tools" title="Link to this heading">#</a></h2>
+<section id="format-xml-files-for-human-readability">
+<h3>Format XML Files for Human Readability<a class="headerlink" href="#format-xml-files-for-human-readability" title="Link to this heading">#</a></h3>
+<p>Transform single-line XML and .dm files into human-readable format with proper indentation:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Reformat all .xml and .dm files in a directory recursively</span>
+python<span class="w"> </span>tools/format_xml.py<span class="w"> </span>&lt;directory_path&gt;<span class="w"> </span>-r
 
-<span class="c1"># Multiple dirs:</span>
+<span class="c1"># Process multiple directories</span>
 python<span class="w"> </span>tools/format_xml.py<span class="w"> </span>-r<span class="w"> </span><span class="se">\</span>
 <span class="w">  </span>../smartem-decisions-test-datasets/metadata_Supervisor_20250114_220855_23_epuBSAd20_GrOxDDM<span class="w"> </span><span class="se">\</span>
 <span class="w">  </span>../smartem-decisions-test-datasets/metadata_Supervisor_20241220_140307_72_et2_gangshun<span class="w"> </span><span class="se">\</span>
 <span class="w">  </span>../smartem-decisions-test-datasets/metadata_Supervisor_20250108_101446_62_cm40593-1_EPU
 
-<span class="c1"># For more options see:</span>
+<span class="c1"># Display all available options</span>
 python<span class="w"> </span>tools/format_xml.py<span class="w"> </span>--help
 </pre></div>
 </div>
 </section>
-<section id="find-all-foilhole-manifest-duplicates-in-a-directory-recursively">
-<h2>Find all foilhole manifest duplicates in a directory, recursively<a class="headerlink" href="#find-all-foilhole-manifest-duplicates-in-a-directory-recursively" title="Link to this heading">#</a></h2>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>tools/find_foilhole_duplicates.py<span class="w"> </span>--help
-<span class="c1"># e.g.</span>
+</section>
+<section id="data-analysis-and-debugging-tools">
+<h2>Data Analysis and Debugging Tools<a class="headerlink" href="#data-analysis-and-debugging-tools" title="Link to this heading">#</a></h2>
+<section id="find-foil-hole-manifest-duplicates">
+<h3>Find Foil Hole Manifest Duplicates<a class="headerlink" href="#find-foil-hole-manifest-duplicates" title="Link to this heading">#</a></h3>
+<p>Identify duplicate foil hole manifests within directory structures to detect data inconsistencies:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Display help and usage information</span>
+tools/find_foilhole_duplicates.py<span class="w"> </span>--help
+
+<span class="c1"># Example: Search for duplicates in test data</span>
 tools/find_foilhole_duplicates.py<span class="w"> </span>./tests/testdata/bi37708-28
 </pre></div>
 </div>
 </section>
-<section id="list-all-files-matching-glob-recursively-in-descending-order-by-file-size">
-<h2>List all files matching glob recursively in descending order by file size:<a class="headerlink" href="#list-all-files-matching-glob-recursively-in-descending-order-by-file-size" title="Link to this heading">#</a></h2>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># To find </span>
+<section id="file-size-analysis">
+<h3>File Size Analysis<a class="headerlink" href="#file-size-analysis" title="Link to this heading">#</a></h3>
+<p>List files matching specific patterns, sorted by size for storage analysis:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Find GridSquare files sorted by size (largest first)</span>
 rg<span class="w"> </span>--files<span class="w"> </span>-g<span class="w"> </span><span class="s1">&#39;GridSquare_*.dm&#39;</span><span class="w"> </span>./tests/testdata/bi37708-28<span class="w"> </span><span class="se">\</span>
 <span class="w">  </span><span class="p">|</span><span class="w"> </span>xargs<span class="w"> </span>-d<span class="w"> </span><span class="s1">&#39;\n&#39;</span><span class="w"> </span>ls<span class="w"> </span>-lh<span class="w"> </span><span class="p">|</span><span class="w"> </span>sort<span class="w"> </span>-k5<span class="w"> </span>-rn<span class="w"> </span><span class="p">|</span><span class="w"> </span>awk<span class="w"> </span><span class="s1">&#39;{print $9, $5}&#39;</span>
 </pre></div>
 </div>
 </section>
-<section id="clean-up-test-datasets-to-reduce-file-size">
-<h2>Clean up test datasets to reduce file size<a class="headerlink" href="#clean-up-test-datasets-to-reduce-file-size" title="Link to this heading">#</a></h2>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># recursively find all distinct file extensions in directory</span>
+</section>
+<section id="test-dataset-management">
+<h2>Test Dataset Management<a class="headerlink" href="#test-dataset-management" title="Link to this heading">#</a></h2>
+<section id="file-extension-analysis">
+<h3>File Extension Analysis<a class="headerlink" href="#file-extension-analysis" title="Link to this heading">#</a></h3>
+<p>Analyse the composition of test datasets by file type:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Recursively find all distinct file extensions with counts</span>
 find<span class="w"> </span>.<span class="w"> </span>-type<span class="w"> </span>f<span class="w"> </span><span class="p">|</span>
 <span class="w">  </span>sed<span class="w"> </span>-E<span class="w"> </span><span class="s1">&#39;s/.*\.([^.]+)$/\1/&#39;</span><span class="w"> </span><span class="p">|</span>
 <span class="w">  </span>grep<span class="w"> </span>-v<span class="w"> </span><span class="s2">&quot;/&quot;</span><span class="w"> </span><span class="p">|</span>
 <span class="w">  </span>sort<span class="w"> </span><span class="p">|</span>
 <span class="w">  </span>uniq<span class="w"> </span>-c<span class="w"> </span><span class="p">|</span>
 <span class="w">  </span>sort<span class="w"> </span>-nr
-
-<span class="c1"># recursively empty all jpg, png, mrc files:</span>
-find<span class="w"> </span>.<span class="w"> </span>-type<span class="w"> </span>f<span class="w"> </span><span class="se">\(</span><span class="w"> </span>-name<span class="w"> </span><span class="s2">&quot;*.jpg&quot;</span><span class="w"> </span>-o<span class="w"> </span>-name<span class="w"> </span><span class="s2">&quot;*.png&quot;</span><span class="w"> </span>-o<span class="w"> </span>-name<span class="w"> </span><span class="s2">&quot;*.mrc&quot;</span><span class="w"> </span><span class="se">\)</span><span class="w"> </span>-exec<span class="w"> </span>truncate<span class="w"> </span>-s<span class="w"> </span><span class="m">0</span><span class="w"> </span><span class="o">{}</span><span class="w"> </span><span class="se">\;</span>
 </pre></div>
 </div>
 </section>
-<section id="watch-dir-metrics-num-of-files-and-file-size-as-stuff-is-written-to-it">
-<h2>Watch dir metrics (num of files and file size) as stuff is written to it<a class="headerlink" href="#watch-dir-metrics-num-of-files-and-file-size-as-stuff-is-written-to-it" title="Link to this heading">#</a></h2>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>watch<span class="w"> </span>-n<span class="w"> </span><span class="m">1</span><span class="w"> </span><span class="s1">&#39;echo &quot;Size: $(du -sh .)&quot;; echo &quot;Files: $(find . -type f | wc -l)&quot;&#39;</span>
+<section id="dataset-size-reduction">
+<h3>Dataset Size Reduction<a class="headerlink" href="#dataset-size-reduction" title="Link to this heading">#</a></h3>
+<p>Reduce test dataset storage requirements whilst maintaining directory structure:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Empty image and data files whilst preserving metadata structure</span>
+find<span class="w"> </span>.<span class="w"> </span>-type<span class="w"> </span>f<span class="w"> </span><span class="se">\(</span><span class="w"> </span>-name<span class="w"> </span><span class="s2">&quot;*.jpg&quot;</span><span class="w"> </span>-o<span class="w"> </span>-name<span class="w"> </span><span class="s2">&quot;*.png&quot;</span><span class="w"> </span>-o<span class="w"> </span>-name<span class="w"> </span><span class="s2">&quot;*.mrc&quot;</span><span class="w"> </span><span class="se">\)</span><span class="w"> </span>-exec<span class="w"> </span>truncate<span class="w"> </span>-s<span class="w"> </span><span class="m">0</span><span class="w"> </span><span class="o">{}</span><span class="w"> </span><span class="se">\;</span>
 </pre></div>
 </div>
+<p><strong>Warning:</strong> This command permanently removes file contents. Use only on test datasets, not production data.</p>
+</section>
+</section>
+<section id="development-monitoring">
+<h2>Development Monitoring<a class="headerlink" href="#development-monitoring" title="Link to this heading">#</a></h2>
+<section id="directory-growth-monitoring">
+<h3>Directory Growth Monitoring<a class="headerlink" href="#directory-growth-monitoring" title="Link to this heading">#</a></h3>
+<p>Monitor directory metrics during data acquisition or processing:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Watch directory size and file count with 1-second updates</span>
+watch<span class="w"> </span>-n<span class="w"> </span><span class="m">1</span><span class="w"> </span><span class="s1">&#39;echo &quot;Size: $(du -sh .)&quot;; echo &quot;Files: $(find . -type f | wc -l)&quot;&#39;</span>
+</pre></div>
+</div>
+<p>This tool is particularly useful for monitoring EPU data acquisition progress or debugging processing pipeline performance.</p>
+</section>
+</section>
+<section id="additional-development-commands">
+<h2>Additional Development Commands<a class="headerlink" href="#additional-development-commands" title="Link to this heading">#</a></h2>
+<section id="pre-commit-workflow">
+<h3>Pre-commit Workflow<a class="headerlink" href="#pre-commit-workflow" title="Link to this heading">#</a></h3>
+<p>Maintain code quality during development:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Run pre-commit checks on specific files</span>
+pre-commit<span class="w"> </span>run<span class="w"> </span>--files<span class="w"> </span>&lt;file1&gt;<span class="w"> </span>&lt;file2&gt;
+
+<span class="c1"># Run all pre-commit checks</span>
+pre-commit<span class="w"> </span>run<span class="w"> </span>--all-files
+</pre></div>
+</div>
+</section>
+<section id="testing-and-quality-assurance">
+<h3>Testing and Quality Assurance<a class="headerlink" href="#testing-and-quality-assurance" title="Link to this heading">#</a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Run comprehensive test suite</span>
+pytest
+
+<span class="c1"># Type checking with pyright</span>
+pyright<span class="w"> </span>src<span class="w"> </span>tests
+
+<span class="c1"># Code formatting and linting</span>
+ruff<span class="w"> </span>check
+ruff<span class="w"> </span>format
+</pre></div>
+</div>
+</section>
 </section>
 </section>
 
@@ -575,11 +629,29 @@ find<span class="w"> </span>.<span class="w"> </span>-type<span class="w"> </spa
   </div>
   <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
     <ul class="visible nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#format-xml-to-make-it-readable-recursively">Format XML to make it readable, recursively</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#find-all-foilhole-manifest-duplicates-in-a-directory-recursively">Find all foilhole manifest duplicates in a directory, recursively</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#list-all-files-matching-glob-recursively-in-descending-order-by-file-size">List all files matching glob recursively in descending order by file size:</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#clean-up-test-datasets-to-reduce-file-size">Clean up test datasets to reduce file size</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#watch-dir-metrics-num-of-files-and-file-size-as-stuff-is-written-to-it">Watch dir metrics (num of files and file size) as stuff is written to it</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#xml-formatting-tools">XML Formatting Tools</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#format-xml-files-for-human-readability">Format XML Files for Human Readability</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#data-analysis-and-debugging-tools">Data Analysis and Debugging Tools</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#find-foil-hole-manifest-duplicates">Find Foil Hole Manifest Duplicates</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#file-size-analysis">File Size Analysis</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#test-dataset-management">Test Dataset Management</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#file-extension-analysis">File Extension Analysis</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#dataset-size-reduction">Dataset Size Reduction</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#development-monitoring">Development Monitoring</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#directory-growth-monitoring">Directory Growth Monitoring</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#additional-development-commands">Additional Development Commands</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pre-commit-workflow">Pre-commit Workflow</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#testing-and-quality-assurance">Testing and Quality Assurance</a></li>
+</ul>
+</li>
 </ul>
   </nav></div>
 
