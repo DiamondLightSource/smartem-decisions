@@ -88,7 +88,7 @@ mock = [
     "uvicorn[standard]>=0.30.0,<1.0.0",
 ]
 
-# MCP server and client dependencies
+# MCP server and client dependencies (optional)
 mcp = [
     "smartem-decisions[common,api,cli,agent]",
     "mcp>=1.0.0,<2.0.0",
