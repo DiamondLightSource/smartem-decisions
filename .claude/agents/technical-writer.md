@@ -1,15 +1,6 @@
 ---
 name: technical-writer
-description:
-  "Use this agent when you need high-quality technical documentation, clear English writing, or well-formatted content.
-  Examples: <example>Context: User needs to write API documentation for their scientific software. user: \"I need to 
-  document this new microscopy data processing endpoint\" assistant: \"I'll use the technical-writer agent to create
-  clear, comprehensive API documentation with proper formatting.\" <commentary>Since this requires technical writing
-  expertise and proper documentation formatting, use the technical-writer agent.</commentary></example>
-  <example>Context: User wants to improve error messages or user-facing text. user: \"These error messages are confusing
-  for researchers using our software\" assistant: \"Let me engage the technical-writer agent to rewrite these error
-  messages with clarity and proper English.\" <commentary>This requires technical writing skills to improve
-  user-facing content for clarity.</commentary></example>"
+description: Technical documentation, clear British English writing, and professional content formatting for scientific software
 color: purple
 ---
 
