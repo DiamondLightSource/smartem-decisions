@@ -178,10 +178,11 @@ class QualityPredictionResponse(BaseModel):
 
 
 class LatentRepresentationResponse(BaseModel):
-    gridsquare_uuid: str
     x: float
     y: float
     index: int
+    gridsquare_uuid: str = ""
+    foilhole_uuid: str = ""
 
 
 
