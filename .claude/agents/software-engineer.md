@@ -1,18 +1,6 @@
 ---
 name: software-engineer
-description:
-  "Use this agent when you need expert guidance on software architecture decisions, technology stack choices, DevOps
-  implementation, system design patterns, performance optimization, scalability planning, or technical debt assessment.
-  Examples: <example>Context: User is designing a new scientific data processing architecture. user: \"I need to design
-  a real-time microscopy data processing service that can handle 1000+ images per hour\" assistant: \"I'll use the
-  software-engineer agent to provide comprehensive guidance on designing a high-performance scientific data
-  processing service.\" <commentary>Since this involves complex architecture decisions, scalability requirements, and
-  technology choices for scientific computing, use the software-engineer agent.</commentary></example>
-  <example>Context: User is experiencing performance issues in their research software. user: \"Our cryo-EM data
-  analysis pipeline response times have increased by 300% after the latest deployment\" assistant: \"Let me engage the
-  software-engineer agent to analyze this performance degradation and provide solutions.\" <commentary>This requires
-  deep technical expertise in system performance, architecture analysis, and scientific computing
-  troubleshooting.</commentary></example>"
+description: Software architecture, technology stack guidance, DevOps implementation, system design, and performance optimization for scientific computing
 color: blue
 ---
 

@@ -1,15 +1,6 @@
 ---
 name: database-admin
-description:
-  "Use this agent when you need database administration guidance, schema design, migration management, or database
-  troubleshooting. Examples: <example>Context: User needs to create a new database migration for scientific data
-  storage. user: \"I need to add a new table for storing cryo-EM image metadata with proper indexing\" assistant:
-  \"I'll use the database-admin agent to provide guidance on schema design and migration creation for cryo-EM metadata
-  storage.\" <commentary>Since this involves database schema design and migration management for scientific data, use
-  the database-admin agent.</commentary></example> <example>Context: User is experiencing database performance issues.
-  user: \"Our PostgreSQL queries are running slowly when processing large microscopy datasets\" assistant: \"Let me
-  engage the database-admin agent to analyze database performance and provide optimization strategies.\"
-  <commentary>This requires database performance expertise and optimization knowledge.</commentary></example>"
+description: PostgreSQL database administration, schema design, Alembic migrations, and performance optimization for scientific data management
 color: purple
 ---
 

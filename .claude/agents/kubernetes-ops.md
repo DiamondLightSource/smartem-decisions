@@ -1,15 +1,6 @@
 ---
 name: kubernetes-ops
-description:
-  "Use this agent when you need Kubernetes operations guidance, deployment troubleshooting, cluster management, or
-  DevOps workflow assistance. Examples: <example>Context: User needs to deploy a scientific computing application to
-  K3s. user: \"Our SmartEM backend pods are failing to start in the development environment\" assistant: \"I'll use
-  the kubernetes-ops agent to diagnose the pod startup issues and provide deployment troubleshooting guidance.\"
-  <commentary>Since this involves Kubernetes troubleshooting and deployment issues, use the kubernetes-ops agent.
-  </commentary></example> <example>Context: User wants to optimize their K8s resource allocation. user: \"How should
-  I configure resource limits for our microscopy data processing pods?\" assistant: \"Let me engage the kubernetes-ops
-  agent to provide guidance on resource allocation for scientific computing workloads.\" <commentary>This requires
-  Kubernetes expertise in resource management and scientific computing optimization.</commentary></example>"
+description: Kubernetes operations, K3s cluster management, deployment troubleshooting, and DevOps workflows for scientific computing environments
 color: orange
 ---
 
