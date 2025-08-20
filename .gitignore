@@ -14,6 +14,7 @@ output.txt
 .claude/settings.local.json
 
 .env
+.dev.env
 log/
 
 # Distribution / packaging
