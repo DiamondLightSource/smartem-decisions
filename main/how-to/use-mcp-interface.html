@@ -1,0 +1,1202 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Using SmartEM MCP Interface &#8212; smartem-decisions 0.1.dev295+gef86e79e4.d20250820 documentation</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+<link href="../_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=4ae1632d" />
+    <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinx-design.min.css?v=95c83b7e" />
+  
+  <!-- So that users can add custom icons -->
+  <script src="../_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
+<link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
+
+    <script src="../_static/documentation_options.js?v=96cb887c"></script>
+    <script src="../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../_static/copybutton.js?v=30646c52"></script>
+    <script src="../_static/design-tabs.js?v=f930bc37"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'how-to/use-mcp-interface';</script>
+    <script>
+        DOCUMENTATION_OPTIONS.theme_version = '0.16.1';
+        DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://DiamondLightSource.github.io/smartem-decisions/switcher.json';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = 'main';
+        DOCUMENTATION_OPTIONS.show_version_warning_banner =
+            false;
+        </script>
+    <link rel="icon" href="../_static/dls-logo.svg"/>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Explanations" href="../explanations.html" />
+    <link rel="prev" title="How to Use the SmartEM API Client" href="use-core-http-api-client.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="main" />
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../_static/dls-logo.svg" class="logo__image only-light" alt=""/>
+    <img src="../_static/dls-logo.svg" class="logo__image only-dark pst-js-only" alt=""/>
+  
+  
+    <p class="title logo__title">smartem-decisions</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../tutorials.html">
+    Tutorials
+  </a>
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="../how-to.html">
+    How-to Guides
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../explanations.html">
+    Explanations
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../reference.html">
+    Reference
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/DiamondLightSource/smartem-decisions" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://pypi.org/project/smartem-decisions" title="PyPI" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fas fa-cube fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">PyPI</span></a>
+        </li>
+</ul></div>
+      
+        <div class="navbar-item">
+<div class="version-switcher__container dropdown pst-js-only">
+  <button id="pst-version-switcher-button-2"
+    type="button"
+    class="version-switcher__button btn btn-sm dropdown-toggle"
+    data-bs-toggle="dropdown"
+    aria-haspopup="listbox"
+    aria-controls="pst-version-switcher-list-2"
+    aria-label="Version switcher list"
+  >
+    Choose version  <!-- this text may get changed later by javascript -->
+    <span class="caret"></span>
+  </button>
+  <div id="pst-version-switcher-list-2"
+    class="version-switcher__menu dropdown-menu list-group-flush py-0"
+    role="listbox" aria-labelledby="pst-version-switcher-button-2">
+    <!-- dropdown will be populated by javascript on page load -->
+  </div>
+</div></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+    <button class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../tutorials.html">
+    Tutorials
+  </a>
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="../how-to.html">
+    How-to Guides
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../explanations.html">
+    Explanations
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../reference.html">
+    Reference
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/DiamondLightSource/smartem-decisions" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://pypi.org/project/smartem-decisions" title="PyPI" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fas fa-cube fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">PyPI</span></a>
+        </li>
+</ul></div>
+        
+          <div class="navbar-item">
+<div class="version-switcher__container dropdown pst-js-only">
+  <button id="pst-version-switcher-button-3"
+    type="button"
+    class="version-switcher__button btn btn-sm dropdown-toggle"
+    data-bs-toggle="dropdown"
+    aria-haspopup="listbox"
+    aria-controls="pst-version-switcher-list-3"
+    aria-label="Version switcher list"
+  >
+    Choose version  <!-- this text may get changed later by javascript -->
+    <span class="caret"></span>
+  </button>
+  <div id="pst-version-switcher-list-3"
+    class="version-switcher__menu dropdown-menu list-group-flush py-0"
+    role="listbox" aria-labelledby="pst-version-switcher-button-3">
+    <!-- dropdown will be populated by javascript on page load -->
+  </div>
+</div></div>
+        
+      </div>
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+<nav class="bd-docs-nav bd-links"
+     aria-label="Section Navigation">
+  <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
+  <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="use-api-documentation.html">Using the API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="configure-logging.html">Configure Logging and Verbosity</a></li>
+<li class="toctree-l1"><a class="reference internal" href="containerization.html">Containerization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contribute.html">Contribute to the project</a></li>
+<li class="toctree-l1"><a class="reference internal" href="database-migrations.html">Database Migrations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="deploy-kubernetes.html">Kubernetes Deployment</a></li>
+<li class="toctree-l1"><a class="reference internal" href="development-tools.html">Development Tools</a></li>
+<li class="toctree-l1"><a class="reference internal" href="generate-docs.html">Generate Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="run-agent.html">Run SmartEM Agent (EPU Agent)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="run-backend.html">Run SmartEM Backend</a></li>
+<li class="toctree-l1"><a class="reference internal" href="run-container.html">Run in a container</a></li>
+<li class="toctree-l1"><a class="reference internal" href="use-core-http-api-client.html">How to Use the SmartEM API Client</a></li>
+<li class="toctree-l1 current active"><a class="current reference internal" href="#">Using SmartEM MCP Interface</a></li>
+</ul>
+</div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="../how-to.html" class="nav-link">How-to Guides</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Using SmartEM MCP Interface</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section id="using-smartem-mcp-interface">
+<h1>Using SmartEM MCP Interface<a class="headerlink" href="#using-smartem-mcp-interface" title="Link to this heading">#</a></h1>
+<p>The SmartEM MCP (Model Context Protocol) interface provides natural language querying capabilities for microscopy session data. Built with FastMCP 2.0, it supports both filesystem-based parsing and API-based queries for comprehensive data access.</p>
+<section id="overview">
+<h2>Overview<a class="headerlink" href="#overview" title="Link to this heading">#</a></h2>
+<p>The MCP interface consists of:</p>
+<ul class="simple">
+<li><p><strong>FastMCP Server</strong>: Provides natural language query capabilities via MCP protocol using FastMCP framework</p></li>
+<li><p><strong>MCP Client</strong>: Python client for programmatic access with simplified FastMCP patterns</p></li>
+<li><p><strong>CLI Interface</strong>: Command-line tools for interactive usage</p></li>
+</ul>
+</section>
+<section id="installation">
+<h2>Installation<a class="headerlink" href="#installation" title="Link to this heading">#</a></h2>
+<p>Install with MCP dependencies (includes FastMCP 2.0 framework):</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span>.<span class="o">[</span>mcp<span class="o">]</span>
+</pre></div>
+</div>
+<p>This installs the required FastMCP 2.0 framework and SmartEM MCP components.</p>
+</section>
+<section id="quick-start">
+<h2>Quick Start<a class="headerlink" href="#quick-start" title="Link to this heading">#</a></h2>
+<section id="interactive-query-mode">
+<h3>1. Interactive Query Mode<a class="headerlink" href="#interactive-query-mode" title="Link to this heading">#</a></h3>
+<p>Start interactive mode for natural language questions:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>-m<span class="w"> </span>smartem_mcp<span class="w"> </span>interactive
+</pre></div>
+</div>
+<p>Example questions:</p>
+<ul class="simple">
+<li><p>“Show me a summary of session /path/to/epu/directory”</p></li>
+<li><p>“Find low quality items in /path/to/epu with threshold 0.3”</p></li>
+<li><p>“What are the recent acquisitions?”</p></li>
+</ul>
+</section>
+<section id="command-line-usage">
+<h3>2. Command Line Usage<a class="headerlink" href="#command-line-usage" title="Link to this heading">#</a></h3>
+<p>Parse EPU directory:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>-m<span class="w"> </span>smartem_mcp<span class="w"> </span>client<span class="w"> </span>parse<span class="w"> </span>--path<span class="w"> </span>/path/to/epu/session
+</pre></div>
+</div>
+<p>Find low quality items:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>-m<span class="w"> </span>smartem_mcp<span class="w"> </span>client<span class="w"> </span>quality<span class="w"> </span>--path<span class="w"> </span>/path/to/epu<span class="w"> </span>--threshold<span class="w"> </span><span class="m">0</span>.3
+</pre></div>
+</div>
+<p>Query recent acquisitions (requires API):</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>-m<span class="w"> </span>smartem_mcp<span class="w"> </span>client<span class="w"> </span>acquisitions<span class="w"> </span>--limit<span class="w"> </span><span class="m">10</span>
+</pre></div>
+</div>
+</section>
+<section id="programmatic-usage">
+<h3>3. Programmatic Usage<a class="headerlink" href="#programmatic-usage" title="Link to this heading">#</a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">smartem_mcp.client</span><span class="w"> </span><span class="kn">import</span> <span class="n">SmartEMMCPClient</span>
+
+<span class="k">async</span> <span class="k">with</span> <span class="n">SmartEMMCPClient</span><span class="p">()</span> <span class="k">as</span> <span class="n">client</span><span class="p">:</span>
+    <span class="c1"># Parse EPU directory</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">client</span><span class="o">.</span><span class="n">parse_epu_directory</span><span class="p">(</span><span class="s2">&quot;/path/to/epu&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;success&quot;</span><span class="p">):</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Found </span><span class="si">{</span><span class="n">result</span><span class="p">[</span><span class="s1">&#39;grid_count&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2"> grids&quot;</span><span class="p">)</span>
+    
+    <span class="c1"># Find low quality items</span>
+    <span class="n">quality_result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">client</span><span class="o">.</span><span class="n">find_low_quality_items</span><span class="p">(</span>
+        <span class="s2">&quot;/path/to/epu&quot;</span><span class="p">,</span> 
+        <span class="n">threshold</span><span class="o">=</span><span class="mf">0.3</span>
+    <span class="p">)</span>
+    
+    <span class="c1"># Query API data</span>
+    <span class="n">acquisitions</span> <span class="o">=</span> <span class="k">await</span> <span class="n">client</span><span class="o">.</span><span class="n">query_recent_acquisitions</span><span class="p">(</span><span class="n">limit</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="data-sources">
+<h2>Data Sources<a class="headerlink" href="#data-sources" title="Link to this heading">#</a></h2>
+<section id="filesystem-queries">
+<h3>Filesystem Queries<a class="headerlink" href="#filesystem-queries" title="Link to this heading">#</a></h3>
+<p>Direct parsing of EPU XML files using existing <code class="docutils literal notranslate"><span class="pre">smartem_agent</span></code> tools:</p>
+<ul class="simple">
+<li><p><strong>Use case</strong>: Ad-hoc analysis, debugging, development</p></li>
+<li><p><strong>Capabilities</strong>: Full EPU directory parsing, quality analysis</p></li>
+<li><p><strong>Requirements</strong>: Direct filesystem access to EPU data</p></li>
+</ul>
+</section>
+<section id="api-queries">
+<h3>API Queries<a class="headerlink" href="#api-queries" title="Link to this heading">#</a></h3>
+<p>Query historical and in-flight sessions via <code class="docutils literal notranslate"><span class="pre">smartem_api</span></code>:</p>
+<ul class="simple">
+<li><p><strong>Use case</strong>: Historical analysis, live session monitoring</p></li>
+<li><p><strong>Capabilities</strong>: Acquisition status, grid processing, real-time data</p></li>
+<li><p><strong>Requirements</strong>: Running SmartEM backend service</p></li>
+</ul>
+</section>
+</section>
+<section id="claude-code-integration">
+<h2>Claude Code Integration<a class="headerlink" href="#claude-code-integration" title="Link to this heading">#</a></h2>
+<p>The SmartEM MCP server integrates seamlessly with Claude Code, allowing natural language queries about microscopy data directly within your development environment.</p>
+<section id="prerequisites">
+<h3>Prerequisites<a class="headerlink" href="#prerequisites" title="Link to this heading">#</a></h3>
+<p>Ensure MCP dependencies are installed (includes FastMCP 2.0):</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span>.<span class="o">[</span>mcp<span class="o">]</span>
+</pre></div>
+</div>
+<p>Verify the installation:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>-m<span class="w"> </span>smartem_mcp<span class="w"> </span>--version
+</pre></div>
+</div>
+</section>
+<section id="registration-with-claude-code">
+<h3>Registration with Claude Code<a class="headerlink" href="#registration-with-claude-code" title="Link to this heading">#</a></h3>
+<section id="option-1-using-claude-cli-recommended">
+<h4>Option 1: Using Claude CLI (Recommended)<a class="headerlink" href="#option-1-using-claude-cli-recommended" title="Link to this heading">#</a></h4>
+<p>Register the SmartEM MCP server using the Claude CLI:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Basic registration (user-wide scope)</span>
+claude<span class="w"> </span>mcp<span class="w"> </span>add<span class="w"> </span>smartem<span class="w"> </span>--<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>smartem_mcp<span class="w"> </span>server
+
+<span class="c1"># With custom API URL</span>
+claude<span class="w"> </span>mcp<span class="w"> </span>add<span class="w"> </span>smartem<span class="w"> </span>--<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>smartem_mcp<span class="w"> </span>server<span class="w"> </span>--api-url<span class="w"> </span>http://localhost:30080
+
+<span class="c1"># Project-scoped registration</span>
+claude<span class="w"> </span>mcp<span class="w"> </span>add<span class="w"> </span>smartem<span class="w"> </span>--scope<span class="w"> </span>project<span class="w"> </span>--<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>smartem_mcp<span class="w"> </span>server<span class="w"> </span>--api-url<span class="w"> </span>http://localhost:30080
+</pre></div>
+</div>
+</section>
+<section id="option-2-manual-configuration">
+<h4>Option 2: Manual Configuration<a class="headerlink" href="#option-2-manual-configuration" title="Link to this heading">#</a></h4>
+<p>If you prefer manual configuration, add the server to your Claude Code settings:</p>
+<p><strong>For user-wide registration:</strong>
+Edit <code class="docutils literal notranslate"><span class="pre">~/.config/claude-code/mcp.json</span></code>:</p>
+<div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;mcpServers&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;smartem&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">&quot;command&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;python&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;args&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;-m&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;smartem_mcp&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;server&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;--api-url&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;http://localhost:30080&quot;</span><span class="p">],</span>
+<span class="w">      </span><span class="nt">&quot;env&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;SMARTEM_API_URL&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;http://localhost:30080&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;SMARTEM_MCP_LOG_LEVEL&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;INFO&quot;</span>
+<span class="w">      </span><span class="p">}</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p><strong>For project-scoped registration:</strong>
+Create <code class="docutils literal notranslate"><span class="pre">.claude/mcp.json</span></code> in your project root:</p>
+<div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;mcpServers&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;smartem&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">&quot;command&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;python&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;args&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;-m&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;smartem_mcp&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;server&quot;</span><span class="p">],</span>
+<span class="w">      </span><span class="nt">&quot;env&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;SMARTEM_API_URL&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;http://localhost:30080&quot;</span>
+<span class="w">      </span><span class="p">}</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="registration-options">
+<h3>Registration Options<a class="headerlink" href="#registration-options" title="Link to this heading">#</a></h3>
+<section id="environment-variables">
+<h4>Environment Variables<a class="headerlink" href="#environment-variables" title="Link to this heading">#</a></h4>
+<p>Configure the MCP server behaviour through environment variables:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">SMARTEM_API_URL</span></code>: Base URL for SmartEM API (default: <code class="docutils literal notranslate"><span class="pre">http://localhost:30080</span></code>)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">SMARTEM_MCP_LOG_LEVEL</span></code>: Logging level (<code class="docutils literal notranslate"><span class="pre">DEBUG</span></code>, <code class="docutils literal notranslate"><span class="pre">INFO</span></code>, <code class="docutils literal notranslate"><span class="pre">WARNING</span></code>, <code class="docutils literal notranslate"><span class="pre">ERROR</span></code>)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">PYTHON_PATH</span></code>: Python executable path if not in system PATH</p></li>
+</ul>
+<p>Example with custom environment:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>claude<span class="w"> </span>mcp<span class="w"> </span>add<span class="w"> </span>smartem<span class="w"> </span>--env<span class="w"> </span><span class="nv">SMARTEM_API_URL</span><span class="o">=</span>http://production.server:8080<span class="w"> </span>--env<span class="w"> </span><span class="nv">SMARTEM_MCP_LOG_LEVEL</span><span class="o">=</span>DEBUG<span class="w"> </span>--<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>smartem_mcp<span class="w"> </span>server
+</pre></div>
+</div>
+</section>
+<section id="scope-options">
+<h4>Scope Options<a class="headerlink" href="#scope-options" title="Link to this heading">#</a></h4>
+<ul class="simple">
+<li><p><strong>User scope</strong> (default): Available across all Claude Code projects</p></li>
+<li><p><strong>Project scope</strong>: Only available within the current project directory</p></li>
+</ul>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># User-wide (default)</span>
+claude<span class="w"> </span>mcp<span class="w"> </span>add<span class="w"> </span>smartem<span class="w"> </span>--<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>smartem_mcp<span class="w"> </span>server
+
+<span class="c1"># Project-specific</span>
+claude<span class="w"> </span>mcp<span class="w"> </span>add<span class="w"> </span>smartem<span class="w"> </span>--scope<span class="w"> </span>project<span class="w"> </span>--<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>smartem_mcp<span class="w"> </span>server
+</pre></div>
+</div>
+</section>
+</section>
+<section id="verification">
+<h3>Verification<a class="headerlink" href="#verification" title="Link to this heading">#</a></h3>
+<section id="check-registration-status">
+<h4>1. Check Registration Status<a class="headerlink" href="#check-registration-status" title="Link to this heading">#</a></h4>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># List all registered MCP servers</span>
+claude<span class="w"> </span>mcp<span class="w"> </span>list
+
+<span class="c1"># Check SmartEM server status</span>
+claude<span class="w"> </span>mcp<span class="w"> </span>status<span class="w"> </span>smartem
+</pre></div>
+</div>
+</section>
+<section id="test-connection">
+<h4>2. Test Connection<a class="headerlink" href="#test-connection" title="Link to this heading">#</a></h4>
+<p>Start a new Claude Code session and verify the SmartEM tools are available:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># In Claude Code, type a natural language query:</span>
+<span class="c1"># &quot;List all available SmartEM tools&quot;</span>
+</pre></div>
+</div>
+<p>You should see the following tools available:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">parse_epu_directory</span></code> - Parse EPU microscopy directories</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">query_quality_metrics</span></code> - Find low-quality images and foil holes</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">query_acquisitions</span></code> - Query recent acquisition sessions</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">query_grid_status</span></code> - Get grid processing status</p></li>
+</ul>
+<p><strong>Note</strong>: The client provides high-level methods such as <code class="docutils literal notranslate"><span class="pre">find_low_quality_items()</span></code> which internally call the corresponding MCP tools.</p>
+</section>
+<section id="test-basic-functionality">
+<h4>3. Test Basic Functionality<a class="headerlink" href="#test-basic-functionality" title="Link to this heading">#</a></h4>
+<p>Try a simple query in Claude Code:</p>
+<blockquote>
+<div><p>“Parse the EPU directory at /path/to/your/epu/session”</p>
+</div></blockquote>
+</section>
+</section>
+<section id="usage-in-claude-code">
+<h3>Usage in Claude Code<a class="headerlink" href="#usage-in-claude-code" title="Link to this heading">#</a></h3>
+<p>Once registered, you can interact with SmartEM data using natural language within Claude Code:</p>
+<section id="directory-analysis">
+<h4>Directory Analysis<a class="headerlink" href="#directory-analysis" title="Link to this heading">#</a></h4>
+<blockquote>
+<div><p>“Show me a comprehensive analysis of the EPU session at /data/microscopy/session_001”</p>
+</div></blockquote>
+<blockquote>
+<div><p>“What grids and grid squares are available in /path/to/epu/directory?”</p>
+</div></blockquote>
+</section>
+<section id="quality-assessment">
+<h4>Quality Assessment<a class="headerlink" href="#quality-assessment" title="Link to this heading">#</a></h4>
+<blockquote>
+<div><p>“Find all images with quality scores below 0.4 in the EPU directory /data/session_001”</p>
+</div></blockquote>
+<blockquote>
+<div><p>“Show me foil holes that need attention from /path/to/epu with quality threshold 0.3”</p>
+</div></blockquote>
+</section>
+<section id="session-monitoring">
+<h4>Session Monitoring<a class="headerlink" href="#session-monitoring" title="Link to this heading">#</a></h4>
+<blockquote>
+<div><p>“What are the 5 most recent microscopy acquisitions?”</p>
+</div></blockquote>
+<blockquote>
+<div><p>“Check the processing status of grid uuid-12345”</p>
+</div></blockquote>
+</section>
+<section id="advanced-queries">
+<h4>Advanced Queries<a class="headerlink" href="#advanced-queries" title="Link to this heading">#</a></h4>
+<blockquote>
+<div><p>“Compare quality metrics between /data/session_001 and /data/session_002”</p>
+</div></blockquote>
+<blockquote>
+<div><p>“Generate a report for all low-quality items found today”</p>
+</div></blockquote>
+</section>
+</section>
+<section id="server-mode-standalone">
+<h3>Server Mode (Standalone)<a class="headerlink" href="#server-mode-standalone" title="Link to this heading">#</a></h3>
+<p>For advanced users or debugging, run the MCP server in standalone mode:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>-m<span class="w"> </span>smartem_mcp<span class="w"> </span>server<span class="w"> </span>--api-url<span class="w"> </span>http://localhost:30080<span class="w"> </span>--log-level<span class="w"> </span>DEBUG
+</pre></div>
+</div>
+<p>This starts the server with stdio communication, primarily useful for:</p>
+<ul class="simple">
+<li><p>Debugging MCP protocol issues</p></li>
+<li><p>Custom client integrations</p></li>
+<li><p>Development and testing</p></li>
+</ul>
+</section>
+</section>
+<section id="available-tools">
+<h2>Available Tools<a class="headerlink" href="#available-tools" title="Link to this heading">#</a></h2>
+<section id="parse-epu-directory">
+<h3><code class="docutils literal notranslate"><span class="pre">parse_epu_directory</span></code><a class="headerlink" href="#parse-epu-directory" title="Link to this heading">#</a></h3>
+<p>Parse EPU microscopy directory and extract comprehensive session data.</p>
+<p><strong>Parameters:</strong></p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">path</span></code> (required): Path to EPU output directory containing EpuSession.dm</p></li>
+</ul>
+<p><strong>Returns:</strong> Acquisition data, grids, grid squares, and statistics</p>
+</section>
+<section id="query-quality-metrics">
+<h3><code class="docutils literal notranslate"><span class="pre">query_quality_metrics</span></code><a class="headerlink" href="#query-quality-metrics" title="Link to this heading">#</a></h3>
+<p>Find foil holes and micrographs with quality scores below threshold.</p>
+<p><strong>Parameters:</strong></p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">path</span></code> (required): Path to EPU directory</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">threshold</span></code> (optional): Quality threshold (default: 0.5)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">source</span></code> (optional): “filesystem” or “api” (default: filesystem)</p></li>
+</ul>
+<p><strong>Returns:</strong> List of low-quality items with metadata</p>
+</section>
+<section id="query-acquisitions">
+<h3><code class="docutils literal notranslate"><span class="pre">query_acquisitions</span></code><a class="headerlink" href="#query-acquisitions" title="Link to this heading">#</a></h3>
+<p>Query recent microscopy acquisition sessions from API.</p>
+<p><strong>Parameters:</strong></p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">limit</span></code> (optional): Number of acquisitions to return (default: 10)</p></li>
+</ul>
+<p><strong>Returns:</strong> List of acquisitions with status and metadata</p>
+</section>
+<section id="query-grid-status">
+<h3><code class="docutils literal notranslate"><span class="pre">query_grid_status</span></code><a class="headerlink" href="#query-grid-status" title="Link to this heading">#</a></h3>
+<p>Get detailed status and processing state for specific grid.</p>
+<p><strong>Parameters:</strong></p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">grid_id</span></code> (required): Grid UUID or identifier</p></li>
+</ul>
+<p><strong>Returns:</strong> Grid details and processing status</p>
+</section>
+</section>
+<section id="future-enhancements">
+<h2>Future Enhancements<a class="headerlink" href="#future-enhancements" title="Link to this heading">#</a></h2>
+<p>The following capabilities are scaffolded for future implementation:</p>
+<section id="real-time-event-streaming">
+<h3>Real-time Event Streaming<a class="headerlink" href="#real-time-event-streaming" title="Link to this heading">#</a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Future capability - real-time updates via RabbitMQ</span>
+<span class="n">events</span> <span class="o">=</span> <span class="k">await</span> <span class="n">client</span><span class="o">.</span><span class="n">subscribe_to_events</span><span class="p">(</span><span class="s2">&quot;acquisition.*.quality_updated&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="direct-database-querying">
+<h3>Direct Database Querying<a class="headerlink" href="#direct-database-querying" title="Link to this heading">#</a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Future capability - direct read-only database access</span>
+<span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">client</span><span class="o">.</span><span class="n">query_database</span><span class="p">(</span><span class="s2">&quot;SELECT * FROM micrographs WHERE quality &lt; 0.3&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="error-handling">
+<h2>Error Handling<a class="headerlink" href="#error-handling" title="Link to this heading">#</a></h2>
+<p>All operations return structured results with success indicators:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">client</span><span class="o">.</span><span class="n">parse_epu_directory</span><span class="p">(</span><span class="s2">&quot;/path/to/epu&quot;</span><span class="p">)</span>
+<span class="k">if</span> <span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;success&quot;</span><span class="p">):</span>
+    <span class="c1"># Process result data</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;data&quot;</span><span class="p">,</span> <span class="p">{})</span>
+    <span class="k">pass</span>
+<span class="k">else</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error: </span><span class="si">{</span><span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;error&#39;</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="configuration">
+<h2>Configuration<a class="headerlink" href="#configuration" title="Link to this heading">#</a></h2>
+<section id="id1">
+<h3>Environment Variables<a class="headerlink" href="#id1" title="Link to this heading">#</a></h3>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">SMARTEM_API_URL</span></code>: Base URL for SmartEM API (default: http://localhost:30080)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">SMARTEM_MCP_LOG_LEVEL</span></code>: Logging level (default: INFO)</p></li>
+</ul>
+</section>
+<section id="api-authentication">
+<h3>API Authentication<a class="headerlink" href="#api-authentication" title="Link to this heading">#</a></h3>
+<p>For authenticated API access (future):</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">client</span> <span class="o">=</span> <span class="n">SmartEMMCPClient</span><span class="p">(</span><span class="n">api_token</span><span class="o">=</span><span class="s2">&quot;your_token_here&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="troubleshooting">
+<h2>Troubleshooting<a class="headerlink" href="#troubleshooting" title="Link to this heading">#</a></h2>
+<section id="common-issues">
+<h3>Common Issues<a class="headerlink" href="#common-issues" title="Link to this heading">#</a></h3>
+<section id="mcp-server-registration-problems">
+<h4>1. MCP Server Registration Problems<a class="headerlink" href="#mcp-server-registration-problems" title="Link to this heading">#</a></h4>
+<p><strong>“SmartEM MCP server not found”</strong></p>
+<ul class="simple">
+<li><p>Ensure MCP dependencies are installed: <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">-e</span> <span class="pre">.[mcp]</span></code> (includes FastMCP 2.0)</p></li>
+<li><p>Verify Python path includes smartem_mcp module: <code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">-c</span> <span class="pre">&quot;import</span> <span class="pre">smartem_mcp;</span> <span class="pre">print('OK')&quot;</span></code></p></li>
+<li><p>Check registration with <code class="docutils literal notranslate"><span class="pre">claude</span> <span class="pre">mcp</span> <span class="pre">list</span></code></p></li>
+</ul>
+<p><strong>“Failed to start MCP server”</strong></p>
+<ul class="simple">
+<li><p>Verify Python executable is accessible: <code class="docutils literal notranslate"><span class="pre">which</span> <span class="pre">python</span></code></p></li>
+<li><p>Test server manually: <code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">-m</span> <span class="pre">smartem_mcp</span> <span class="pre">server</span> <span class="pre">--api-url</span> <span class="pre">http://localhost:30080</span></code></p></li>
+<li><p>Check environment variables are properly set</p></li>
+</ul>
+<p><strong>“MCP server registered but not responding”</strong></p>
+<ul class="simple">
+<li><p>Remove and re-add the server: <code class="docutils literal notranslate"><span class="pre">claude</span> <span class="pre">mcp</span> <span class="pre">remove</span> <span class="pre">smartem</span> <span class="pre">&amp;&amp;</span> <span class="pre">claude</span> <span class="pre">mcp</span> <span class="pre">add</span> <span class="pre">smartem</span> <span class="pre">--</span> <span class="pre">python</span> <span class="pre">-m</span> <span class="pre">smartem_mcp</span> <span class="pre">server</span></code></p></li>
+<li><p>Restart Claude Code completely</p></li>
+<li><p>Check server logs: <code class="docutils literal notranslate"><span class="pre">claude</span> <span class="pre">mcp</span> <span class="pre">logs</span> <span class="pre">smartem</span></code></p></li>
+</ul>
+</section>
+<section id="directory-and-data-issues">
+<h4>2. Directory and Data Issues<a class="headerlink" href="#directory-and-data-issues" title="Link to this heading">#</a></h4>
+<p><strong>“Invalid EPU directory”</strong></p>
+<ul class="simple">
+<li><p>Verify directory contains EpuSession.dm file</p></li>
+<li><p>Check Metadata/ and Images-Disc*/ subdirectories exist</p></li>
+<li><p>Ensure proper file permissions for reading EPU data</p></li>
+</ul>
+<p><strong>“Permission denied accessing EPU files”</strong></p>
+<ul class="simple">
+<li><p>Check file permissions: <code class="docutils literal notranslate"><span class="pre">ls</span> <span class="pre">-la</span> <span class="pre">/path/to/epu/directory</span></code></p></li>
+<li><p>Ensure user has read access to all EPU subdirectories</p></li>
+<li><p>For network mounts, verify mount permissions</p></li>
+</ul>
+</section>
+<section id="api-connection-issues">
+<h4>3. API Connection Issues<a class="headerlink" href="#api-connection-issues" title="Link to this heading">#</a></h4>
+<p><strong>“API connection failed”</strong></p>
+<ul class="simple">
+<li><p>Verify SmartEM backend is running: <code class="docutils literal notranslate"><span class="pre">curl</span> <span class="pre">http://localhost:30080/health</span></code></p></li>
+<li><p>Check API URL is correct in registration command</p></li>
+<li><p>Test network connectivity to API endpoint</p></li>
+</ul>
+<p><strong>“Authentication failed”</strong> (Future feature)</p>
+<ul class="simple">
+<li><p>Verify API tokens are properly configured</p></li>
+<li><p>Check token expiration and renewal</p></li>
+</ul>
+</section>
+<section id="claude-code-integration-issues">
+<h4>4. Claude Code Integration Issues<a class="headerlink" href="#claude-code-integration-issues" title="Link to this heading">#</a></h4>
+<p><strong>“Tools not available in Claude Code”</strong></p>
+<ul class="simple">
+<li><p>Restart Claude Code after registration</p></li>
+<li><p>Check MCP server status: <code class="docutils literal notranslate"><span class="pre">claude</span> <span class="pre">mcp</span> <span class="pre">status</span> <span class="pre">smartem</span></code></p></li>
+<li><p>Verify registration scope (user vs project)</p></li>
+</ul>
+<p><strong>“Queries return empty results”</strong></p>
+<ul class="simple">
+<li><p>Test with standalone client: <code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">-m</span> <span class="pre">smartem_mcp</span> <span class="pre">client</span> <span class="pre">parse</span> <span class="pre">--path</span> <span class="pre">/path/to/epu</span></code></p></li>
+<li><p>Check EPU directory structure and data validity</p></li>
+<li><p>Verify API connectivity for acquisition queries</p></li>
+</ul>
+</section>
+</section>
+<section id="debug-mode">
+<h3>Debug Mode<a class="headerlink" href="#debug-mode" title="Link to this heading">#</a></h3>
+<section id="enable-debug-logging">
+<h4>Enable Debug Logging<a class="headerlink" href="#enable-debug-logging" title="Link to this heading">#</a></h4>
+<p>For MCP server debugging:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>claude<span class="w"> </span>mcp<span class="w"> </span>add<span class="w"> </span>smartem<span class="w"> </span>--env<span class="w"> </span><span class="nv">SMARTEM_MCP_LOG_LEVEL</span><span class="o">=</span>DEBUG<span class="w"> </span>--<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>smartem_mcp<span class="w"> </span>server<span class="w"> </span>--api-url<span class="w"> </span>http://localhost:30080<span class="w"> </span>--log-level<span class="w"> </span>DEBUG
+</pre></div>
+</div>
+<p>For client debugging:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>-m<span class="w"> </span>smartem_mcp<span class="w"> </span>--log-level<span class="w"> </span>DEBUG<span class="w"> </span>client<span class="w"> </span>parse<span class="w"> </span>--path<span class="w"> </span>/path/to/epu
+</pre></div>
+</div>
+</section>
+<section id="check-server-logs">
+<h4>Check Server Logs<a class="headerlink" href="#check-server-logs" title="Link to this heading">#</a></h4>
+<p>View MCP server logs in Claude Code:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>claude<span class="w"> </span>mcp<span class="w"> </span>logs<span class="w"> </span>smartem
+</pre></div>
+</div>
+</section>
+<section id="manual-server-testing">
+<h4>Manual Server Testing<a class="headerlink" href="#manual-server-testing" title="Link to this heading">#</a></h4>
+<p>Test the server independently of Claude Code:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Start server in stdio mode for testing</span>
+python<span class="w"> </span>-m<span class="w"> </span>smartem_mcp<span class="w"> </span>server<span class="w"> </span>--log-level<span class="w"> </span>DEBUG
+
+<span class="c1"># The server uses FastMCP stdio communication protocol</span>
+<span class="c1"># For testing, use interactive mode or programmatic client instead:</span>
+python<span class="w"> </span>-m<span class="w"> </span>smartem_mcp<span class="w"> </span>interactive
+</pre></div>
+</div>
+</section>
+</section>
+<section id="environment-specific-troubleshooting">
+<h3>Environment-Specific Troubleshooting<a class="headerlink" href="#environment-specific-troubleshooting" title="Link to this heading">#</a></h3>
+<section id="development-environment">
+<h4>Development Environment<a class="headerlink" href="#development-environment" title="Link to this heading">#</a></h4>
+<ul class="simple">
+<li><p>Ensure virtual environment is activated when registering</p></li>
+<li><p>Use absolute Python paths: <code class="docutils literal notranslate"><span class="pre">claude</span> <span class="pre">mcp</span> <span class="pre">add</span> <span class="pre">smartem</span> <span class="pre">--</span> <span class="pre">/path/to/.venv/bin/python</span> <span class="pre">-m</span> <span class="pre">smartem_mcp</span> <span class="pre">server</span></code></p></li>
+</ul>
+</section>
+<section id="production-environment">
+<h4>Production Environment<a class="headerlink" href="#production-environment" title="Link to this heading">#</a></h4>
+<ul class="simple">
+<li><p>Verify all dependencies are installed in production Python environment</p></li>
+<li><p>Check firewall rules for API connectivity</p></li>
+<li><p>Ensure proper logging configuration for production</p></li>
+</ul>
+</section>
+<section id="container-environments">
+<h4>Container Environments<a class="headerlink" href="#container-environments" title="Link to this heading">#</a></h4>
+<ul class="simple">
+<li><p>Mount EPU directories properly in container</p></li>
+<li><p>Expose API ports correctly</p></li>
+<li><p>Set environment variables in container runtime</p></li>
+</ul>
+</section>
+</section>
+<section id="getting-help">
+<h3>Getting Help<a class="headerlink" href="#getting-help" title="Link to this heading">#</a></h3>
+<p>If issues persist:</p>
+<ol class="arabic">
+<li><p><strong>Gather diagnostic information:</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># System info</span>
+python<span class="w"> </span>--version
+pip<span class="w"> </span>list<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>-E<span class="w"> </span><span class="s2">&quot;(smartem|mcp)&quot;</span>
+claude<span class="w"> </span>mcp<span class="w"> </span>list
+claude<span class="w"> </span>mcp<span class="w"> </span>status<span class="w"> </span>smartem
+
+<span class="c1"># Test basic functionality</span>
+python<span class="w"> </span>-m<span class="w"> </span>smartem_mcp<span class="w"> </span>--version
+python<span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;import smartem_mcp; print(&#39;Import successful&#39;)&quot;</span>
+</pre></div>
+</div>
+</li>
+<li><p><strong>Check project documentation:</strong> <a class="reference internal" href="#/README.md"><span class="xref myst">SmartEM Decisions README</span></a></p></li>
+<li><p><strong>Review MCP protocol documentation:</strong> <a class="reference external" href="https://modelcontextprotocol.io/">Model Context Protocol Specification</a></p></li>
+<li><p><strong>Submit issue:</strong> Include diagnostic information and specific error messages</p></li>
+</ol>
+</section>
+</section>
+<section id="integration-with-claude-code">
+<h2>Integration with Claude Code<a class="headerlink" href="#integration-with-claude-code" title="Link to this heading">#</a></h2>
+<p>When properly configured, you can ask Claude Code natural language questions:</p>
+<blockquote>
+<div><p>“Show me all grid squares with quality scores below 0.5 from the EPU session at /data/session1”</p>
+</div></blockquote>
+<blockquote>
+<div><p>“What’s the current status of acquisition abc-123?”</p>
+</div></blockquote>
+<blockquote>
+<div><p>“List micrographs acquired in the last hour with defocus values”</p>
+</div></blockquote>
+<p>The MCP server will automatically route these queries to the appropriate data sources and return formatted results.</p>
+</section>
+</section>
+
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="use-core-http-api-client.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">How to Use the SmartEM API Client</p>
+      </div>
+    </a>
+    <a class="right-next"
+       href="../explanations.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">Explanations</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#overview">Overview</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#installation">Installation</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#quick-start">Quick Start</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#interactive-query-mode">1. Interactive Query Mode</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#command-line-usage">2. Command Line Usage</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#programmatic-usage">3. Programmatic Usage</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#data-sources">Data Sources</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#filesystem-queries">Filesystem Queries</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#api-queries">API Queries</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#claude-code-integration">Claude Code Integration</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#prerequisites">Prerequisites</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#registration-with-claude-code">Registration with Claude Code</a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#option-1-using-claude-cli-recommended">Option 1: Using Claude CLI (Recommended)</a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#option-2-manual-configuration">Option 2: Manual Configuration</a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#registration-options">Registration Options</a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#environment-variables">Environment Variables</a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#scope-options">Scope Options</a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#verification">Verification</a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#check-registration-status">1. Check Registration Status</a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#test-connection">2. Test Connection</a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#test-basic-functionality">3. Test Basic Functionality</a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#usage-in-claude-code">Usage in Claude Code</a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#directory-analysis">Directory Analysis</a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#quality-assessment">Quality Assessment</a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#session-monitoring">Session Monitoring</a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#advanced-queries">Advanced Queries</a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#server-mode-standalone">Server Mode (Standalone)</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#available-tools">Available Tools</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#parse-epu-directory"><code class="docutils literal notranslate"><span class="pre">parse_epu_directory</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#query-quality-metrics"><code class="docutils literal notranslate"><span class="pre">query_quality_metrics</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#query-acquisitions"><code class="docutils literal notranslate"><span class="pre">query_acquisitions</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#query-grid-status"><code class="docutils literal notranslate"><span class="pre">query_grid_status</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#future-enhancements">Future Enhancements</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#real-time-event-streaming">Real-time Event Streaming</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#direct-database-querying">Direct Database Querying</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#error-handling">Error Handling</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#configuration">Configuration</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id1">Environment Variables</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#api-authentication">API Authentication</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#troubleshooting">Troubleshooting</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#common-issues">Common Issues</a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#mcp-server-registration-problems">1. MCP Server Registration Problems</a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#directory-and-data-issues">2. Directory and Data Issues</a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#api-connection-issues">3. API Connection Issues</a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#claude-code-integration-issues">4. Claude Code Integration Issues</a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#debug-mode">Debug Mode</a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#enable-debug-logging">Enable Debug Logging</a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#check-server-logs">Check Server Logs</a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#manual-server-testing">Manual Server Testing</a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#environment-specific-troubleshooting">Environment-Specific Troubleshooting</a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#development-environment">Development Environment</a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#production-environment">Production Environment</a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#container-environments">Container Environments</a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#getting-help">Getting Help</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#integration-with-claude-code">Integration with Claude Code</a></li>
+</ul>
+  </nav></div>
+
+  <div class="sidebar-secondary-item">
+
+  
+  <div class="tocsection editthispage">
+    <a href="https://github.com/DiamondLightSource/smartem-decisions/edit/main/docs/how-to/use-mcp-interface.md">
+      <i class="fa-solid fa-pencil"></i>
+      
+      
+        
+          Edit on GitHub
+        
+      
+    </a>
+  </div>
+</div>
+
+  <div class="sidebar-secondary-item">
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/how-to/use-mcp-interface.md.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div></div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf"></script>
+<script defer src="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.16.1.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>
