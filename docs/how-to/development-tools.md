@@ -1,57 +1,115 @@
 # Development Tools
 
-Collection of utility tools for development, testing, and maintenance.
+Collection of utility tools for development, testing, and maintenance of the SmartEM Decisions project.
 
-## Format XML to make it readable, recursively
+## XML Formatting Tools
+
+### Format XML Files for Human Readability
+
+Transform single-line XML and .dm files into human-readable format with proper indentation:
 
 ```bash
-# To reformat all `.xml` and `.dm` files in a given directory recursively, rewriting in-place
-# from single-line to human-readable:
-python tools/format_xml.py <some_dir> -r
+# Reformat all .xml and .dm files in a directory recursively
+python tools/format_xml.py <directory_path> -r
 
-# Multiple dirs:
+# Process multiple directories
 python tools/format_xml.py -r \
   ../smartem-decisions-test-datasets/metadata_Supervisor_20250114_220855_23_epuBSAd20_GrOxDDM \
   ../smartem-decisions-test-datasets/metadata_Supervisor_20241220_140307_72_et2_gangshun \
   ../smartem-decisions-test-datasets/metadata_Supervisor_20250108_101446_62_cm40593-1_EPU
 
-# For more options see:
+# Display all available options
 python tools/format_xml.py --help
 ```
 
-## Find all foilhole manifest duplicates in a directory, recursively
+## Data Analysis and Debugging Tools
+
+### Find Foil Hole Manifest Duplicates
+
+Identify duplicate foil hole manifests within directory structures to detect data inconsistencies:
 
 ```bash
+# Display help and usage information
 tools/find_foilhole_duplicates.py --help
-# e.g.
+
+# Example: Search for duplicates in test data
 tools/find_foilhole_duplicates.py ./tests/testdata/bi37708-28
 ```
 
-## List all files matching glob recursively in descending order by file size:
+### File Size Analysis
+
+List files matching specific patterns, sorted by size for storage analysis:
 
 ```bash
-# To find 
+# Find GridSquare files sorted by size (largest first)
 rg --files -g 'GridSquare_*.dm' ./tests/testdata/bi37708-28 \
   | xargs -d '\n' ls -lh | sort -k5 -rn | awk '{print $9, $5}'
 ```
 
-## Clean up test datasets to reduce file size
+## Test Dataset Management
+
+### File Extension Analysis
+
+Analyse the composition of test datasets by file type:
 
 ```bash
-# recursively find all distinct file extensions in directory
+# Recursively find all distinct file extensions with counts
 find . -type f |
   sed -E 's/.*\.([^.]+)$/\1/' |
   grep -v "/" |
   sort |
   uniq -c |
   sort -nr
+```
 
-# recursively empty all jpg, png, mrc files:
+### Dataset Size Reduction
+
+Reduce test dataset storage requirements whilst maintaining directory structure:
+
+```bash
+# Empty image and data files whilst preserving metadata structure
 find . -type f \( -name "*.jpg" -o -name "*.png" -o -name "*.mrc" \) -exec truncate -s 0 {} \;
 ```
 
-## Watch dir metrics (num of files and file size) as stuff is written to it
+**Warning:** This command permanently removes file contents. Use only on test datasets, not production data.
+
+## Development Monitoring
+
+### Directory Growth Monitoring
+
+Monitor directory metrics during data acquisition or processing:
 
 ```bash
+# Watch directory size and file count with 1-second updates
 watch -n 1 'echo "Size: $(du -sh .)"; echo "Files: $(find . -type f | wc -l)"'
+```
+
+This tool is particularly useful for monitoring EPU data acquisition progress or debugging processing pipeline performance.
+
+## Additional Development Commands
+
+### Pre-commit Workflow
+
+Maintain code quality during development:
+
+```bash
+# Run pre-commit checks on specific files
+pre-commit run --files <file1> <file2>
+
+# Run all pre-commit checks
+pre-commit run --all-files
+```
+
+### Testing and Quality Assurance
+
+```bash
+# Run comprehensive test suite
+pytest
+
+# Type checking with pyright
+pyright src tests
+
+# Code formatting and linting
+ruff check
+ruff format
 ```
