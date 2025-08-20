@@ -14,6 +14,53 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
+# Load environment variables from .dev.env
+load_env_file() {
+    local env_file="$PROJECT_ROOT/.dev.env"
+    
+    if [[ ! -f "$env_file" ]]; then
+        log_error "Missing .dev.env file at: $env_file"
+        log_error "Please copy .dev.env.example to .dev.env and configure your credentials"
+        log_error "Example file location: $PROJECT_ROOT/.dev.env.example"
+        exit 1
+    fi
+    
+    # Source the .dev.env file
+    set -a  # automatically export all variables
+    source "$env_file"
+    set +a  # disable automatic export
+    
+    log_info "Loaded environment variables from .dev.env"
+}
+
+# Validate required environment variables
+validate_credentials() {
+    local missing_vars=()
+    
+    # Check GHCR credentials (supporting both old and new variable names for compatibility)
+    [[ -z "${DOCKER_USERNAME:-}" ]] && missing_vars+=("DOCKER_USERNAME")
+    [[ -z "${DOCKER_PASSWORD:-}" ]] && missing_vars+=("DOCKER_PASSWORD")
+    [[ -z "${DOCKER_EMAIL:-}" ]] && missing_vars+=("DOCKER_EMAIL")
+    
+    if [[ ${#missing_vars[@]} -gt 0 ]]; then
+        log_error "Missing required environment variables in .dev.env:"
+        for var in "${missing_vars[@]}"; do
+            log_error "  - $var"
+        done
+        log_error "Please check .dev.env.example for required variables"
+        exit 1
+    fi
+    
+    # Basic validation for token format (GitHub tokens start with ghp_, gho_, ghu_, ghs_, or ghr_)
+    if [[ ! "$DOCKER_PASSWORD" =~ ^gh[porus]_[A-Za-z0-9_]+ ]]; then
+        log_error "DOCKER_PASSWORD does not appear to be a valid GitHub token"
+        log_error "GitHub tokens should start with 'ghp_', 'gho_', 'ghu_', 'ghs_', or 'ghr_'"
+        exit 1
+    fi
+    
+    log_info "All required credentials are present and valid"
+}
+
 # Logging functions
 log_info() {
     echo -e "${BLUE}[INFO]${NC} $1"
@@ -146,9 +193,9 @@ ensure_ghcr_secret() {
     log_info "Creating GHCR secret..."
     kubectl create secret docker-registry ghcr-secret \
         --docker-server=ghcr.io \
-        --docker-username=vredchenko \
-        --docker-password=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 \
-        --docker-email=val.redchenko@diamond.ac.uk \
+        --docker-username="$DOCKER_USERNAME" \
+        --docker-password="$DOCKER_PASSWORD" \
+        --docker-email="$DOCKER_EMAIL" \
         --namespace="$NAMESPACE"
     
     log_success "GHCR secret created successfully"
@@ -249,6 +296,8 @@ show_status() {
 case "${1:-up}" in
     "up")
         check_kubectl
+        load_env_file
+        validate_credentials
         check_current_status
         cleanup_environment
         deploy_environment
@@ -270,6 +319,8 @@ case "${1:-up}" in
         ;;
     "restart")
         check_kubectl
+        load_env_file
+        validate_credentials
         log_info "Restarting development environment..."
         cleanup_environment
         deploy_environment
