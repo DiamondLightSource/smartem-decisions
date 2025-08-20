@@ -88,25 +88,182 @@ Query historical and in-flight sessions via `smartem_api`:
 - **Capabilities**: Acquisition status, grid processing, real-time data
 - **Requirements**: Running SmartEM backend service
 
-## Server Mode
+## Claude Code Integration
 
-Run standalone MCP server for Claude Code integration:
+The SmartEM MCP server integrates seamlessly with Claude Code, allowing natural language queries about microscopy data directly within your development environment.
+
+### Prerequisites
+
+Ensure MCP dependencies are installed:
 
 ```bash
-python -m smartem_mcp server --api-url http://localhost:30080
+pip install -e .[mcp]
 ```
 
-Configure in Claude Code settings:
+Verify the installation:
+
+```bash
+python -m smartem_mcp --version
+```
+
+### Registration with Claude Code
+
+#### Option 1: Using Claude CLI (Recommended)
+
+Register the SmartEM MCP server using the Claude CLI:
+
+```bash
+# Basic registration (user-wide scope)
+claude mcp add smartem -- python -m smartem_mcp server
+
+# With custom API URL
+claude mcp add smartem -- python -m smartem_mcp server --api-url http://localhost:30080
+
+# Project-scoped registration
+claude mcp add smartem --scope project -- python -m smartem_mcp server --api-url http://localhost:30080
+```
+
+#### Option 2: Manual Configuration
+
+If you prefer manual configuration, add the server to your Claude Code settings:
+
+**For user-wide registration:**
+Edit `~/.config/claude-code/mcp.json`:
+
 ```json
 {
   "mcpServers": {
     "smartem": {
       "command": "python",
-      "args": ["-m", "smartem_mcp.server"]
+      "args": ["-m", "smartem_mcp", "server", "--api-url", "http://localhost:30080"],
+      "env": {
+        "SMARTEM_API_URL": "http://localhost:30080",
+        "SMARTEM_MCP_LOG_LEVEL": "INFO"
+      }
     }
   }
 }
 ```
+
+**For project-scoped registration:**
+Create `.claude/mcp.json` in your project root:
+
+```json
+{
+  "mcpServers": {
+    "smartem": {
+      "command": "python",
+      "args": ["-m", "smartem_mcp", "server"],
+      "env": {
+        "SMARTEM_API_URL": "http://localhost:30080"
+      }
+    }
+  }
+}
+```
+
+### Registration Options
+
+#### Environment Variables
+
+Configure the MCP server behaviour through environment variables:
+
+- `SMARTEM_API_URL`: Base URL for SmartEM API (default: `http://localhost:30080`)
+- `SMARTEM_MCP_LOG_LEVEL`: Logging level (`DEBUG`, `INFO`, `WARNING`, `ERROR`)
+- `PYTHON_PATH`: Python executable path if not in system PATH
+
+Example with custom environment:
+
+```bash
+claude mcp add smartem --env SMARTEM_API_URL=http://production.server:8080 --env SMARTEM_MCP_LOG_LEVEL=DEBUG -- python -m smartem_mcp server
+```
+
+#### Scope Options
+
+- **User scope** (default): Available across all Claude Code projects
+- **Project scope**: Only available within the current project directory
+
+```bash
+# User-wide (default)
+claude mcp add smartem -- python -m smartem_mcp server
+
+# Project-specific
+claude mcp add smartem --scope project -- python -m smartem_mcp server
+```
+
+### Verification
+
+#### 1. Check Registration Status
+
+```bash
+# List all registered MCP servers
+claude mcp list
+
+# Check SmartEM server status
+claude mcp status smartem
+```
+
+#### 2. Test Connection
+
+Start a new Claude Code session and verify the SmartEM tools are available:
+
+```bash
+# In Claude Code, type a natural language query:
+# "List all available SmartEM tools"
+```
+
+You should see the following tools available:
+- `parse_epu_directory` - Parse EPU microscopy directories
+- `query_quality_metrics` - Find low-quality images and foil holes  
+- `query_acquisitions` - Query recent acquisition sessions
+- `query_grid_status` - Get grid processing status
+
+#### 3. Test Basic Functionality
+
+Try a simple query in Claude Code:
+
+> "Parse the EPU directory at /path/to/your/epu/session"
+
+### Usage in Claude Code
+
+Once registered, you can interact with SmartEM data using natural language within Claude Code:
+
+#### Directory Analysis
+
+> "Show me a comprehensive analysis of the EPU session at /data/microscopy/session_001"
+
+> "What grids and grid squares are available in /path/to/epu/directory?"
+
+#### Quality Assessment
+
+> "Find all images with quality scores below 0.4 in the EPU directory /data/session_001"
+
+> "Show me foil holes that need attention from /path/to/epu with quality threshold 0.3"
+
+#### Session Monitoring
+
+> "What are the 5 most recent microscopy acquisitions?"
+
+> "Check the processing status of grid uuid-12345"
+
+#### Advanced Queries
+
+> "Compare quality metrics between /data/session_001 and /data/session_002"
+
+> "Generate a report for all low-quality items found today"
+
+### Server Mode (Standalone)
+
+For advanced users or debugging, run the MCP server in standalone mode:
+
+```bash
+python -m smartem_mcp server --api-url http://localhost:30080 --log-level DEBUG
+```
+
+This starts the server with stdio communication, primarily useful for:
+- Debugging MCP protocol issues
+- Custom client integrations
+- Development and testing
 
 ## Available Tools
 
@@ -191,24 +348,128 @@ client = SmartEMMCPClient(api_token="your_token_here")
 
 ### Common Issues
 
-1. **"Could not connect to MCP server"**
-   - Ensure MCP dependencies are installed: `pip install -e .[mcp]`
-   - Check Python path includes smartem_mcp module
+#### 1. MCP Server Registration Problems
 
-2. **"Invalid EPU directory"**
-   - Verify directory contains EpuSession.dm file
-   - Check Metadata/ and Images-Disc*/ subdirectories exist
+**"SmartEM MCP server not found"**
+- Ensure MCP dependencies are installed: `pip install -e .[mcp]`  
+- Verify Python path includes smartem_mcp module
+- Check registration with `claude mcp list`
 
-3. **"API connection failed"**
-   - Verify SmartEM backend is running
-   - Check API URL and network connectivity
+**"Failed to start MCP server"**
+- Verify Python executable is accessible: `which python`
+- Test server manually: `python -m smartem_mcp server --api-url http://localhost:30080`
+- Check environment variables are properly set
+
+**"MCP server registered but not responding"**
+- Remove and re-add the server: `claude mcp remove smartem && claude mcp add smartem -- python -m smartem_mcp server`
+- Restart Claude Code completely
+- Check server logs: `claude mcp logs smartem`
+
+#### 2. Directory and Data Issues
+
+**"Invalid EPU directory"**
+- Verify directory contains EpuSession.dm file
+- Check Metadata/ and Images-Disc*/ subdirectories exist  
+- Ensure proper file permissions for reading EPU data
+
+**"Permission denied accessing EPU files"**
+- Check file permissions: `ls -la /path/to/epu/directory`
+- Ensure user has read access to all EPU subdirectories
+- For network mounts, verify mount permissions
+
+#### 3. API Connection Issues
+
+**"API connection failed"**
+- Verify SmartEM backend is running: `curl http://localhost:30080/health`
+- Check API URL is correct in registration command
+- Test network connectivity to API endpoint
+
+**"Authentication failed"** (Future feature)
+- Verify API tokens are properly configured
+- Check token expiration and renewal
+
+#### 4. Claude Code Integration Issues
+
+**"Tools not available in Claude Code"**
+- Restart Claude Code after registration
+- Check MCP server status: `claude mcp status smartem`
+- Verify registration scope (user vs project)
+
+**"Queries return empty results"**
+- Test with standalone client: `python -m smartem_mcp client parse --path /path/to/epu`
+- Check EPU directory structure and data validity
+- Verify API connectivity for acquisition queries
 
 ### Debug Mode
 
-Enable debug logging:
+#### Enable Debug Logging
+
+For MCP server debugging:
+```bash
+claude mcp add smartem --env SMARTEM_MCP_LOG_LEVEL=DEBUG -- python -m smartem_mcp server --api-url http://localhost:30080 --log-level DEBUG
+```
+
+For client debugging:
 ```bash
 python -m smartem_mcp --log-level DEBUG client parse --path /path/to/epu
 ```
+
+#### Check Server Logs
+
+View MCP server logs in Claude Code:
+```bash
+claude mcp logs smartem
+```
+
+#### Manual Server Testing
+
+Test the server independently of Claude Code:
+```bash
+# Terminal 1: Start server
+python -m smartem_mcp server --log-level DEBUG
+
+# Terminal 2: Test with echo
+echo '{"jsonrpc": "2.0", "id": 1, "method": "tools/list"}' | python -m smartem_mcp server --log-level DEBUG
+```
+
+### Environment-Specific Troubleshooting
+
+#### Development Environment
+- Ensure virtual environment is activated when registering
+- Use absolute Python paths: `claude mcp add smartem -- /path/to/.venv/bin/python -m smartem_mcp server`
+
+#### Production Environment  
+- Verify all dependencies are installed in production Python environment
+- Check firewall rules for API connectivity
+- Ensure proper logging configuration for production
+
+#### Container Environments
+- Mount EPU directories properly in container
+- Expose API ports correctly
+- Set environment variables in container runtime
+
+### Getting Help
+
+If issues persist:
+
+1. **Gather diagnostic information:**
+   ```bash
+   # System info
+   python --version
+   pip list | grep -E "(smartem|mcp)"
+   claude mcp list
+   claude mcp status smartem
+   
+   # Test basic functionality
+   python -m smartem_mcp --version
+   python -c "import smartem_mcp; print('Import successful')"
+   ```
+
+2. **Check project documentation:** [SmartEM Decisions README](/README.md)
+
+3. **Review MCP protocol documentation:** [Model Context Protocol Specification](https://modelcontextprotocol.io/)
+
+4. **Submit issue:** Include diagnostic information and specific error messages
 
 ## Integration with Claude Code
 
