@@ -1,5 +1,5 @@
 """
-SmartEM MCP Command Line Interface
+SmartEM MCP Command Line Interface using FastMCP
 
 Provides command-line access to SmartEM MCP server and client functionality.
 """
@@ -9,19 +9,9 @@ import asyncio
 import json
 import logging
 import sys
-from pathlib import Path
 
 from smartem_mcp._version import __version__
-from smartem_mcp.client import SmartEMMCPClient, SmartEMQueryInterface
-from smartem_mcp.server import SmartEMMCPServer
-
-
-async def run_server(args):
-    """Run MCP server"""
-    logging.basicConfig(level=getattr(logging, args.log_level))
-
-    server = SmartEMMCPServer(api_base_url=args.api_url)
-    await server.serve()
+from smartem_mcp.client import SmartEMMCPClient
 
 
 async def run_client(args):
@@ -34,33 +24,31 @@ async def run_client(args):
                 print("Error: --path required for parse command")
                 return 1
 
-            result = await client.parse_epu_directory(args.path)
-            if args.json:
-                print(json.dumps(result.model_dump(), indent=2))
-            else:
-                if result.success:
-                    data = result.data or {}
-                    print(f"✅ Successfully parsed EPU directory: {args.path}")
-                    print(f"   Grids: {data.get('grid_count', 0)}")
-                    print(f"   Grid squares: {data.get('total_gridsquares', 0)}")
-                    if data.get("acquisition"):
-                        print(f"   Acquisition: {data['acquisition'].get('name', 'Unknown')}")
+            try:
+                result = await client.parse_epu_directory(args.path)
+                if args.json:
+                    print(json.dumps(result, indent=2, default=str))
                 else:
-                    print(f"❌ Failed to parse directory: {result.error}")
-                    return 1
+                    print(f"✅ Successfully parsed EPU directory: {args.path}")
+                    print(f"   Grids: {result.get('grid_count', 0)}")
+                    print(f"   Grid squares: {result.get('total_gridsquares', 0)}")
+                    if result.get("acquisition"):
+                        print(f"   Acquisition: {result['acquisition'].get('name', 'Unknown')}")
+            except Exception as e:
+                print(f"❌ Failed to parse directory: {str(e)}")
+                return 1
 
         elif args.client_command == "quality":
             if not args.path:
                 print("Error: --path required for quality command")
                 return 1
 
-            result = await client.find_low_quality_items(args.path, args.threshold, args.source)
-            if args.json:
-                print(json.dumps(result.model_dump(), indent=2))
-            else:
-                if result.success:
-                    data = result.data or {}
-                    items = data.get("low_quality_items", [])
+            try:
+                result = await client.find_low_quality_items(args.path, args.threshold, args.source)
+                if args.json:
+                    print(json.dumps(result, indent=2, default=str))
+                else:
+                    items = result.get("low_quality_items", [])
                     print(f"✅ Quality analysis complete (threshold: {args.threshold})")
                     print(f"   Found {len(items)} low-quality items")
                     if items:
@@ -68,43 +56,41 @@ async def run_client(args):
                             print(f"   - {item}")
                         if len(items) > 5:
                             print(f"   ... and {len(items) - 5} more")
-                else:
-                    print(f"❌ Quality analysis failed: {result.error}")
-                    return 1
+            except Exception as e:
+                print(f"❌ Quality analysis failed: {str(e)}")
+                return 1
 
         elif args.client_command == "acquisitions":
-            result = await client.query_recent_acquisitions(args.limit)
-            if args.json:
-                print(json.dumps(result.model_dump(), indent=2))
-            else:
-                if result.success:
-                    data = result.data or {}
-                    acquisitions = data.get("acquisitions", [])
+            try:
+                result = await client.query_recent_acquisitions(args.limit)
+                if args.json:
+                    print(json.dumps(result, indent=2, default=str))
+                else:
+                    acquisitions = result.get("acquisitions", [])
                     print(f"✅ Found {len(acquisitions)} recent acquisitions")
                     for acq in acquisitions:
                         print(f"   - {acq.get('name', 'Unknown')} (ID: {acq.get('id', 'N/A')})")
-                else:
-                    print(f"❌ Failed to query acquisitions: {result.error}")
-                    return 1
+            except Exception as e:
+                print(f"❌ Failed to query acquisitions: {str(e)}")
+                return 1
 
         elif args.client_command == "grid":
             if not args.grid_id:
                 print("Error: --grid-id required for grid command")
                 return 1
 
-            result = await client.get_grid_status(args.grid_id)
-            if args.json:
-                print(json.dumps(result.model_dump(), indent=2))
-            else:
-                if result.success:
-                    data = result.data or {}
-                    grid = data.get("grid", {})
+            try:
+                result = await client.get_grid_status(args.grid_id)
+                if args.json:
+                    print(json.dumps(result, indent=2, default=str))
+                else:
+                    grid = result.get("grid", {})
                     print(f"✅ Grid {args.grid_id} status:")
                     print(f"   Status: {grid.get('status', 'Unknown')}")
                     print(f"   Created: {grid.get('created_at', 'Unknown')}")
-                else:
-                    print(f"❌ Failed to get grid status: {result.error}")
-                    return 1
+            except Exception as e:
+                print(f"❌ Failed to get grid status: {str(e)}")
+                return 1
 
         else:
             print(f"Unknown client command: {args.client_command}")
@@ -117,55 +103,70 @@ async def run_interactive(args):
     """Run interactive query mode"""
     logging.basicConfig(level=getattr(logging, args.log_level))
 
-    interface = SmartEMQueryInterface()
     print(f"SmartEM Interactive Query Interface v{__version__}")
-    print("Ask questions about your microscopy data!")
+    print("Execute direct tool calls against the MCP server!")
+    print("Available tools: parse_epu_directory, query_quality_metrics, query_acquisitions, query_grid_status")
     print("Examples:")
-    print("  - 'Show me a summary of session /path/to/epu'")
-    print("  - 'Find low quality items in /path/to/epu with threshold 0.3'")
-    print("  - 'What are the recent acquisitions?'")
+    print("  parse /path/to/epu")
+    print("  quality /path/to/epu 0.3")
+    print("  acquisitions 10")
+    print("  grid <grid-id>")
     print()
+
+    client = SmartEMMCPClient()
 
     try:
         while True:
-            question = input("❓ Your question: ").strip()
-            if question.lower() in ["exit", "quit", "q"]:
+            command = input("❓ Tool command: ").strip()
+            if command.lower() in ["exit", "quit", "q"]:
                 break
 
-            if not question:
+            if not command:
                 continue
 
-            # Extract context from question
-            context = {}
-            if "/path/to/" in question or question.startswith("/"):
-                # Simple path extraction
-                words = question.split()
-                for word in words:
-                    if word.startswith("/") and Path(word).exists():
-                        context["path"] = word
-                        break
-
-            if "threshold" in question:
-                try:
-                    # Extract threshold value
-                    import re
-
-                    match = re.search(r"threshold\s*(\d*\.?\d+)", question)
-                    if match:
-                        context["threshold"] = float(match.group(1))
-                except ValueError:
-                    pass
+            parts = command.split()
+            tool_cmd = parts[0].lower()
 
             try:
-                answer = await interface.ask(question, context)
-                print(f"🔍 {answer}")
+                if tool_cmd == "parse" and len(parts) >= 2:
+                    path = parts[1]
+                    result = await client.parse_epu_directory(path)
+                    grid_count = result.get("grid_count", 0)
+                    total_squares = result.get("total_gridsquares", 0)
+                    print(f"🔍 Parsed {grid_count} grids, {total_squares} grid squares")
+
+                elif tool_cmd == "quality" and len(parts) >= 2:
+                    path = parts[1]
+                    threshold = float(parts[2]) if len(parts) > 2 else 0.5
+                    result = await client.find_low_quality_items(path, threshold)
+                    items = result.get("low_quality_items", [])
+                    print(f"🔍 Found {len(items)} low-quality items (threshold: {threshold})")
+
+                elif tool_cmd == "acquisitions":
+                    limit = int(parts[1]) if len(parts) > 1 else 10
+                    result = await client.query_recent_acquisitions(limit)
+                    acquisitions = result.get("acquisitions", [])
+                    print(f"🔍 Found {len(acquisitions)} recent acquisitions")
+
+                elif tool_cmd == "grid" and len(parts) >= 2:
+                    grid_id = parts[1]
+                    result = await client.get_grid_status(grid_id)
+                    grid = result.get("grid", {})
+                    print(f"🔍 Grid {grid_id}: {grid.get('status', 'Unknown')}")
+
+                else:
+                    print("❌ Invalid command format")
+                    print("Use: parse <path> | quality <path> [threshold] | acquisitions [limit] | grid <id>")
+
             except Exception as e:
-                print(f"❌ Error processing question: {str(e)}")
+                print(f"❌ Error: {str(e)}")
 
             print()
 
     except KeyboardInterrupt:
         print("\n👋 Goodbye!")
+    finally:
+        await client.disconnect()
 
     return 0
 
@@ -242,7 +243,24 @@ Examples:
 
     try:
         if args.mode == "server":
-            return asyncio.run(run_server(args))
+            # Run server with proper argument passing
+            from smartem_mcp.server import init_api_client
+
+            logging.basicConfig(level=getattr(logging, args.log_level))
+
+            # Initialize API client
+            api_connected = init_api_client(args.api_url)
+            if api_connected:
+                logger = logging.getLogger(__name__)
+                logger.info("Initialized SmartEM API client")
+            else:
+                logger = logging.getLogger(__name__)
+                logger.warning("Could not initialize SmartEM API client - some features may be limited")
+
+            # Import the mcp instance and run it
+            from smartem_mcp.server import mcp
+
+            return asyncio.run(mcp.run())
         elif args.mode == "client":
             return asyncio.run(run_client(args))
         elif args.mode == "interactive":
