@@ -1,10 +1,13 @@
-[![CI](https://github.com/DiamondLightSource/smartem-decisions/actions/workflows/ci.yml/badge.svg)](https://github.com/DiamondLightSource/smartem-decisions/actions/workflows/ci.yml)
-[![Coverage](https://codecov.io/gh/DiamondLightSource/smartem-decisions/branch/main/graph/badge.svg)](https://codecov.io/gh/DiamondLightSource/smartem-decisions)
+[![CI](https://github.com/DiamondLightSource/smartem-decisions/actions/workflows/ci.yml/badge.svg)](
+https://github.com/DiamondLightSource/smartem-decisions/actions/workflows/ci.yml)
+[![Coverage](https://codecov.io/gh/DiamondLightSource/smartem-decisions/branch/main/graph/badge.svg)](
+https://codecov.io/gh/DiamondLightSource/smartem-decisions)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
 # SmartEM Decisions
 
-A comprehensive system for smart data collection and processing in cryo-electron microscopy, designed to optimize acquisition workflows through intelligent decision-making and real-time data analysis.
+A comprehensive system for smart data collection and processing in cryo-electron microscopy, designed to optimize
+acquisition workflows through intelligent decision-making and real-time data analysis.
 
 ## Quick Links
 
