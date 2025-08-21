@@ -11,6 +11,19 @@ repos:
         exclude: ^docs/assets/
       - id: end-of-file-fixer
 
+  - repo: https://github.com/Yelp/detect-secrets
+    rev: v1.5.0
+    hooks:
+      - id: detect-secrets
+        args: [
+          '--baseline', '.secrets.baseline',
+          '--exclude-files', '^docs/assets/',
+          '--exclude-files', '^build/',
+          '--exclude-files', '^dist/',
+          '--exclude-files', '.*\.lock$',
+          '--exclude-files', '.*migrations/versions/.*\.py$'
+        ]
+
   - repo: local
     hooks:
       - id: ruff
