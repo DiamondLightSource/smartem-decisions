@@ -1,0 +1,66 @@
+on:
+  workflow_call:
+
+jobs:
+  detect-secrets:
+    runs-on: ubuntu-latest
+    name: Secrets Scanning
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # Full history for comprehensive scanning
+    
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+        cache: 'pip'
+    
+    - name: Install detect-secrets
+      run: |
+        python -m pip install --upgrade pip
+        pip install detect-secrets
+    
+    - name: Verify baseline exists
+      run: |
+        if [ ! -f .secrets.baseline ]; then
+          echo "❌ .secrets.baseline not found!"
+          echo "This likely means the pre-commit setup is incomplete."
+          exit 1
+        fi
+        echo "✅ Found .secrets.baseline"
+    
+    - name: Run detect-secrets scan
+      run: |
+        echo "🔍 Scanning for secrets..."
+        detect-secrets scan \
+          --baseline .secrets.baseline \
+          --exclude-files '^docs/assets/' \
+          --exclude-files '^build/' \
+          --exclude-files '^dist/' \
+          --exclude-files '.*\.lock$' \
+          --exclude-files '.*migrations/versions/.*\.py$' \
+          --force-use-all-plugins
+    
+    - name: Audit baseline for unaudited secrets
+      run: |
+        echo "🔐 Auditing secrets baseline..."
+        detect-secrets audit .secrets.baseline --report --fail-on-unaudited
+    
+    - name: Check for new secrets in recent commits
+      if: github.event_name == 'pull_request'
+      run: |
+        echo "🆕 Checking for new secrets in PR..."
+        # Get the diff and scan it for secrets
+        git diff origin/main...HEAD | detect-secrets scan --baseline .secrets.baseline --stdin --force-use-all-plugins
+    
+    - name: Upload scan results
+      uses: actions/upload-artifact@v4
+      if: failure()
+      with:
+        name: secrets-scan-results
+        path: |
+          .secrets.baseline
+        retention-days: 30

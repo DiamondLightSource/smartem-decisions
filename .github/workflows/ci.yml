@@ -25,6 +25,11 @@ jobs:
     if: ${{ !startsWith(github.event.pull_request.title, '[WIP]') || github.event_name != 'pull_request' }}
     uses: ./.github/workflows/_check.yml
 
+  security:
+    needs: check
+    if: needs.check.outputs.branch-pr == ''
+    uses: ./.github/workflows/_security.yml
+
 # TODO restore
 #  lint:
 #    needs: check
