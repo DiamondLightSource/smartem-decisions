@@ -7,7 +7,9 @@
 - **Code Style**: Ruff (120 char line length) with pyright type checking
 
 ## Code Standards
-- **MANDATORY PRE-COMMIT WORKFLOW**: After creating or modifying ANY file, immediately run `pre-commit run --files <files>` and fix all issues. This is not optional - no task is complete until pre-commit passes cleanly
+- **MANDATORY PRE-COMMIT WORKFLOW**: After creating or modifying ANY file, immediately run
+  `pre-commit run --files <files>` and fix all issues. This is not optional - no task is complete until pre-commit
+  passes cleanly
 - **New line at end of file**: All files must end with a newline (pre-commit enforces this)
 - **No Comments**: Code should be self-explanatory - avoid explanatory comments
 - **Modern Python**: Use Python 3.12 typing features (no legacy `typing` imports where unnecessary)
@@ -87,7 +89,8 @@ Available specialised agents in `.claude/agents/`:
 - **kubernetes-ops**: K3s/lightweight Kubernetes, scientific computing workloads
 - **technical-writer**: Documentation, British English, technical writing, Markdown formatting
 
-Claude Code will automatically invoke appropriate agents based on task context. For documentation tasks, the technical-writer agent ensures British English usage and professional formatting.
+Claude Code will automatically invoke appropriate agents based on task context. For documentation tasks, the
+technical-writer agent ensures British English usage and professional formatting.
 
 ## Dependencies of Note
 - **Web**: FastAPI, uvicorn, httpx, requests

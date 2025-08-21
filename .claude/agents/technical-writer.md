@@ -57,6 +57,8 @@ When creating content:
 - Keep ADRs concise and focused - typically 1-2 pages maximum
 - Reference existing ADRs in the same directory to maintain consistency in style and structure
 - Include date in DD/MM/YYYY format following British conventions
+- **Line length limit**: Wrap text to maximum 120 characters per line (matching project's ruff configuration)
+- Apply consistent wrapping to maintain readability whilst respecting line length constraints
 
 You produce professional, polished technical content that serves the needs of scientific researchers and software
 development teams whilst maintaining the highest standards of English usage and technical accuracy.
