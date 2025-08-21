@@ -1809,7 +1809,7 @@ def get_prediction_models(db: SqlAlchemySession = DB_DEPENDENCY):
     return db.query(QualityPredictionModel).all()
 
 
-@app.get("/grid/{grid_uuid}/model_weights", response=dict[str, list[QualityPredictionModelWeight]])
+@app.get("/grid/{grid_uuid}/model_weights", response_model=dict[str, list[QualityPredictionModelWeight]])
 def get_model_weights_for_grid(grid_uuid: str, db: SqlAlchemySession = DB_DEPENDENCY):
     """Get time series of model weights for grid"""
     weights = (
@@ -1850,8 +1850,10 @@ def get_foilhole_quality_prediction_time_series_for_gridsquare(
         .order_by(QualityPrediction.timestamp)
         .all()
     )
+    predictions = sorted(predictions, key=lambda x: x[1].foilhole_id)
+    predictions = sorted(predictions, key=lambda x: x[0].prediction_model_name)
     grouped_predictions = {
-        k: {fh: [elem[0] for elem in v2] for fh, v2 in itertools.groupby(list(v), lambda x: x[1].uuid)}
+        k: {fh: [elem[0] for elem in v2] for fh, v2 in itertools.groupby(list(v), lambda x: x[1].foilhole_id)}
         for k, v in itertools.groupby(predictions, lambda x: x[0].prediction_model_name)
     }
     return grouped_predictions
