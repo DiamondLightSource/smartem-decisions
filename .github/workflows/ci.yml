@@ -28,7 +28,7 @@ jobs:
   security:
     needs: check
     if: needs.check.outputs.branch-pr == ''
-    uses: ./.github/workflows/_security.yml
+    uses: ./.github/workflows/security-scan.yml
 
 # TODO restore
 #  lint:
