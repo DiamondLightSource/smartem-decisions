@@ -85,4 +85,11 @@ lockfiles/
 # ruff cache
 .ruff_cache/
 
+# Kubernetes secrets - only allow sealed secrets (encrypted)
 k8s/secret.yaml
+k8s/environments/*/secrets.yaml
+k8s/**/*secret*.yaml
+!k8s/**/*sealedsecret*.yaml
+tools/.secrets-*
+*.secret
+*.secrets
