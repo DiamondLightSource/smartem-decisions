@@ -47,7 +47,18 @@ jobs:
     - name: Audit baseline for unaudited secrets
       run: |
         echo "🔐 Auditing secrets baseline..."
-        detect-secrets audit .secrets.baseline --report --fail-on-unaudited
+        
+        # Check if baseline contains any unaudited secrets (null values)
+        if grep -q '"is_secret": null' .secrets.baseline; then
+          echo "❌ Found unaudited secrets in baseline!"
+          echo "Please run: detect-secrets audit .secrets.baseline"
+          echo "Review and mark each finding as true/false positive"
+          detect-secrets audit .secrets.baseline --report
+          exit 1
+        else
+          echo "✅ All secrets in baseline have been audited"
+          detect-secrets audit .secrets.baseline --report
+        fi
     
     - name: Check for new secrets in recent commits
       if: github.event_name == 'pull_request'
