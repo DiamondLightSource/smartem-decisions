@@ -46,4 +46,32 @@ k8s/
 └── README.md
 ```
 
+## Security: Sealed Secrets
+
+The project uses [Bitnami Sealed Secrets](https://sealed-secrets.netlify.app/) for secure credential management. Before 
+deploying to any environment, you must generate the appropriate sealed secrets:
+
+### Generate Secrets for Development
+
+```bash
+# Auto-generate secure credentials for development
+./tools/generate-sealed-secrets.sh development
+```
+
+### Generate Secrets for Production
+
+```bash
+# Interactive credential input for production security
+./tools/generate-sealed-secrets.sh production
+```
+
+Sealed secrets are encrypted with the cluster's public key and safe to commit to version control. The sealed-secrets 
+controller automatically decrypts them into regular Kubernetes secrets that applications can use.
+
+> **Security Note**: Never commit plain-text secrets to version control. Always use sealed secrets for credential management.
+
+For comprehensive secret management documentation, see [Managing Kubernetes Secrets](manage-kubernetes-secrets.md).
+
+## Detailed Documentation
+
 For detailed Kubernetes deployment instructions, environment configurations, and troubleshooting, see the [k8s directory documentation](k8s/).

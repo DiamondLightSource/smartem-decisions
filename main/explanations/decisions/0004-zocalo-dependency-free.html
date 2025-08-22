@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>3. No dependency on python-zocalo &#8212; smartem-decisions 0.1.dev295+gef86e79e4.d20250820 documentation</title>
+    <title>3. No dependency on python-zocalo &#8212; smartem-decisions 0.1.dev306+g20f1ad064.d20250822 documentation</title>
   
   
   
@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../../_static/documentation_options.js?v=96cb887c"></script>
+    <script src="../../_static/documentation_options.js?v=dd290b83"></script>
     <script src="../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -58,7 +58,7 @@
     <link rel="icon" href="../../_static/dls-logo.svg"/>
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" />
-    <link rel="next" title="EPU Output Directory Structure" href="../epu-data-structures.html" />
+    <link rel="next" title="5. Use detect-secrets for secret scanning" href="0005-detect-secrets-for-secret-scanning.html" />
     <link rel="prev" title="3. Short descriptive title" href="0003-message-queue-message-grouping.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
@@ -402,6 +402,8 @@
 <li class="toctree-l2"><a class="reference internal" href="0002-switched-to-python-copier-template.html">2. Adopt python-copier-template for project structure</a></li>
 <li class="toctree-l2"><a class="reference internal" href="0003-message-queue-message-grouping.html">3. Short descriptive title</a></li>
 <li class="toctree-l2 current active"><a class="current reference internal" href="#">3. No dependency on python-zocalo</a></li>
+<li class="toctree-l2"><a class="reference internal" href="0005-detect-secrets-for-secret-scanning.html">5. Use detect-secrets for secret scanning</a></li>
+<li class="toctree-l2"><a class="reference internal" href="0006-sealed-secrets-kubernetes-secrets-management.html">6. Use Sealed Secrets for Kubernetes secrets management</a></li>
 </ul>
 </details></li>
 <li class="toctree-l1"><a class="reference internal" href="../epu-data-structures.html">EPU Output Directory Structure</a></li>
@@ -479,9 +481,11 @@
 <section id="context">
 <h2>Context<a class="headerlink" href="#context" title="Link to this heading">#</a></h2>
 <p>We initially needed to send logs to Graylog, and this functionality was already implemented in <code class="docutils literal notranslate"><span class="pre">python-zocalo</span></code>.
-Hence, one option was to import any logging-related functionality from Zocalo, while another option was
-to just copy the code across, duplicating it in our repo.</p>
-<p><strong>Update</strong>: Graylog functionality has since been removed from the project. In production Kubernetes, all stdout and stderr are automatically sent to a managed Graylog instance, so we don’t need to handle this in our application code. For local development, we now use standard Python logging to keep things simple.</p>
+Hence, one option was to import any logging-related functionality from Zocalo, while another option was to just
+copy the code across, duplicating it in our repo.</p>
+<p><strong>Update</strong>: Graylog functionality has since been removed from the project. In production Kubernetes, all stdout and
+stderr are automatically sent to a managed Graylog instance, so we don’t need to handle this in our application
+code. For local development, we now use standard Python logging to keep things simple.</p>
 </section>
 <section id="decision">
 <h2>Decision<a class="headerlink" href="#decision" title="Link to this heading">#</a></h2>
@@ -493,7 +497,9 @@ discussions about whether we move off of it longer term</p>
 </section>
 <section id="consequences">
 <h2>Consequences<a class="headerlink" href="#consequences" title="Link to this heading">#</a></h2>
-<p>We will stay free of any Zocalo dependencies. Initially we duplicated logging functionality within this project, but have since simplified to use standard Python logging as production Kubernetes handles log aggregation automatically.</p>
+<p>We will stay free of any Zocalo dependencies. Initially we duplicated logging functionality within this project,
+but have since simplified to use standard Python logging as production Kubernetes handles log aggregation
+automatically.</p>
 </section>
 </section>
 
@@ -517,11 +523,11 @@ discussions about whether we move off of it longer term</p>
       </div>
     </a>
     <a class="right-next"
-       href="../epu-data-structures.html"
+       href="0005-detect-secrets-for-secret-scanning.html"
        title="next page">
       <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">EPU Output Directory Structure</p>
+        <p class="prev-next-title">5. Use detect-secrets for secret scanning</p>
       </div>
       <i class="fa-solid fa-angle-right"></i>
     </a>

@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Kubernetes Deployment &#8212; smartem-decisions 0.1.dev295+gef86e79e4.d20250820 documentation</title>
+    <title>Kubernetes Deployment &#8212; smartem-decisions 0.1.dev306+g20f1ad064.d20250822 documentation</title>
   
   
   
@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../_static/documentation_options.js?v=96cb887c"></script>
+    <script src="../_static/documentation_options.js?v=dd290b83"></script>
     <script src="../_static/doctools.js?v=9bcbadda"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -405,6 +405,7 @@
 <li class="toctree-l1 current active"><a class="current reference internal" href="#">Kubernetes Deployment</a></li>
 <li class="toctree-l1"><a class="reference internal" href="development-tools.html">Development Tools</a></li>
 <li class="toctree-l1"><a class="reference internal" href="generate-docs.html">Generate Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="manage-kubernetes-secrets.html">Managing Kubernetes Secrets</a></li>
 <li class="toctree-l1"><a class="reference internal" href="run-agent.html">Run SmartEM Agent (EPU Agent)</a></li>
 <li class="toctree-l1"><a class="reference internal" href="run-backend.html">Run SmartEM Backend</a></li>
 <li class="toctree-l1"><a class="reference internal" href="run-container.html">Run in a container</a></li>
@@ -519,6 +520,34 @@
 └── README.md
 </pre></div>
 </div>
+</section>
+<section id="security-sealed-secrets">
+<h2>Security: Sealed Secrets<a class="headerlink" href="#security-sealed-secrets" title="Link to this heading">#</a></h2>
+<p>The project uses <a class="reference external" href="https://sealed-secrets.netlify.app/">Bitnami Sealed Secrets</a> for secure credential management. Before
+deploying to any environment, you must generate the appropriate sealed secrets:</p>
+<section id="generate-secrets-for-development">
+<h3>Generate Secrets for Development<a class="headerlink" href="#generate-secrets-for-development" title="Link to this heading">#</a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Auto-generate secure credentials for development</span>
+./tools/generate-sealed-secrets.sh<span class="w"> </span>development
+</pre></div>
+</div>
+</section>
+<section id="generate-secrets-for-production">
+<h3>Generate Secrets for Production<a class="headerlink" href="#generate-secrets-for-production" title="Link to this heading">#</a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Interactive credential input for production security</span>
+./tools/generate-sealed-secrets.sh<span class="w"> </span>production
+</pre></div>
+</div>
+<p>Sealed secrets are encrypted with the cluster’s public key and safe to commit to version control. The sealed-secrets
+controller automatically decrypts them into regular Kubernetes secrets that applications can use.</p>
+<blockquote>
+<div><p><strong>Security Note</strong>: Never commit plain-text secrets to version control. Always use sealed secrets for credential management.</p>
+</div></blockquote>
+<p>For comprehensive secret management documentation, see <a class="reference internal" href="manage-kubernetes-secrets.html"><span class="std std-doc">Managing Kubernetes Secrets</span></a>.</p>
+</section>
+</section>
+<section id="detailed-documentation">
+<h2>Detailed Documentation<a class="headerlink" href="#detailed-documentation" title="Link to this heading">#</a></h2>
 <p>For detailed Kubernetes deployment instructions, environment configurations, and troubleshooting, see the <a class="reference internal" href="#k8s/"><span class="xref myst">k8s directory documentation</span></a>.</p>
 </section>
 </section>
@@ -575,6 +604,12 @@
 </ul>
 </li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#kubernetes-structure">Kubernetes Structure</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#security-sealed-secrets">Security: Sealed Secrets</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#generate-secrets-for-development">Generate Secrets for Development</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#generate-secrets-for-production">Generate Secrets for Production</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#detailed-documentation">Detailed Documentation</a></li>
 </ul>
   </nav></div>
 

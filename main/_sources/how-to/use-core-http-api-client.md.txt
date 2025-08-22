@@ -4,7 +4,9 @@ This guide explains how to use the unified SmartEM API client to communicate wit
 
 ## Overview
 
-The SmartEM API Client provides a unified interface to interact with the SmartEM Core API. It supports both synchronous and asynchronous operations, making it flexible for different usage scenarios. The client also includes data conversion utilities to convert between EPU data models and API request/response models.
+The SmartEM API Client provides a unified interface to interact with the SmartEM Core API. It supports both
+synchronous and asynchronous operations, making it flexible for different usage scenarios. The client also includes
+data conversion utilities to convert between EPU data models and API request/response models.
 
 ## Installation
 
@@ -53,7 +55,8 @@ async with SmartEMAPIClient("http://localhost:8000") as client:
 
 ## Synchronous vs Asynchronous Methods
 
-The client provides both synchronous and asynchronous methods for all operations. The asynchronous methods are prefixed with `a` (e.g., `aget_status` vs `get_status`).
+The client provides both synchronous and asynchronous methods for all operations. The asynchronous methods are
+prefixed with `a` (e.g., `aget_status` vs `get_status`).
 
 ```python
 # Synchronous method
