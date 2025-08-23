@@ -17,7 +17,7 @@ The SmartEM API Client is included with the SmartEM Decisions package, so no add
 ### Importing the Client
 
 ```python
-from src.smartem_agent.core_http_api_client import SmartEMAPIClient
+from smartem_agent.core_http_api_client import SmartEMAPIClient
 ```
 
 ### Creating a Client Instance
@@ -71,7 +71,7 @@ acquisitions = await client.aget_acquisitions()
 ### Creating an Acquisition
 
 ```python
-from src.smartem_agent.model.schemas import EpuSessionData
+from smartem_agent.model.schemas import EpuSessionData
 from datetime import datetime
 
 # Create an acquisition from EPU session data
@@ -85,7 +85,7 @@ response = client.create_acquisition(session)
 print(f"Created acquisition with ID: {response.id}")
 
 # Alternatively, create directly with an API request model
-from src.smartem_backend.model.http_request import AcquisitionCreateRequest
+from smartem_backend.model.http_request import AcquisitionCreateRequest
 
 request = AcquisitionCreateRequest(
     id="my-acquisition-id",
@@ -110,7 +110,7 @@ print(f"Acquisition details: {acquisition.name}, Status: {acquisition.status}")
 ### Updating an Acquisition
 
 ```python
-from src.smartem_backend.model.http_request import AcquisitionUpdateRequest
+from smartem_backend.model.http_request import AcquisitionUpdateRequest
 
 update = AcquisitionUpdateRequest(
     name="Updated Acquisition Name",
@@ -142,25 +142,25 @@ Here's an example of creating entities at each level:
 acquisition = client.create_acquisition(EpuSessionData(id="acq-1", name="Test Acquisition"))
 
 # Create a grid for the acquisition
-from src.smartem_agent.model.schemas import GridData
+from smartem_agent.model.schemas import GridData
 
 grid = GridData(data_dir="/path/to/grid")
 grid_response = client.create_acquisition_grid(acquisition.id, grid)
 
 # Create a grid square for the grid
-from src.smartem_agent.model.schemas import GridSquareData
+from smartem_agent.model.schemas import GridSquareData
 
 gridsquare = GridSquareData(id="gs-1", data_dir="/path/to/gridsquare")
 gridsquare_response = client.create_grid_gridsquare(grid_response.id, gridsquare)
 
 # Create a foil hole for the grid square
-from src.smartem_agent.model.schemas import FoilHoleData
+from smartem_agent.model.schemas import FoilHoleData
 
 foilhole = FoilHoleData(id="fh-1", gridsquare_id=gridsquare.id)
 foilhole_response = client.create_gridsquare_foilhole(gridsquare_response.id, foilhole)
 
 # Create a micrograph for the foil hole
-from src.smartem_agent.model.schemas import MicrographData, MicrographManifest
+from smartem_agent.model.schemas import MicrographData, MicrographManifest
 
 manifest = MicrographManifest(
     unique_id="mic-1",
