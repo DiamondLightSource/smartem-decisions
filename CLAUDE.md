@@ -57,7 +57,7 @@ alembic revision --autogenerate -m "Description"
 ```
 
 ## Project Architecture
-- **Multi-package structure**: `smartem_backend`, `smartem_agent`, `smartem_common`, `smartem_api`, `athena_api`
+- **Multi-package structure**: `smartem_backend`, `smartem_agent`, `smartem_common`, `athena_api`
 - **Scientific computing focus**: Cryo-electron microscopy workflow automation
 - **Microservices**: FastAPI backend with message queue (RabbitMQ) communication
 - **Database**: PostgreSQL with SQLModel/Alembic migrations

@@ -49,7 +49,7 @@ class MockMCPClient:
             return {"error": result.error, "success": False}
 
     async def query_recent_acquisitions(self, limit):
-        return {"success": False, "error": "API not available in demo mode - would normally query SmartEM backend"}
+        return {"success": False, "error": "API not available in demo mode - would normally query SmartEM API"}
 
 
 async def demo_natural_language_queries():
