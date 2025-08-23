@@ -5,7 +5,7 @@ from pathlib import Path
 
 import requests
 
-from smartem_agent.core_http_api_client import SmartEMAPIClient
+from smartem_backend.api_client import SmartEMAPIClient
 from smartem_common.schemas import (
     AcquisitionData,
     AtlasData,

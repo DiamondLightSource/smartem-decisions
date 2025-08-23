@@ -127,7 +127,7 @@ class TestInMemoryDataStore(unittest.TestCase):
 
 
 class TestPersistentDataStore(unittest.TestCase):
-    @patch("smartem_agent.core_http_api_client.SmartEMAPIClient")
+    @patch("smartem_backend.api_client.SmartEMAPIClient")
     def setUp(self, mock_api_client):
         from smartem_agent.model.store import PersistentDataStore
 
