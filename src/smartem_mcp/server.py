@@ -21,7 +21,7 @@ from fastmcp import FastMCP
 
 from smartem_agent.fs_parser import EpuParser
 from smartem_agent.model.store import InMemoryDataStore
-from smartem_api.client import SmartEMAPIClient
+from smartem_backend.api_client import SmartEMAPIClient
 from smartem_mcp._version import __version__
 
 logger = logging.getLogger(__name__)

@@ -1,2 +1,2 @@
-# Re-export from smartem_api for backward compatibility
-from smartem_api.client import *  # noqa: F403,F401
+# Re-export from smartem_backend for backward compatibility
+from smartem_backend.api_client import *  # noqa: F403,F401

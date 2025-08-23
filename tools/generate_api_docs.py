@@ -66,11 +66,11 @@ def generate_smartem_from_implementation():
         # Skip database initialization in CI environments
         os.environ.setdefault("SKIP_DB_INIT", "true")
 
-        # Import the FastAPI app from SmartEM API
-        print("Attempting to import smartem_api.server...")
-        from smartem_api.server import app
+        # Import the FastAPI app from SmartEM Backend
+        print("Attempting to import smartem_backend.api_server...")
+        from smartem_backend.api_server import app
 
-        print("Successfully imported smartem_api.server")
+        print("Successfully imported smartem_backend.api_server")
 
         # Get the OpenAPI spec from the FastAPI app
         openapi_spec = app.openapi()
