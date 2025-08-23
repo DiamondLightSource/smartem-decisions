@@ -84,7 +84,7 @@ Direct parsing of EPU XML files using existing `smartem_agent` tools:
 
 ### API Queries
 
-Query historical and in-flight sessions via `smartem_backend` API:
+Query historical and in-flight sessions via SmartEM API:
 
 - **Use case**: Historical analysis, live session monitoring
 - **Capabilities**: Acquisition status, grid processing, real-time data

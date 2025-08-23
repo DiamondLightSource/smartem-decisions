@@ -7,7 +7,7 @@ querying with read-only access to scientific data.
 
 Architecture:
 - Direct filesystem parsing using smartem_agent tools
-- API querying via smartem_api client
+- API querying via SmartEM API client
 - FastMCP decorators for simplified tool and resource registration
 """
 
