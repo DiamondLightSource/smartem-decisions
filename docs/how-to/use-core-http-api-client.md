@@ -17,7 +17,7 @@ The SmartEM API Client is included with the SmartEM Decisions package, so no add
 ### Importing the Client
 
 ```python
-from smartem_agent.core_http_api_client import SmartEMAPIClient
+from smartem_backend.api_client import SmartEMAPIClient
 ```
 
 ### Creating a Client Instance
