@@ -7,7 +7,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Index &#8212; smartem-decisions 0.1.dev306+g20f1ad064.d20250822 documentation</title>
+    <title>Index &#8212; smartem-decisions 0.1.dev310+g206e74dc9.d20250823 documentation</title>
   
   
   
@@ -40,7 +40,7 @@
   <link rel="preload" as="script" href="_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="_static/documentation_options.js?v=dd290b83"></script>
+    <script src="_static/documentation_options.js?v=c6c4356a"></script>
     <script src="_static/doctools.js?v=9bcbadda"></script>
     <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/clipboard.min.js?v=a7894cd8"></script>
@@ -391,6 +391,8 @@
   <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
   <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
 <li class="toctree-l1 has-children"><a class="reference internal" href="_api/smartem_backend.html">API</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="_api/smartem_backend.api_client.html"><code class="docutils literal notranslate"><span class="pre">smartem_backend.api_client</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="_api/smartem_backend.api_server.html"><code class="docutils literal notranslate"><span class="pre">smartem_backend.api_server</span></code></a></li>
 <li class="toctree-l2 has-children"><a class="reference internal" href="_api/smartem_backend.cli.html"><code class="docutils literal notranslate"><span class="pre">smartem_backend.cli</span></code></a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
 <li class="toctree-l3"><a class="reference internal" href="_api/smartem_backend.cli.initialise_prediction_model_weights.html"><code class="docutils literal notranslate"><span class="pre">smartem_backend.cli.initialise_prediction_model_weights</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="_api/smartem_backend.cli.random_model_predictions.html"><code class="docutils literal notranslate"><span class="pre">smartem_backend.cli.random_model_predictions</span></code></a></li>
@@ -457,6 +459,8 @@
 <div class="genindex-jumpbox">
  <a href="#A"><strong>A</strong></a>
  | <a href="#C"><strong>C</strong></a>
+ | <a href="#D"><strong>D</strong></a>
+ | <a href="#E"><strong>E</strong></a>
  | <a href="#F"><strong>F</strong></a>
  | <a href="#G"><strong>G</strong></a>
  | <a href="#H"><strong>H</strong></a>
@@ -467,11 +471,14 @@
  | <a href="#P"><strong>P</strong></a>
  | <a href="#R"><strong>R</strong></a>
  | <a href="#S"><strong>S</strong></a>
+ | <a href="#U"><strong>U</strong></a>
  
 </div>
 <h2 id="A">A</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="_api/smartem_backend.api_client.html#smartem_backend.api_client.EntityConverter.acquisition_to_request">acquisition_to_request() (smartem_backend.api_client.EntityConverter static method)</a>
+</li>
       <li><a href="_api/smartem_backend.model.mq_event.html#smartem_backend.model.mq_event.AcquisitionCreatedEvent">AcquisitionCreatedEvent (class in smartem_backend.model.mq_event)</a>
 </li>
       <li><a href="_api/smartem_backend.model.mq_event.html#smartem_backend.model.mq_event.AcquisitionDeletedEvent">AcquisitionDeletedEvent (class in smartem_backend.model.mq_event)</a>
@@ -480,12 +487,16 @@
 </li>
       <li><a href="_api/smartem_backend.model.mq_event.html#smartem_backend.model.mq_event.AcquisitionUpdatedEvent">AcquisitionUpdatedEvent (class in smartem_backend.model.mq_event)</a>
 </li>
+      <li><a href="_api/smartem_backend.api_client.html#smartem_backend.api_client.EntityConverter.atlas_tile_to_request">atlas_tile_to_request() (smartem_backend.api_client.EntityConverter static method)</a>
+</li>
+      <li><a href="_api/smartem_backend.api_client.html#smartem_backend.api_client.EntityConverter.atlas_to_request">atlas_to_request() (smartem_backend.api_client.EntityConverter static method)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="_api/smartem_backend.model.mq_event.html#smartem_backend.model.mq_event.AtlasCreatedEvent">AtlasCreatedEvent (class in smartem_backend.model.mq_event)</a>
 </li>
       <li><a href="_api/smartem_backend.model.mq_event.html#smartem_backend.model.mq_event.AtlasDeletedEvent">AtlasDeletedEvent (class in smartem_backend.model.mq_event)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="_api/smartem_backend.model.mq_event.html#smartem_backend.model.mq_event.AtlasEventBase">AtlasEventBase (class in smartem_backend.model.mq_event)</a>
 </li>
       <li><a href="_api/smartem_backend.model.mq_event.html#smartem_backend.model.mq_event.AtlasTileCreatedEvent">AtlasTileCreatedEvent (class in smartem_backend.model.mq_event)</a>
@@ -506,13 +517,121 @@
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="_api/smartem_backend.utils.html#smartem_backend.utils.RabbitMQConnection.channel">channel() (smartem_backend.utils.RabbitMQConnection method)</a>
 </li>
-      <li><a href="_api/smartem_backend.utils.html#smartem_backend.utils.RabbitMQConnection.close">close() (smartem_backend.utils.RabbitMQConnection method)</a>
+      <li><a href="_api/smartem_backend.api_server.html#smartem_backend.api_server.check_database_health">check_database_health() (in module smartem_backend.api_server)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="_api/smartem_backend.api_server.html#smartem_backend.api_server.check_rabbitmq_health">check_rabbitmq_health() (in module smartem_backend.api_server)</a>
+</li>
+      <li><a href="_api/smartem_backend.api_client.html#smartem_backend.api_client.SmartEMAPIClient.close">close() (smartem_backend.api_client.SmartEMAPIClient method)</a>
+
+      <ul>
+        <li><a href="_api/smartem_backend.utils.html#smartem_backend.utils.RabbitMQConnection.close">(smartem_backend.utils.RabbitMQConnection method)</a>
+</li>
+      </ul></li>
       <li><a href="_api/smartem_backend.utils.html#smartem_backend.utils.RabbitMQConnection.connect">connect() (smartem_backend.utils.RabbitMQConnection method)</a>
 </li>
       <li><a href="_api/smartem_backend.utils.html#smartem_backend.utils.RabbitMQConsumer.consume">consume() (smartem_backend.utils.RabbitMQConsumer method)</a>
+</li>
+      <li><a href="_api/smartem_backend.api_server.html#smartem_backend.api_server.create_acquisition">create_acquisition() (in module smartem_backend.api_server)</a>
+
+      <ul>
+        <li><a href="_api/smartem_backend.api_client.html#smartem_backend.api_client.SmartEMAPIClient.create_acquisition">(smartem_backend.api_client.SmartEMAPIClient method)</a>
+</li>
+      </ul></li>
+      <li><a href="_api/smartem_backend.api_server.html#smartem_backend.api_server.create_acquisition_grid">create_acquisition_grid() (in module smartem_backend.api_server)</a>
+
+      <ul>
+        <li><a href="_api/smartem_backend.api_client.html#smartem_backend.api_client.SmartEMAPIClient.create_acquisition_grid">(smartem_backend.api_client.SmartEMAPIClient method)</a>
+</li>
+      </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="_api/smartem_backend.api_server.html#smartem_backend.api_server.create_atlas_tile_for_atlas">create_atlas_tile_for_atlas() (in module smartem_backend.api_server)</a>
+
+      <ul>
+        <li><a href="_api/smartem_backend.api_client.html#smartem_backend.api_client.SmartEMAPIClient.create_atlas_tile_for_atlas">(smartem_backend.api_client.SmartEMAPIClient method)</a>
+</li>
+      </ul></li>
+      <li><a href="_api/smartem_backend.api_server.html#smartem_backend.api_server.create_foilhole_micrograph">create_foilhole_micrograph() (in module smartem_backend.api_server)</a>
+
+      <ul>
+        <li><a href="_api/smartem_backend.api_client.html#smartem_backend.api_client.SmartEMAPIClient.create_foilhole_micrograph">(smartem_backend.api_client.SmartEMAPIClient method)</a>
+</li>
+      </ul></li>
+      <li><a href="_api/smartem_backend.api_server.html#smartem_backend.api_server.create_grid_atlas">create_grid_atlas() (in module smartem_backend.api_server)</a>
+
+      <ul>
+        <li><a href="_api/smartem_backend.api_client.html#smartem_backend.api_client.SmartEMAPIClient.create_grid_atlas">(smartem_backend.api_client.SmartEMAPIClient method)</a>
+</li>
+      </ul></li>
+      <li><a href="_api/smartem_backend.api_server.html#smartem_backend.api_server.create_grid_gridsquare">create_grid_gridsquare() (in module smartem_backend.api_server)</a>
+
+      <ul>
+        <li><a href="_api/smartem_backend.api_client.html#smartem_backend.api_client.SmartEMAPIClient.create_grid_gridsquare">(smartem_backend.api_client.SmartEMAPIClient method)</a>
+</li>
+      </ul></li>
+      <li><a href="_api/smartem_backend.api_server.html#smartem_backend.api_server.create_gridsquare_foilhole">create_gridsquare_foilhole() (in module smartem_backend.api_server)</a>
+
+      <ul>
+        <li><a href="_api/smartem_backend.api_client.html#smartem_backend.api_client.SmartEMAPIClient.create_gridsquare_foilhole">(smartem_backend.api_client.SmartEMAPIClient method)</a>
+</li>
+      </ul></li>
+  </ul></td>
+</tr></table>
+
+<h2 id="D">D</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="_api/smartem_backend.api_server.html#smartem_backend.api_server.delete_acquisition">delete_acquisition() (in module smartem_backend.api_server)</a>
+
+      <ul>
+        <li><a href="_api/smartem_backend.api_client.html#smartem_backend.api_client.SmartEMAPIClient.delete_acquisition">(smartem_backend.api_client.SmartEMAPIClient method)</a>
+</li>
+      </ul></li>
+      <li><a href="_api/smartem_backend.api_server.html#smartem_backend.api_server.delete_atlas">delete_atlas() (in module smartem_backend.api_server)</a>
+
+      <ul>
+        <li><a href="_api/smartem_backend.api_client.html#smartem_backend.api_client.SmartEMAPIClient.delete_atlas">(smartem_backend.api_client.SmartEMAPIClient method)</a>
+</li>
+      </ul></li>
+      <li><a href="_api/smartem_backend.api_server.html#smartem_backend.api_server.delete_atlas_tile">delete_atlas_tile() (in module smartem_backend.api_server)</a>
+
+      <ul>
+        <li><a href="_api/smartem_backend.api_client.html#smartem_backend.api_client.SmartEMAPIClient.delete_atlas_tile">(smartem_backend.api_client.SmartEMAPIClient method)</a>
+</li>
+      </ul></li>
+      <li><a href="_api/smartem_backend.api_server.html#smartem_backend.api_server.delete_foilhole">delete_foilhole() (in module smartem_backend.api_server)</a>
+
+      <ul>
+        <li><a href="_api/smartem_backend.api_client.html#smartem_backend.api_client.SmartEMAPIClient.delete_foilhole">(smartem_backend.api_client.SmartEMAPIClient method)</a>
+</li>
+      </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="_api/smartem_backend.api_server.html#smartem_backend.api_server.delete_grid">delete_grid() (in module smartem_backend.api_server)</a>
+
+      <ul>
+        <li><a href="_api/smartem_backend.api_client.html#smartem_backend.api_client.SmartEMAPIClient.delete_grid">(smartem_backend.api_client.SmartEMAPIClient method)</a>
+</li>
+      </ul></li>
+      <li><a href="_api/smartem_backend.api_server.html#smartem_backend.api_server.delete_gridsquare">delete_gridsquare() (in module smartem_backend.api_server)</a>
+
+      <ul>
+        <li><a href="_api/smartem_backend.api_client.html#smartem_backend.api_client.SmartEMAPIClient.delete_gridsquare">(smartem_backend.api_client.SmartEMAPIClient method)</a>
+</li>
+      </ul></li>
+      <li><a href="_api/smartem_backend.api_server.html#smartem_backend.api_server.delete_micrograph">delete_micrograph() (in module smartem_backend.api_server)</a>
+
+      <ul>
+        <li><a href="_api/smartem_backend.api_client.html#smartem_backend.api_client.SmartEMAPIClient.delete_micrograph">(smartem_backend.api_client.SmartEMAPIClient method)</a>
+</li>
+      </ul></li>
+  </ul></td>
+</tr></table>
+
+<h2 id="E">E</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="_api/smartem_backend.api_client.html#smartem_backend.api_client.EntityConverter">EntityConverter (class in smartem_backend.api_client)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -520,12 +639,14 @@
 <h2 id="F">F</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="_api/smartem_backend.model.mq_event.html#smartem_backend.model.mq_event.FoilHoleCreatedEvent">FoilHoleCreatedEvent (class in smartem_backend.model.mq_event)</a>
+      <li><a href="_api/smartem_backend.api_client.html#smartem_backend.api_client.EntityConverter.foilhole_to_request">foilhole_to_request() (smartem_backend.api_client.EntityConverter static method)</a>
 </li>
-      <li><a href="_api/smartem_backend.model.mq_event.html#smartem_backend.model.mq_event.FoilHoleDeletedEvent">FoilHoleDeletedEvent (class in smartem_backend.model.mq_event)</a>
+      <li><a href="_api/smartem_backend.model.mq_event.html#smartem_backend.model.mq_event.FoilHoleCreatedEvent">FoilHoleCreatedEvent (class in smartem_backend.model.mq_event)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="_api/smartem_backend.model.mq_event.html#smartem_backend.model.mq_event.FoilHoleDeletedEvent">FoilHoleDeletedEvent (class in smartem_backend.model.mq_event)</a>
+</li>
       <li><a href="_api/smartem_backend.model.mq_event.html#smartem_backend.model.mq_event.FoilHoleEventBase">FoilHoleEventBase (class in smartem_backend.model.mq_event)</a>
 </li>
       <li><a href="_api/smartem_backend.model.mq_event.html#smartem_backend.model.mq_event.FoilHoleUpdatedEvent">FoilHoleUpdatedEvent (class in smartem_backend.model.mq_event)</a>
@@ -540,21 +661,163 @@
 </li>
       <li><a href="_api/smartem_backend.cli.random_model_predictions.html#smartem_backend.cli.random_model_predictions.generate_predictions_for_gridsquare">generate_predictions_for_gridsquare() (in module smartem_backend.cli.random_model_predictions)</a>
 </li>
+      <li><a href="_api/smartem_backend.api_server.html#smartem_backend.api_server.get_acquisition">get_acquisition() (in module smartem_backend.api_server)</a>
+
+      <ul>
+        <li><a href="_api/smartem_backend.api_client.html#smartem_backend.api_client.SmartEMAPIClient.get_acquisition">(smartem_backend.api_client.SmartEMAPIClient method)</a>
+</li>
+      </ul></li>
+      <li><a href="_api/smartem_backend.api_server.html#smartem_backend.api_server.get_acquisition_grids">get_acquisition_grids() (in module smartem_backend.api_server)</a>
+
+      <ul>
+        <li><a href="_api/smartem_backend.api_client.html#smartem_backend.api_client.SmartEMAPIClient.get_acquisition_grids">(smartem_backend.api_client.SmartEMAPIClient method)</a>
+</li>
+      </ul></li>
+      <li><a href="_api/smartem_backend.api_server.html#smartem_backend.api_server.get_acquisitions">get_acquisitions() (in module smartem_backend.api_server)</a>
+
+      <ul>
+        <li><a href="_api/smartem_backend.api_client.html#smartem_backend.api_client.SmartEMAPIClient.get_acquisitions">(smartem_backend.api_client.SmartEMAPIClient method)</a>
+</li>
+      </ul></li>
+      <li><a href="_api/smartem_backend.api_server.html#smartem_backend.api_server.get_atlas">get_atlas() (in module smartem_backend.api_server)</a>
+
+      <ul>
+        <li><a href="_api/smartem_backend.api_client.html#smartem_backend.api_client.SmartEMAPIClient.get_atlas">(smartem_backend.api_client.SmartEMAPIClient method)</a>
+</li>
+      </ul></li>
+      <li><a href="_api/smartem_backend.api_server.html#smartem_backend.api_server.get_atlas_tile">get_atlas_tile() (in module smartem_backend.api_server)</a>
+
+      <ul>
+        <li><a href="_api/smartem_backend.api_client.html#smartem_backend.api_client.SmartEMAPIClient.get_atlas_tile">(smartem_backend.api_client.SmartEMAPIClient method)</a>
+</li>
+      </ul></li>
+      <li><a href="_api/smartem_backend.api_server.html#smartem_backend.api_server.get_atlas_tiles">get_atlas_tiles() (in module smartem_backend.api_server)</a>
+
+      <ul>
+        <li><a href="_api/smartem_backend.api_client.html#smartem_backend.api_client.SmartEMAPIClient.get_atlas_tiles">(smartem_backend.api_client.SmartEMAPIClient method)</a>
+</li>
+      </ul></li>
+      <li><a href="_api/smartem_backend.api_server.html#smartem_backend.api_server.get_atlas_tiles_by_atlas">get_atlas_tiles_by_atlas() (in module smartem_backend.api_server)</a>
+
+      <ul>
+        <li><a href="_api/smartem_backend.api_client.html#smartem_backend.api_client.SmartEMAPIClient.get_atlas_tiles_by_atlas">(smartem_backend.api_client.SmartEMAPIClient method)</a>
+</li>
+      </ul></li>
+      <li><a href="_api/smartem_backend.api_server.html#smartem_backend.api_server.get_atlases">get_atlases() (in module smartem_backend.api_server)</a>
+
+      <ul>
+        <li><a href="_api/smartem_backend.api_client.html#smartem_backend.api_client.SmartEMAPIClient.get_atlases">(smartem_backend.api_client.SmartEMAPIClient method)</a>
+</li>
+      </ul></li>
       <li><a href="_api/smartem_backend.utils.html#smartem_backend.utils.get_db_engine">get_db_engine() (in module smartem_backend.utils)</a>
 </li>
       <li><a href="_api/smartem_backend.consumer.html#smartem_backend.consumer.get_event_handlers">get_event_handlers() (in module smartem_backend.consumer)</a>
 </li>
+      <li><a href="_api/smartem_backend.api_server.html#smartem_backend.api_server.get_foilhole">get_foilhole() (in module smartem_backend.api_server)</a>
+
+      <ul>
+        <li><a href="_api/smartem_backend.api_client.html#smartem_backend.api_client.SmartEMAPIClient.get_foilhole">(smartem_backend.api_client.SmartEMAPIClient method)</a>
+</li>
+      </ul></li>
+      <li><a href="_api/smartem_backend.api_server.html#smartem_backend.api_server.get_foilhole_micrographs">get_foilhole_micrographs() (in module smartem_backend.api_server)</a>
+
+      <ul>
+        <li><a href="_api/smartem_backend.api_client.html#smartem_backend.api_client.SmartEMAPIClient.get_foilhole_micrographs">(smartem_backend.api_client.SmartEMAPIClient method)</a>
+</li>
+      </ul></li>
+      <li><a href="_api/smartem_backend.api_server.html#smartem_backend.api_server.get_foilholes">get_foilholes() (in module smartem_backend.api_server)</a>
+
+      <ul>
+        <li><a href="_api/smartem_backend.api_client.html#smartem_backend.api_client.SmartEMAPIClient.get_foilholes">(smartem_backend.api_client.SmartEMAPIClient method)</a>
+</li>
+      </ul></li>
+      <li><a href="_api/smartem_backend.api_server.html#smartem_backend.api_server.get_grid">get_grid() (in module smartem_backend.api_server)</a>
+
+      <ul>
+        <li><a href="_api/smartem_backend.api_client.html#smartem_backend.api_client.SmartEMAPIClient.get_grid">(smartem_backend.api_client.SmartEMAPIClient method)</a>
+</li>
+      </ul></li>
+      <li><a href="_api/smartem_backend.api_server.html#smartem_backend.api_server.get_grid_atlas">get_grid_atlas() (in module smartem_backend.api_server)</a>
+
+      <ul>
+        <li><a href="_api/smartem_backend.api_client.html#smartem_backend.api_client.SmartEMAPIClient.get_grid_atlas">(smartem_backend.api_client.SmartEMAPIClient method)</a>
+</li>
+      </ul></li>
+      <li><a href="_api/smartem_backend.api_server.html#smartem_backend.api_server.get_grid_gridsquares">get_grid_gridsquares() (in module smartem_backend.api_server)</a>
+
+      <ul>
+        <li><a href="_api/smartem_backend.api_client.html#smartem_backend.api_client.SmartEMAPIClient.get_grid_gridsquares">(smartem_backend.api_client.SmartEMAPIClient method)</a>
+</li>
+      </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="_api/smartem_backend.api_server.html#smartem_backend.api_server.get_grids">get_grids() (in module smartem_backend.api_server)</a>
+
+      <ul>
+        <li><a href="_api/smartem_backend.api_client.html#smartem_backend.api_client.SmartEMAPIClient.get_grids">(smartem_backend.api_client.SmartEMAPIClient method)</a>
+</li>
+      </ul></li>
+      <li><a href="_api/smartem_backend.api_server.html#smartem_backend.api_server.get_gridsquare">get_gridsquare() (in module smartem_backend.api_server)</a>
+
+      <ul>
+        <li><a href="_api/smartem_backend.api_client.html#smartem_backend.api_client.SmartEMAPIClient.get_gridsquare">(smartem_backend.api_client.SmartEMAPIClient method)</a>
+</li>
+      </ul></li>
+      <li><a href="_api/smartem_backend.api_server.html#smartem_backend.api_server.get_gridsquare_foilholes">get_gridsquare_foilholes() (in module smartem_backend.api_server)</a>
+
+      <ul>
+        <li><a href="_api/smartem_backend.api_client.html#smartem_backend.api_client.SmartEMAPIClient.get_gridsquare_foilholes">(smartem_backend.api_client.SmartEMAPIClient method)</a>
+</li>
+      </ul></li>
+      <li><a href="_api/smartem_backend.api_server.html#smartem_backend.api_server.get_gridsquares">get_gridsquares() (in module smartem_backend.api_server)</a>
+
+      <ul>
+        <li><a href="_api/smartem_backend.api_client.html#smartem_backend.api_client.SmartEMAPIClient.get_gridsquares">(smartem_backend.api_client.SmartEMAPIClient method)</a>
+</li>
+      </ul></li>
+      <li><a href="_api/smartem_backend.api_server.html#smartem_backend.api_server.get_health">get_health() (in module smartem_backend.api_server)</a>
+
+      <ul>
+        <li><a href="_api/smartem_backend.api_client.html#smartem_backend.api_client.SmartEMAPIClient.get_health">(smartem_backend.api_client.SmartEMAPIClient method)</a>
+</li>
+      </ul></li>
       <li><a href="_api/smartem_backend.utils.html#smartem_backend.utils.get_log_file_path">get_log_file_path() (in module smartem_backend.utils)</a>
+</li>
+      <li><a href="_api/smartem_backend.api_server.html#smartem_backend.api_server.get_micrograph">get_micrograph() (in module smartem_backend.api_server)</a>
+
+      <ul>
+        <li><a href="_api/smartem_backend.api_client.html#smartem_backend.api_client.SmartEMAPIClient.get_micrograph">(smartem_backend.api_client.SmartEMAPIClient method)</a>
+</li>
+      </ul></li>
+      <li><a href="_api/smartem_backend.api_server.html#smartem_backend.api_server.get_micrographs">get_micrographs() (in module smartem_backend.api_server)</a>
+
+      <ul>
+        <li><a href="_api/smartem_backend.api_client.html#smartem_backend.api_client.SmartEMAPIClient.get_micrographs">(smartem_backend.api_client.SmartEMAPIClient method)</a>
+</li>
+      </ul></li>
+      <li><a href="_api/smartem_backend.api_server.html#smartem_backend.api_server.get_status">get_status() (in module smartem_backend.api_server)</a>
+
+      <ul>
+        <li><a href="_api/smartem_backend.api_client.html#smartem_backend.api_client.SmartEMAPIClient.get_status">(smartem_backend.api_client.SmartEMAPIClient method)</a>
+</li>
+      </ul></li>
+      <li><a href="_api/smartem_backend.api_server.html#smartem_backend.api_server.grid_registered">grid_registered() (in module smartem_backend.api_server)</a>
+</li>
+      <li><a href="_api/smartem_backend.api_client.html#smartem_backend.api_client.EntityConverter.grid_to_request">grid_to_request() (smartem_backend.api_client.EntityConverter static method)</a>
 </li>
       <li><a href="_api/smartem_backend.model.mq_event.html#smartem_backend.model.mq_event.GridCreatedEvent">GridCreatedEvent (class in smartem_backend.model.mq_event)</a>
 </li>
       <li><a href="_api/smartem_backend.model.mq_event.html#smartem_backend.model.mq_event.GridDeletedEvent">GridDeletedEvent (class in smartem_backend.model.mq_event)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="_api/smartem_backend.model.mq_event.html#smartem_backend.model.mq_event.GridEventBase">GridEventBase (class in smartem_backend.model.mq_event)</a>
 </li>
       <li><a href="_api/smartem_backend.model.mq_event.html#smartem_backend.model.mq_event.GridRegisteredEvent">GridRegisteredEvent (class in smartem_backend.model.mq_event)</a>
+</li>
+      <li><a href="_api/smartem_backend.api_client.html#smartem_backend.api_client.EntityConverter.gridsquare_position_to_request">gridsquare_position_to_request() (smartem_backend.api_client.EntityConverter static method)</a>
+</li>
+      <li><a href="_api/smartem_backend.api_server.html#smartem_backend.api_server.gridsquare_registered">gridsquare_registered() (in module smartem_backend.api_server)</a>
+</li>
+      <li><a href="_api/smartem_backend.api_client.html#smartem_backend.api_client.EntityConverter.gridsquare_to_request">gridsquare_to_request() (smartem_backend.api_client.EntityConverter static method)</a>
 </li>
       <li><a href="_api/smartem_backend.model.mq_event.html#smartem_backend.model.mq_event.GridSquareCreatedEvent">GridSquareCreatedEvent (class in smartem_backend.model.mq_event)</a>
 </li>
@@ -646,6 +909,12 @@
 <h2 id="L">L</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="_api/smartem_backend.api_client.html#smartem_backend.api_client.SmartEMAPIClient.link_atlas_tile_and_gridsquare">link_atlas_tile_and_gridsquare() (smartem_backend.api_client.SmartEMAPIClient method)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="_api/smartem_backend.api_server.html#smartem_backend.api_server.link_atlas_tile_to_gridsquare">link_atlas_tile_to_gridsquare() (in module smartem_backend.api_server)</a>
+</li>
       <li><a href="_api/smartem_backend.log_manager.html#smartem_backend.log_manager.LogConfig">LogConfig (class in smartem_backend.log_manager)</a>
 </li>
   </ul></td>
@@ -657,6 +926,8 @@
       <li><a href="_api/smartem_backend.consumer.html#smartem_backend.consumer.main">main() (in module smartem_backend.consumer)</a>
 </li>
       <li><a href="_api/smartem_backend.model.mq_event.html#smartem_backend.model.mq_event.MessageQueueEventType">MessageQueueEventType (class in smartem_backend.model.mq_event)</a>
+</li>
+      <li><a href="_api/smartem_backend.api_client.html#smartem_backend.api_client.EntityConverter.micrograph_to_request">micrograph_to_request() (smartem_backend.api_client.EntityConverter static method)</a>
 </li>
       <li><a href="_api/smartem_backend.model.mq_event.html#smartem_backend.model.mq_event.MicrographCreatedEvent">MicrographCreatedEvent (class in smartem_backend.model.mq_event)</a>
 </li>
@@ -671,6 +942,10 @@
 
       <ul>
         <li><a href="_api/smartem_backend.html#module-smartem_backend">smartem_backend</a>
+</li>
+        <li><a href="_api/smartem_backend.api_client.html#module-smartem_backend.api_client">smartem_backend.api_client</a>
+</li>
+        <li><a href="_api/smartem_backend.api_server.html#module-smartem_backend.api_server">smartem_backend.api_server</a>
 </li>
         <li><a href="_api/smartem_backend.cli.html#module-smartem_backend.cli">smartem_backend.cli</a>
 </li>
@@ -825,6 +1100,20 @@
 </li>
       </ul></li>
       <li>
+    smartem_backend.api_client
+
+      <ul>
+        <li><a href="_api/smartem_backend.api_client.html#module-smartem_backend.api_client">module</a>
+</li>
+      </ul></li>
+      <li>
+    smartem_backend.api_server
+
+      <ul>
+        <li><a href="_api/smartem_backend.api_server.html#module-smartem_backend.api_server">module</a>
+</li>
+      </ul></li>
+      <li>
     smartem_backend.cli
 
       <ul>
@@ -866,6 +1155,8 @@
         <li><a href="_api/smartem_backend.consumer.html#module-smartem_backend.consumer">module</a>
 </li>
       </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li>
     smartem_backend.log_manager
 
@@ -873,8 +1164,6 @@
         <li><a href="_api/smartem_backend.log_manager.html#module-smartem_backend.log_manager">module</a>
 </li>
       </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li>
     smartem_backend.model
 
@@ -945,8 +1234,60 @@
         <li><a href="_api/smartem_backend.utils.html#module-smartem_backend.utils">module</a>
 </li>
       </ul></li>
+      <li><a href="_api/smartem_backend.api_client.html#smartem_backend.api_client.SmartEMAPIClient">SmartEMAPIClient (class in smartem_backend.api_client)</a>
+</li>
       <li><a href="_api/smartem_backend.utils.html#smartem_backend.utils.RabbitMQConsumer.stop_consuming">stop_consuming() (smartem_backend.utils.RabbitMQConsumer method)</a>
 </li>
+  </ul></td>
+</tr></table>
+
+<h2 id="U">U</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="_api/smartem_backend.api_server.html#smartem_backend.api_server.update_acquisition">update_acquisition() (in module smartem_backend.api_server)</a>
+
+      <ul>
+        <li><a href="_api/smartem_backend.api_client.html#smartem_backend.api_client.SmartEMAPIClient.update_acquisition">(smartem_backend.api_client.SmartEMAPIClient method)</a>
+</li>
+      </ul></li>
+      <li><a href="_api/smartem_backend.api_server.html#smartem_backend.api_server.update_atlas">update_atlas() (in module smartem_backend.api_server)</a>
+
+      <ul>
+        <li><a href="_api/smartem_backend.api_client.html#smartem_backend.api_client.SmartEMAPIClient.update_atlas">(smartem_backend.api_client.SmartEMAPIClient method)</a>
+</li>
+      </ul></li>
+      <li><a href="_api/smartem_backend.api_server.html#smartem_backend.api_server.update_atlas_tile">update_atlas_tile() (in module smartem_backend.api_server)</a>
+
+      <ul>
+        <li><a href="_api/smartem_backend.api_client.html#smartem_backend.api_client.SmartEMAPIClient.update_atlas_tile">(smartem_backend.api_client.SmartEMAPIClient method)</a>
+</li>
+      </ul></li>
+      <li><a href="_api/smartem_backend.api_server.html#smartem_backend.api_server.update_foilhole">update_foilhole() (in module smartem_backend.api_server)</a>
+
+      <ul>
+        <li><a href="_api/smartem_backend.api_client.html#smartem_backend.api_client.SmartEMAPIClient.update_foilhole">(smartem_backend.api_client.SmartEMAPIClient method)</a>
+</li>
+      </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="_api/smartem_backend.api_server.html#smartem_backend.api_server.update_grid">update_grid() (in module smartem_backend.api_server)</a>
+
+      <ul>
+        <li><a href="_api/smartem_backend.api_client.html#smartem_backend.api_client.SmartEMAPIClient.update_grid">(smartem_backend.api_client.SmartEMAPIClient method)</a>
+</li>
+      </ul></li>
+      <li><a href="_api/smartem_backend.api_server.html#smartem_backend.api_server.update_gridsquare">update_gridsquare() (in module smartem_backend.api_server)</a>
+
+      <ul>
+        <li><a href="_api/smartem_backend.api_client.html#smartem_backend.api_client.SmartEMAPIClient.update_gridsquare">(smartem_backend.api_client.SmartEMAPIClient method)</a>
+</li>
+      </ul></li>
+      <li><a href="_api/smartem_backend.api_server.html#smartem_backend.api_server.update_micrograph">update_micrograph() (in module smartem_backend.api_server)</a>
+
+      <ul>
+        <li><a href="_api/smartem_backend.api_client.html#smartem_backend.api_client.SmartEMAPIClient.update_micrograph">(smartem_backend.api_client.SmartEMAPIClient method)</a>
+</li>
+      </ul></li>
   </ul></td>
 </tr></table>
 

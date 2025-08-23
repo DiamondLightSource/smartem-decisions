@@ -1,0 +1,23 @@
+``smartem_backend.api_client``
+==============================
+        
+        
+
+.. automodule:: smartem_backend.api_client
+    :members:
+
+    
+    
+    
+
+    
+    
+    .. rubric:: Members
+
+    .. autosummary::
+        :nosignatures:
+    
+        EntityConverter
+        SmartEMAPIClient
+    
+    

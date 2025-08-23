@@ -1,0 +1,1241 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>smartem_backend.api_client &#8212; smartem-decisions 0.1.dev310+g206e74dc9.d20250823 documentation</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+<link href="../../_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=4ae1632d" />
+    <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sphinx-design.min.css?v=95c83b7e" />
+  
+  <!-- So that users can add custom icons -->
+  <script src="../../_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
+<link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
+
+    <script src="../../_static/documentation_options.js?v=c6c4356a"></script>
+    <script src="../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../../_static/copybutton.js?v=30646c52"></script>
+    <script src="../../_static/design-tabs.js?v=f930bc37"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = '_modules/smartem_backend/api_client';</script>
+    <script>
+        DOCUMENTATION_OPTIONS.theme_version = '0.16.1';
+        DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://DiamondLightSource.github.io/smartem-decisions/switcher.json';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = 'main';
+        DOCUMENTATION_OPTIONS.show_version_warning_banner =
+            false;
+        </script>
+    <link rel="icon" href="../../_static/dls-logo.svg"/>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="main" />
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../../_static/dls-logo.svg" class="logo__image only-light" alt=""/>
+    <img src="../../_static/dls-logo.svg" class="logo__image only-dark pst-js-only" alt=""/>
+  
+  
+    <p class="title logo__title">smartem-decisions</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../tutorials.html">
+    Tutorials
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../how-to.html">
+    How-to Guides
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../explanations.html">
+    Explanations
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../reference.html">
+    Reference
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/DiamondLightSource/smartem-decisions" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://pypi.org/project/smartem-decisions" title="PyPI" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fas fa-cube fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">PyPI</span></a>
+        </li>
+</ul></div>
+      
+        <div class="navbar-item">
+<div class="version-switcher__container dropdown pst-js-only">
+  <button id="pst-version-switcher-button-2"
+    type="button"
+    class="version-switcher__button btn btn-sm dropdown-toggle"
+    data-bs-toggle="dropdown"
+    aria-haspopup="listbox"
+    aria-controls="pst-version-switcher-list-2"
+    aria-label="Version switcher list"
+  >
+    Choose version  <!-- this text may get changed later by javascript -->
+    <span class="caret"></span>
+  </button>
+  <div id="pst-version-switcher-list-2"
+    class="version-switcher__menu dropdown-menu list-group-flush py-0"
+    role="listbox" aria-labelledby="pst-version-switcher-button-2">
+    <!-- dropdown will be populated by javascript on page load -->
+  </div>
+</div></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+        
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar hide-on-wide">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../tutorials.html">
+    Tutorials
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../how-to.html">
+    How-to Guides
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../explanations.html">
+    Explanations
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../reference.html">
+    Reference
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/DiamondLightSource/smartem-decisions" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://pypi.org/project/smartem-decisions" title="PyPI" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fas fa-cube fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">PyPI</span></a>
+        </li>
+</ul></div>
+        
+          <div class="navbar-item">
+<div class="version-switcher__container dropdown pst-js-only">
+  <button id="pst-version-switcher-button-3"
+    type="button"
+    class="version-switcher__button btn btn-sm dropdown-toggle"
+    data-bs-toggle="dropdown"
+    aria-haspopup="listbox"
+    aria-controls="pst-version-switcher-list-3"
+    aria-label="Version switcher list"
+  >
+    Choose version  <!-- this text may get changed later by javascript -->
+    <span class="caret"></span>
+  </button>
+  <div id="pst-version-switcher-list-3"
+    class="version-switcher__menu dropdown-menu list-group-flush py-0"
+    role="listbox" aria-labelledby="pst-version-switcher-button-3">
+    <!-- dropdown will be populated by javascript on page load -->
+  </div>
+</div></div>
+        
+      </div>
+    
+  </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="../index.html" class="nav-link">Module code</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">smartem_backend.api_client</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <h1>Source code for smartem_backend.api_client</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">traceback</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">datetime</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">requests</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pydantic</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseModel</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">smartem_backend.model.http_request</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">AcquisitionCreateRequest</span><span class="p">,</span>
+    <span class="n">AtlasCreateRequest</span><span class="p">,</span>
+    <span class="n">AtlasTileCreateRequest</span><span class="p">,</span>
+    <span class="n">FoilHoleCreateRequest</span><span class="p">,</span>
+    <span class="n">GridCreateRequest</span><span class="p">,</span>
+    <span class="n">GridSquareCreateRequest</span><span class="p">,</span>
+    <span class="n">GridSquarePositionRequest</span><span class="p">,</span>
+    <span class="n">MicrographCreateRequest</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">smartem_backend.model.http_response</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">AcquisitionResponse</span><span class="p">,</span>
+    <span class="n">AtlasResponse</span><span class="p">,</span>
+    <span class="n">AtlasTileGridSquarePositionResponse</span><span class="p">,</span>
+    <span class="n">AtlasTileResponse</span><span class="p">,</span>
+    <span class="n">FoilHoleResponse</span><span class="p">,</span>
+    <span class="n">GridResponse</span><span class="p">,</span>
+    <span class="n">GridSquareResponse</span><span class="p">,</span>
+    <span class="n">MicrographResponse</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">smartem_common.entity_status</span><span class="w"> </span><span class="kn">import</span> <span class="n">AcquisitionStatus</span><span class="p">,</span> <span class="n">GridSquareStatus</span><span class="p">,</span> <span class="n">GridStatus</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">smartem_common.schemas</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">AcquisitionData</span><span class="p">,</span>
+    <span class="n">AtlasData</span><span class="p">,</span>
+    <span class="n">AtlasTileData</span><span class="p">,</span>
+    <span class="n">AtlasTileGridSquarePositionData</span><span class="p">,</span>
+    <span class="n">FoilHoleData</span><span class="p">,</span>
+    <span class="n">GridData</span><span class="p">,</span>
+    <span class="n">GridSquareData</span><span class="p">,</span>
+    <span class="n">MicrographData</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="c1"># TODO look for a way to remove the extra bloat - conversion from EntityData type to EntityCreateRequest type</span>
+<span class="c1">#  if at all possible</span>
+
+
+<div class="viewcode-block" id="EntityConverter">
+<a class="viewcode-back" href="../../_api/smartem_backend.api_client.html#smartem_backend.api_client.EntityConverter">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">EntityConverter</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Handles conversions between EPU data model and API request/response models.</span>
+<span class="sd">    Separating this conversion logic keeps the main client code cleaner.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="EntityConverter.acquisition_to_request">
+<a class="viewcode-back" href="../../_api/smartem_backend.api_client.html#smartem_backend.api_client.EntityConverter.acquisition_to_request">[docs]</a>
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">acquisition_to_request</span><span class="p">(</span><span class="n">entity</span><span class="p">:</span> <span class="n">AcquisitionData</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AcquisitionCreateRequest</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Convert EPU session data to acquisition request model&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">AcquisitionCreateRequest</span><span class="p">(</span>
+            <span class="n">uuid</span><span class="o">=</span><span class="n">entity</span><span class="o">.</span><span class="n">uuid</span><span class="p">,</span>
+            <span class="c1"># TODO check if natural `id` should also be included</span>
+            <span class="n">name</span><span class="o">=</span><span class="n">entity</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+            <span class="n">start_time</span><span class="o">=</span><span class="n">entity</span><span class="o">.</span><span class="n">start_time</span><span class="p">,</span>
+            <span class="n">storage_path</span><span class="o">=</span><span class="n">entity</span><span class="o">.</span><span class="n">storage_path</span><span class="p">,</span>
+            <span class="n">atlas_path</span><span class="o">=</span><span class="n">entity</span><span class="o">.</span><span class="n">atlas_path</span><span class="p">,</span>
+            <span class="n">clustering_mode</span><span class="o">=</span><span class="n">entity</span><span class="o">.</span><span class="n">clustering_mode</span><span class="p">,</span>
+            <span class="n">clustering_radius</span><span class="o">=</span><span class="n">entity</span><span class="o">.</span><span class="n">clustering_radius</span><span class="p">,</span>
+            <span class="n">instrument_model</span><span class="o">=</span><span class="n">entity</span><span class="o">.</span><span class="n">instrument</span><span class="o">.</span><span class="n">instrument_model</span> <span class="k">if</span> <span class="n">entity</span><span class="o">.</span><span class="n">instrument</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">instrument_id</span><span class="o">=</span><span class="n">entity</span><span class="o">.</span><span class="n">instrument</span><span class="o">.</span><span class="n">instrument_id</span> <span class="k">if</span> <span class="n">entity</span><span class="o">.</span><span class="n">instrument</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">computer_name</span><span class="o">=</span><span class="n">entity</span><span class="o">.</span><span class="n">instrument</span><span class="o">.</span><span class="n">computer_name</span> <span class="k">if</span> <span class="n">entity</span><span class="o">.</span><span class="n">instrument</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">status</span><span class="o">=</span><span class="n">AcquisitionStatus</span><span class="o">.</span><span class="n">STARTED</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="EntityConverter.grid_to_request">
+<a class="viewcode-back" href="../../_api/smartem_backend.api_client.html#smartem_backend.api_client.EntityConverter.grid_to_request">[docs]</a>
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">grid_to_request</span><span class="p">(</span><span class="n">entity</span><span class="p">:</span> <span class="n">GridData</span><span class="p">,</span> <span class="n">lowmag</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">GridCreateRequest</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Convert Grid data to grid request model&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">GridCreateRequest</span><span class="p">(</span>
+            <span class="n">uuid</span><span class="o">=</span><span class="n">entity</span><span class="o">.</span><span class="n">uuid</span><span class="p">,</span>
+            <span class="n">status</span><span class="o">=</span><span class="n">GridStatus</span><span class="o">.</span><span class="n">NONE</span><span class="p">,</span>
+            <span class="n">name</span><span class="o">=</span><span class="n">entity</span><span class="o">.</span><span class="n">acquisition_data</span><span class="o">.</span><span class="n">name</span> <span class="k">if</span> <span class="n">entity</span><span class="o">.</span><span class="n">acquisition_data</span> <span class="k">else</span> <span class="s2">&quot;Unknown&quot;</span><span class="p">,</span>
+            <span class="n">acquisition_uuid</span><span class="o">=</span><span class="n">entity</span><span class="o">.</span><span class="n">acquisition_data</span><span class="o">.</span><span class="n">uuid</span><span class="p">,</span>
+            <span class="n">data_dir</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">entity</span><span class="o">.</span><span class="n">data_dir</span><span class="p">)</span> <span class="k">if</span> <span class="n">entity</span><span class="o">.</span><span class="n">data_dir</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">atlas_dir</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">entity</span><span class="o">.</span><span class="n">atlas_dir</span><span class="p">)</span> <span class="k">if</span> <span class="n">entity</span><span class="o">.</span><span class="n">atlas_dir</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">lowmag</span><span class="o">=</span><span class="n">lowmag</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="EntityConverter.gridsquare_to_request">
+<a class="viewcode-back" href="../../_api/smartem_backend.api_client.html#smartem_backend.api_client.EntityConverter.gridsquare_to_request">[docs]</a>
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">gridsquare_to_request</span><span class="p">(</span><span class="n">entity</span><span class="p">:</span> <span class="n">GridSquareData</span><span class="p">,</span> <span class="n">lowmag</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">GridSquareCreateRequest</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Convert GridSquareData to grid square request model&quot;&quot;&quot;</span>
+        <span class="n">metadata</span> <span class="o">=</span> <span class="n">entity</span><span class="o">.</span><span class="n">metadata</span>
+        <span class="n">manifest</span> <span class="o">=</span> <span class="n">entity</span><span class="o">.</span><span class="n">manifest</span>
+        <span class="k">return</span> <span class="n">GridSquareCreateRequest</span><span class="p">(</span>
+            <span class="n">grid_uuid</span><span class="o">=</span><span class="n">entity</span><span class="o">.</span><span class="n">grid_uuid</span><span class="p">,</span>
+            <span class="n">gridsquare_id</span><span class="o">=</span><span class="n">entity</span><span class="o">.</span><span class="n">gridsquare_id</span><span class="p">,</span>
+            <span class="n">uuid</span><span class="o">=</span><span class="n">entity</span><span class="o">.</span><span class="n">uuid</span><span class="p">,</span>
+            <span class="n">center_x</span><span class="o">=</span><span class="n">entity</span><span class="o">.</span><span class="n">center_x</span><span class="p">,</span>
+            <span class="n">center_y</span><span class="o">=</span><span class="n">entity</span><span class="o">.</span><span class="n">center_y</span><span class="p">,</span>
+            <span class="n">size_width</span><span class="o">=</span><span class="n">entity</span><span class="o">.</span><span class="n">size_width</span><span class="p">,</span>
+            <span class="n">size_height</span><span class="o">=</span><span class="n">entity</span><span class="o">.</span><span class="n">size_height</span><span class="p">,</span>
+            <span class="n">status</span><span class="o">=</span><span class="n">GridSquareStatus</span><span class="o">.</span><span class="n">NONE</span><span class="p">,</span>
+            <span class="n">data_dir</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">entity</span><span class="o">.</span><span class="n">data_dir</span><span class="p">)</span> <span class="k">if</span> <span class="n">entity</span><span class="o">.</span><span class="n">data_dir</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">atlas_node_id</span><span class="o">=</span><span class="n">metadata</span><span class="o">.</span><span class="n">atlas_node_id</span> <span class="k">if</span> <span class="n">metadata</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">state</span><span class="o">=</span><span class="n">metadata</span><span class="o">.</span><span class="n">state</span> <span class="k">if</span> <span class="n">metadata</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">rotation</span><span class="o">=</span><span class="n">metadata</span><span class="o">.</span><span class="n">rotation</span> <span class="k">if</span> <span class="n">metadata</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">image_path</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">metadata</span><span class="o">.</span><span class="n">image_path</span><span class="p">)</span> <span class="k">if</span> <span class="n">metadata</span> <span class="ow">and</span> <span class="n">metadata</span><span class="o">.</span><span class="n">image_path</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">selected</span><span class="o">=</span><span class="n">metadata</span><span class="o">.</span><span class="n">selected</span> <span class="k">if</span> <span class="n">metadata</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">unusable</span><span class="o">=</span><span class="n">metadata</span><span class="o">.</span><span class="n">unusable</span> <span class="k">if</span> <span class="n">metadata</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">stage_position_x</span><span class="o">=</span><span class="n">metadata</span><span class="o">.</span><span class="n">stage_position</span><span class="o">.</span><span class="n">x</span> <span class="k">if</span> <span class="n">metadata</span> <span class="ow">and</span> <span class="n">metadata</span><span class="o">.</span><span class="n">stage_position</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">stage_position_y</span><span class="o">=</span><span class="n">metadata</span><span class="o">.</span><span class="n">stage_position</span><span class="o">.</span><span class="n">y</span> <span class="k">if</span> <span class="n">metadata</span> <span class="ow">and</span> <span class="n">metadata</span><span class="o">.</span><span class="n">stage_position</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">stage_position_z</span><span class="o">=</span><span class="n">metadata</span><span class="o">.</span><span class="n">stage_position</span><span class="o">.</span><span class="n">z</span> <span class="k">if</span> <span class="n">metadata</span> <span class="ow">and</span> <span class="n">metadata</span><span class="o">.</span><span class="n">stage_position</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">acquisition_datetime</span><span class="o">=</span><span class="n">manifest</span><span class="o">.</span><span class="n">acquisition_datetime</span> <span class="k">if</span> <span class="n">manifest</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">defocus</span><span class="o">=</span><span class="n">manifest</span><span class="o">.</span><span class="n">defocus</span> <span class="k">if</span> <span class="n">manifest</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">magnification</span><span class="o">=</span><span class="n">manifest</span><span class="o">.</span><span class="n">magnification</span> <span class="k">if</span> <span class="n">manifest</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">pixel_size</span><span class="o">=</span><span class="n">manifest</span><span class="o">.</span><span class="n">pixel_size</span> <span class="k">if</span> <span class="n">manifest</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">detector_name</span><span class="o">=</span><span class="n">manifest</span><span class="o">.</span><span class="n">detector_name</span> <span class="k">if</span> <span class="n">manifest</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">applied_defocus</span><span class="o">=</span><span class="n">manifest</span><span class="o">.</span><span class="n">applied_defocus</span> <span class="k">if</span> <span class="n">manifest</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">lowmag</span><span class="o">=</span><span class="n">lowmag</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="EntityConverter.foilhole_to_request">
+<a class="viewcode-back" href="../../_api/smartem_backend.api_client.html#smartem_backend.api_client.EntityConverter.foilhole_to_request">[docs]</a>
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">foilhole_to_request</span><span class="p">(</span><span class="n">entity</span><span class="p">:</span> <span class="n">FoilHoleData</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">FoilHoleCreateRequest</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Convert FoilHoleData to foil hole request model&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">FoilHoleCreateRequest</span><span class="p">(</span>
+            <span class="n">uuid</span><span class="o">=</span><span class="n">entity</span><span class="o">.</span><span class="n">uuid</span><span class="p">,</span>
+            <span class="n">foilhole_id</span><span class="o">=</span><span class="n">entity</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>  <span class="c1"># Changed from id=entity.id to foilhole_id=entity.id</span>
+            <span class="n">gridsquare_id</span><span class="o">=</span><span class="n">entity</span><span class="o">.</span><span class="n">gridsquare_id</span><span class="p">,</span>
+            <span class="n">gridsquare_uuid</span><span class="o">=</span><span class="n">entity</span><span class="o">.</span><span class="n">gridsquare_uuid</span><span class="p">,</span>
+            <span class="n">center_x</span><span class="o">=</span><span class="n">entity</span><span class="o">.</span><span class="n">center_x</span><span class="p">,</span>
+            <span class="n">center_y</span><span class="o">=</span><span class="n">entity</span><span class="o">.</span><span class="n">center_y</span><span class="p">,</span>
+            <span class="n">quality</span><span class="o">=</span><span class="n">entity</span><span class="o">.</span><span class="n">quality</span><span class="p">,</span>
+            <span class="n">rotation</span><span class="o">=</span><span class="n">entity</span><span class="o">.</span><span class="n">rotation</span><span class="p">,</span>
+            <span class="n">size_width</span><span class="o">=</span><span class="n">entity</span><span class="o">.</span><span class="n">size_width</span><span class="p">,</span>
+            <span class="n">size_height</span><span class="o">=</span><span class="n">entity</span><span class="o">.</span><span class="n">size_height</span><span class="p">,</span>
+            <span class="n">x_location</span><span class="o">=</span><span class="n">entity</span><span class="o">.</span><span class="n">x_location</span><span class="p">,</span>
+            <span class="n">y_location</span><span class="o">=</span><span class="n">entity</span><span class="o">.</span><span class="n">y_location</span><span class="p">,</span>
+            <span class="n">x_stage_position</span><span class="o">=</span><span class="n">entity</span><span class="o">.</span><span class="n">x_stage_position</span><span class="p">,</span>
+            <span class="n">y_stage_position</span><span class="o">=</span><span class="n">entity</span><span class="o">.</span><span class="n">y_stage_position</span><span class="p">,</span>
+            <span class="n">diameter</span><span class="o">=</span><span class="n">entity</span><span class="o">.</span><span class="n">diameter</span><span class="p">,</span>
+            <span class="n">is_near_grid_bar</span><span class="o">=</span><span class="n">entity</span><span class="o">.</span><span class="n">is_near_grid_bar</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="EntityConverter.micrograph_to_request">
+<a class="viewcode-back" href="../../_api/smartem_backend.api_client.html#smartem_backend.api_client.EntityConverter.micrograph_to_request">[docs]</a>
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">micrograph_to_request</span><span class="p">(</span><span class="n">entity</span><span class="p">:</span> <span class="n">MicrographData</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MicrographCreateRequest</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Convert MicrographData to micrograph request model&quot;&quot;&quot;</span>
+        <span class="n">manifest</span> <span class="o">=</span> <span class="n">entity</span><span class="o">.</span><span class="n">manifest</span>
+        <span class="k">return</span> <span class="n">MicrographCreateRequest</span><span class="p">(</span>
+            <span class="n">uuid</span><span class="o">=</span><span class="n">entity</span><span class="o">.</span><span class="n">uuid</span><span class="p">,</span>
+            <span class="n">foilhole_uuid</span><span class="o">=</span><span class="n">entity</span><span class="o">.</span><span class="n">foilhole_uuid</span><span class="p">,</span>
+            <span class="n">foilhole_id</span><span class="o">=</span><span class="n">entity</span><span class="o">.</span><span class="n">foilhole_id</span><span class="p">,</span>
+            <span class="n">location_id</span><span class="o">=</span><span class="n">entity</span><span class="o">.</span><span class="n">location_id</span><span class="p">,</span>
+            <span class="n">high_res_path</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">entity</span><span class="o">.</span><span class="n">high_res_path</span><span class="p">)</span> <span class="k">if</span> <span class="n">entity</span><span class="o">.</span><span class="n">high_res_path</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">manifest_file</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">entity</span><span class="o">.</span><span class="n">manifest_file</span><span class="p">)</span> <span class="k">if</span> <span class="n">entity</span><span class="o">.</span><span class="n">manifest_file</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">acquisition_datetime</span><span class="o">=</span><span class="n">manifest</span><span class="o">.</span><span class="n">acquisition_datetime</span> <span class="k">if</span> <span class="n">manifest</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">defocus</span><span class="o">=</span><span class="n">manifest</span><span class="o">.</span><span class="n">defocus</span> <span class="k">if</span> <span class="n">manifest</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">detector_name</span><span class="o">=</span><span class="n">manifest</span><span class="o">.</span><span class="n">detector_name</span> <span class="k">if</span> <span class="n">manifest</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">energy_filter</span><span class="o">=</span><span class="n">manifest</span><span class="o">.</span><span class="n">energy_filter</span> <span class="k">if</span> <span class="n">manifest</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">phase_plate</span><span class="o">=</span><span class="n">manifest</span><span class="o">.</span><span class="n">phase_plate</span> <span class="k">if</span> <span class="n">manifest</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">image_size_x</span><span class="o">=</span><span class="n">manifest</span><span class="o">.</span><span class="n">image_size_x</span> <span class="k">if</span> <span class="n">manifest</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">image_size_y</span><span class="o">=</span><span class="n">manifest</span><span class="o">.</span><span class="n">image_size_y</span> <span class="k">if</span> <span class="n">manifest</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">binning_x</span><span class="o">=</span><span class="n">manifest</span><span class="o">.</span><span class="n">binning_x</span> <span class="k">if</span> <span class="n">manifest</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">binning_y</span><span class="o">=</span><span class="n">manifest</span><span class="o">.</span><span class="n">binning_y</span> <span class="k">if</span> <span class="n">manifest</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="EntityConverter.atlas_to_request">
+<a class="viewcode-back" href="../../_api/smartem_backend.api_client.html#smartem_backend.api_client.EntityConverter.atlas_to_request">[docs]</a>
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">atlas_to_request</span><span class="p">(</span><span class="n">entity</span><span class="p">:</span> <span class="n">AtlasData</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AtlasCreateRequest</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Convert AtlasData to atlas request model&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">AtlasCreateRequest</span><span class="p">(</span>
+            <span class="n">uuid</span><span class="o">=</span><span class="n">entity</span><span class="o">.</span><span class="n">uuid</span><span class="p">,</span>
+            <span class="n">atlas_id</span><span class="o">=</span><span class="n">entity</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
+            <span class="n">grid_uuid</span><span class="o">=</span><span class="n">entity</span><span class="o">.</span><span class="n">grid_uuid</span><span class="p">,</span>
+            <span class="n">name</span><span class="o">=</span><span class="n">entity</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+            <span class="n">storage_folder</span><span class="o">=</span><span class="n">entity</span><span class="o">.</span><span class="n">storage_folder</span><span class="p">,</span>
+            <span class="n">acquisition_date</span><span class="o">=</span><span class="n">entity</span><span class="o">.</span><span class="n">acquisition_date</span><span class="p">,</span>
+            <span class="n">tiles</span><span class="o">=</span><span class="p">[</span>
+                <span class="n">AtlasTileCreateRequest</span><span class="p">(</span>
+                    <span class="n">atlas_uuid</span><span class="o">=</span><span class="n">entity</span><span class="o">.</span><span class="n">uuid</span><span class="p">,</span>
+                    <span class="n">uuid</span><span class="o">=</span><span class="n">t</span><span class="o">.</span><span class="n">uuid</span><span class="p">,</span>
+                    <span class="n">tile_id</span><span class="o">=</span><span class="n">t</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
+                    <span class="n">position_x</span><span class="o">=</span><span class="n">t</span><span class="o">.</span><span class="n">tile_position</span><span class="o">.</span><span class="n">position</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+                    <span class="n">position_y</span><span class="o">=</span><span class="n">t</span><span class="o">.</span><span class="n">tile_position</span><span class="o">.</span><span class="n">position</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>
+                    <span class="n">size_x</span><span class="o">=</span><span class="n">t</span><span class="o">.</span><span class="n">tile_position</span><span class="o">.</span><span class="n">size</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+                    <span class="n">size_y</span><span class="o">=</span><span class="n">t</span><span class="o">.</span><span class="n">tile_position</span><span class="o">.</span><span class="n">size</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>
+                    <span class="n">file_format</span><span class="o">=</span><span class="n">t</span><span class="o">.</span><span class="n">file_format</span><span class="p">,</span>
+                    <span class="n">base_filename</span><span class="o">=</span><span class="n">t</span><span class="o">.</span><span class="n">base_filename</span><span class="p">,</span>
+                <span class="p">)</span>
+                <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">entity</span><span class="o">.</span><span class="n">tiles</span>
+            <span class="p">],</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="EntityConverter.atlas_tile_to_request">
+<a class="viewcode-back" href="../../_api/smartem_backend.api_client.html#smartem_backend.api_client.EntityConverter.atlas_tile_to_request">[docs]</a>
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">atlas_tile_to_request</span><span class="p">(</span><span class="n">entity</span><span class="p">:</span> <span class="n">AtlasTileData</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AtlasTileCreateRequest</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Convert AtlasTileData to atlas tile request model&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">AtlasTileCreateRequest</span><span class="p">(</span>
+            <span class="n">atlas_uuid</span><span class="o">=</span><span class="n">entity</span><span class="o">.</span><span class="n">atlas_uuid</span><span class="p">,</span>
+            <span class="n">uuid</span><span class="o">=</span><span class="n">entity</span><span class="o">.</span><span class="n">uuid</span><span class="p">,</span>
+            <span class="n">tile_id</span><span class="o">=</span><span class="n">entity</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
+            <span class="n">position_x</span><span class="o">=</span><span class="n">entity</span><span class="o">.</span><span class="n">tile_position</span><span class="o">.</span><span class="n">position</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+            <span class="n">position_y</span><span class="o">=</span><span class="n">entity</span><span class="o">.</span><span class="n">tile_position</span><span class="o">.</span><span class="n">position</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>
+            <span class="n">size_x</span><span class="o">=</span><span class="n">entity</span><span class="o">.</span><span class="n">tile_position</span><span class="o">.</span><span class="n">size</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+            <span class="n">size_y</span><span class="o">=</span><span class="n">entity</span><span class="o">.</span><span class="n">tile_position</span><span class="o">.</span><span class="n">size</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>
+            <span class="n">file_format</span><span class="o">=</span><span class="n">entity</span><span class="o">.</span><span class="n">file_format</span><span class="p">,</span>
+            <span class="n">base_filename</span><span class="o">=</span><span class="n">entity</span><span class="o">.</span><span class="n">base_filename</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="EntityConverter.gridsquare_position_to_request">
+<a class="viewcode-back" href="../../_api/smartem_backend.api_client.html#smartem_backend.api_client.EntityConverter.gridsquare_position_to_request">[docs]</a>
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">gridsquare_position_to_request</span><span class="p">(</span><span class="n">entity</span><span class="p">:</span> <span class="n">AtlasTileGridSquarePositionData</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">GridSquarePositionRequest</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Convert AtlasTileData to atlas tile request model&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">GridSquarePositionRequest</span><span class="p">(</span>
+            <span class="n">center_x</span><span class="o">=</span><span class="n">entity</span><span class="o">.</span><span class="n">position</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+            <span class="n">center_y</span><span class="o">=</span><span class="n">entity</span><span class="o">.</span><span class="n">position</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>
+            <span class="n">size_width</span><span class="o">=</span><span class="n">entity</span><span class="o">.</span><span class="n">size</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+            <span class="n">size_height</span><span class="o">=</span><span class="n">entity</span><span class="o">.</span><span class="n">size</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>
+        <span class="p">)</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="SmartEMAPIClient">
+<a class="viewcode-back" href="../../_api/smartem_backend.api_client.html#smartem_backend.api_client.SmartEMAPIClient">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">SmartEMAPIClient</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    SmartEM API client that provides synchronous HTTP interface.</span>
+
+<span class="sd">    This client handles all API communication with the SmartEM Core API,</span>
+<span class="sd">    provides data conversion between EPU data models and API request/response models,</span>
+<span class="sd">    and maintains a cache of entity IDs.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">base_url</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">timeout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">10.0</span><span class="p">,</span> <span class="n">logger</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initialize the SmartEM API client</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            base_url: Base URL for the API</span>
+<span class="sd">            timeout: Request timeout in seconds</span>
+<span class="sd">            logger: Optional custom logger instance</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">base_url</span> <span class="o">=</span> <span class="n">base_url</span><span class="o">.</span><span class="n">rstrip</span><span class="p">(</span><span class="s2">&quot;/&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">timeout</span> <span class="o">=</span> <span class="n">timeout</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_session</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">Session</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_session</span><span class="o">.</span><span class="n">timeout</span> <span class="o">=</span> <span class="n">timeout</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_logger</span> <span class="o">=</span> <span class="n">logger</span> <span class="ow">or</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+        <span class="c1"># Configure logger if it&#39;s the default one</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">logger</span><span class="p">:</span>
+            <span class="n">handler</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">StreamHandler</span><span class="p">()</span>
+            <span class="n">formatter</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">Formatter</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%(asctime)s</span><span class="s2"> - </span><span class="si">%(name)s</span><span class="s2"> - </span><span class="si">%(levelname)s</span><span class="s2"> - </span><span class="si">%(message)s</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="n">handler</span><span class="o">.</span><span class="n">setFormatter</span><span class="p">(</span><span class="n">formatter</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_logger</span><span class="o">.</span><span class="n">addHandler</span><span class="p">(</span><span class="n">handler</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_logger</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Initialized SmartEM API client with base URL: </span><span class="si">{</span><span class="n">base_url</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+<div class="viewcode-block" id="SmartEMAPIClient.close">
+<a class="viewcode-back" href="../../_api/smartem_backend.api_client.html#smartem_backend.api_client.SmartEMAPIClient.close">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Close the client connection&quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_session</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error closing session: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__enter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__exit__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">exc_type</span><span class="p">,</span> <span class="n">exc_val</span><span class="p">,</span> <span class="n">exc_tb</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+    <span class="c1"># Generic API request methods</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_request</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">method</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">endpoint</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">request_model</span><span class="p">:</span> <span class="n">BaseModel</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">response_cls</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Make a generic API request</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            method: HTTP method (get, post, put, delete)</span>
+<span class="sd">            endpoint: API endpoint path</span>
+<span class="sd">            request_model: Optional request data model</span>
+<span class="sd">            response_cls: Optional response class to parse the response</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Parsed response, list of responses, or None for delete operations</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            requests.HTTPError: If the HTTP request returns an error status code</span>
+<span class="sd">            requests.RequestException: If there&#39;s a network error or timeout</span>
+<span class="sd">            ValueError: If there&#39;s an error parsing the response</span>
+<span class="sd">            Exception: For any other errors</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">url</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">base_url</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">endpoint</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="n">json_data</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="k">if</span> <span class="n">request_model</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">request_model</span><span class="p">,</span> <span class="s2">&quot;model_dump&quot;</span><span class="p">):</span>
+                <span class="c1"># It&#39;s a Pydantic model</span>
+                <span class="n">json_data</span> <span class="o">=</span> <span class="n">request_model</span><span class="o">.</span><span class="n">model_dump</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s2">&quot;json&quot;</span><span class="p">,</span> <span class="n">exclude_none</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c1"># It&#39;s already a dict, but might contain datetime objects</span>
+                <span class="n">json_data</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">v</span><span class="o">.</span><span class="n">isoformat</span><span class="p">()</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">datetime</span><span class="p">)</span> <span class="k">else</span> <span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">request_model</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Request data for </span><span class="si">{</span><span class="n">method</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">url</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">json_data</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Making </span><span class="si">{</span><span class="n">method</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span><span class="si">}</span><span class="s2"> request to </span><span class="si">{</span><span class="n">url</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="n">response</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_session</span><span class="o">.</span><span class="n">request</span><span class="p">(</span><span class="n">method</span><span class="p">,</span> <span class="n">url</span><span class="p">,</span> <span class="n">json</span><span class="o">=</span><span class="n">json_data</span><span class="p">)</span>
+            <span class="n">response</span><span class="o">.</span><span class="n">raise_for_status</span><span class="p">()</span>
+
+            <span class="c1"># For delete operations, return None</span>
+            <span class="k">if</span> <span class="n">method</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s2">&quot;delete&quot;</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Successfully deleted resource at </span><span class="si">{</span><span class="n">url</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="k">return</span> <span class="kc">None</span>
+
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">data</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Response from </span><span class="si">{</span><span class="n">url</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">data</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+                <span class="c1"># Parse response if response_cls is provided</span>
+                <span class="k">if</span> <span class="n">response_cls</span><span class="p">:</span>
+                    <span class="k">try</span><span class="p">:</span>
+                        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+                            <span class="k">return</span> <span class="p">[</span><span class="n">response_cls</span><span class="o">.</span><span class="n">model_validate</span><span class="p">(</span><span class="n">item</span><span class="p">)</span> <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">data</span><span class="p">]</span>
+                        <span class="k">else</span><span class="p">:</span>
+                            <span class="k">return</span> <span class="n">response_cls</span><span class="o">.</span><span class="n">model_validate</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+                    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">_logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error validating response data from </span><span class="si">{</span><span class="n">url</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">_logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Response data that failed validation: </span><span class="si">{</span><span class="n">data</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Invalid response data: </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="kc">None</span>
+
+                <span class="k">return</span> <span class="n">data</span>
+            <span class="k">except</span> <span class="n">json</span><span class="o">.</span><span class="n">JSONDecodeError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Could not parse JSON response from </span><span class="si">{</span><span class="n">url</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Raw response: </span><span class="si">{</span><span class="n">response</span><span class="o">.</span><span class="n">text</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Invalid JSON response: </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="kc">None</span>
+
+        <span class="k">except</span> <span class="n">requests</span><span class="o">.</span><span class="n">HTTPError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">status_code</span> <span class="o">=</span> <span class="n">e</span><span class="o">.</span><span class="n">response</span><span class="o">.</span><span class="n">status_code</span>
+            <span class="n">error_detail</span> <span class="o">=</span> <span class="kc">None</span>
+
+            <span class="c1"># Try to extract error details from the response</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">error_response</span> <span class="o">=</span> <span class="n">e</span><span class="o">.</span><span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>
+                <span class="n">error_detail</span> <span class="o">=</span> <span class="n">error_response</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;detail&quot;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">))</span>
+            <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+                <span class="n">error_detail</span> <span class="o">=</span> <span class="n">e</span><span class="o">.</span><span class="n">response</span><span class="o">.</span><span class="n">text</span> <span class="ow">or</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">_logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;HTTP </span><span class="si">{</span><span class="n">status_code</span><span class="si">}</span><span class="s2"> error for </span><span class="si">{</span><span class="n">method</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">url</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">error_detail</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">raise</span>
+
+        <span class="k">except</span> <span class="n">requests</span><span class="o">.</span><span class="n">RequestException</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Request error for </span><span class="si">{</span><span class="n">method</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">url</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Request error details: </span><span class="si">{</span><span class="n">traceback</span><span class="o">.</span><span class="n">format_exc</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">raise</span>
+
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unexpected error making request to </span><span class="si">{</span><span class="n">url</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error details: </span><span class="si">{</span><span class="n">traceback</span><span class="o">.</span><span class="n">format_exc</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">raise</span>
+
+    <span class="c1"># Entity-specific methods</span>
+
+    <span class="c1"># Status and Health</span>
+<div class="viewcode-block" id="SmartEMAPIClient.get_status">
+<a class="viewcode-back" href="../../_api/smartem_backend.api_client.html#smartem_backend.api_client.SmartEMAPIClient.get_status">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_status</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">object</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get API status information&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_request</span><span class="p">(</span><span class="s2">&quot;get&quot;</span><span class="p">,</span> <span class="s2">&quot;status&quot;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="SmartEMAPIClient.get_health">
+<a class="viewcode-back" href="../../_api/smartem_backend.api_client.html#smartem_backend.api_client.SmartEMAPIClient.get_health">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_health</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">object</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get API health check information&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_request</span><span class="p">(</span><span class="s2">&quot;get&quot;</span><span class="p">,</span> <span class="s2">&quot;health&quot;</span><span class="p">)</span></div>
+
+
+    <span class="c1"># Acquisitions</span>
+<div class="viewcode-block" id="SmartEMAPIClient.get_acquisitions">
+<a class="viewcode-back" href="../../_api/smartem_backend.api_client.html#smartem_backend.api_client.SmartEMAPIClient.get_acquisitions">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_acquisitions</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">AcquisitionResponse</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get all acquisitions&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_request</span><span class="p">(</span><span class="s2">&quot;get&quot;</span><span class="p">,</span> <span class="s2">&quot;acquisitions&quot;</span><span class="p">,</span> <span class="n">response_cls</span><span class="o">=</span><span class="n">AcquisitionResponse</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="SmartEMAPIClient.create_acquisition">
+<a class="viewcode-back" href="../../_api/smartem_backend.api_client.html#smartem_backend.api_client.SmartEMAPIClient.create_acquisition">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">create_acquisition</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">acquisition</span><span class="p">:</span> <span class="n">AcquisitionData</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AcquisitionResponse</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create a new acquisition&quot;&quot;&quot;</span>
+        <span class="n">acquisition</span> <span class="o">=</span> <span class="n">EntityConverter</span><span class="o">.</span><span class="n">acquisition_to_request</span><span class="p">(</span><span class="n">acquisition</span><span class="p">)</span>
+        <span class="n">response</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_request</span><span class="p">(</span><span class="s2">&quot;post&quot;</span><span class="p">,</span> <span class="s2">&quot;acquisitions&quot;</span><span class="p">,</span> <span class="n">acquisition</span><span class="p">,</span> <span class="n">AcquisitionResponse</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">response</span></div>
+
+
+<div class="viewcode-block" id="SmartEMAPIClient.get_acquisition">
+<a class="viewcode-back" href="../../_api/smartem_backend.api_client.html#smartem_backend.api_client.SmartEMAPIClient.get_acquisition">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_acquisition</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">acquisition_uuid</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AcquisitionResponse</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get a single acquisition by ID&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_request</span><span class="p">(</span><span class="s2">&quot;get&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;acquisitions/</span><span class="si">{</span><span class="n">acquisition_uuid</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">response_cls</span><span class="o">=</span><span class="n">AcquisitionResponse</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="SmartEMAPIClient.update_acquisition">
+<a class="viewcode-back" href="../../_api/smartem_backend.api_client.html#smartem_backend.api_client.SmartEMAPIClient.update_acquisition">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">update_acquisition</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">acquisition</span><span class="p">:</span> <span class="n">AcquisitionData</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AcquisitionResponse</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Update an acquisition&quot;&quot;&quot;</span>
+        <span class="n">acquisition</span> <span class="o">=</span> <span class="n">EntityConverter</span><span class="o">.</span><span class="n">acquisition_to_request</span><span class="p">(</span><span class="n">acquisition</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_request</span><span class="p">(</span><span class="s2">&quot;put&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;acquisitions/</span><span class="si">{</span><span class="n">acquisition</span><span class="o">.</span><span class="n">uuid</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">acquisition</span><span class="p">,</span> <span class="n">AcquisitionResponse</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="SmartEMAPIClient.delete_acquisition">
+<a class="viewcode-back" href="../../_api/smartem_backend.api_client.html#smartem_backend.api_client.SmartEMAPIClient.delete_acquisition">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">delete_acquisition</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">acquisition_uuid</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Delete an acquisition&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_request</span><span class="p">(</span><span class="s2">&quot;delete&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;acquisitions/</span><span class="si">{</span><span class="n">acquisition_uuid</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span></div>
+
+
+    <span class="c1"># Grids</span>
+<div class="viewcode-block" id="SmartEMAPIClient.get_grids">
+<a class="viewcode-back" href="../../_api/smartem_backend.api_client.html#smartem_backend.api_client.SmartEMAPIClient.get_grids">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_grids</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">GridResponse</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get all grids&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_request</span><span class="p">(</span><span class="s2">&quot;get&quot;</span><span class="p">,</span> <span class="s2">&quot;grids&quot;</span><span class="p">,</span> <span class="n">response_cls</span><span class="o">=</span><span class="n">GridResponse</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="SmartEMAPIClient.get_grid">
+<a class="viewcode-back" href="../../_api/smartem_backend.api_client.html#smartem_backend.api_client.SmartEMAPIClient.get_grid">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_grid</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">grid_uuid</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">GridResponse</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get a single grid by ID&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_request</span><span class="p">(</span><span class="s2">&quot;get&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;grids/</span><span class="si">{</span><span class="n">grid_uuid</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">response_cls</span><span class="o">=</span><span class="n">GridResponse</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="SmartEMAPIClient.update_grid">
+<a class="viewcode-back" href="../../_api/smartem_backend.api_client.html#smartem_backend.api_client.SmartEMAPIClient.update_grid">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">update_grid</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">grid</span><span class="p">:</span> <span class="n">GridData</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">GridResponse</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Update a grid&quot;&quot;&quot;</span>
+        <span class="n">grid</span> <span class="o">=</span> <span class="n">EntityConverter</span><span class="o">.</span><span class="n">grid_to_request</span><span class="p">(</span><span class="n">grid</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_request</span><span class="p">(</span><span class="s2">&quot;put&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;grids/</span><span class="si">{</span><span class="n">grid</span><span class="o">.</span><span class="n">uuid</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">grid</span><span class="p">,</span> <span class="n">GridResponse</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="SmartEMAPIClient.delete_grid">
+<a class="viewcode-back" href="../../_api/smartem_backend.api_client.html#smartem_backend.api_client.SmartEMAPIClient.delete_grid">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">delete_grid</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">grid_uuid</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Delete a grid&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_request</span><span class="p">(</span><span class="s2">&quot;delete&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;grids/</span><span class="si">{</span><span class="n">grid_uuid</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="SmartEMAPIClient.get_acquisition_grids">
+<a class="viewcode-back" href="../../_api/smartem_backend.api_client.html#smartem_backend.api_client.SmartEMAPIClient.get_acquisition_grids">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_acquisition_grids</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">acquisition_uuid</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">GridResponse</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get all grids for a specific acquisition&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_request</span><span class="p">(</span><span class="s2">&quot;get&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;acquisitions/</span><span class="si">{</span><span class="n">acquisition_uuid</span><span class="si">}</span><span class="s2">/grids&quot;</span><span class="p">,</span> <span class="n">response_cls</span><span class="o">=</span><span class="n">GridResponse</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="SmartEMAPIClient.create_acquisition_grid">
+<a class="viewcode-back" href="../../_api/smartem_backend.api_client.html#smartem_backend.api_client.SmartEMAPIClient.create_acquisition_grid">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">create_acquisition_grid</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">grid</span><span class="p">:</span> <span class="n">GridData</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">GridResponse</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create a new grid for a specific acquisition&quot;&quot;&quot;</span>
+        <span class="n">grid</span> <span class="o">=</span> <span class="n">EntityConverter</span><span class="o">.</span><span class="n">grid_to_request</span><span class="p">(</span><span class="n">grid</span><span class="p">)</span>
+        <span class="n">response</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_request</span><span class="p">(</span><span class="s2">&quot;post&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;acquisitions/</span><span class="si">{</span><span class="n">grid</span><span class="o">.</span><span class="n">acquisition_uuid</span><span class="si">}</span><span class="s2">/grids&quot;</span><span class="p">,</span> <span class="n">grid</span><span class="p">,</span> <span class="n">GridResponse</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">response</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">grid_registered</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">grid_uuid</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_request</span><span class="p">(</span><span class="s2">&quot;post&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;grids/</span><span class="si">{</span><span class="n">grid_uuid</span><span class="si">}</span><span class="s2">/registered&quot;</span><span class="p">)</span>
+
+    <span class="c1"># Atlas</span>
+<div class="viewcode-block" id="SmartEMAPIClient.get_atlases">
+<a class="viewcode-back" href="../../_api/smartem_backend.api_client.html#smartem_backend.api_client.SmartEMAPIClient.get_atlases">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_atlases</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">AtlasResponse</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get all atlases&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_request</span><span class="p">(</span><span class="s2">&quot;get&quot;</span><span class="p">,</span> <span class="s2">&quot;atlases&quot;</span><span class="p">,</span> <span class="n">response_cls</span><span class="o">=</span><span class="n">AtlasResponse</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="SmartEMAPIClient.get_atlas">
+<a class="viewcode-back" href="../../_api/smartem_backend.api_client.html#smartem_backend.api_client.SmartEMAPIClient.get_atlas">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_atlas</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">atlas_uuid</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AtlasResponse</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get a single atlas by ID&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_request</span><span class="p">(</span><span class="s2">&quot;get&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;atlases/</span><span class="si">{</span><span class="n">atlas_uuid</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">response_cls</span><span class="o">=</span><span class="n">AtlasResponse</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="SmartEMAPIClient.update_atlas">
+<a class="viewcode-back" href="../../_api/smartem_backend.api_client.html#smartem_backend.api_client.SmartEMAPIClient.update_atlas">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">update_atlas</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">atlas</span><span class="p">:</span> <span class="n">AtlasData</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AtlasResponse</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Update an atlas&quot;&quot;&quot;</span>
+        <span class="n">atlas</span> <span class="o">=</span> <span class="n">EntityConverter</span><span class="o">.</span><span class="n">atlas_to_request</span><span class="p">(</span><span class="n">atlas</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_request</span><span class="p">(</span><span class="s2">&quot;put&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;atlases/</span><span class="si">{</span><span class="n">atlas</span><span class="o">.</span><span class="n">uuid</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">atlas</span><span class="p">,</span> <span class="n">AtlasResponse</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="SmartEMAPIClient.delete_atlas">
+<a class="viewcode-back" href="../../_api/smartem_backend.api_client.html#smartem_backend.api_client.SmartEMAPIClient.delete_atlas">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">delete_atlas</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">atlas_uuid</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Delete an atlas&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_request</span><span class="p">(</span><span class="s2">&quot;delete&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;atlases/</span><span class="si">{</span><span class="n">atlas_uuid</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="SmartEMAPIClient.get_grid_atlas">
+<a class="viewcode-back" href="../../_api/smartem_backend.api_client.html#smartem_backend.api_client.SmartEMAPIClient.get_grid_atlas">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_grid_atlas</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">grid_uuid</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AtlasResponse</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the atlas for a specific grid&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_request</span><span class="p">(</span><span class="s2">&quot;get&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;grids/</span><span class="si">{</span><span class="n">grid_uuid</span><span class="si">}</span><span class="s2">/atlas&quot;</span><span class="p">,</span> <span class="n">response_cls</span><span class="o">=</span><span class="n">AtlasResponse</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="SmartEMAPIClient.create_grid_atlas">
+<a class="viewcode-back" href="../../_api/smartem_backend.api_client.html#smartem_backend.api_client.SmartEMAPIClient.create_grid_atlas">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">create_grid_atlas</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">atlas</span><span class="p">:</span> <span class="n">AtlasData</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AtlasResponse</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create a new atlas for a grid&quot;&quot;&quot;</span>
+        <span class="c1"># Convert AtlasData to AtlasCreateRequest if needed</span>
+        <span class="n">atlas</span> <span class="o">=</span> <span class="n">EntityConverter</span><span class="o">.</span><span class="n">atlas_to_request</span><span class="p">(</span><span class="n">atlas</span><span class="p">)</span>
+        <span class="n">response</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_request</span><span class="p">(</span><span class="s2">&quot;post&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;grids/</span><span class="si">{</span><span class="n">atlas</span><span class="o">.</span><span class="n">grid_uuid</span><span class="si">}</span><span class="s2">/atlas&quot;</span><span class="p">,</span> <span class="n">atlas</span><span class="p">,</span> <span class="n">AtlasResponse</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">response</span></div>
+
+
+    <span class="c1"># Atlas Tiles</span>
+<div class="viewcode-block" id="SmartEMAPIClient.get_atlas_tiles">
+<a class="viewcode-back" href="../../_api/smartem_backend.api_client.html#smartem_backend.api_client.SmartEMAPIClient.get_atlas_tiles">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_atlas_tiles</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">AtlasTileResponse</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get all atlas tiles&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_request</span><span class="p">(</span><span class="s2">&quot;get&quot;</span><span class="p">,</span> <span class="s2">&quot;atlas-tiles&quot;</span><span class="p">,</span> <span class="n">response_cls</span><span class="o">=</span><span class="n">AtlasTileResponse</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="SmartEMAPIClient.get_atlas_tile">
+<a class="viewcode-back" href="../../_api/smartem_backend.api_client.html#smartem_backend.api_client.SmartEMAPIClient.get_atlas_tile">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_atlas_tile</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tile_uuid</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AtlasTileResponse</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get a single atlas tile by ID&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_request</span><span class="p">(</span><span class="s2">&quot;get&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;atlas-tiles/</span><span class="si">{</span><span class="n">tile_uuid</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">response_cls</span><span class="o">=</span><span class="n">AtlasTileResponse</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="SmartEMAPIClient.update_atlas_tile">
+<a class="viewcode-back" href="../../_api/smartem_backend.api_client.html#smartem_backend.api_client.SmartEMAPIClient.update_atlas_tile">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">update_atlas_tile</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tile</span><span class="p">:</span> <span class="n">AtlasTileData</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AtlasTileResponse</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Update an atlas tile&quot;&quot;&quot;</span>
+        <span class="n">tile</span> <span class="o">=</span> <span class="n">EntityConverter</span><span class="o">.</span><span class="n">atlas_tile_to_request</span><span class="p">(</span><span class="n">tile</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_request</span><span class="p">(</span><span class="s2">&quot;put&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;atlas-tiles/</span><span class="si">{</span><span class="n">tile</span><span class="o">.</span><span class="n">uuid</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">tile</span><span class="p">,</span> <span class="n">AtlasTileResponse</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="SmartEMAPIClient.delete_atlas_tile">
+<a class="viewcode-back" href="../../_api/smartem_backend.api_client.html#smartem_backend.api_client.SmartEMAPIClient.delete_atlas_tile">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">delete_atlas_tile</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tile_uuid</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Delete an atlas tile&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_request</span><span class="p">(</span><span class="s2">&quot;delete&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;atlas-tiles/</span><span class="si">{</span><span class="n">tile_uuid</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="SmartEMAPIClient.get_atlas_tiles_by_atlas">
+<a class="viewcode-back" href="../../_api/smartem_backend.api_client.html#smartem_backend.api_client.SmartEMAPIClient.get_atlas_tiles_by_atlas">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_atlas_tiles_by_atlas</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">atlas_uuid</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">AtlasTileResponse</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get all tiles for a specific atlas&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_request</span><span class="p">(</span><span class="s2">&quot;get&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;atlases/</span><span class="si">{</span><span class="n">atlas_uuid</span><span class="si">}</span><span class="s2">/tiles&quot;</span><span class="p">,</span> <span class="n">response_cls</span><span class="o">=</span><span class="n">AtlasTileResponse</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="SmartEMAPIClient.create_atlas_tile_for_atlas">
+<a class="viewcode-back" href="../../_api/smartem_backend.api_client.html#smartem_backend.api_client.SmartEMAPIClient.create_atlas_tile_for_atlas">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">create_atlas_tile_for_atlas</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tile</span><span class="p">:</span> <span class="n">AtlasTileData</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AtlasTileResponse</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create a new tile for a specific atlas&quot;&quot;&quot;</span>
+        <span class="n">tile</span> <span class="o">=</span> <span class="n">EntityConverter</span><span class="o">.</span><span class="n">atlas_tile_to_request</span><span class="p">(</span><span class="n">tile</span><span class="p">)</span>
+        <span class="n">response</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_request</span><span class="p">(</span><span class="s2">&quot;post&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;atlases/</span><span class="si">{</span><span class="n">tile</span><span class="o">.</span><span class="n">atlas_uuid</span><span class="si">}</span><span class="s2">/tiles&quot;</span><span class="p">,</span> <span class="n">tile</span><span class="p">,</span> <span class="n">AtlasTileResponse</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">response</span></div>
+
+
+<div class="viewcode-block" id="SmartEMAPIClient.link_atlas_tile_and_gridsquare">
+<a class="viewcode-back" href="../../_api/smartem_backend.api_client.html#smartem_backend.api_client.SmartEMAPIClient.link_atlas_tile_and_gridsquare">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">link_atlas_tile_and_gridsquare</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">gridsquare_position</span><span class="p">:</span> <span class="n">AtlasTileGridSquarePositionData</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AtlasTileGridSquarePositionResponse</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Link a grid square to a tile&quot;&quot;&quot;</span>
+        <span class="n">tile_uuid</span> <span class="o">=</span> <span class="n">gridsquare_position</span><span class="o">.</span><span class="n">tile_uuid</span>
+        <span class="n">gridsquare_uuid</span> <span class="o">=</span> <span class="n">gridsquare_position</span><span class="o">.</span><span class="n">gridsquare_uuid</span>
+        <span class="n">gridsquare_position</span> <span class="o">=</span> <span class="n">EntityConverter</span><span class="o">.</span><span class="n">gridsquare_position_to_request</span><span class="p">(</span><span class="n">gridsquare_position</span><span class="p">)</span>
+        <span class="n">response</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_request</span><span class="p">(</span>
+            <span class="s2">&quot;post&quot;</span><span class="p">,</span>
+            <span class="sa">f</span><span class="s2">&quot;atlas-tiles/</span><span class="si">{</span><span class="n">tile_uuid</span><span class="si">}</span><span class="s2">/gridsquares/</span><span class="si">{</span><span class="n">gridsquare_uuid</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+            <span class="n">gridsquare_position</span><span class="p">,</span>
+            <span class="n">AtlasTileGridSquarePositionResponse</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">response</span></div>
+
+
+    <span class="c1"># GridSquares</span>
+<div class="viewcode-block" id="SmartEMAPIClient.get_gridsquares">
+<a class="viewcode-back" href="../../_api/smartem_backend.api_client.html#smartem_backend.api_client.SmartEMAPIClient.get_gridsquares">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_gridsquares</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">GridSquareResponse</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get all grid squares&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_request</span><span class="p">(</span><span class="s2">&quot;get&quot;</span><span class="p">,</span> <span class="s2">&quot;gridsquares&quot;</span><span class="p">,</span> <span class="n">response_cls</span><span class="o">=</span><span class="n">GridSquareResponse</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="SmartEMAPIClient.get_gridsquare">
+<a class="viewcode-back" href="../../_api/smartem_backend.api_client.html#smartem_backend.api_client.SmartEMAPIClient.get_gridsquare">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_gridsquare</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">gridsquare_uuid</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">GridSquareResponse</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get a single grid square by ID&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_request</span><span class="p">(</span><span class="s2">&quot;get&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;gridsquares/</span><span class="si">{</span><span class="n">gridsquare_uuid</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">response_cls</span><span class="o">=</span><span class="n">GridSquareResponse</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="SmartEMAPIClient.update_gridsquare">
+<a class="viewcode-back" href="../../_api/smartem_backend.api_client.html#smartem_backend.api_client.SmartEMAPIClient.update_gridsquare">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">update_gridsquare</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">gridsquare</span><span class="p">:</span> <span class="n">GridSquareData</span><span class="p">,</span> <span class="n">lowmag</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">GridSquareResponse</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Update a grid square&quot;&quot;&quot;</span>
+        <span class="n">request_model</span> <span class="o">=</span> <span class="n">EntityConverter</span><span class="o">.</span><span class="n">gridsquare_to_request</span><span class="p">(</span><span class="n">gridsquare</span><span class="p">,</span> <span class="n">lowmag</span><span class="o">=</span><span class="n">lowmag</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_request</span><span class="p">(</span><span class="s2">&quot;put&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;gridsquares/</span><span class="si">{</span><span class="n">gridsquare</span><span class="o">.</span><span class="n">uuid</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">request_model</span><span class="p">,</span> <span class="n">GridSquareResponse</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="SmartEMAPIClient.delete_gridsquare">
+<a class="viewcode-back" href="../../_api/smartem_backend.api_client.html#smartem_backend.api_client.SmartEMAPIClient.delete_gridsquare">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">delete_gridsquare</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">gridsquare_uuid</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Delete a grid square&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_request</span><span class="p">(</span><span class="s2">&quot;delete&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;gridsquares/</span><span class="si">{</span><span class="n">gridsquare_uuid</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="SmartEMAPIClient.get_grid_gridsquares">
+<a class="viewcode-back" href="../../_api/smartem_backend.api_client.html#smartem_backend.api_client.SmartEMAPIClient.get_grid_gridsquares">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_grid_gridsquares</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">grid_uuid</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">GridSquareResponse</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get all grid squares for a specific grid&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_request</span><span class="p">(</span><span class="s2">&quot;get&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;grids/</span><span class="si">{</span><span class="n">grid_uuid</span><span class="si">}</span><span class="s2">/gridsquares&quot;</span><span class="p">,</span> <span class="n">response_cls</span><span class="o">=</span><span class="n">GridSquareResponse</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="SmartEMAPIClient.create_grid_gridsquare">
+<a class="viewcode-back" href="../../_api/smartem_backend.api_client.html#smartem_backend.api_client.SmartEMAPIClient.create_grid_gridsquare">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">create_grid_gridsquare</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">gridsquare</span><span class="p">:</span> <span class="n">GridSquareData</span><span class="p">,</span> <span class="n">lowmag</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">GridSquareResponse</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create a new grid square for a specific grid&quot;&quot;&quot;</span>
+        <span class="c1"># Convert GridSquareData to GridSquareCreateRequest if needed</span>
+        <span class="n">gridsquare</span> <span class="o">=</span> <span class="n">EntityConverter</span><span class="o">.</span><span class="n">gridsquare_to_request</span><span class="p">(</span><span class="n">gridsquare</span><span class="p">,</span> <span class="n">lowmag</span><span class="o">=</span><span class="n">lowmag</span><span class="p">)</span>
+        <span class="n">response</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_request</span><span class="p">(</span><span class="s2">&quot;post&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;grids/</span><span class="si">{</span><span class="n">gridsquare</span><span class="o">.</span><span class="n">grid_uuid</span><span class="si">}</span><span class="s2">/gridsquares&quot;</span><span class="p">,</span> <span class="n">gridsquare</span><span class="p">,</span> <span class="n">GridSquareResponse</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">response</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">gridsquare_registered</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">gridsquare_uuid</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_request</span><span class="p">(</span><span class="s2">&quot;post&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;gridsquares/</span><span class="si">{</span><span class="n">gridsquare_uuid</span><span class="si">}</span><span class="s2">/registered&quot;</span><span class="p">)</span>
+
+    <span class="c1"># FoilHoles</span>
+<div class="viewcode-block" id="SmartEMAPIClient.get_foilholes">
+<a class="viewcode-back" href="../../_api/smartem_backend.api_client.html#smartem_backend.api_client.SmartEMAPIClient.get_foilholes">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_foilholes</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">FoilHoleResponse</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get all foil holes&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_request</span><span class="p">(</span><span class="s2">&quot;get&quot;</span><span class="p">,</span> <span class="s2">&quot;foilholes&quot;</span><span class="p">,</span> <span class="n">response_cls</span><span class="o">=</span><span class="n">FoilHoleResponse</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="SmartEMAPIClient.get_foilhole">
+<a class="viewcode-back" href="../../_api/smartem_backend.api_client.html#smartem_backend.api_client.SmartEMAPIClient.get_foilhole">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_foilhole</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">foilhole_uuid</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">FoilHoleResponse</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get a single foil hole by ID&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_request</span><span class="p">(</span><span class="s2">&quot;get&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;foilholes/</span><span class="si">{</span><span class="n">foilhole_uuid</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">response_cls</span><span class="o">=</span><span class="n">FoilHoleResponse</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="SmartEMAPIClient.update_foilhole">
+<a class="viewcode-back" href="../../_api/smartem_backend.api_client.html#smartem_backend.api_client.SmartEMAPIClient.update_foilhole">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">update_foilhole</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">foilhole</span><span class="p">:</span> <span class="n">FoilHoleData</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">FoilHoleResponse</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Update a foil hole&quot;&quot;&quot;</span>
+        <span class="n">foilhole</span> <span class="o">=</span> <span class="n">EntityConverter</span><span class="o">.</span><span class="n">foilhole_to_request</span><span class="p">(</span><span class="n">foilhole</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_request</span><span class="p">(</span><span class="s2">&quot;put&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;foilholes/</span><span class="si">{</span><span class="n">foilhole</span><span class="o">.</span><span class="n">uuid</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">foilhole</span><span class="p">,</span> <span class="n">FoilHoleResponse</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="SmartEMAPIClient.delete_foilhole">
+<a class="viewcode-back" href="../../_api/smartem_backend.api_client.html#smartem_backend.api_client.SmartEMAPIClient.delete_foilhole">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">delete_foilhole</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">foilhole_uuid</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Delete a foil hole&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_request</span><span class="p">(</span><span class="s2">&quot;delete&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;foilholes/</span><span class="si">{</span><span class="n">foilhole_uuid</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="SmartEMAPIClient.get_gridsquare_foilholes">
+<a class="viewcode-back" href="../../_api/smartem_backend.api_client.html#smartem_backend.api_client.SmartEMAPIClient.get_gridsquare_foilholes">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_gridsquare_foilholes</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">gridsquare_uuid</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">FoilHoleResponse</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get all foil holes for a specific grid square&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_request</span><span class="p">(</span><span class="s2">&quot;get&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;gridsquares/</span><span class="si">{</span><span class="n">gridsquare_uuid</span><span class="si">}</span><span class="s2">/foilholes&quot;</span><span class="p">,</span> <span class="n">response_cls</span><span class="o">=</span><span class="n">FoilHoleResponse</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="SmartEMAPIClient.create_gridsquare_foilhole">
+<a class="viewcode-back" href="../../_api/smartem_backend.api_client.html#smartem_backend.api_client.SmartEMAPIClient.create_gridsquare_foilhole">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">create_gridsquare_foilhole</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">foilhole</span><span class="p">:</span> <span class="n">FoilHoleData</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">FoilHoleResponse</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create a new foil hole for a specific grid square&quot;&quot;&quot;</span>
+        <span class="n">foilhole</span> <span class="o">=</span> <span class="n">EntityConverter</span><span class="o">.</span><span class="n">foilhole_to_request</span><span class="p">(</span><span class="n">foilhole</span><span class="p">)</span>
+        <span class="n">response</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_request</span><span class="p">(</span>
+            <span class="s2">&quot;post&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;gridsquares/</span><span class="si">{</span><span class="n">foilhole</span><span class="o">.</span><span class="n">gridsquare_uuid</span><span class="si">}</span><span class="s2">/foilholes&quot;</span><span class="p">,</span> <span class="n">foilhole</span><span class="p">,</span> <span class="n">FoilHoleResponse</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">response</span></div>
+
+
+    <span class="c1"># Micrographs</span>
+<div class="viewcode-block" id="SmartEMAPIClient.get_micrographs">
+<a class="viewcode-back" href="../../_api/smartem_backend.api_client.html#smartem_backend.api_client.SmartEMAPIClient.get_micrographs">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_micrographs</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">MicrographResponse</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get all micrographs&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_request</span><span class="p">(</span><span class="s2">&quot;get&quot;</span><span class="p">,</span> <span class="s2">&quot;micrographs&quot;</span><span class="p">,</span> <span class="n">response_cls</span><span class="o">=</span><span class="n">MicrographResponse</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="SmartEMAPIClient.get_micrograph">
+<a class="viewcode-back" href="../../_api/smartem_backend.api_client.html#smartem_backend.api_client.SmartEMAPIClient.get_micrograph">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_micrograph</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">micrograph_uuid</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MicrographResponse</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get a single micrograph by ID&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_request</span><span class="p">(</span><span class="s2">&quot;get&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;micrographs/</span><span class="si">{</span><span class="n">micrograph_uuid</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">response_cls</span><span class="o">=</span><span class="n">MicrographResponse</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="SmartEMAPIClient.update_micrograph">
+<a class="viewcode-back" href="../../_api/smartem_backend.api_client.html#smartem_backend.api_client.SmartEMAPIClient.update_micrograph">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">update_micrograph</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">micrograph</span><span class="p">:</span> <span class="n">MicrographData</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MicrographResponse</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Update a micrograph&quot;&quot;&quot;</span>
+        <span class="n">micrograph</span> <span class="o">=</span> <span class="n">EntityConverter</span><span class="o">.</span><span class="n">micrograph_to_request</span><span class="p">(</span><span class="n">micrograph</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_request</span><span class="p">(</span><span class="s2">&quot;put&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;micrographs/</span><span class="si">{</span><span class="n">micrograph</span><span class="o">.</span><span class="n">uuid</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">micrograph</span><span class="p">,</span> <span class="n">MicrographResponse</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="SmartEMAPIClient.delete_micrograph">
+<a class="viewcode-back" href="../../_api/smartem_backend.api_client.html#smartem_backend.api_client.SmartEMAPIClient.delete_micrograph">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">delete_micrograph</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">micrograph_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Delete a micrograph&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_request</span><span class="p">(</span><span class="s2">&quot;delete&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;micrographs/</span><span class="si">{</span><span class="n">micrograph_id</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="SmartEMAPIClient.get_foilhole_micrographs">
+<a class="viewcode-back" href="../../_api/smartem_backend.api_client.html#smartem_backend.api_client.SmartEMAPIClient.get_foilhole_micrographs">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_foilhole_micrographs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">foilhole_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">MicrographResponse</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get all micrographs for a specific foil hole&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_request</span><span class="p">(</span><span class="s2">&quot;get&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;foilholes/</span><span class="si">{</span><span class="n">foilhole_id</span><span class="si">}</span><span class="s2">/micrographs&quot;</span><span class="p">,</span> <span class="n">response_cls</span><span class="o">=</span><span class="n">MicrographResponse</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="SmartEMAPIClient.create_foilhole_micrograph">
+<a class="viewcode-back" href="../../_api/smartem_backend.api_client.html#smartem_backend.api_client.SmartEMAPIClient.create_foilhole_micrograph">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">create_foilhole_micrograph</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">micrograph</span><span class="p">:</span> <span class="n">MicrographData</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MicrographResponse</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create a new micrograph for a specific foil hole&quot;&quot;&quot;</span>
+        <span class="n">micrograph</span> <span class="o">=</span> <span class="n">EntityConverter</span><span class="o">.</span><span class="n">micrograph_to_request</span><span class="p">(</span><span class="n">micrograph</span><span class="p">)</span>
+        <span class="n">response</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_request</span><span class="p">(</span>
+            <span class="s2">&quot;post&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;foilholes/</span><span class="si">{</span><span class="n">micrograph</span><span class="o">.</span><span class="n">foilhole_uuid</span><span class="si">}</span><span class="s2">/micrographs&quot;</span><span class="p">,</span> <span class="n">micrograph</span><span class="p">,</span> <span class="n">MicrographResponse</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">response</span></div>
+</div>
+
+</pre></div>
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf"></script>
+<script defer src="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.16.1.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>

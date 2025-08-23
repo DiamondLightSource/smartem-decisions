@@ -1,5 +1,13 @@
 ``smartem_backend.model.http_response``
 =======================================
+        
+        
+        
+        
+        
+        
+        
+        
 
 .. automodule:: smartem_backend.model.http_response
     :members:
@@ -9,5 +17,19 @@
     
 
     
+    
+    .. rubric:: Members
+
+    .. autosummary::
+        :nosignatures:
+    
+        AcquisitionResponse
+        AtlasResponse
+        AtlasTileGridSquarePositionResponse
+        AtlasTileResponse
+        FoilHoleResponse
+        GridResponse
+        GridSquareResponse
+        MicrographResponse
     
     

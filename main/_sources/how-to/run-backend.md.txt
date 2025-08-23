@@ -18,11 +18,11 @@ python -m smartem_backend.simulate_msg --help # to see a list of options
 ./tools/simulate-messages.sh # run a simulation, triggering system events in sequence
 
 # run HTTP API in development (FastAPI CLI):
-fastapi dev src/smartem_api/server.py # Note: FastAPI CLI gets installed by pip as one of dev dependencies
+fastapi dev src/smartem_backend/api_server.py # Note: FastAPI CLI gets installed by pip as one of dev dependencies
 # run HTTP API in production (traditional):
-source .env && uvicorn src.smartem_api.server:app --host 0.0.0.0 --port $HTTP_API_PORT
+source .env && uvicorn src.smartem_backend.api_server:app --host 0.0.0.0 --port $HTTP_API_PORT
 # run HTTP API with environment variable:
-SMARTEM_LOG_LEVEL=ERROR uvicorn src.smartem_api.server:app --host 0.0.0.0 --port $HTTP_API_PORT
+SMARTEM_LOG_LEVEL=ERROR uvicorn src.smartem_backend.api_server:app --host 0.0.0.0 --port $HTTP_API_PORT
 # smoke test the API:
 ./tests/check_smartem_core_http_api.py http://localhost:8000 -v
 
