@@ -86,7 +86,7 @@ Available specialised agents in `.claude/agents/`:
 - **project-owner**: Strategic project guidance, requirements, scientific domain decisions
 - **software-engineer**: Architecture decisions, DevOps, system design, performance optimisation
 - **database-admin**: PostgreSQL expertise, Alembic migrations, scientific data management
-- **kubernetes-ops**: K3s/lightweight Kubernetes, scientific computing workloads
+- **devops**: DevOps and DevX expert specialising in CI/CD, containerisation, Kubernetes operations, and scientific computing deployment workflows
 - **technical-writer**: Documentation, British English, technical writing, Markdown formatting
 
 Claude Code will automatically invoke appropriate agents based on task context. For documentation tasks, the
