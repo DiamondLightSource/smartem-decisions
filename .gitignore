@@ -93,3 +93,7 @@ k8s/**/*secret*.yaml
 tools/.secrets-*
 *.secret
 *.secrets
+
+# Editor/IDE files
+.kiro/
+.vscode/settings.json
