@@ -65,7 +65,7 @@ alembic revision --autogenerate -m "Description"
 
 ## Scientific Domain Context
 - **Cryo-EM workflows**: Real-time microscopy data processing and decision making
-- **High-throughput**: Handle 1000+ images/hour processing requirements
+- **High-throughput**: Handle high-frequency processing requirements
 - **Research reproducibility**: Maintain data provenance and scientific rigor
 - **Open source**: Apache 2.0 licensed research software
 
