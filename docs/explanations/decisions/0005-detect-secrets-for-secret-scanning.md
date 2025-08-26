@@ -20,7 +20,7 @@ Key requirements included:
 - Integration with Python 3.12+ ecosystem and existing toolchain
 - Handling scientific computing patterns (chemical formulas, gene sequences, scientific notation) without excessive
   false positives
-- Support for high-throughput processing (1000+ images/hour) without workflow disruption
+- Support for high-throughput processing without workflow disruption
 - Enterprise-grade baseline management for research environments
 
 Three tools were evaluated:
