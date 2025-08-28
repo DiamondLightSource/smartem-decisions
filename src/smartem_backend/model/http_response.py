@@ -166,3 +166,21 @@ class MicrographResponse(BaseModel):
     model_config = ConfigDict(
         from_attributes=True, use_enum_values=True, json_encoders={datetime: lambda v: v.isoformat() if v else None}
     )
+
+
+# ============ Agent Communication Response Models ============
+
+
+class AgentInstructionAcknowledgementResponse(BaseModel):
+    """Response model for instruction acknowledgement confirmations"""
+
+    status: str
+    instruction_id: str
+    acknowledged_at: str
+    agent_id: str
+    session_id: str
+
+    model_config = ConfigDict(
+        from_attributes=True,
+        use_enum_values=True,
+    )

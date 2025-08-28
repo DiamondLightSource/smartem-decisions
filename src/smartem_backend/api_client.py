@@ -1,13 +1,17 @@
+import asyncio
 import json
 import logging
 import traceback
+from collections.abc import Callable
 from datetime import datetime
 
 import requests
+import sseclient
 from pydantic import BaseModel
 
 from smartem_backend.model.http_request import (
     AcquisitionCreateRequest,
+    AgentInstructionAcknowledgement,
     AtlasCreateRequest,
     AtlasTileCreateRequest,
     FoilHoleCreateRequest,
@@ -18,6 +22,7 @@ from smartem_backend.model.http_request import (
 )
 from smartem_backend.model.http_response import (
     AcquisitionResponse,
+    AgentInstructionAcknowledgementResponse,
     AtlasResponse,
     AtlasTileGridSquarePositionResponse,
     AtlasTileResponse,
@@ -578,3 +583,204 @@ class SmartEMAPIClient:
             "post", f"foilholes/{micrograph.foilhole_uuid}/micrographs", micrograph, MicrographResponse
         )
         return response
+
+    # ============ Agent Communication Methods ============
+
+    def acknowledge_instruction(
+        self, agent_id: str, session_id: str, instruction_id: str, acknowledgement: AgentInstructionAcknowledgement
+    ) -> AgentInstructionAcknowledgementResponse:
+        """Acknowledge an instruction from the agent"""
+        return self._request(
+            "post",
+            f"agent/{agent_id}/session/{session_id}/instructions/{instruction_id}/ack",
+            acknowledgement,
+            AgentInstructionAcknowledgementResponse,
+        )
+
+    def get_active_connections(self) -> dict:
+        """Get active agent connections (debug endpoint)"""
+        return self._request("get", "debug/agent-connections")
+
+    def get_session_instructions(self, session_id: str) -> dict:
+        """Get instructions for a session (debug endpoint)"""
+        return self._request("get", f"debug/session/{session_id}/instructions")
+
+
+class SSEAgentClient:
+    """
+    SSE client for agents to receive real-time instructions from the backend.
+    This is separate from the main ApiClient as it handles long-lived connections.
+    """
+
+    def __init__(self, base_url: str, agent_id: str, session_id: str, timeout: int = 30):
+        """
+        Initialize SSE client for agent communication
+
+        Args:
+            base_url: Base URL of the API server
+            agent_id: Unique identifier for this agent/microscope
+            session_id: Current microscopy session ID
+            timeout: Connection timeout in seconds
+        """
+        self.base_url = base_url.rstrip("/")
+        self.agent_id = agent_id
+        self.session_id = session_id
+        self.timeout = timeout
+        self.logger = logging.getLogger(f"SSEAgentClient-{agent_id}")
+        self._is_running = False
+
+    def stream_instructions(
+        self,
+        instruction_callback: Callable[[dict], None],
+        connection_callback: Callable[[dict], None] | None = None,
+        error_callback: Callable[[Exception], None] | None = None,
+    ) -> None:
+        """
+        Start streaming instructions via SSE (blocking)
+
+        Args:
+            instruction_callback: Called when an instruction is received
+            connection_callback: Called when connection events occur (optional)
+            error_callback: Called when errors occur (optional)
+        """
+        stream_url = f"{self.base_url}/agent/{self.agent_id}/session/{self.session_id}/instructions/stream"
+
+        self.logger.info(f"Starting SSE stream for agent {self.agent_id}, session {self.session_id}")
+        self._is_running = True
+
+        try:
+            response = requests.get(
+                stream_url, headers={"Accept": "text/event-stream"}, stream=True, timeout=self.timeout
+            )
+            response.raise_for_status()
+
+            client = sseclient.SSEClient(response)
+
+            for event in client.events():
+                if not self._is_running:
+                    break
+
+                try:
+                    data = json.loads(event.data)
+                    event_type = data.get("type")
+
+                    if event_type == "connection":
+                        self.logger.info(f"Connected with connection_id: {data.get('connection_id')}")
+                        if connection_callback:
+                            connection_callback(data)
+
+                    elif event_type == "heartbeat":
+                        self.logger.debug(f"Heartbeat received at {data.get('timestamp')}")
+
+                    elif event_type == "instruction":
+                        self.logger.info(
+                            f"Instruction received: {data.get('instruction_id')} - {data.get('instruction_type')}"
+                        )
+                        instruction_callback(data)
+
+                    else:
+                        self.logger.warning(f"Unknown event type: {event_type}")
+
+                except json.JSONDecodeError as e:
+                    self.logger.error(f"Failed to parse SSE data: {e}")
+                    if error_callback:
+                        error_callback(e)
+                except Exception as e:
+                    self.logger.error(f"Error processing SSE event: {e}")
+                    if error_callback:
+                        error_callback(e)
+
+        except requests.exceptions.RequestException as e:
+            self.logger.error(f"SSE connection error: {e}")
+            if error_callback:
+                error_callback(e)
+        except Exception as e:
+            self.logger.error(f"Unexpected SSE error: {e}")
+            if error_callback:
+                error_callback(e)
+        finally:
+            self._is_running = False
+            self.logger.info("SSE stream ended")
+
+    async def stream_instructions_async(
+        self,
+        instruction_callback: Callable[[dict], None],
+        connection_callback: Callable[[dict], None] | None = None,
+        error_callback: Callable[[Exception], None] | None = None,
+        retry_interval: int = 5,
+        max_retries: int = 3,
+    ) -> None:
+        """
+        Start streaming instructions via SSE (async with auto-retry)
+
+        Args:
+            instruction_callback: Called when an instruction is received
+            connection_callback: Called when connection events occur (optional)
+            error_callback: Called when errors occur (optional)
+            retry_interval: Seconds to wait between reconnection attempts
+            max_retries: Maximum number of reconnection attempts
+        """
+        retry_count = 0
+
+        while retry_count < max_retries and self._is_running:
+            try:
+                # Run the synchronous streaming in a thread pool
+                await asyncio.get_event_loop().run_in_executor(
+                    None, self.stream_instructions, instruction_callback, connection_callback, error_callback
+                )
+                break  # Successful connection, exit retry loop
+
+            except Exception as e:
+                retry_count += 1
+                self.logger.error(f"SSE connection failed (attempt {retry_count}/{max_retries}): {e}")
+
+                if retry_count < max_retries:
+                    self.logger.info(f"Retrying in {retry_interval} seconds...")
+                    await asyncio.sleep(retry_interval)
+                else:
+                    self.logger.error("Max retries reached, giving up")
+                    if error_callback:
+                        error_callback(e)
+
+    def acknowledge_instruction(
+        self, instruction_id: str, status: str, result: str | None = None, error_message: str | None = None
+    ) -> AgentInstructionAcknowledgementResponse:
+        """
+        Acknowledge an instruction
+
+        Args:
+            instruction_id: ID of the instruction to acknowledge
+            status: Status of acknowledgement ('received', 'processed', 'failed', 'declined')
+            result: Optional result message
+            error_message: Optional error message if status is 'failed'
+        """
+        acknowledgement = AgentInstructionAcknowledgement(
+            status=status, result=result, error_message=error_message, processed_at=datetime.now()
+        )
+
+        ack_url = f"{self.base_url}/agent/{self.agent_id}/session/{self.session_id}/instructions/{instruction_id}/ack"
+
+        try:
+            response = requests.post(
+                ack_url,
+                json=acknowledgement.model_dump(),
+                headers={"Content-Type": "application/json"},
+                timeout=self.timeout,
+            )
+            response.raise_for_status()
+
+            ack_response = AgentInstructionAcknowledgementResponse(**response.json())
+            self.logger.info(f"Successfully acknowledged instruction {instruction_id} with status {status}")
+            return ack_response
+
+        except requests.exceptions.RequestException as e:
+            self.logger.error(f"Failed to acknowledge instruction {instruction_id}: {e}")
+            raise
+        except Exception as e:
+            self.logger.error(f"Unexpected error acknowledging instruction {instruction_id}: {e}")
+            raise
+
+    def stop(self):
+        """Stop the SSE stream"""
+        self.logger.info("Stopping SSE stream...")
+        self._is_running = False
