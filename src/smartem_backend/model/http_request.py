@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict
 
@@ -279,3 +280,21 @@ class MicrographCreateRequest(MicrographBaseRequest):
 
 class MicrographUpdateRequest(MicrographBaseFields):
     pass
+
+
+# ============ Agent Communication Models ============
+
+
+class AgentInstructionAcknowledgement(BaseModel):
+    """Request model for instruction acknowledgements from agents"""
+
+    status: Literal["received", "processed", "failed", "declined"]
+    result: str | None = None
+    error_message: str | None = None
+    processed_at: datetime | None = None
+
+    model_config = ConfigDict(
+        str_strip_whitespace=True,
+        validate_assignment=True,
+        extra="forbid",
+    )
