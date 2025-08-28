@@ -1,12 +1,15 @@
+import asyncio
 import json
 import logging
 import os
+import uuid
 from datetime import datetime
 
 from fastapi import Depends, FastAPI, HTTPException, Request, status
 from sqlalchemy import text
 from sqlalchemy.orm import Session as SqlAlchemySession
 from sqlalchemy.orm import sessionmaker
+from sse_starlette.sse import EventSourceResponse
 
 from smartem_backend.model.database import (
     Acquisition,
@@ -28,6 +31,7 @@ from smartem_backend.model.entity_status import (
 from smartem_backend.model.http_request import (
     AcquisitionCreateRequest,
     AcquisitionUpdateRequest,
+    AgentInstructionAcknowledgement,
     AtlasCreateRequest,
     AtlasTileCreateRequest,
     AtlasTileUpdateRequest,
@@ -44,6 +48,7 @@ from smartem_backend.model.http_request import (
 )
 from smartem_backend.model.http_response import (
     AcquisitionResponse,
+    AgentInstructionAcknowledgementResponse,
     AtlasResponse,
     AtlasTileGridSquarePositionResponse,
     AtlasTileResponse,
@@ -1142,3 +1147,153 @@ def create_foilhole_micrograph(
         response_data["status"] = MicrographStatus.NONE
 
     return MicrographResponse(**response_data)
+
+
+# ============ Agent Communication Endpoints ============
+
+# Mock data storage for development
+active_connections: dict[str, dict] = {}  # agent_id -> connection_info
+mock_instructions: dict[str, list] = {}  # session_id -> instructions
+
+
+@app.get("/agent/{agent_id}/session/{session_id}/instructions/stream")
+async def stream_instructions(agent_id: str, session_id: str) -> EventSourceResponse:
+    """SSE endpoint for streaming instructions to agents for a specific session"""
+
+    async def event_generator():
+        connection_id = str(uuid.uuid4())
+
+        # Register connection
+        active_connections[agent_id] = {
+            "connection_id": connection_id,
+            "session_id": session_id,
+            "connected_at": datetime.now(),
+            "last_heartbeat": datetime.now(),
+        }
+
+        try:
+            # Send initial connection acknowledgment
+            yield {
+                "event": "connection",
+                "data": json.dumps(
+                    {
+                        "type": "connection",
+                        "agent_id": agent_id,
+                        "session_id": session_id,
+                        "connection_id": connection_id,
+                    }
+                ),
+            }
+
+            # Mock instruction generation with timers
+            instruction_counter = 1
+            while True:
+                # Send heartbeat every 30 seconds
+                yield {
+                    "event": "heartbeat",
+                    "data": json.dumps({"type": "heartbeat", "timestamp": datetime.now().isoformat()}),
+                }
+
+                # Generate mock instruction every 45 seconds (simulating microscope control intervals)
+                await asyncio.sleep(45)
+
+                mock_instruction = {
+                    "type": "instruction",
+                    "instruction_id": str(uuid.uuid4()),
+                    "agent_id": agent_id,
+                    "session_id": session_id,
+                    "instruction_type": "microscope.control.move_stage",
+                    "payload": {
+                        "stage_position": {
+                            "x": 1000.0 + (instruction_counter * 100),
+                            "y": 500.0 + (instruction_counter * 50),
+                            "z": 0.0,
+                        },
+                        "speed": "normal",
+                    },
+                    "created_at": datetime.now().isoformat(),
+                    "sequence_number": instruction_counter,
+                }
+
+                # Store for acknowledgement tracking
+                if session_id not in mock_instructions:
+                    mock_instructions[session_id] = []
+                mock_instructions[session_id].append(mock_instruction)
+
+                yield {"event": "instruction", "data": json.dumps(mock_instruction)}
+                instruction_counter += 1
+
+                # Update heartbeat
+                if agent_id in active_connections:
+                    active_connections[agent_id]["last_heartbeat"] = datetime.now()
+
+        except asyncio.CancelledError:
+            # Connection closed by client
+            if agent_id in active_connections:
+                del active_connections[agent_id]
+            raise
+        except Exception as e:
+            logger.error(f"SSE stream error for agent {agent_id}: {e}")
+            # Unexpected error
+            if agent_id in active_connections:
+                del active_connections[agent_id]
+            raise
+
+    return EventSourceResponse(event_generator())
+
+
+@app.post(
+    "/agent/{agent_id}/session/{session_id}/instructions/{instruction_id}/ack",
+    response_model=AgentInstructionAcknowledgementResponse,
+)
+async def acknowledge_instruction(
+    agent_id: str, session_id: str, instruction_id: str, acknowledgement: AgentInstructionAcknowledgement
+) -> AgentInstructionAcknowledgementResponse:
+    """HTTP endpoint for instruction acknowledgements"""
+
+    # Validate agent connection
+    if agent_id not in active_connections:
+        raise HTTPException(status_code=404, detail="Agent not connected")
+
+    connection_info = active_connections[agent_id]
+    if connection_info["session_id"] != session_id:
+        raise HTTPException(status_code=400, detail="Session ID mismatch")
+
+    # Find instruction in mock storage
+    session_instructions = mock_instructions.get(session_id, [])
+    instruction = next((instr for instr in session_instructions if instr["instruction_id"] == instruction_id), None)
+
+    if not instruction:
+        raise HTTPException(status_code=404, detail="Instruction not found")
+
+    # Mock acknowledgement processing
+    ack_timestamp = datetime.now().isoformat()
+
+    # Update instruction with acknowledgement
+    instruction["acknowledged_at"] = ack_timestamp
+    instruction["acknowledgement_status"] = acknowledgement.status
+    instruction["acknowledgement_result"] = acknowledgement.result
+    instruction["acknowledgement_error"] = acknowledgement.error_message
+
+    logger.info(f"Instruction {instruction_id} acknowledged by agent {agent_id} with status: {acknowledgement.status}")
+
+    return AgentInstructionAcknowledgementResponse(
+        status="success",
+        instruction_id=instruction_id,
+        acknowledged_at=ack_timestamp,
+        agent_id=agent_id,
+        session_id=session_id,
+    )
+
+
+# Debug endpoints for development
+@app.get("/debug/agent-connections")
+async def get_active_connections():
+    """Debug endpoint to view active agent connections"""
+    return {"active_connections": active_connections}
+
+
+@app.get("/debug/session/{session_id}/instructions")
+async def get_session_instructions(session_id: str):
+    """Debug endpoint to view instructions for a session"""
+    return {"instructions": mock_instructions.get(session_id, [])}
