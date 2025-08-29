@@ -2,6 +2,7 @@ from datetime import datetime
 from typing import Optional
 
 from sqlalchemy import Column, text
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlmodel import Field, Relationship, SQLModel
 from sqlmodel import Session as SQLModelSession
 
@@ -39,6 +40,9 @@ class Acquisition(SQLModel, table=True, table_name="acquisition"):
     instrument_id: str | None = Field(default=None)
     computer_name: str | None = Field(default=None)
     grids: list["Grid"] = Relationship(sa_relationship_kwargs={"back_populates": "acquisition"}, cascade_delete=True)
+    agent_sessions: list["AgentSession"] = Relationship(
+        sa_relationship_kwargs={"back_populates": "acquisition"}, cascade_delete=True
+    )
 
 
 class Atlas(SQLModel, table=True, table_name="atlas"):
@@ -255,6 +259,122 @@ class QualityPrediction(SQLModel, table=True):
     model: QualityPredictionModel | None = Relationship(back_populates="predictions")
 
 
+# ============ Agent Communication Tables ============
+
+
+class AgentSession(SQLModel, table=True):
+    """
+    Represents a microscopy session conducted by an agent.
+    Sessions group related instructions and provide experimental context.
+    Backend-originated entity using BIGSERIAL primary key for scalability.
+    """
+
+    __table_args__ = {"extend_existing": True}
+    id: int | None = Field(default=None, primary_key=True)
+    session_id: str = Field(unique=True, index=True)  # Keep for backward compatibility and external references
+    agent_id: str = Field(index=True)
+    acquisition_uuid: str | None = Field(default=None, foreign_key="acquisition.uuid", index=True)
+    name: str | None = Field(default=None)
+    description: str | None = Field(default=None)
+    experimental_parameters: dict | None = Field(default=None, sa_column=Column(JSONB))
+    status: str = Field(default="active", index=True)
+    created_at: datetime = Field(default_factory=datetime.now, index=True)
+    started_at: datetime | None = Field(default=None)
+    ended_at: datetime | None = Field(default=None)
+    last_activity_at: datetime = Field(default_factory=datetime.now, index=True)
+
+    # Relationships
+    acquisition: Optional["Acquisition"] = Relationship(sa_relationship_kwargs={"back_populates": "agent_sessions"})
+    instructions: list["AgentInstruction"] = Relationship(
+        sa_relationship_kwargs={"back_populates": "session"}, cascade_delete=True
+    )
+    connections: list["AgentConnection"] = Relationship(
+        sa_relationship_kwargs={"back_populates": "session"}, cascade_delete=True
+    )
+
+
+class AgentInstruction(SQLModel, table=True):
+    """
+    Represents instructions sent to microscopy agents with full lifecycle tracking.
+    Instructions contain the command payload and track delivery/acknowledgement status.
+    Backend-originated entity using BIGSERIAL primary key for scalability.
+    """
+
+    __table_args__ = {"extend_existing": True}
+    id: int | None = Field(default=None, primary_key=True)
+    instruction_id: str = Field(unique=True, index=True)  # Keep for backward compatibility and external references
+    session_id: str = Field(foreign_key="agentsession.session_id", index=True)
+    agent_id: str = Field(index=True)
+    instruction_type: str = Field(index=True)
+    payload: dict = Field(sa_column=Column(JSONB))
+    sequence_number: int | None = Field(default=None, index=True)
+    priority: str = Field(default="normal", index=True)
+    status: str = Field(default="pending", index=True)
+    created_at: datetime = Field(default_factory=datetime.now, index=True)
+    sent_at: datetime | None = Field(default=None, index=True)
+    acknowledged_at: datetime | None = Field(default=None, index=True)
+    expires_at: datetime | None = Field(default=None, index=True)
+    retry_count: int = Field(default=0)
+    max_retries: int = Field(default=3)
+    instruction_metadata: dict | None = Field(default=None, sa_column=Column(JSONB))
+
+    # Relationships
+    session: "AgentSession" = Relationship(sa_relationship_kwargs={"back_populates": "instructions"})
+    acknowledgements: list["AgentInstructionAcknowledgement"] = Relationship(
+        sa_relationship_kwargs={"back_populates": "instruction"}, cascade_delete=True
+    )
+
+
+class AgentConnection(SQLModel, table=True):
+    """
+    Tracks active SSE connections from agents.
+    Used for connection health monitoring and cleanup.
+    Backend-originated entity using BIGSERIAL primary key for scalability.
+    """
+
+    __table_args__ = {"extend_existing": True}
+    id: int | None = Field(default=None, primary_key=True)
+    connection_id: str = Field(unique=True, index=True)  # Keep for backward compatibility and external references
+    session_id: str = Field(foreign_key="agentsession.session_id", index=True)
+    agent_id: str = Field(index=True)
+    connection_type: str = Field(default="sse")
+    client_info: dict | None = Field(default=None, sa_column=Column(JSONB))
+    status: str = Field(default="active", index=True)
+    created_at: datetime = Field(default_factory=datetime.now, index=True)
+    last_heartbeat_at: datetime = Field(default_factory=datetime.now, index=True)
+    closed_at: datetime | None = Field(default=None)
+    close_reason: str | None = Field(default=None)
+
+    # Relationships
+    session: "AgentSession" = Relationship(sa_relationship_kwargs={"back_populates": "connections"})
+
+
+class AgentInstructionAcknowledgement(SQLModel, table=True):
+    """
+    Stores the history of instruction acknowledgements from agents.
+    Provides audit trail for instruction processing and scientific reproducibility.
+    Agent-originated entity using UUID primary key for distributed creation.
+    """
+
+    __table_args__ = {"extend_existing": True}
+    acknowledgement_id: str = Field(
+        sa_column=Column(UUID(as_uuid=False), primary_key=True, server_default=text("gen_random_uuid()"))
+    )
+    instruction_id: str = Field(foreign_key="agentinstruction.instruction_id", index=True)
+    agent_id: str = Field(index=True)
+    session_id: str = Field(index=True)
+    status: str = Field(index=True)  # received, processed, failed, declined
+    result: str | None = Field(default=None)
+    error_message: str | None = Field(default=None)
+    processing_time_ms: int | None = Field(default=None)
+    acknowledgement_metadata: dict | None = Field(default=None, sa_column=Column(JSONB))
+    created_at: datetime = Field(default_factory=datetime.now, index=True)
+    processed_at: datetime | None = Field(default=None, index=True)
+
+    # Relationships
+    instruction: "AgentInstruction" = Relationship(sa_relationship_kwargs={"back_populates": "acknowledgements"})
+
+
 def _create_db_and_tables(engine):
     # First drop all tables and enums
     with SQLModelSession(engine) as sess:
@@ -440,6 +560,101 @@ def _create_db_and_tables(engine):
                 text("CREATE INDEX IF NOT EXISTS idx_quality_prediction_timestamp ON qualityprediction (timestamp);")
             )
             sess.execute(text("CREATE INDEX IF NOT EXISTS idx_quality_prediction_value ON qualityprediction (value);"))
+
+            # Agent communication indexes
+            sess.execute(text("CREATE INDEX IF NOT EXISTS idx_agent_session_agent_id ON agentsession (agent_id);"))
+            sess.execute(
+                text(
+                    "CREATE INDEX IF NOT EXISTS idx_agent_session_acquisition_uuid ON agentsession (acquisition_uuid);"
+                )
+            )
+            sess.execute(text("CREATE INDEX IF NOT EXISTS idx_agent_session_status ON agentsession (status);"))
+            sess.execute(text("CREATE INDEX IF NOT EXISTS idx_agent_session_created_at ON agentsession (created_at);"))
+            sess.execute(
+                text("CREATE INDEX IF NOT EXISTS idx_agent_session_last_activity ON agentsession (last_activity_at);")
+            )
+
+            # Agent instruction indexes
+            sess.execute(
+                text("CREATE INDEX IF NOT EXISTS idx_agent_instruction_session_id ON agentinstruction (session_id);")
+            )
+            sess.execute(
+                text("CREATE INDEX IF NOT EXISTS idx_agent_instruction_agent_id ON agentinstruction (agent_id);")
+            )
+            sess.execute(
+                text("CREATE INDEX IF NOT EXISTS idx_agent_instruction_type ON agentinstruction (instruction_type);")
+            )
+            sess.execute(text("CREATE INDEX IF NOT EXISTS idx_agent_instruction_status ON agentinstruction (status);"))
+            sess.execute(
+                text("CREATE INDEX IF NOT EXISTS idx_agent_instruction_created_at ON agentinstruction (created_at);")
+            )
+            sess.execute(
+                text("CREATE INDEX IF NOT EXISTS idx_agent_instruction_sent_at ON agentinstruction (sent_at);")
+            )
+            sess.execute(
+                text(
+                    "CREATE INDEX IF NOT EXISTS idx_agent_instruction_acknowledged_at "
+                    "ON agentinstruction (acknowledged_at);"
+                )
+            )
+            sess.execute(
+                text("CREATE INDEX IF NOT EXISTS idx_agent_instruction_expires_at ON agentinstruction (expires_at);")
+            )
+            sess.execute(
+                text("CREATE INDEX IF NOT EXISTS idx_agent_instruction_sequence ON agentinstruction (sequence_number);")
+            )
+            sess.execute(
+                text("CREATE INDEX IF NOT EXISTS idx_agent_instruction_priority ON agentinstruction (priority);")
+            )
+
+            # Agent connection indexes
+            sess.execute(
+                text("CREATE INDEX IF NOT EXISTS idx_agent_connection_session_id ON agentconnection (session_id);")
+            )
+            sess.execute(
+                text("CREATE INDEX IF NOT EXISTS idx_agent_connection_agent_id ON agentconnection (agent_id);")
+            )
+            sess.execute(text("CREATE INDEX IF NOT EXISTS idx_agent_connection_status ON agentconnection (status);"))
+            sess.execute(
+                text("CREATE INDEX IF NOT EXISTS idx_agent_connection_created_at ON agentconnection (created_at);")
+            )
+            sess.execute(
+                text(
+                    "CREATE INDEX IF NOT EXISTS idx_agent_connection_heartbeat ON agentconnection (last_heartbeat_at);"
+                )
+            )
+
+            # Agent acknowledgement indexes
+            sess.execute(
+                text(
+                    "CREATE INDEX IF NOT EXISTS idx_agent_ack_instruction_id "
+                    "ON agentinstructionacknowledgement (instruction_id);"
+                )
+            )
+            sess.execute(
+                text("CREATE INDEX IF NOT EXISTS idx_agent_ack_agent_id ON agentinstructionacknowledgement (agent_id);")
+            )
+            sess.execute(
+                text(
+                    "CREATE INDEX IF NOT EXISTS idx_agent_ack_session_id "
+                    "ON agentinstructionacknowledgement (session_id);"
+                )
+            )
+            sess.execute(
+                text("CREATE INDEX IF NOT EXISTS idx_agent_ack_status ON agentinstructionacknowledgement (status);")
+            )
+            sess.execute(
+                text(
+                    "CREATE INDEX IF NOT EXISTS idx_agent_ack_created_at "
+                    "ON agentinstructionacknowledgement (created_at);"
+                )
+            )
+            sess.execute(
+                text(
+                    "CREATE INDEX IF NOT EXISTS idx_agent_ack_processed_at "
+                    "ON agentinstructionacknowledgement (processed_at);"
+                )
+            )
 
             sess.commit()
         except Exception as e:
