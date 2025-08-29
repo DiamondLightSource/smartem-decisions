@@ -72,6 +72,13 @@ backend = [
     "sse-starlette>=2.1.0,<4.0.0",
 ]
 
+# Packages for cryoEM file I/O; used for image displays from API
+images = [
+    "pillow",
+    "mrcfile",
+    "tifffile",
+]
+
 # Agent component dependencies
 agent = [
     "smartem-decisions[common,client,cli]",
@@ -99,7 +106,7 @@ mcp = [
 
 # Combined dependencies (for convenience)
 all = [
-    "smartem-decisions[dev,common,client,cli,backend,agent,fsrecorder,mock,mcp]",
+    "smartem-decisions[dev,common,client,cli,backend,agent,fsrecorder,mock,mcp,images]",
 ]
 
 [project.scripts]
