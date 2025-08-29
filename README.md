@@ -103,6 +103,75 @@ python -m smartem_agent watch /path/to/data -v     # File watcher with INFO logg
 python tools/fsrecorder/fsrecorder.py replay recording.tar.gz /path/to/data --fast
 ```
 
+## Administrative Utilities
+
+After installation with `pip install -e .[all]`, the following command-line utilities are available for system administration and maintenance:
+
+### Agent Communication Management
+
+- **`smartem.agent-cleanup`** - Data lifecycle and cleanup operations for agent communication data
+  ```bash
+  # Check current database usage and statistics
+  smartem.agent-cleanup --operation=stats
+  
+  # Run full cleanup with scientific retention policy (7-year audit trail)
+  smartem.agent-cleanup --operation=cleanup --policy=scientific
+  
+  # Run cleanup with development retention policy (shorter retention)
+  smartem.agent-cleanup --operation=cleanup --policy=development
+  
+  # Clean only stale connections
+  smartem.agent-cleanup --operation=connections
+  
+  # Preview what would be cleaned without making changes
+  smartem.agent-cleanup --operation=cleanup --dry-run
+  ```
+
+### ML Model and Prediction Management
+
+- **`smartem.register-prediction-model`** - Register new machine learning prediction models
+  ```bash
+  smartem.register-prediction-model "ResNet-50" "Deep learning model for cryo-EM image quality assessment"
+  ```
+
+- **`smartem.init-model-weight`** - Initialize model weights for specific grids
+  ```bash
+  smartem.init-model-weight --help  # View available options
+  ```
+
+- **`smartem.random-model-predictions`** - Generate test predictions for development and testing
+  ```bash
+  smartem.random-model-predictions --help  # View available options
+  ```
+
+- **`smartem.random-prior-updates`** - Simulate prior updates for testing workflows
+  ```bash
+  smartem.random-prior-updates --help  # View available options
+  ```
+
+### Development and Integration Tools
+
+- **`smartem_agent_tools`** - Agent development and debugging utilities
+- **`smartem-mcp`** - Model Context Protocol (MCP) integration tools
+
+### Data Retention Policies
+
+The `smartem.agent-cleanup` utility supports two built-in retention policies:
+
+- **Scientific Compliance** (default): Conservative retention suitable for scientific research
+  - Connections: 48 hours
+  - Instructions: 365 days  
+  - Completed sessions: 2 years
+  - Acknowledgements: 7 years (regulatory compliance)
+
+- **Development**: Shorter retention for development environments
+  - Connections: 4 hours
+  - Instructions: 7 days
+  - Completed sessions: 14 days
+  - Acknowledgements: 30 days
+
+All utilities include comprehensive `--help` documentation for detailed usage instructions.
+
 ## More Information
 
 For detailed documentation including:
