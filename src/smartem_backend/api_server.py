@@ -170,8 +170,9 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.error(f"Failed to stop connection manager: {e}")
 
+app = FastAPI()
 
-app = FastAPI(
+api_app = FastAPI(
     title="SmartEM Decisions Backend API",
     description="API for accessing and managing electron microscopy data",
     version=__version__,
@@ -239,7 +240,7 @@ def check_rabbitmq_health():
 
 
 # TODO remove in prod:
-@app.middleware("http")
+@api_app.middleware("http")
 async def log_requests(request: Request, call_next):
     if request.method in ("POST", "PUT", "PATCH") and log_level == logging.DEBUG:
         body = await request.body()
@@ -259,7 +260,7 @@ async def log_requests(request: Request, call_next):
     return response
 
 
-@app.get("/status")
+@api_app.get("/status")
 def get_status():
     """Get API status and configuration information"""
     return {
@@ -281,7 +282,7 @@ def get_status():
     }
 
 
-@app.get("/health")
+@api_app.get("/health")
 def get_health():
     """Health check endpoint with actual connectivity checks"""
     # Perform health checks
@@ -316,13 +317,13 @@ def get_health():
 # ============ Acquisition CRUD Operations ============
 
 
-@app.get("/acquisitions", response_model=list[AcquisitionResponse])
+@api_app.get("/acquisitions", response_model=list[AcquisitionResponse])
 def get_acquisitions(db: SqlAlchemySession = DB_DEPENDENCY):
     """Get all acquisitions"""
     return db.query(Acquisition).all()
 
 
-@app.post("/acquisitions", response_model=AcquisitionResponse, status_code=status.HTTP_201_CREATED)
+@api_app.post("/acquisitions", response_model=AcquisitionResponse, status_code=status.HTTP_201_CREATED)
 def create_acquisition(acquisition: AcquisitionCreateRequest, db: SqlAlchemySession = DB_DEPENDENCY):
     """Create a new acquisition"""
     acquisition_data = {
@@ -357,7 +358,7 @@ def create_acquisition(acquisition: AcquisitionCreateRequest, db: SqlAlchemySess
     return AcquisitionResponse(**response_data)
 
 
-@app.get("/acquisitions/{acquisition_uuid}", response_model=AcquisitionResponse)
+@api_app.get("/acquisitions/{acquisition_uuid}", response_model=AcquisitionResponse)
 def get_acquisition(acquisition_uuid: str, db: SqlAlchemySession = DB_DEPENDENCY):
     """Get a single acquisition by ID"""
     acquisition = db.query(Acquisition).filter(Acquisition.uuid == acquisition_uuid).first()
@@ -366,7 +367,7 @@ def get_acquisition(acquisition_uuid: str, db: SqlAlchemySession = DB_DEPENDENCY
     return acquisition
 
 
-@app.put("/acquisitions/{acquisition_uuid}", response_model=AcquisitionResponse)
+@api_app.put("/acquisitions/{acquisition_uuid}", response_model=AcquisitionResponse)
 def update_acquisition(
     acquisition_uuid: str, acquisition: AcquisitionUpdateRequest, db: SqlAlchemySession = DB_DEPENDENCY
 ):
@@ -409,7 +410,7 @@ def update_acquisition(
     return AcquisitionResponse(**response_data)
 
 
-@app.delete("/acquisitions/{acquisition_uuid}", status_code=status.HTTP_204_NO_CONTENT)
+@api_app.delete("/acquisitions/{acquisition_uuid}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_acquisition(acquisition_uuid: str, db: SqlAlchemySession = DB_DEPENDENCY):
     """Delete an acquisition"""
     db_acquisition = db.query(Acquisition).filter(Acquisition.uuid == acquisition_uuid).first()
@@ -429,13 +430,13 @@ def delete_acquisition(acquisition_uuid: str, db: SqlAlchemySession = DB_DEPENDE
 # ============ Grid CRUD Operations ============
 
 
-@app.get("/grids", response_model=list[GridResponse])
+@api_app.get("/grids", response_model=list[GridResponse])
 def get_grids(db: SqlAlchemySession = DB_DEPENDENCY):
     """Get all grids"""
     return db.query(Grid).all()
 
 
-@app.get("/grids/{grid_uuid}", response_model=GridResponse)
+@api_app.get("/grids/{grid_uuid}", response_model=GridResponse)
 def get_grid(grid_uuid: str, db: SqlAlchemySession = DB_DEPENDENCY):
     """Get a single grid by ID"""
     grid = db.query(Grid).filter(Grid.uuid == grid_uuid).first()
@@ -444,7 +445,7 @@ def get_grid(grid_uuid: str, db: SqlAlchemySession = DB_DEPENDENCY):
     return grid
 
 
-@app.put("/grids/{grid_uuid}", response_model=GridResponse)
+@api_app.put("/grids/{grid_uuid}", response_model=GridResponse)
 def update_grid(grid_uuid: str, grid: GridUpdateRequest, db: SqlAlchemySession = DB_DEPENDENCY):
     """Update a grid"""
     db_grid = db.query(Grid).filter(Grid.uuid == grid_uuid).first()
@@ -476,7 +477,7 @@ def update_grid(grid_uuid: str, grid: GridUpdateRequest, db: SqlAlchemySession =
     return GridResponse(**response_data)
 
 
-@app.delete("/grids/{grid_uuid}", status_code=status.HTTP_204_NO_CONTENT)
+@api_app.delete("/grids/{grid_uuid}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_grid(grid_uuid: str, db: SqlAlchemySession = DB_DEPENDENCY):
     """Delete a grid by publishing to RabbitMQ"""
     db_grid = db.query(Grid).filter(Grid.uuid == grid_uuid).first()
@@ -490,13 +491,15 @@ def delete_grid(grid_uuid: str, db: SqlAlchemySession = DB_DEPENDENCY):
     return None
 
 
-@app.get("/acquisitions/{acquisition_uuid}/grids", response_model=list[GridResponse])
+@api_app.get("/acquisitions/{acquisition_uuid}/grids", response_model=list[GridResponse])
 def get_acquisition_grids(acquisition_uuid: str, db: SqlAlchemySession = DB_DEPENDENCY):
     """Get all grids for a specific acquisition"""
     return db.query(Grid).filter(Grid.acquisition_uuid == acquisition_uuid).all()
 
 
-@app.post("/acquisitions/{acquisition_uuid}/grids", response_model=GridResponse, status_code=status.HTTP_201_CREATED)
+@api_app.post(
+    "/acquisitions/{acquisition_uuid}/grids", response_model=GridResponse, status_code=status.HTTP_201_CREATED
+)
 def create_acquisition_grid(acquisition_uuid: str, grid: GridCreateRequest, db: SqlAlchemySession = DB_DEPENDENCY):
     """Create a new grid for a specific acquisition"""
     grid_data = {
@@ -529,7 +532,7 @@ def create_acquisition_grid(acquisition_uuid: str, grid: GridCreateRequest, db: 
     return GridResponse(**response_data)
 
 
-@app.post("/grids/{grid_uuid}/registered")
+@api_app.post("/grids/{grid_uuid}/registered")
 def grid_registered(grid_uuid: str) -> bool:
     """All squares on a grid have been registered at low mag"""
     success = publish_grid_registered(grid_uuid)
@@ -541,13 +544,13 @@ def grid_registered(grid_uuid: str) -> bool:
 # ============ Atlas CRUD Operations ============
 
 
-@app.get("/atlases", response_model=list[AtlasResponse])
+@api_app.get("/atlases", response_model=list[AtlasResponse])
 def get_atlases(db: SqlAlchemySession = DB_DEPENDENCY):
     """Get all atlases"""
     return db.query(Atlas).all()
 
 
-@app.get("/atlases/{atlas_uuid}", response_model=AtlasResponse)
+@api_app.get("/atlases/{atlas_uuid}", response_model=AtlasResponse)
 def get_atlas(atlas_uuid: str, db: SqlAlchemySession = DB_DEPENDENCY):
     """Get a single atlas by ID"""
     atlas = db.query(Atlas).filter(Atlas.uuid == atlas_uuid).first()
@@ -556,7 +559,7 @@ def get_atlas(atlas_uuid: str, db: SqlAlchemySession = DB_DEPENDENCY):
     return atlas
 
 
-@app.put("/atlases/{atlas_uuid}", response_model=AtlasResponse)
+@api_app.put("/atlases/{atlas_uuid}", response_model=AtlasResponse)
 def update_atlas(atlas_uuid: str, atlas: AtlasUpdateRequest, db: SqlAlchemySession = DB_DEPENDENCY):
     """Update an atlas"""
     db_atlas = db.query(Atlas).filter(Atlas.uuid == atlas_uuid).first()
@@ -587,7 +590,7 @@ def update_atlas(atlas_uuid: str, atlas: AtlasUpdateRequest, db: SqlAlchemySessi
     return AtlasResponse(**response_data)
 
 
-@app.delete("/atlases/{atlas_uuid}", status_code=status.HTTP_204_NO_CONTENT)
+@api_app.delete("/atlases/{atlas_uuid}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_atlas(atlas_uuid: str, db: SqlAlchemySession = DB_DEPENDENCY):
     """Delete an atlas by publishing to RabbitMQ"""
     db_atlas = db.query(Atlas).filter(Atlas.uuid == atlas_uuid).first()
@@ -601,7 +604,7 @@ def delete_atlas(atlas_uuid: str, db: SqlAlchemySession = DB_DEPENDENCY):
     return None
 
 
-@app.get("/grids/{grid_uuid}/atlas", response_model=AtlasResponse)
+@api_app.get("/grids/{grid_uuid}/atlas", response_model=AtlasResponse)
 def get_grid_atlas(grid_uuid: str, db: SqlAlchemySession = DB_DEPENDENCY):
     """Get the atlas for a specific grid"""
     atlas = db.query(Atlas).filter(Atlas.grid_uuid == grid_uuid).first()
@@ -610,7 +613,7 @@ def get_grid_atlas(grid_uuid: str, db: SqlAlchemySession = DB_DEPENDENCY):
     return atlas
 
 
-@app.post("/grids/{grid_uuid}/atlas", response_model=AtlasResponse, status_code=status.HTTP_201_CREATED)
+@api_app.post("/grids/{grid_uuid}/atlas", response_model=AtlasResponse, status_code=status.HTTP_201_CREATED)
 def create_grid_atlas(grid_uuid: str, atlas: AtlasCreateRequest, db: SqlAlchemySession = DB_DEPENDENCY):
     """Create a new atlas for a grid"""
     tiles_data = None
@@ -664,13 +667,13 @@ def create_grid_atlas(grid_uuid: str, atlas: AtlasCreateRequest, db: SqlAlchemyS
 # ============ Atlas Tile CRUD Operations ============
 
 
-@app.get("/atlas-tiles", response_model=list[AtlasTileResponse])
+@api_app.get("/atlas-tiles", response_model=list[AtlasTileResponse])
 def get_atlas_tiles(db: SqlAlchemySession = DB_DEPENDENCY):
     """Get all atlas tiles"""
     return db.query(AtlasTile).all()
 
 
-@app.get("/atlas-tiles/{tile_uuid}", response_model=AtlasTileResponse)
+@api_app.get("/atlas-tiles/{tile_uuid}", response_model=AtlasTileResponse)
 def get_atlas_tile(tile_uuid: str, db: SqlAlchemySession = DB_DEPENDENCY):
     """Get a single atlas tile by ID"""
     tile = db.query(AtlasTile).filter(AtlasTile.uuid == tile_uuid).first()
@@ -679,7 +682,7 @@ def get_atlas_tile(tile_uuid: str, db: SqlAlchemySession = DB_DEPENDENCY):
     return tile
 
 
-@app.put("/atlas-tiles/{tile_uuid}", response_model=AtlasTileResponse)
+@api_app.put("/atlas-tiles/{tile_uuid}", response_model=AtlasTileResponse)
 def update_atlas_tile(tile_uuid: str, tile: AtlasTileUpdateRequest, db: SqlAlchemySession = DB_DEPENDENCY):
     """Update an atlas tile"""
     db_tile = db.query(AtlasTile).filter(AtlasTile.uuid == tile_uuid).first()
@@ -712,7 +715,7 @@ def update_atlas_tile(tile_uuid: str, tile: AtlasTileUpdateRequest, db: SqlAlche
     return AtlasTileResponse(**response_data)
 
 
-@app.delete("/atlas-tiles/{tile_uuid}", status_code=status.HTTP_204_NO_CONTENT)
+@api_app.delete("/atlas-tiles/{tile_uuid}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_atlas_tile(tile_uuid: str, db: SqlAlchemySession = DB_DEPENDENCY):
     """Delete an atlas tile by publishing to RabbitMQ"""
     db_tile = db.query(AtlasTile).filter(AtlasTile.uuid == tile_uuid).first()
@@ -726,14 +729,14 @@ def delete_atlas_tile(tile_uuid: str, db: SqlAlchemySession = DB_DEPENDENCY):
     return None
 
 
-@app.get("/atlases/{atlas_uuid}/tiles", response_model=list[AtlasTileResponse])
+@api_app.get("/atlases/{atlas_uuid}/tiles", response_model=list[AtlasTileResponse])
 def get_atlas_tiles_by_atlas(atlas_uuid: str, db: SqlAlchemySession = DB_DEPENDENCY):
     """Get all tiles for a specific atlas"""
     tiles = db.query(AtlasTile).filter(AtlasTile.atlas_uuid == atlas_uuid).all()
     return tiles
 
 
-@app.post("/atlases/{atlas_uuid}/tiles", response_model=AtlasTileResponse, status_code=status.HTTP_201_CREATED)
+@api_app.post("/atlases/{atlas_uuid}/tiles", response_model=AtlasTileResponse, status_code=status.HTTP_201_CREATED)
 def create_atlas_tile_for_atlas(atlas_uuid: str, tile: AtlasTileCreateRequest, db: SqlAlchemySession = DB_DEPENDENCY):
     """Create a new tile for a specific atlas"""
     tile_data = tile.model_dump()
@@ -763,7 +766,7 @@ def create_atlas_tile_for_atlas(atlas_uuid: str, tile: AtlasTileCreateRequest, d
     return AtlasTileResponse(**response_data)
 
 
-@app.post(
+@api_app.post(
     "/atlas-tiles/{tile_uuid}/gridsquares/{gridsquare_uuid}",
     response_model=AtlasTileGridSquarePositionResponse,
     status_code=status.HTTP_201_CREATED,
@@ -797,13 +800,13 @@ def link_atlas_tile_to_gridsquare(
 # ============ GridSquare CRUD Operations ============
 
 
-@app.get("/gridsquares", response_model=list[GridSquareResponse])
+@api_app.get("/gridsquares", response_model=list[GridSquareResponse])
 def get_gridsquares(db: SqlAlchemySession = DB_DEPENDENCY):
     """Get all grid squares"""
     return db.query(GridSquare).all()
 
 
-@app.get("/gridsquares/{gridsquare_uuid}", response_model=GridSquareResponse)
+@api_app.get("/gridsquares/{gridsquare_uuid}", response_model=GridSquareResponse)
 def get_gridsquare(gridsquare_uuid: str, db: SqlAlchemySession = DB_DEPENDENCY):
     """Get a single grid square by ID"""
     gridsquare = db.query(GridSquare).filter(GridSquare.uuid == gridsquare_uuid).first()
@@ -812,7 +815,7 @@ def get_gridsquare(gridsquare_uuid: str, db: SqlAlchemySession = DB_DEPENDENCY):
     return gridsquare
 
 
-@app.put("/gridsquares/{gridsquare_uuid}", response_model=GridSquareResponse)
+@api_app.put("/gridsquares/{gridsquare_uuid}", response_model=GridSquareResponse)
 def update_gridsquare(gridsquare_uuid: str, gridsquare: GridSquareUpdateRequest, db: SqlAlchemySession = DB_DEPENDENCY):
     """Update a grid square"""
     db_gridsquare = db.query(GridSquare).filter(GridSquare.uuid == gridsquare_uuid).first()
@@ -870,7 +873,7 @@ def update_gridsquare(gridsquare_uuid: str, gridsquare: GridSquareUpdateRequest,
     return GridSquareResponse(**response_data)
 
 
-@app.delete("/gridsquares/{gridsquare_uuid}", status_code=status.HTTP_204_NO_CONTENT)
+@api_app.delete("/gridsquares/{gridsquare_uuid}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_gridsquare(gridsquare_uuid: str, db: SqlAlchemySession = DB_DEPENDENCY):
     """Delete a grid square by publishing to RabbitMQ"""
     db_gridsquare = db.query(GridSquare).filter(GridSquare.uuid == gridsquare_uuid).first()
@@ -884,13 +887,13 @@ def delete_gridsquare(gridsquare_uuid: str, db: SqlAlchemySession = DB_DEPENDENC
     return None
 
 
-@app.get("/grids/{grid_uuid}/gridsquares", response_model=list[GridSquareResponse])
+@api_app.get("/grids/{grid_uuid}/gridsquares", response_model=list[GridSquareResponse])
 def get_grid_gridsquares(grid_uuid: str, db: SqlAlchemySession = DB_DEPENDENCY):
     """Get all grid squares for a specific grid"""
     return db.query(GridSquare).filter(GridSquare.grid_uuid == grid_uuid).all()
 
 
-@app.post("/grids/{grid_uuid}/gridsquares", response_model=GridSquareResponse, status_code=status.HTTP_201_CREATED)
+@api_app.post("/grids/{grid_uuid}/gridsquares", response_model=GridSquareResponse, status_code=status.HTTP_201_CREATED)
 def create_grid_gridsquare(grid_uuid: str, gridsquare: GridSquareCreateRequest, db: SqlAlchemySession = DB_DEPENDENCY):
     """Create a new grid square for a specific grid"""
     gridsquare_data = {
@@ -930,7 +933,7 @@ def create_grid_gridsquare(grid_uuid: str, gridsquare: GridSquareCreateRequest, 
     return GridSquareResponse(**response_data)
 
 
-@app.post("/gridsquares/{gridsquare_uuid}/registered")
+@api_app.post("/gridsquares/{gridsquare_uuid}/registered")
 def gridsquare_registered(gridsquare_uuid: str, db: SqlAlchemySession = DB_DEPENDENCY) -> bool:
     """All holes on a grid square have been registered at square mag"""
     db_gridsquare = db.query(GridSquare).filter(GridSquare.uuid == gridsquare_uuid).first()
@@ -948,13 +951,13 @@ def gridsquare_registered(gridsquare_uuid: str, db: SqlAlchemySession = DB_DEPEN
 # ============ FoilHole CRUD Operations ============
 
 
-@app.get("/foilholes", response_model=list[FoilHoleResponse])
+@api_app.get("/foilholes", response_model=list[FoilHoleResponse])
 def get_foilholes(db: SqlAlchemySession = DB_DEPENDENCY):
     """Get all foil holes"""
     return db.query(FoilHole).all()
 
 
-@app.get("/foilholes/{foilhole_uuid}", response_model=FoilHoleResponse)
+@api_app.get("/foilholes/{foilhole_uuid}", response_model=FoilHoleResponse)
 def get_foilhole(foilhole_uuid: str, db: SqlAlchemySession = DB_DEPENDENCY):
     """Get a single foil hole by ID"""
     foilhole = db.query(FoilHole).filter(FoilHole.uuid == foilhole_uuid).first()
@@ -963,7 +966,7 @@ def get_foilhole(foilhole_uuid: str, db: SqlAlchemySession = DB_DEPENDENCY):
     return foilhole
 
 
-@app.put("/foilholes/{foilhole_uuid}", response_model=FoilHoleResponse)
+@api_app.put("/foilholes/{foilhole_uuid}", response_model=FoilHoleResponse)
 def update_foilhole(foilhole_uuid: str, foilhole: FoilHoleUpdateRequest, db: SqlAlchemySession = DB_DEPENDENCY):
     """Update a foil hole"""
     # TODO this isn't tested
@@ -1011,7 +1014,7 @@ def update_foilhole(foilhole_uuid: str, foilhole: FoilHoleUpdateRequest, db: Sql
     return FoilHoleResponse(**response_data)
 
 
-@app.delete("/foilholes/{foilhole_uuid}", status_code=status.HTTP_204_NO_CONTENT)
+@api_app.delete("/foilholes/{foilhole_uuid}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_foilhole(foilhole_uuid: str, db: SqlAlchemySession = DB_DEPENDENCY):
     """Delete a foil hole by publishing to RabbitMQ"""
     db_foilhole = db.query(FoilHole).filter(FoilHole.uuid == foilhole_uuid).first()
@@ -1025,7 +1028,7 @@ def delete_foilhole(foilhole_uuid: str, db: SqlAlchemySession = DB_DEPENDENCY):
     return None
 
 
-@app.get("/gridsquares/{gridsquare_uuid}/foilholes", response_model=list[FoilHoleResponse])
+@api_app.get("/gridsquares/{gridsquare_uuid}/foilholes", response_model=list[FoilHoleResponse])
 def get_gridsquare_foilholes(gridsquare_uuid: str, on_square_only: bool = False, db: SqlAlchemySession = DB_DEPENDENCY):
     """Get all foil holes for a specific grid square"""
     if on_square_only:
@@ -1040,7 +1043,7 @@ def get_gridsquare_foilholes(gridsquare_uuid: str, on_square_only: bool = False,
     return holes
 
 
-@app.post(
+@api_app.post(
     "/gridsquares/{gridsquare_uuid}/foilholes", response_model=FoilHoleResponse, status_code=status.HTTP_201_CREATED
 )
 def create_gridsquare_foilhole(
@@ -1079,13 +1082,13 @@ def create_gridsquare_foilhole(
 # ============ Micrograph CRUD Operations ============
 
 
-@app.get("/micrographs", response_model=list[MicrographResponse])
+@api_app.get("/micrographs", response_model=list[MicrographResponse])
 def get_micrographs(db: SqlAlchemySession = DB_DEPENDENCY):
     """Get all micrographs"""
     return db.query(Micrograph).all()
 
 
-@app.get("/micrographs/{micrograph_uuid}", response_model=MicrographResponse)
+@api_app.get("/micrographs/{micrograph_uuid}", response_model=MicrographResponse)
 def get_micrograph(micrograph_uuid: str, db: SqlAlchemySession = DB_DEPENDENCY):
     """Get a single micrograph by ID"""
     micrograph = db.query(Micrograph).filter(Micrograph.uuid == micrograph_uuid).first()
@@ -1094,7 +1097,7 @@ def get_micrograph(micrograph_uuid: str, db: SqlAlchemySession = DB_DEPENDENCY):
     return micrograph
 
 
-@app.put("/micrographs/{micrograph_uuid}", response_model=MicrographResponse)
+@api_app.put("/micrographs/{micrograph_uuid}", response_model=MicrographResponse)
 def update_micrograph(micrograph_uuid: str, micrograph: MicrographUpdateRequest, db: SqlAlchemySession = DB_DEPENDENCY):
     """Update a micrograph"""
     db_micrograph = db.query(Micrograph).filter(Micrograph.uuid == micrograph_uuid).first()
@@ -1148,7 +1151,7 @@ def update_micrograph(micrograph_uuid: str, micrograph: MicrographUpdateRequest,
     return MicrographResponse(**response_data)
 
 
-@app.delete("/micrographs/{micrograph_uuid}", status_code=status.HTTP_204_NO_CONTENT)
+@api_app.delete("/micrographs/{micrograph_uuid}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_micrograph(micrograph_uuid: str, db: SqlAlchemySession = DB_DEPENDENCY):
     """Delete a micrograph by publishing to RabbitMQ"""
     db_micrograph = db.query(Micrograph).filter(Micrograph.uuid == micrograph_uuid).first()
@@ -1162,13 +1165,13 @@ def delete_micrograph(micrograph_uuid: str, db: SqlAlchemySession = DB_DEPENDENC
     return None
 
 
-@app.get("/foilholes/{foilhole_uuid}/micrographs", response_model=list[MicrographResponse])
+@api_app.get("/foilholes/{foilhole_uuid}/micrographs", response_model=list[MicrographResponse])
 def get_foilhole_micrographs(foilhole_uuid: str, db: SqlAlchemySession = DB_DEPENDENCY):
     """Get all micrographs for a specific foil hole"""
     return db.query(Micrograph).filter(Micrograph.foilhole_uuid == foilhole_uuid).all()
 
 
-@app.post(
+@api_app.post(
     "/foilholes/{foilhole_uuid}/micrographs", response_model=MicrographResponse, status_code=status.HTTP_201_CREATED
 )
 def create_foilhole_micrograph(
@@ -1803,13 +1806,13 @@ if __name__ == "__main__":
 # ============ Quality Prediction Model CRUD Operations ============
 
 
-@app.get("/prediction_models", response_model=list[QualityPredictionModelResponse])
+@api_app.get("/prediction_models", response_model=list[QualityPredictionModelResponse])
 def get_prediction_models(db: SqlAlchemySession = DB_DEPENDENCY):
     """Get all prediction model"""
     return db.query(QualityPredictionModel).all()
 
 
-@app.get("/grid/{grid_uuid}/model_weights", response_model=dict[str, list[QualityPredictionModelWeight]])
+@api_app.get("/grid/{grid_uuid}/model_weights", response_model=dict[str, list[QualityPredictionModelWeight]])
 def get_model_weights_for_grid(grid_uuid: str, db: SqlAlchemySession = DB_DEPENDENCY):
     """Get time series of model weights for grid"""
     weights = (
@@ -1822,7 +1825,7 @@ def get_model_weights_for_grid(grid_uuid: str, db: SqlAlchemySession = DB_DEPEND
     return grouped_weights
 
 
-@app.get("/gridsquares/{gridsquare_uuid}/quality_predictions", response_model=dict[str, list[QualityPrediction]])
+@api_app.get("/gridsquares/{gridsquare_uuid}/quality_predictions", response_model=dict[str, list[QualityPrediction]])
 def get_gridsquare_quality_prediction_time_series(gridsquare_uuid: str, db: SqlAlchemySession = DB_DEPENDENCY):
     """Get time ordered predictions for all models that provide them for this square"""
     predictions = (
@@ -1835,7 +1838,7 @@ def get_gridsquare_quality_prediction_time_series(gridsquare_uuid: str, db: SqlA
     return grouped_predictions
 
 
-@app.get(
+@api_app.get(
     "/gridsquares/{gridsquare_uuid}/foilhole_quality_predictions",
     response_model=dict[str, dict[str, list[QualityPrediction]]],
 )
@@ -1859,7 +1862,7 @@ def get_foilhole_quality_prediction_time_series_for_gridsquare(
     return grouped_predictions
 
 
-@app.get(
+@api_app.get(
     "/prediction_model/{prediction_model_name}/grid/{grid_uuid}/prediction",
     response_model=list[QualityPredictionResponse],
 )
@@ -1877,7 +1880,7 @@ def get_prediction_for_grid(prediction_model_name: str, grid_uuid: str, db: SqlA
     return predictions
 
 
-@app.get(
+@api_app.get(
     "/prediction_model/{prediction_model_name}/gridsquare/{gridsquare_uuid}/prediction",
     response_model=list[QualityPredictionResponse],
 )
@@ -1897,7 +1900,7 @@ def get_prediction_for_gridsquare(
     return predictions
 
 
-@app.get(
+@api_app.get(
     "/prediction_model/{prediction_model_name}/grid/{grid_uuid}/latent_representation",
     response_model=list[LatentRepresentationResponse],
 )
@@ -1945,7 +1948,7 @@ def get_latent_rep(prediction_model_name: str, grid_uuid: str, db: SqlAlchemySes
     return [LatentRepresentationResponse(gridsquare_uuid=k, x=v.x, y=v.y, index=v.index) for k, v in rep.items() if v]
 
 
-@app.get(
+@api_app.get(
     "/prediction_model/{prediction_model_name}/gridsquare/{gridsquare_uuid}/latent_representation",
     response_model=list[LatentRepresentationResponse],
 )
@@ -1993,7 +1996,7 @@ def get_square_latent_rep(prediction_model_name: str, gridsquare_uuid: str, db: 
     return [LatentRepresentationResponse(foilhole_uuid=k, x=v.x, y=v.y, index=v.index) for k, v in rep.items() if v]
 
 
-@app.get("/grids/{grid_uuid}/atlas_image")
+@api_app.get("/grids/{grid_uuid}/atlas_image")
 def get_grid_atlas_image(
     grid_uuid: str,
     x: int | None = None,
@@ -2020,7 +2023,7 @@ def get_grid_atlas_image(
     return Response(im_bytes, media_type="image/png")
 
 
-@app.get("/gridsquares/{gridsquare_uuid}/gridsquare_image")
+@api_app.get("/gridsquares/{gridsquare_uuid}/gridsquare_image")
 def get_gridsquare_image(
     gridsquare_uuid: str,
     db: SqlAlchemySession = DB_DEPENDENCY,
@@ -2044,3 +2047,6 @@ def get_gridsquare_image(
         im.save(buf, format="PNG")
         im_bytes = buf.getvalue()
     return Response(im_bytes, media_type="image/png")
+
+
+app.mount("/api", api_app)
