@@ -934,7 +934,9 @@ def create_grid_gridsquare(grid_uuid: str, gridsquare: GridSquareCreateRequest, 
 
 
 @api_app.post("/gridsquares/{gridsquare_uuid}/registered")
-def gridsquare_registered(gridsquare_uuid: str, db: SqlAlchemySession = DB_DEPENDENCY) -> bool:
+def gridsquare_registered(
+    gridsquare_uuid: str, count: int | None = None, db: SqlAlchemySession = DB_DEPENDENCY
+) -> bool:
     """All holes on a grid square have been registered at square mag"""
     db_gridsquare = db.query(GridSquare).filter(GridSquare.uuid == gridsquare_uuid).first()
     if not db_gridsquare:
@@ -942,7 +944,7 @@ def gridsquare_registered(gridsquare_uuid: str, db: SqlAlchemySession = DB_DEPEN
     db_gridsquare.status = GridSquareStatus.REGISTERED
     db.add(db_gridsquare)
     db.commit()
-    success = publish_gridsquare_registered(gridsquare_uuid)
+    success = publish_gridsquare_registered(gridsquare_uuid, count=count)
     if not success:
         logger.error(f"Failed to publish grid square created event for UUID: {gridsquare_uuid}")
     return success
