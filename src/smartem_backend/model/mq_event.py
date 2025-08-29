@@ -243,6 +243,7 @@ class GridSquareRegisteredEvent(GridSquareEventBase):
 
     uuid: str
     grid_uuid: str | None = None
+    count: int | None = None
 
 
 # ============ Foil Hole Events ============
