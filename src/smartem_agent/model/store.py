@@ -399,7 +399,9 @@ class PersistentDataStore(InMemoryDataStore):
 
     def grid_registered(self, uuid: str):
         try:
-            self.api_client.grid_registered(uuid)
+            self.gridsquares[uuid].registered = True
+            num_square_registered = sum(s.registered for s in self.gridsquare.values())
+            self.api_client.grid_registered(uuid, count=num_square_registered)
         except Exception as e:
             logger.error(f"Error notifying of registration of grid UUID {uuid}: {e}")
 
