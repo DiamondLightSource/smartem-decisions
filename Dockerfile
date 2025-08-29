@@ -20,20 +20,25 @@ WORKDIR /app
 COPY . .
 # Install the package using pyproject.toml and setup.py
 # This will also handle copying _version.py files and .env.example → .env
-RUN pip install --no-cache-dir ".[backend]" && \
+RUN pip install --no-cache-dir ".[backend,images]" && \
     rm -rf .git
 
 # The runtime stage copies the built venv into a slim runtime container
 FROM python:${PYTHON_VERSION}-slim AS runtime
+# Build args for if you need the image to run as non-root
+ARG groupid=0
+ARG userid=0
+ARG groupname=root
 # Add apt-get system dependencies for runtime here if needed
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libpq5 \
     && rm -rf /var/lib/apt/lists/*
-COPY --from=build /venv/ /venv/
-COPY --from=build /app/ /app/
+RUN groupadd -r -g "${groupid}" "${groupname}" && useradd -r -M "${groupname}" -u "${userid}" -g "${groupname}"
+COPY --from=build --chown="${userid}:${groupname}" /venv/ /venv/
+COPY --from=build --chown="${userid}:${groupname}"/app/ /app/
 ENV PATH=/venv/bin:$PATH
 
-COPY entrypoint.sh /entrypoint.sh
+COPY --chown="${userid}:${groupname}"entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
 ENTRYPOINT ["/entrypoint.sh"]

@@ -69,6 +69,13 @@ backend = [
     "smartem-decisions[common,api,cli]",
 ]
 
+# Packages for cryoEM file I/O; used for image displays from API
+images = [
+    "pillow",
+    "mrcfile",
+    "tifffile",
+]
+
 # Agent component dependencies
 agent = [
     "smartem-decisions[common,api,cli]",
@@ -90,7 +97,7 @@ mock = [
 
 # Combined dependencies (for convenience)
 all = [
-    "smartem-decisions[dev,common,api,cli,backend,agent,fsrecorder,mock]",
+    "smartem-decisions[dev,common,api,cli,backend,agent,fsrecorder,mock,images]",
 ]
 
 [project.scripts]

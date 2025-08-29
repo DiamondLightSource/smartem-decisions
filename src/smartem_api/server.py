@@ -7,8 +7,8 @@ from datetime import datetime
 from pathlib import Path
 
 import mrcfile
+import tifffile
 from fastapi import Depends, FastAPI, HTTPException, Request, status
-from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
 from PIL import Image
 from pydantic import BaseModel
@@ -140,14 +140,6 @@ app = FastAPI(
     description="API for accessing and managing electron microscopy data",
     version=__version__,
     redoc_url=None,
-)
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
 )
 
 # Configure logging based on environment variable
@@ -1260,6 +1252,26 @@ def get_prediction_for_grid(prediction_model_name: str, grid_uuid: str, db: SqlA
 
 
 @app.get(
+    "/prediction_model/{prediction_model_name}/gridsquare/{gridsquare_uuid}/prediction",
+    response_model=list[QualityPredictionResponse],
+)
+def get_prediction_for_gridsquare(
+    prediction_model_name: str, gridsquare_uuid: str, db: SqlAlchemySession = DB_DEPENDENCY
+):
+    holes = db.query(FoilHole).filter(FoilHole.gridsquare_uuid == gridsquare_uuid).all()
+    predictions = [
+        db.query(QualityPrediction)
+        .filter(QualityPrediction.foilhole_uuid == fh.uuid)
+        .filter(QualityPrediction.prediction_model_name == prediction_model_name)
+        .order_by(QualityPrediction.timestamp.desc())
+        .all()
+        for fh in holes
+    ]
+    predictions = [p[0] for p in predictions if p]
+    return predictions
+
+
+@app.get(
     "/prediction_model/{prediction_model_name}/grid/{grid_uuid}/latent_representation",
     response_model=list[LatentRepresentationResponse],
 )
@@ -1391,12 +1403,17 @@ def get_gridsquare_image(
     gridsquare = db.query(GridSquare).filter(GridSquare.uuid == gridsquare_uuid).first()
     if not gridsquare:
         raise HTTPException(status_code=404, detail="Grid square not found")
+    if not gridsquare.image_path:
+        raise HTTPException(status_code=404, detail="Grid square image unknown")
     square_img_path = Path(gridsquare.image_path)
-    mrc = mrcfile.read(square_img_path)
-    mrc = mrc - mrc.min()
-    mrc = mrc * (255 / mrc.max())
-    mrc = mrc.astype("uint8")
-    im = Image.fromarray(mrc)
+    if square_img_path.suffix == ".mrc":
+        imdata = mrcfile.read(square_img_path)
+    else:
+        imdata = tifffile.imread(square_img_path)
+    imdata = imdata - imdata.min()
+    imdata = imdata * (255 / imdata.max())
+    imdata = imdata.astype("uint8")
+    im = Image.fromarray(imdata)
     with io.BytesIO() as buf:
         im.save(buf, format="PNG")
         im_bytes = buf.getvalue()
