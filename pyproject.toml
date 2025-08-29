@@ -103,11 +103,17 @@ all = [
 ]
 
 [project.scripts]
+# Agent tools and communication
 smartem_agent_tools = "smartem_agent.__main__:main"
+"smartem.agent-cleanup" = "smartem_backend.agent_data_cleanup:main"
+
+# ML model and prediction management
 "smartem.register-prediction-model" = "smartem_backend.cli.register_quality_prediction_model:run"
 "smartem.init-model-weight" = "smartem_backend.cli.initialise_prediction_model_weights:run"
 "smartem.random-model-predictions" = "smartem_backend.cli.random_model_predictions:run"
 "smartem.random-prior-updates" = "smartem_backend.cli.random_prior_updates:run"
+
+# Additional services
 "smartem-mcp" = "smartem_mcp.__main__:main"
 
 [project.urls]
