@@ -149,11 +149,12 @@ def publish_gridsquare_deleted(uuid):
     return rmq_publisher.publish_event(MessageQueueEventType.GRIDSQUARE_DELETED, event)
 
 
-def publish_gridsquare_registered(uuid: str):
+def publish_gridsquare_registered(uuid: str, count: int | None = None):
     """Publish grid square updated event to RabbitMQ"""
     event = GridSquareRegisteredEvent(
         event_type=MessageQueueEventType.GRIDSQUARE_REGISTERED,
         uuid=uuid,
+        count=count,
     )
     return rmq_publisher.publish_event(MessageQueueEventType.GRIDSQUARE_REGISTERED, event)
 
