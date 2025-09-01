@@ -35,10 +35,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 RUN groupadd -r -g "${groupid}" "${groupname}" && useradd -r -M "${groupname}" -u "${userid}" -g "${groupname}"
 COPY --from=build --chown="${userid}:${groupname}" /venv/ /venv/
-COPY --from=build --chown="${userid}:${groupname}"/app/ /app/
+COPY --from=build --chown="${userid}:${groupname}" /app/ /app/
 ENV PATH=/venv/bin:$PATH
 
-COPY --chown="${userid}:${groupname}"entrypoint.sh /entrypoint.sh
+COPY --chown="${userid}:${groupname}" entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
 ENTRYPOINT ["/entrypoint.sh"]
