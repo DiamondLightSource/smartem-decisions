@@ -419,9 +419,7 @@ class SmartEMAPIClient:
         response = self._request("post", f"acquisitions/{grid.acquisition_uuid}/grids", grid, GridResponse)
         return response
 
-    def grid_registered(self, grid_uuid: str, count: int | None = None) -> bool:
-        if count:
-            return self._request("post", f"grids/{grid_uuid}/registered?count={count}")
+    def grid_registered(self, grid_uuid: str) -> bool:
         return self._request("post", f"grids/{grid_uuid}/registered")
 
     # Atlas
@@ -525,8 +523,10 @@ class SmartEMAPIClient:
         response = self._request("post", f"grids/{gridsquare.grid_uuid}/gridsquares", gridsquare, GridSquareResponse)
         return response
 
-    def gridsquare_registered(self, gridsquare_uuid: str) -> bool:
-        return self._request("post", f"gridsquares/{gridsquare_uuid}/registered")
+    def gridsquare_registered(self, gridsquare_uuid: str, count: int | None = None) -> bool:
+        if count is None:
+            return self._request("post", f"gridsquares/{gridsquare_uuid}/registered")
+        return self._request("post", f"gridsquares/{gridsquare_uuid}/registered?count={count}")
 
     # FoilHoles
     def get_foilholes(self) -> list[FoilHoleResponse]:
