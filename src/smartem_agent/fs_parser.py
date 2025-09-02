@@ -982,9 +982,10 @@ class EpuParser:
                 gs_uuid_map[str(gsid)] = gridsquare.uuid
                 datastore.create_gridsquare(gridsquare, lowmag=True)
             for atlastile in grid.atlas_data.tiles:
+                pos_data_for_tile = []
                 for gsid, gs_tile_pos in atlastile.gridsquare_positions.items():
                     for pos in gs_tile_pos:
-                        datastore.link_atlastile_to_gridsquare(
+                        pos_data_for_tile.append(
                             AtlasTileGridSquarePositionData(
                                 gridsquare_uuid=gs_uuid_map[gsid],
                                 tile_uuid=atlastile.uuid,
@@ -992,6 +993,7 @@ class EpuParser:
                                 size=pos.size,
                             )
                         )
+                datastore.link_atlastile_to_gridsquares(pos_data_for_tile)
             datastore.grid_registered(grid.uuid)
 
         # 2. Parse all gridsquare metadata from /Metadata directory
@@ -1038,8 +1040,8 @@ class EpuParser:
             else:
                 datastore.create_gridsquare(gridsquare)
             logging.debug(f"Added gridsquare: {gridsquare_id} (uuid: {gridsquare.uuid})")
-            for fh_id, fh_position in gridsquare_metadata.foilhole_positions.items():
-                fh = FoilHoleData(
+            all_foilhole_data = [
+                FoilHoleData(
                     id=str(fh_id),
                     gridsquare_id=gridsquare_id,
                     gridsquare_uuid=gridsquare.uuid,
@@ -1050,7 +1052,9 @@ class EpuParser:
                     diameter=fh_position.diameter,
                     is_near_grid_bar=fh_position.is_near_grid_bar,
                 )
-                datastore.create_foilhole(fh)
+                for fh_id, fh_position in gridsquare_metadata.foilhole_positions.items()
+            ]
+            datastore.create_foilholes(gridsquare.uuid, all_foilhole_data)
             if len(gridsquare_metadata.foilhole_positions):
                 datastore.gridsquare_registered(gridsquare.uuid)
 
