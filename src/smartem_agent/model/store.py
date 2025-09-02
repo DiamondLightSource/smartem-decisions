@@ -171,6 +171,9 @@ class InMemoryDataStore:
     def link_atlastile_to_gridsquare(self, gridsquare_position: AtlasTileGridSquarePositionData):
         return None
 
+    def link_atlastile_to_gridsquares(self, gridsquare_positions: list[AtlasTileGridSquarePositionData]):
+        return None
+
     def create_gridsquare(self, gridsquare: GridSquareData, lowmag: bool = False):
         self.gridsquares[gridsquare.uuid] = gridsquare
         if gridsquare.grid_uuid not in self.grid_rels:
@@ -227,6 +230,14 @@ class InMemoryDataStore:
             self.gridsquare_rels[foilhole.gridsquare_uuid] = set()
         self.gridsquare_rels[foilhole.gridsquare_uuid].add(foilhole.uuid)
         self.foilhole_rels[foilhole.uuid] = set()
+
+    def create_foilholes(self, gridsquare_uuid: str, foilholes: list[FoilHoleData]):
+        for foilhole in foilholes:
+            self.foilholes[foilhole.uuid] = foilhole
+            if gridsquare_uuid not in self.gridsquare_rels:
+                self.gridsquare_rels[gridsquare_uuid] = set()
+            self.gridsquare_rels[gridsquare_uuid].add(foilhole.uuid)
+            self.foilhole_rels[foilhole.uuid] = set()
 
     def update_foilhole(self, foilhole: FoilHoleData):
         if foilhole.uuid in self.foilholes:
@@ -492,6 +503,22 @@ class PersistentDataStore(InMemoryDataStore):
                 f"grid square {gridsquare_position.gridsquare_uuid}: {e}"
             )
 
+    def link_atlastile_to_gridsquares(self, gridsquare_positions: list[AtlasTileGridSquarePositionData]):
+        try:
+            result = self.api_client.link_atlas_tile_and_gridsquares(gridsquare_positions)
+            if not result:
+                logger.error(
+                    f"API call to link atlas tile UUID {gridsquare_positions[0].tile_uuid} with gridsquares "
+                    f"failed, but grid was updated in local store"
+                )
+        except requests.HTTPError as e:
+            logger.error(
+                f"HTTP {e.response.status_code} error linking atlas tile {gridsquare_positions[0].tile_uuid} "
+                f"to grid squares: {e}"
+            )
+        except Exception as e:
+            logger.error(f"Error linking atlas tile {gridsquare_positions[0].tile_uuid} to " f"grid squares: {e}")
+
     def create_gridsquare(self, gridsquare: GridSquareData, lowmag: bool = False):
         try:
             super().create_gridsquare(gridsquare, lowmag=lowmag)
@@ -552,7 +579,7 @@ class PersistentDataStore(InMemoryDataStore):
     @retry_with_backoff()
     def _create_foilhole_with_retry(self, foilhole: FoilHoleData):
         """Create foilhole with retry logic for handling race conditions"""
-        return self.api_client.create_gridsquare_foilhole(foilhole)
+        return self.api_client.create_gridsquare_foilholes([foilhole])
 
     def update_foilhole(self, foilhole: FoilHoleData):
         try:
@@ -567,6 +594,26 @@ class PersistentDataStore(InMemoryDataStore):
                 logger.error(f"HTTP {e.response.status_code} error updating foilhole UUID {foilhole.uuid}: {e}")
         except Exception as e:
             logger.error(f"Error updating foilhole UUID {foilhole.uuid}: {e}")
+
+    def create_foilholes(self, gridsquare_uuid: str, foilholes: list[FoilHoleData]):
+        try:
+            super().create_foilholes(foilholes)
+            self._create_foilholes_with_retry(gridsquare_uuid, foilholes)
+        except requests.HTTPError as e:
+            if e.response.status_code == 404:
+                logger.error(
+                    f"Parent gridsquare {gridsquare_uuid} not found when creating foilholes. "
+                    f"This indicates a race condition or missing gridsquare."
+                )
+            else:
+                logger.error(f"HTTP {e.response.status_code} error creating foilholes: {e}")
+        except Exception as e:
+            logger.error(f"Unexpected error creating foilholes: {e}")
+
+    @retry_with_backoff()
+    def _create_foilholes_with_retry(self, gridsquare_uuid: str, foilholes: list[FoilHoleData]):
+        """Create foilhole with retry logic for handling race conditions"""
+        return self.api_client.create_gridsquare_foilholes(gridsquare_uuid, foilholes)
 
     def remove_foilhole(self, uuid: str):
         try:
