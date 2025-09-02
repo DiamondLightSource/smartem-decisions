@@ -797,6 +797,40 @@ def link_atlas_tile_to_gridsquare(
     return AtlasTileGridSquarePositionResponse(**response_data)
 
 
+@api_app.post(
+    "/atlas-tiles/{tile_uuid}/gridsquares",
+    response_model=list[AtlasTileGridSquarePositionResponse],
+    status_code=status.HTTP_201_CREATED,
+)
+def link_atlas_tile_to_gridsquares(
+    tile_uuid: str,
+    gridsquare_positions: list[GridSquarePositionRequest],
+    db: SqlAlchemySession = DB_DEPENDENCY,
+):
+    """Connect mutliple grid squares to a tile with its position information"""
+    response_data = []
+    for gridsquare_position in gridsquare_positions:
+        position_data = gridsquare_position.model_dump()
+        position_data["atlastile_uuid"] = tile_uuid
+        position_data["gridsquare_uuid"] = gridsquare_position.gridsquare_uuid
+
+        tile_square_link = AtlasTileGridSquarePosition(**position_data)
+        db.add(tile_square_link)
+        response_data.append(
+            {
+                "atlastile_uuid": tile_square_link.atlastile_uuid,
+                "gridsquare_uuid": tile_square_link.gridsquare_uuid,
+                "center_x": tile_square_link.center_x,
+                "center_y": tile_square_link.center_y,
+                "size_width": tile_square_link.size_width,
+                "size_height": tile_square_link.size_height,
+            }
+        )
+    db.commit()
+
+    return [AtlasTileGridSquarePositionResponse(**rd) for rd in response_data]
+
+
 # ============ GridSquare CRUD Operations ============
 
 
@@ -1046,39 +1080,47 @@ def get_gridsquare_foilholes(gridsquare_uuid: str, on_square_only: bool = False,
 
 
 @api_app.post(
-    "/gridsquares/{gridsquare_uuid}/foilholes", response_model=FoilHoleResponse, status_code=status.HTTP_201_CREATED
+    "/gridsquares/{gridsquare_uuid}/foilholes",
+    response_model=list[FoilHoleResponse],
+    status_code=status.HTTP_201_CREATED,
 )
 def create_gridsquare_foilhole(
-    gridsquare_uuid: str, foilhole: FoilHoleCreateRequest, db: SqlAlchemySession = DB_DEPENDENCY
+    gridsquare_uuid: str, foilholes: list[FoilHoleCreateRequest], db: SqlAlchemySession = DB_DEPENDENCY
 ):
     """Create a new foil hole for a specific grid square"""
-    foilhole_data = {"gridsquare_uuid": gridsquare_uuid, "status": FoilHoleStatus.NONE, **foilhole.model_dump()}
-
-    db_foilhole = FoilHole(**foilhole_data)
-    db.add(db_foilhole)
+    added_holes = []
+    response = []
+    for foilhole in foilholes:
+        foilhole_data = {"gridsquare_uuid": gridsquare_uuid, "status": FoilHoleStatus.NONE, **foilhole.model_dump()}
+        db_foilhole = FoilHole(**foilhole_data)
+        db.add(db_foilhole)
+        added_holes.append(db_foilhole)
     db.commit()
-    db.refresh(db_foilhole)
+    for foilhole in added_holes:
+        db.refresh(foilhole)
 
-    success = publish_foilhole_created(
-        uuid=db_foilhole.uuid,
-        foilhole_id=db_foilhole.foilhole_id,
-        gridsquare_uuid=db_foilhole.gridsquare_uuid,
-        gridsquare_id=db_foilhole.gridsquare_id,
-    )
-    if not success:
-        logger.error(f"Failed to publish foilhole created event for UUID: {db_foilhole.uuid}")
+        success = publish_foilhole_created(
+            uuid=foilhole.uuid,
+            foilhole_id=foilhole.foilhole_id,
+            gridsquare_uuid=foilhole.gridsquare_uuid,
+            gridsquare_id=foilhole.gridsquare_id,
+        )
+        if not success:
+            logger.error(f"Failed to publish foilhole created event for UUID: {foilhole.uuid}")
 
-    response_data = {
-        "gridsquare_uuid": gridsquare_uuid,
-        "status": FoilHoleStatus.NONE.value,
-        **foilhole.model_dump(),
-    }
+        data = {
+            "gridsquare_uuid": gridsquare_uuid,
+            "status": FoilHoleStatus.NONE.value,
+            **foilhole.model_dump(),
+        }
 
-    # Make sure status is set correctly (the above might get overridden by model_dump)
-    if "status" not in response_data or response_data["status"] is None:
-        response_data["status"] = FoilHoleStatus.NONE.value
+        # Make sure status is set correctly (the above might get overridden by model_dump)
+        if "status" not in data or data["status"] is None:
+            data["status"] = FoilHoleStatus.NONE.value
 
-    return FoilHoleResponse(**response_data)
+        response.append(FoilHoleResponse(**data))
+
+    return response
 
 
 # ============ Micrograph CRUD Operations ============

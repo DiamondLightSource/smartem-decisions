@@ -141,6 +141,7 @@ class GridSquarePositionRequest(BaseModel):
     center_y: int
     size_width: int
     size_height: int
+    gridsquare_uuid: str | None = None
 
 
 # GridSquare models
