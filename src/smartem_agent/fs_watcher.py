@@ -2,6 +2,7 @@ import logging
 import os
 import re
 import sys
+import threading
 import time
 from collections.abc import Callable
 from datetime import datetime
@@ -12,6 +13,7 @@ from watchdog.events import FileSystemEventHandler
 
 from smartem_agent.fs_parser import EpuParser
 from smartem_agent.model.store import InMemoryDataStore, PersistentDataStore
+from smartem_backend.api_client import SSEAgentClient
 from smartem_common.schemas import (
     AtlasTileGridSquarePositionData,
     FoilHoleData,
@@ -93,6 +95,9 @@ class RateLimitedFilesystemEventHandler(FileSystemEventHandler):
         log_interval: float = 10.0,
         patterns: list[str] | None = None,
         path_mapper: Callable[[Path], Path] = lambda p: p,
+        agent_id: str | None = None,
+        session_id: str | None = None,
+        sse_timeout: int = 30,
     ):
         self.last_log_time = time.time()
         self.log_interval = log_interval
@@ -121,6 +126,151 @@ class RateLimitedFilesystemEventHandler(FileSystemEventHandler):
             "Instantiated new datastore, "
             + ("in-memory only" if dry_run else f"data will be permanently saved to backend: {api_url}")
         )
+
+        # Initialize SSE client if agent_id and session_id are provided
+        self.sse_client = None
+        self.sse_thread = None
+        self._sse_shutdown_event = threading.Event()
+        if agent_id and session_id and api_url and not dry_run:
+            self.sse_client = SSEAgentClient(
+                base_url=api_url, agent_id=agent_id, session_id=session_id, timeout=sse_timeout
+            )
+            self._start_sse_stream()
+
+    def _start_sse_stream(self):
+        """Start SSE streaming in a background thread"""
+        if self.sse_client:
+            logging.info(
+                f"Starting SSE stream for agent {self.sse_client.agent_id}, session {self.sse_client.session_id}"
+            )
+            # Use non-daemon thread for better shutdown control
+            self.sse_thread = threading.Thread(target=self._run_sse_stream, daemon=False)
+            self.sse_thread.start()
+
+    def _run_sse_stream(self):
+        """Run the SSE stream in background thread with reconnection logic"""
+        retry_count = 0
+        max_retries = 5
+        retry_delay = 10  # seconds
+
+        while not self._sse_shutdown_event.is_set() and retry_count < max_retries:
+            try:
+                logging.info(f"SSE stream attempt {retry_count + 1}/{max_retries}")
+                self.sse_client.stream_instructions(
+                    instruction_callback=self._handle_sse_instruction,
+                    connection_callback=self._handle_sse_connection,
+                    error_callback=self._handle_sse_error,
+                )
+                # If we get here, connection closed normally
+                break
+            except Exception as e:
+                retry_count += 1
+                logging.error(f"SSE stream error (attempt {retry_count}/{max_retries}): {e}")
+
+                if retry_count < max_retries and not self._sse_shutdown_event.is_set():
+                    logging.info(f"Retrying SSE connection in {retry_delay} seconds...")
+                    if self._sse_shutdown_event.wait(retry_delay):
+                        break  # Shutdown requested during wait
+
+        if retry_count >= max_retries:
+            logging.error("SSE stream failed after maximum retry attempts")
+        else:
+            logging.info("SSE stream stopped")
+
+    def _handle_sse_instruction(self, instruction_data: dict):
+        """Handle incoming SSE instruction messages"""
+        instruction_id = instruction_data.get("instruction_id")
+        instruction_type = instruction_data.get("instruction_type")
+        payload = instruction_data.get("payload", {})
+
+        print("\n📨 SSE INSTRUCTION RECEIVED:")
+        print(f"   ID: {instruction_id}")
+        print(f"   Type: {instruction_type}")
+        print(f"   Payload: {payload}")
+        print(f"   Timestamp: {instruction_data.get('created_at')}")
+
+        # Log to standard logging as well
+        logging.info(f"SSE Instruction - ID: {instruction_id}, Type: {instruction_type}, Payload: {payload}")
+
+        # Process the instruction based on type
+        try:
+            result = self._process_instruction(instruction_type, payload)
+
+            # Acknowledge successful processing
+            self.sse_client.acknowledge_instruction(
+                instruction_id=instruction_id, status="processed", result=result or "Instruction processed successfully"
+            )
+            logging.info(f"Processed and acknowledged instruction {instruction_id}")
+
+        except Exception as e:
+            logging.error(f"Failed to process instruction {instruction_id}: {e}")
+            # Acknowledge failure
+            try:
+                self.sse_client.acknowledge_instruction(
+                    instruction_id=instruction_id, status="failed", error_message=str(e)
+                )
+            except Exception as ack_error:
+                logging.error(f"Failed to acknowledge instruction failure {instruction_id}: {ack_error}")
+
+    def _process_instruction(self, instruction_type: str, payload: dict) -> str:
+        """Process different types of instructions
+
+        This method can be extended to handle various instruction types.
+        For now, it provides basic logging and status reporting functionality.
+        """
+        if instruction_type == "agent.status.request":
+            # Return current agent status
+            return f"Agent watching {self.watch_dir}, {len(self.changed_files)} files in queue"
+
+        elif instruction_type == "agent.config.update":
+            # Handle configuration updates (example)
+            if "log_interval" in payload:
+                old_interval = self.log_interval
+                self.log_interval = float(payload["log_interval"])
+                return f"Log interval updated from {old_interval} to {self.log_interval}"
+
+        elif instruction_type == "agent.info.datastore":
+            # Return datastore information
+            grid_count = len(self.datastore.grids) if self.datastore else 0
+            return f"Datastore contains {grid_count} grids"
+
+        else:
+            # Log unknown instruction types but don't fail
+            logging.warning(f"Unknown instruction type: {instruction_type}")
+            return f"Logged unknown instruction type: {instruction_type}"
+
+    def _handle_sse_connection(self, connection_data: dict):
+        """Handle SSE connection events"""
+        agent_id = connection_data.get("agent_id")
+        session_id = connection_data.get("session_id")
+        connection_id = connection_data.get("connection_id")
+
+        print("\n🔗 SSE CONNECTION ESTABLISHED:")
+        print(f"   Agent ID: {agent_id}")
+        print(f"   Session ID: {session_id}")
+        print(f"   Connection ID: {connection_id}")
+        print("   Listening for instructions...")
+
+        logging.info(f"SSE Connected - Agent: {agent_id}, Session: {session_id}, Connection: {connection_id}")
+
+    def _handle_sse_error(self, error: Exception):
+        """Handle SSE errors"""
+        print(f"\n❌ SSE ERROR: {error}")
+        logging.error(f"SSE Error: {error}")
+
+    def stop_sse_stream(self):
+        """Stop the SSE stream"""
+        # Signal shutdown to prevent reconnection attempts
+        self._sse_shutdown_event.set()
+
+        if self.sse_client:
+            self.sse_client.stop()
+
+        if self.sse_thread and self.sse_thread.is_alive():
+            logging.info("Waiting for SSE thread to stop...")
+            self.sse_thread.join(timeout=10)  # Increased timeout for graceful shutdown
+            if self.sse_thread.is_alive():
+                logging.warning("SSE thread did not stop within timeout period")
 
     def _instruments_match(self, inst1: MicroscopeData, inst2: MicroscopeData) -> bool:
         """Check if two instrument records are equivalent."""

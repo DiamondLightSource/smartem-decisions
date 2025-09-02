@@ -161,6 +161,9 @@ def watch_directory(
     api_url: str = "http://127.0.0.1:8000",
     log_file: str = "fs_changes.log",
     log_interval: float = 10.0,
+    agent_id: str = typer.Option(None, "--agent-id", help="Agent ID for SSE connection"),
+    session_id: str = typer.Option(None, "--session-id", help="Session ID for SSE connection"),
+    sse_timeout: int = typer.Option(30, "--sse-timeout", help="SSE connection timeout in seconds"),
     verbose: int = typer.Option(
         0, "-v", "--verbose", count=True, help="Increase verbosity (-v for INFO, -vv for DEBUG)"
     ),
@@ -205,7 +208,16 @@ def watch_directory(
         f"Starting to watch directory: {str(path)} (including subdirectories) for patterns: {DEFAULT_PATTERNS}"
     )
 
-    handler = RateLimitedFilesystemEventHandler(path, dry_run, api_url, log_interval, DEFAULT_PATTERNS)
+    handler = RateLimitedFilesystemEventHandler(
+        watch_dir=path,
+        dry_run=dry_run,
+        api_url=api_url,
+        log_interval=log_interval,
+        patterns=DEFAULT_PATTERNS,
+        agent_id=agent_id,
+        session_id=session_id,
+        sse_timeout=sse_timeout,
+    )
 
     logging.info("Parsing existing directory contents...")
     # TODO settle a potential race condition between parser and watcher if one exists:
@@ -218,6 +230,9 @@ def watch_directory(
     def handle_exit(signum, frame):
         nonlocal handler
         logging.info(handler.datastore)
+
+        # Stop SSE stream if active
+        handler.stop_sse_stream()
 
         observer.stop()
         logging.info("Watching stopped")
