@@ -1094,7 +1094,7 @@ def create_gridsquare_foilhole(
         foilhole_data = {"gridsquare_uuid": gridsquare_uuid, "status": FoilHoleStatus.NONE, **foilhole.model_dump()}
         db_foilhole = FoilHole(**foilhole_data)
         db.add(db_foilhole)
-        added_holes.append(db_foilhole)
+        added_holes.append(FoilHole(**foilhole_data))
     db.commit()
     for foilhole in added_holes:
         db.refresh(foilhole)
@@ -1997,10 +1997,18 @@ def get_latent_rep(prediction_model_name: str, grid_uuid: str, db: SqlAlchemySes
     response_model=list[LatentRepresentationResponse],
 )
 def get_square_latent_rep(prediction_model_name: str, gridsquare_uuid: str, db: SqlAlchemySession = DB_DEPENDENCY):
+    square_and_holes = (
+        db.query(GridSquare, FoilHole)
+        .filter(GridSquare.uuid == gridsquare_uuid)
+        .filter(FoilHole.gridsquare_uuid == GridSquare.uuid)
+        .all()
+    )
+    grid_uuid = square_and_holes[0][0].grid_uuid
+    hole_uuids = [p[1].uuid for p in square_and_holes]
     model_parameters = (
         db.query(QualityPredictionModelParameter)
         .filter(QualityPredictionModelParameter.prediction_model_name == prediction_model_name)
-        .filter(QualityPredictionModelParameter.gridsquare_uuid == gridsquare_uuid)
+        .filter(QualityPredictionModelParameter.grid_uuid == grid_uuid)
         .filter(QualityPredictionModelParameter.group.like("coordinates:%"))
         .order_by(QualityPredictionModelParameter.timestamp.desc())
         .all()
@@ -2008,8 +2016,9 @@ def get_square_latent_rep(prediction_model_name: str, gridsquare_uuid: str, db: 
     cluster_indices = (
         db.query(QualityPredictionModelParameter)
         .filter(QualityPredictionModelParameter.prediction_model_name == prediction_model_name)
-        .filter(QualityPredictionModelParameter.gridsquare_uuid == gridsquare_uuid)
+        .filter(QualityPredictionModelParameter.grid_uuid == grid_uuid)
         .filter(QualityPredictionModelParameter.group == "cluster_indices")
+        .filter(QualityPredictionModelParameter.key.in_(hole_uuids))
         .order_by(QualityPredictionModelParameter.timestamp.desc())
         .all()
     )
@@ -2022,7 +2031,11 @@ def get_square_latent_rep(prediction_model_name: str, gridsquare_uuid: str, db: 
         def complete(self):
             return all(a is not None for a in (self.x, self.y, self.index))
 
-    rep = {p.uuid: LatentRep() for p in db.query(FoilHole).filter(FoilHole.gridsquare_uuid == gridsquare_uuid).all()}
+    rep = {
+        p.uuid: LatentRep()
+        for p in db.query(FoilHole).filter(FoilHole.gridsquare_uuid == gridsquare_uuid).all()
+        if not p.is_near_grid_bar
+    }
     for p in cluster_indices + model_parameters:
         if p.group == "cluster_indices":
             hole_uuid = p.key
@@ -2031,8 +2044,10 @@ def get_square_latent_rep(prediction_model_name: str, gridsquare_uuid: str, db: 
             continue
         else:
             hole_uuid = p.group.replace("coordinates:", "")
+        if hole_uuid not in rep.keys():
+            continue
         if rep.get(hole_uuid, LatentRep()).complete():
-            break
+            continue
         if p.key == "x":
             rep[hole_uuid].x = p.value
         else:

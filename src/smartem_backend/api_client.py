@@ -212,6 +212,7 @@ class EntityConverter:
             center_y=entity.position[1],
             size_width=entity.size[0],
             size_height=entity.size[1],
+            gridsquare_uuid=entity.gridsquare_uuid,
         )
 
 
@@ -500,6 +501,8 @@ class SmartEMAPIClient:
         self, gridsquare_positions: list[AtlasTileGridSquarePositionData]
     ) -> list[AtlasTileGridSquarePositionResponse]:
         """Link multiple grid squares to a tile"""
+        if not gridsquare_positions:
+            return []
         assert len({pos.tile_uuid for pos in gridsquare_positions}) == 1
         tile_uuid = gridsquare_positions[0].tile_uuid
         gridsquare_positions = [EntityConverter.gridsquare_position_to_request(pos) for pos in gridsquare_positions]
@@ -568,10 +571,14 @@ class SmartEMAPIClient:
         return self._request("get", f"gridsquares/{gridsquare_uuid}/foilholes", response_cls=FoilHoleResponse)
 
     def create_gridsquare_foilholes(
-        self, gridsquare_uuid: str, foilholes: list[FoilHoleData]
+        self, gridsquare_uuid: str, foilholes: list[FoilHoleData], allow_on_grid_bar: bool = False
     ) -> list[FoilHoleResponse]:
         """Create a new foil hole for a specific grid square"""
-        foilholes = [EntityConverter.foilhole_to_request(fh) for fh in foilholes]
+        foilholes = [
+            EntityConverter.foilhole_to_request(fh)
+            for fh in foilholes
+            if (not fh.is_near_grid_bar or allow_on_grid_bar)
+        ]
         # this currently assumes all foil holes are on the same square
         response = self._request("post", f"gridsquares/{gridsquare_uuid}/foilholes", foilholes, FoilHoleResponse)
         return response
