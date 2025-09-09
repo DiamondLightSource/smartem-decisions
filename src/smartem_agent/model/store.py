@@ -505,6 +505,8 @@ class PersistentDataStore(InMemoryDataStore):
 
     def link_atlastile_to_gridsquares(self, gridsquare_positions: list[AtlasTileGridSquarePositionData]):
         try:
+            if not gridsquare_positions:
+                return None
             result = self.api_client.link_atlas_tile_and_gridsquares(gridsquare_positions)
             if not result:
                 logger.error(
@@ -596,8 +598,10 @@ class PersistentDataStore(InMemoryDataStore):
             logger.error(f"Error updating foilhole UUID {foilhole.uuid}: {e}")
 
     def create_foilholes(self, gridsquare_uuid: str, foilholes: list[FoilHoleData]):
+        if not foilholes:
+            return None
         try:
-            super().create_foilholes(foilholes)
+            super().create_foilholes(gridsquare_uuid, foilholes)
             self._create_foilholes_with_retry(gridsquare_uuid, foilholes)
         except requests.HTTPError as e:
             if e.response.status_code == 404:
