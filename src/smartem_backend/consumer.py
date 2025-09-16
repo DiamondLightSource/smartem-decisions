@@ -7,6 +7,7 @@ import signal
 import sys
 import time
 from collections.abc import Callable
+from datetime import datetime
 from typing import Any
 
 import pika
@@ -21,11 +22,19 @@ from smartem_backend.cli.random_model_predictions import (
 )
 from smartem_backend.cli.random_prior_updates import simulate_processing_pipeline_async
 from smartem_backend.log_manager import LogConfig, LogManager
-from smartem_backend.model.database import QualityPrediction, QualityPredictionModelParameter
+from smartem_backend.model.database import (
+    AgentInstruction,
+    AgentSession,
+    QualityPrediction,
+    QualityPredictionModelParameter,
+)
 from smartem_backend.model.mq_event import (
     AcquisitionCreatedEvent,
     AcquisitionDeletedEvent,
     AcquisitionUpdatedEvent,
+    AgentInstructionCreatedEvent,
+    AgentInstructionExpiredEvent,
+    AgentInstructionUpdatedEvent,
     AtlasCreatedEvent,
     AtlasDeletedEvent,
     AtlasUpdatedEvent,
@@ -615,6 +624,122 @@ def handle_model_parameter_update(event_data: dict[str, Any]) -> None:
         logger.error(f"Error processing model parameter update event: {e}")
 
 
+# ============ Agent Communication Events ============
+
+
+def handle_agent_instruction_created(event_data: dict[str, Any]) -> None:
+    """
+    Handle agent instruction created event by persisting the instruction to the database
+
+    Args:
+        event_data: Event data for agent instruction created
+    """
+    try:
+        event = AgentInstructionCreatedEvent(**event_data)
+        logger.info(f"Agent instruction created event: {event.model_dump()}")
+
+        # Persist instruction to database
+        with Session(db_engine) as session:
+            # Verify the session exists
+            session_obj = session.query(AgentSession).filter(AgentSession.session_id == event.session_id).first()
+            if not session_obj:
+                logger.warning(f"Session {event.session_id} not found for instruction {event.instruction_id}")
+                return
+
+            instruction = AgentInstruction(
+                instruction_id=event.instruction_id,
+                session_id=event.session_id,
+                agent_id=event.agent_id,
+                instruction_type=event.instruction_type,
+                payload=event.payload,
+                sequence_number=event.sequence_number,
+                priority=event.priority,
+                status="pending",
+                created_at=datetime.now(),
+                expires_at=event.expires_at,
+                instruction_metadata=event.instruction_metadata or {},
+            )
+            session.add(instruction)
+            session.commit()
+
+        logger.info(f"Successfully persisted instruction {event.instruction_id} to database")
+
+    except ValidationError as e:
+        logger.error(f"Validation error processing agent instruction created event: {e}")
+    except Exception as e:
+        logger.error(f"Error processing agent instruction created event: {e}")
+
+
+def handle_agent_instruction_updated(event_data: dict[str, Any]) -> None:
+    """
+    Handle agent instruction updated event by updating the instruction status
+
+    Args:
+        event_data: Event data for agent instruction updated
+    """
+    try:
+        event = AgentInstructionUpdatedEvent(**event_data)
+        logger.info(f"Agent instruction updated event: {event.model_dump()}")
+
+        # Update instruction status in database
+        with Session(db_engine) as session:
+            instruction = (
+                session.query(AgentInstruction).filter(AgentInstruction.instruction_id == event.instruction_id).first()
+            )
+            if instruction:
+                instruction.status = event.status
+                if event.acknowledged_at:
+                    instruction.acknowledged_at = event.acknowledged_at
+                session.commit()
+                logger.info(f"Updated instruction {event.instruction_id} status to {event.status}")
+            else:
+                logger.warning(f"Instruction {event.instruction_id} not found for status update")
+
+    except ValidationError as e:
+        logger.error(f"Validation error processing agent instruction updated event: {e}")
+    except Exception as e:
+        logger.error(f"Error processing agent instruction updated event: {e}")
+
+
+def handle_agent_instruction_expired(event_data: dict[str, Any]) -> None:
+    """
+    Handle agent instruction expired event by updating retry logic and status
+
+    Args:
+        event_data: Event data for agent instruction expired
+    """
+    try:
+        event = AgentInstructionExpiredEvent(**event_data)
+        logger.info(f"Agent instruction expired event: {event.model_dump()}")
+
+        # Update instruction status in database
+        with Session(db_engine) as session:
+            instruction = (
+                session.query(AgentInstruction).filter(AgentInstruction.instruction_id == event.instruction_id).first()
+            )
+            if instruction:
+                if event.retry_count >= instruction.max_retries:
+                    # Mark as failed after max retries
+                    instruction.status = "expired"
+                    logger.info(
+                        f"Instruction {event.instruction_id} marked as expired after {event.retry_count} retries"
+                    )
+                else:
+                    # Reset to pending for retry
+                    instruction.status = "pending"
+                    instruction.retry_count = event.retry_count
+                    logger.info(f"Instruction {event.instruction_id} reset for retry ({event.retry_count})")
+
+                session.commit()
+            else:
+                logger.warning(f"Instruction {event.instruction_id} not found for expiry handling")
+
+    except ValidationError as e:
+        logger.error(f"Validation error processing agent instruction expired event: {e}")
+    except Exception as e:
+        logger.error(f"Error processing agent instruction expired event: {e}")
+
+
 # Create a mapping from event types to their handler functions
 def get_event_handlers() -> dict[str, Callable]:
     """
@@ -648,7 +773,9 @@ def get_event_handlers() -> dict[str, Callable]:
         MessageQueueEventType.GRIDSQUARE_MODEL_PREDICTION.value: handle_gridsquare_model_prediction,
         MessageQueueEventType.FOILHOLE_MODEL_PREDICTION.value: handle_foilhole_model_prediction,
         MessageQueueEventType.MODEL_PARAMETER_UPDATE.value: handle_model_parameter_update,
-        # TODO: Add handlers for all other event types as needed
+        MessageQueueEventType.AGENT_INSTRUCTION_CREATED.value: handle_agent_instruction_created,
+        MessageQueueEventType.AGENT_INSTRUCTION_UPDATED.value: handle_agent_instruction_updated,
+        MessageQueueEventType.AGENT_INSTRUCTION_EXPIRED.value: handle_agent_instruction_expired,
     }
 
 
