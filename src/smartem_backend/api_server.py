@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session as SqlAlchemySession
 from sqlalchemy.orm import sessionmaker
 from sse_starlette.sse import EventSourceResponse
 
+from smartem_backend.agent_connection_manager import get_connection_manager
 from smartem_backend.model.database import (
     Acquisition,
     AgentConnection,
@@ -137,6 +138,32 @@ app = FastAPI(
     version=__version__,
     redoc_url=None,
 )
+
+# Get connection manager instance
+connection_manager = get_connection_manager()
+
+
+@app.on_event("startup")
+async def startup_event():
+    """Start background services on application startup."""
+    logger.info("Starting SmartEM Backend services...")
+    try:
+        await connection_manager.start()
+        logger.info("Connection manager started successfully")
+    except Exception as e:
+        logger.error(f"Failed to start connection manager: {e}")
+
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    """Stop background services on application shutdown."""
+    logger.info("Stopping SmartEM Backend services...")
+    try:
+        await connection_manager.stop()
+        logger.info("Connection manager stopped successfully")
+    except Exception as e:
+        logger.error(f"Failed to stop connection manager: {e}")
+
 
 # Configure logging based on environment variable
 # SMARTEM_LOG_LEVEL can be: ERROR (default), INFO, DEBUG
@@ -1441,6 +1468,64 @@ async def acknowledge_instruction(
         raise HTTPException(status_code=500, detail="Internal server error") from None
 
 
+@app.post("/agent/{agent_id}/session/{session_id}/heartbeat")
+async def agent_heartbeat(agent_id: str, session_id: str, db: SqlAlchemySession = DB_DEPENDENCY):
+    """
+    Agent heartbeat endpoint to update connection health status.
+
+    Args:
+        agent_id: The agent identifier
+        session_id: The session identifier
+        db: Database session
+
+    Returns:
+        Heartbeat response with status and timestamp
+    """
+    try:
+        # Find active connection for this agent and session
+        connection = (
+            db.query(AgentConnection)
+            .filter(
+                and_(
+                    AgentConnection.agent_id == agent_id,
+                    AgentConnection.session_id == session_id,
+                    AgentConnection.status == "active",
+                )
+            )
+            .first()
+        )
+
+        if not connection:
+            raise HTTPException(status_code=404, detail="No active connection found for agent and session")
+
+        # Update heartbeat timestamp
+        now = datetime.now()
+        connection.last_heartbeat_at = now
+        db.commit()
+
+        # Also update session activity
+        session = db.query(AgentSession).filter(AgentSession.session_id == session_id).first()
+        if session:
+            session.last_activity_at = now
+            db.commit()
+
+        logger.info(f"Heartbeat received from agent {agent_id} session {session_id}")
+
+        return {
+            "status": "success",
+            "agent_id": agent_id,
+            "session_id": session_id,
+            "heartbeat_timestamp": now.isoformat(),
+            "connection_id": connection.connection_id,
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Heartbeat processing error for agent {agent_id}: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error") from None
+
+
 # Debug endpoints for development
 @app.get("/debug/agent-connections")
 async def get_active_connections(db: SqlAlchemySession = DB_DEPENDENCY):
@@ -1558,6 +1643,49 @@ async def get_active_sessions(db: SqlAlchemySession = DB_DEPENDENCY):
         )
 
     return {"active_sessions": sessions_data, "total_count": len(sessions_data)}
+
+
+@app.get("/debug/connection-stats")
+async def get_connection_stats():
+    """Get real-time connection and session statistics"""
+    return connection_manager.get_connection_stats()
+
+
+@app.post("/debug/sessions/create-managed")
+async def create_managed_session(session_data: dict):
+    """Create a session using the connection manager"""
+    try:
+        session_id = connection_manager.create_session(
+            agent_id=session_data.get("agent_id", "test-agent"),
+            acquisition_uuid=session_data.get("acquisition_uuid"),
+            name=session_data.get("name"),
+            description=session_data.get("description"),
+            experimental_parameters=session_data.get("experimental_parameters", {}),
+        )
+
+        return {
+            "session_id": session_id,
+            "status": "created",
+            "created_via": "connection_manager",
+            "timestamp": datetime.now().isoformat(),
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to create session: {str(e)}") from e
+
+
+@app.delete("/debug/sessions/{session_id}/close")
+async def close_managed_session(session_id: str):
+    """Close a session using the connection manager"""
+    success = connection_manager.close_session(session_id)
+    if success:
+        return {
+            "session_id": session_id,
+            "status": "closed",
+            "closed_via": "connection_manager",
+            "timestamp": datetime.now().isoformat(),
+        }
+    else:
+        raise HTTPException(status_code=500, detail="Failed to close session")
 
 
 @app.post("/debug/session/{session_id}/create-instruction")
