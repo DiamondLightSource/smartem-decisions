@@ -291,6 +291,7 @@ class AgentInstructionAcknowledgement(BaseModel):
     status: Literal["received", "processed", "failed", "declined"]
     result: str | None = None
     error_message: str | None = None
+    processing_time_ms: int | None = None
     processed_at: datetime | None = None
 
     model_config = ConfigDict(

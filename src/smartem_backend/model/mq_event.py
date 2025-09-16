@@ -70,6 +70,11 @@ class MessageQueueEventType(str, Enum):
     FOILHOLE_MODEL_PREDICTION = "foilhole.model_prediction"
     MODEL_PARAMETER_UPDATE = "gridsquare.model_parameter_update"
 
+    # Agent communication events
+    AGENT_INSTRUCTION_CREATED = "agent.instruction.created"
+    AGENT_INSTRUCTION_UPDATED = "agent.instruction.updated"
+    AGENT_INSTRUCTION_EXPIRED = "agent.instruction.expired"
+
 
 class GenericEventMessageBody(BaseModel):
     event_type: MessageQueueEventType
@@ -419,3 +424,43 @@ class ModelParameterUpdateEvent(GenericEventMessageBody):
     key: str
     value: float
     group: str = ""
+
+
+# ============ Agent Communication Events ============
+
+
+class AgentInstructionCreatedEvent(GenericEventMessageBody):
+    """Event emitted when an agent instruction is created"""
+
+    event_type: MessageQueueEventType = MessageQueueEventType.AGENT_INSTRUCTION_CREATED
+    instruction_id: str
+    session_id: str
+    agent_id: str
+    instruction_type: str
+    payload: dict
+    sequence_number: int | None = None
+    priority: str = "normal"
+    expires_at: datetime | None = None
+    instruction_metadata: dict | None = None
+
+
+class AgentInstructionUpdatedEvent(GenericEventMessageBody):
+    """Event emitted when an agent instruction is updated"""
+
+    event_type: MessageQueueEventType = MessageQueueEventType.AGENT_INSTRUCTION_UPDATED
+    instruction_id: str
+    session_id: str
+    agent_id: str
+    status: str
+    acknowledged_at: datetime | None = None
+
+
+class AgentInstructionExpiredEvent(GenericEventMessageBody):
+    """Event emitted when an agent instruction expires"""
+
+    event_type: MessageQueueEventType = MessageQueueEventType.AGENT_INSTRUCTION_EXPIRED
+    instruction_id: str
+    session_id: str
+    agent_id: str
+    expires_at: datetime
+    retry_count: int

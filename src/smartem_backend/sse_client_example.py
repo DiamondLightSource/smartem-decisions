@@ -13,6 +13,7 @@ Prerequisites:
 import logging
 import signal
 import sys
+import time
 from datetime import datetime
 
 from smartem_backend.api_client import SSEAgentClient
@@ -30,37 +31,69 @@ def handle_instruction(instruction_data: dict):
     print(f"   Payload: {payload}")
     print(f"   Timestamp: {instruction_data.get('created_at')}")
 
-    # Simulate processing the instruction
-    if instruction_type == "microscope.control.move_stage":
-        stage_position = payload.get("stage_position", {})
-        speed = payload.get("speed", "normal")
+    # Measure processing time
+    start_time = time.time()
 
-        x, y, z = stage_position.get("x"), stage_position.get("y"), stage_position.get("z")
-        print(f"   🎯 Moving stage to position: x={x}, y={y}, z={z}")
-        print(f"   ⚡ Speed: {speed}")
+    try:
+        # Simulate processing the instruction
+        if instruction_type == "microscope.control.move_stage":
+            stage_position = payload.get("stage_position", {})
+            speed = payload.get("speed", "normal")
 
-        # Simulate successful processing
-        try:
-            # Here you would integrate with actual microscope control
-            # For demo, we'll just acknowledge success
+            x, y, z = stage_position.get("x"), stage_position.get("y"), stage_position.get("z")
+            print(f"   🎯 Moving stage to position: x={x}, y={y}, z={z}")
+            print(f"   ⚡ Speed: {speed}")
+
+            # Simulate processing time
+            time.sleep(0.5)  # Simulate 500ms processing time
+
+            # Calculate processing time
+            processing_time_ms = int((time.time() - start_time) * 1000)
+
+            # Acknowledge successful processing
             client.acknowledge_instruction(
-                instruction_id=instruction_id, status="processed", result=f"Stage moved to {stage_position}"
+                instruction_id=instruction_id,
+                status="processed",
+                result=f"Stage moved to {stage_position}",
+                processing_time_ms=processing_time_ms,
             )
-            print(f"   ✅ Instruction {instruction_id} completed successfully")
+            print(f"   ✅ Instruction {instruction_id} completed successfully in {processing_time_ms}ms")
 
-        except Exception as e:
-            # Acknowledge failure if processing fails
-            client.acknowledge_instruction(instruction_id=instruction_id, status="failed", error_message=str(e))
-            print(f"   ❌ Instruction {instruction_id} failed: {e}")
+        elif instruction_type == "microscope.control.take_image":
+            image_params = payload.get("image_params", {})
+            print(f"   📸 Taking image with parameters: {image_params}")
 
-    else:
-        # Unknown instruction type
+            # Simulate image acquisition
+            time.sleep(1.0)  # Simulate 1s image acquisition
+
+            processing_time_ms = int((time.time() - start_time) * 1000)
+
+            client.acknowledge_instruction(
+                instruction_id=instruction_id,
+                status="processed",
+                result=f"Image acquired with params {image_params}",
+                processing_time_ms=processing_time_ms,
+            )
+            print(f"   ✅ Image acquired in {processing_time_ms}ms")
+
+        else:
+            # Unknown instruction type
+            processing_time_ms = int((time.time() - start_time) * 1000)
+            client.acknowledge_instruction(
+                instruction_id=instruction_id,
+                status="declined",
+                error_message=f"Unknown instruction type: {instruction_type}",
+                processing_time_ms=processing_time_ms,
+            )
+            print("   ⚠️  Unknown instruction type, declined")
+
+    except Exception as e:
+        # Acknowledge failure if processing fails
+        processing_time_ms = int((time.time() - start_time) * 1000)
         client.acknowledge_instruction(
-            instruction_id=instruction_id,
-            status="declined",
-            error_message=f"Unknown instruction type: {instruction_type}",
+            instruction_id=instruction_id, status="failed", error_message=str(e), processing_time_ms=processing_time_ms
         )
-        print("   ⚠️  Unknown instruction type, declined")
+        print(f"   ❌ Instruction {instruction_id} failed: {e}")
 
 
 def handle_connection(connection_data: dict):
@@ -106,8 +139,16 @@ if __name__ == "__main__":
     signal.signal(signal.SIGINT, signal_handler)
     signal.signal(signal.SIGTERM, signal_handler)
 
-    # Create SSE client
-    client = SSEAgentClient(base_url=BASE_URL, agent_id=AGENT_ID, session_id=SESSION_ID, timeout=60)
+    # Create SSE client with enhanced configuration
+    client = SSEAgentClient(
+        base_url=BASE_URL,
+        agent_id=AGENT_ID,
+        session_id=SESSION_ID,
+        timeout=60,
+        max_retries=10,
+        initial_retry_delay=1.0,
+        max_retry_delay=30.0,
+    )
 
     try:
         # Option 1: Synchronous (blocking) mode
@@ -115,6 +156,12 @@ if __name__ == "__main__":
         client.stream_instructions(
             instruction_callback=handle_instruction, connection_callback=handle_connection, error_callback=handle_error
         )
+
+        # Show final statistics
+        print("\n📊 Final Statistics:")
+        stats = client.get_stats()
+        for key, value in stats.items():
+            print(f"   {key}: {value}")
 
     except KeyboardInterrupt:
         print("\n🛑 Interrupted by user")

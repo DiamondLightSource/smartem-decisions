@@ -164,6 +164,9 @@ def watch_directory(
     agent_id: str = typer.Option(None, "--agent-id", help="Agent ID for SSE connection"),
     session_id: str = typer.Option(None, "--session-id", help="Session ID for SSE connection"),
     sse_timeout: int = typer.Option(30, "--sse-timeout", help="SSE connection timeout in seconds"),
+    heartbeat_interval: int = typer.Option(
+        60, "--heartbeat-interval", help="Agent heartbeat interval in seconds (0 to disable)"
+    ),
     verbose: int = typer.Option(
         0, "-v", "--verbose", count=True, help="Increase verbosity (-v for INFO, -vv for DEBUG)"
     ),
@@ -217,6 +220,7 @@ def watch_directory(
         agent_id=agent_id,
         session_id=session_id,
         sse_timeout=sse_timeout,
+        heartbeat_interval=heartbeat_interval,
     )
 
     logging.info("Parsing existing directory contents...")

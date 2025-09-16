@@ -1,6 +1,8 @@
 import asyncio
 import json
 import logging
+import random
+import time
 import traceback
 from collections.abc import Callable
 from datetime import datetime
@@ -612,7 +614,16 @@ class SSEAgentClient:
     This is separate from the main ApiClient as it handles long-lived connections.
     """
 
-    def __init__(self, base_url: str, agent_id: str, session_id: str, timeout: int = 30):
+    def __init__(
+        self,
+        base_url: str,
+        agent_id: str,
+        session_id: str,
+        timeout: int = 30,
+        max_retries: int = 10,
+        initial_retry_delay: float = 1.0,
+        max_retry_delay: float = 60.0,
+    ):
         """
         Initialize SSE client for agent communication
 
@@ -621,13 +632,29 @@ class SSEAgentClient:
             agent_id: Unique identifier for this agent/microscope
             session_id: Current microscopy session ID
             timeout: Connection timeout in seconds
+            max_retries: Maximum number of reconnection attempts
+            initial_retry_delay: Initial delay between retries in seconds
+            max_retry_delay: Maximum delay between retries in seconds
         """
         self.base_url = base_url.rstrip("/")
         self.agent_id = agent_id
         self.session_id = session_id
         self.timeout = timeout
+        self.max_retries = max_retries
+        self.initial_retry_delay = initial_retry_delay
+        self.max_retry_delay = max_retry_delay
         self.logger = logging.getLogger(f"SSEAgentClient-{agent_id}")
         self._is_running = False
+        self._connection_id: str | None = None
+        self._stats = {
+            "total_connections": 0,
+            "successful_connections": 0,
+            "failed_connections": 0,
+            "instructions_received": 0,
+            "instructions_acknowledged": 0,
+            "last_connection_time": None,
+            "last_instruction_time": None,
+        }
 
     def stream_instructions(
         self,
@@ -647,12 +674,16 @@ class SSEAgentClient:
 
         self.logger.info(f"Starting SSE stream for agent {self.agent_id}, session {self.session_id}")
         self._is_running = True
+        self._stats["total_connections"] += 1
 
         try:
             response = requests.get(
                 stream_url, headers={"Accept": "text/event-stream"}, stream=True, timeout=self.timeout
             )
             response.raise_for_status()
+
+            self._stats["successful_connections"] += 1
+            self._stats["last_connection_time"] = datetime.now().isoformat()
 
             client = sseclient.SSEClient(response)
 
@@ -665,7 +696,8 @@ class SSEAgentClient:
                     event_type = data.get("type")
 
                     if event_type == "connection":
-                        self.logger.info(f"Connected with connection_id: {data.get('connection_id')}")
+                        self._connection_id = data.get("connection_id")
+                        self.logger.info(f"Connected with connection_id: {self._connection_id}")
                         if connection_callback:
                             connection_callback(data)
 
@@ -673,10 +705,20 @@ class SSEAgentClient:
                         self.logger.debug(f"Heartbeat received at {data.get('timestamp')}")
 
                     elif event_type == "instruction":
+                        self._stats["instructions_received"] += 1
+                        self._stats["last_instruction_time"] = datetime.now().isoformat()
                         self.logger.info(
                             f"Instruction received: {data.get('instruction_id')} - {data.get('instruction_type')}"
                         )
                         instruction_callback(data)
+
+                    elif event_type == "error":
+                        error_msg = data.get("message", "Unknown error")
+                        error = ConnectionError(f"Server error: {error_msg}")
+                        self.logger.error(f"Server error received: {error_msg}")
+                        if error_callback:
+                            error_callback(error)
+                        break
 
                     else:
                         self.logger.warning(f"Unknown event type: {event_type}")
@@ -691,10 +733,12 @@ class SSEAgentClient:
                         error_callback(e)
 
         except requests.exceptions.RequestException as e:
+            self._stats["failed_connections"] += 1
             self.logger.error(f"SSE connection error: {e}")
             if error_callback:
                 error_callback(e)
         except Exception as e:
+            self._stats["failed_connections"] += 1
             self.logger.error(f"Unexpected SSE error: {e}")
             if error_callback:
                 error_callback(e)
@@ -702,83 +746,207 @@ class SSEAgentClient:
             self._is_running = False
             self.logger.info("SSE stream ended")
 
+    def _calculate_backoff_delay(self, retry_count: int) -> float:
+        """Calculate exponential backoff delay with jitter."""
+        delay = min(self.initial_retry_delay * (2**retry_count), self.max_retry_delay)
+        # Add jitter (±25% of delay)
+        jitter = delay * 0.25 * (2 * random.random() - 1)
+        return max(0.1, delay + jitter)
+
     async def stream_instructions_async(
         self,
         instruction_callback: Callable[[dict], None],
         connection_callback: Callable[[dict], None] | None = None,
         error_callback: Callable[[Exception], None] | None = None,
-        retry_interval: int = 5,
-        max_retries: int = 3,
+        auto_retry: bool = True,
     ) -> None:
         """
-        Start streaming instructions via SSE (async with auto-retry)
+        Start streaming instructions via SSE (async with auto-retry and exponential backoff)
 
         Args:
             instruction_callback: Called when an instruction is received
             connection_callback: Called when connection events occur (optional)
             error_callback: Called when errors occur (optional)
-            retry_interval: Seconds to wait between reconnection attempts
-            max_retries: Maximum number of reconnection attempts
+            auto_retry: Whether to automatically retry on connection failures
         """
         retry_count = 0
+        last_error: Exception | None = None
 
-        while retry_count < max_retries and self._is_running:
+        # Ensure we're running
+        self._is_running = True
+
+        while retry_count <= self.max_retries and self._is_running:
             try:
+                self.logger.info(f"Starting SSE connection (attempt {retry_count + 1}/{self.max_retries + 1})")
+
                 # Run the synchronous streaming in a thread pool
                 await asyncio.get_event_loop().run_in_executor(
                     None, self.stream_instructions, instruction_callback, connection_callback, error_callback
                 )
-                break  # Successful connection, exit retry loop
+
+                # If we get here, the connection ended gracefully (user stopped it)
+                if not self._is_running:
+                    self.logger.info("Connection stopped by user")
+                    break
+
+                # If auto_retry is disabled, exit after one attempt
+                if not auto_retry:
+                    break
 
             except Exception as e:
+                last_error = e
                 retry_count += 1
-                self.logger.error(f"SSE connection failed (attempt {retry_count}/{max_retries}): {e}")
 
-                if retry_count < max_retries:
-                    self.logger.info(f"Retrying in {retry_interval} seconds...")
-                    await asyncio.sleep(retry_interval)
+                self.logger.error(f"SSE connection failed (attempt {retry_count}/{self.max_retries + 1}): {e}")
+
+                if retry_count <= self.max_retries and auto_retry and self._is_running:
+                    delay = self._calculate_backoff_delay(retry_count - 1)
+                    self.logger.info(f"Retrying in {delay:.2f} seconds...")
+                    await asyncio.sleep(delay)
                 else:
-                    self.logger.error("Max retries reached, giving up")
-                    if error_callback:
-                        error_callback(e)
+                    self.logger.error("Max retries reached or auto_retry disabled, giving up")
+                    if error_callback and last_error:
+                        error_callback(last_error)
+                    break
 
     def acknowledge_instruction(
-        self, instruction_id: str, status: str, result: str | None = None, error_message: str | None = None
+        self,
+        instruction_id: str,
+        status: str,
+        result: str | None = None,
+        error_message: str | None = None,
+        processing_time_ms: int | None = None,
+        retry_count: int = 3,
     ) -> AgentInstructionAcknowledgementResponse:
         """
-        Acknowledge an instruction
+        Acknowledge an instruction with retry logic
 
         Args:
             instruction_id: ID of the instruction to acknowledge
             status: Status of acknowledgement ('received', 'processed', 'failed', 'declined')
             result: Optional result message
             error_message: Optional error message if status is 'failed'
+            processing_time_ms: Time taken to process the instruction in milliseconds
+            retry_count: Number of retry attempts for acknowledgement
         """
         acknowledgement = AgentInstructionAcknowledgement(
-            status=status, result=result, error_message=error_message, processed_at=datetime.now()
+            status=status,
+            result=result,
+            error_message=error_message,
+            processing_time_ms=processing_time_ms,
+            processed_at=datetime.now(),
         )
 
         ack_url = f"{self.base_url}/agent/{self.agent_id}/session/{self.session_id}/instructions/{instruction_id}/ack"
 
-        try:
-            response = requests.post(
-                ack_url,
-                json=acknowledgement.model_dump(),
-                headers={"Content-Type": "application/json"},
-                timeout=self.timeout,
-            )
-            response.raise_for_status()
+        last_error = None
+        for attempt in range(retry_count):
+            try:
+                response = requests.post(
+                    ack_url,
+                    json=acknowledgement.model_dump(),
+                    headers={"Content-Type": "application/json"},
+                    timeout=self.timeout,
+                )
+                response.raise_for_status()
 
-            ack_response = AgentInstructionAcknowledgementResponse(**response.json())
-            self.logger.info(f"Successfully acknowledged instruction {instruction_id} with status {status}")
-            return ack_response
+                ack_response = AgentInstructionAcknowledgementResponse(**response.json())
+                self._stats["instructions_acknowledged"] += 1
+                self.logger.info(f"Successfully acknowledged instruction {instruction_id} with status {status}")
+                return ack_response
 
-        except requests.exceptions.RequestException as e:
-            self.logger.error(f"Failed to acknowledge instruction {instruction_id}: {e}")
-            raise
-        except Exception as e:
-            self.logger.error(f"Unexpected error acknowledging instruction {instruction_id}: {e}")
-            raise
+            except requests.exceptions.RequestException as e:
+                last_error = e
+                if attempt < retry_count - 1:
+                    delay = self._calculate_backoff_delay(attempt)
+                    self.logger.warning(
+                        f"Failed to acknowledge instruction {instruction_id} (attempt {attempt + 1}), "
+                        f"retrying in {delay:.2f}s: {e}"
+                    )
+                    time.sleep(delay)
+                else:
+                    self.logger.error(
+                        f"Failed to acknowledge instruction {instruction_id} after {retry_count} attempts: {e}"
+                    )
+
+            except Exception as e:
+                last_error = e
+                self.logger.error(f"Unexpected error acknowledging instruction {instruction_id}: {e}")
+                break
+
+        # If we get here, all retries failed
+        raise last_error if last_error else Exception("Unknown acknowledgement error")
+
+    def get_stats(self) -> dict:
+        """Get client connection and performance statistics."""
+        return {
+            **self._stats,
+            "agent_id": self.agent_id,
+            "session_id": self.session_id,
+            "connection_id": self._connection_id,
+            "is_running": self._is_running,
+            "max_retries": self.max_retries,
+            "success_rate": (self._stats["successful_connections"] / max(self._stats["total_connections"], 1)) * 100,
+        }
+
+    def reset_stats(self) -> None:
+        """Reset client statistics."""
+        self._stats = {
+            "total_connections": 0,
+            "successful_connections": 0,
+            "failed_connections": 0,
+            "instructions_received": 0,
+            "instructions_acknowledged": 0,
+            "last_connection_time": None,
+            "last_instruction_time": None,
+        }
+
+    def is_connected(self) -> bool:
+        """Check if the client is currently connected and streaming."""
+        return self._is_running and self._connection_id is not None
+
+    def send_heartbeat(self, retry_count: int = 3) -> bool:
+        """
+        Send a heartbeat to the backend to update connection health status
+
+        Args:
+            retry_count: Number of retry attempts for heartbeat
+
+        Returns:
+            bool: True if heartbeat was sent successfully, False otherwise
+        """
+        heartbeat_url = f"{self.base_url}/agent/{self.agent_id}/session/{self.session_id}/heartbeat"
+
+        for attempt in range(retry_count):
+            try:
+                response = requests.post(
+                    heartbeat_url,
+                    headers={"Content-Type": "application/json"},
+                    timeout=self.timeout,
+                )
+                response.raise_for_status()
+
+                heartbeat_response = response.json()
+                self.logger.debug(
+                    f"Heartbeat sent successfully: {heartbeat_response.get('heartbeat_timestamp', 'unknown')}"
+                )
+                return True
+
+            except requests.exceptions.RequestException as e:
+                if attempt < retry_count - 1:
+                    delay = self._calculate_backoff_delay(attempt)
+                    self.logger.warning(
+                        f"Failed to send heartbeat (attempt {attempt + 1}), retrying in {delay:.2f}s: {e}"
+                    )
+                    time.sleep(delay)
+                else:
+                    self.logger.error(f"Failed to send heartbeat after {retry_count} attempts: {e}")
+
+            except Exception as e:
+                self.logger.error(f"Unexpected error sending heartbeat: {e}")
+                break
+
+        return False
 
     def stop(self):
         """Stop the SSE stream"""

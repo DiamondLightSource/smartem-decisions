@@ -98,6 +98,7 @@ class RateLimitedFilesystemEventHandler(FileSystemEventHandler):
         agent_id: str | None = None,
         session_id: str | None = None,
         sse_timeout: int = 30,
+        heartbeat_interval: int = 60,
     ):
         self.last_log_time = time.time()
         self.log_interval = log_interval
@@ -130,12 +131,16 @@ class RateLimitedFilesystemEventHandler(FileSystemEventHandler):
         # Initialize SSE client if agent_id and session_id are provided
         self.sse_client = None
         self.sse_thread = None
+        self.heartbeat_thread = None
+        self.heartbeat_interval = heartbeat_interval
         self._sse_shutdown_event = threading.Event()
+        self._heartbeat_shutdown_event = threading.Event()
         if agent_id and session_id and api_url and not dry_run:
             self.sse_client = SSEAgentClient(
                 base_url=api_url, agent_id=agent_id, session_id=session_id, timeout=sse_timeout
             )
             self._start_sse_stream()
+            self._start_heartbeat_timer()
 
     def _start_sse_stream(self):
         """Start SSE streaming in a background thread"""
@@ -176,6 +181,37 @@ class RateLimitedFilesystemEventHandler(FileSystemEventHandler):
             logging.error("SSE stream failed after maximum retry attempts")
         else:
             logging.info("SSE stream stopped")
+
+    def _start_heartbeat_timer(self):
+        """Start heartbeat timer in a background thread"""
+        if self.sse_client and self.heartbeat_interval > 0:
+            logging.info(f"Starting heartbeat timer with interval {self.heartbeat_interval} seconds")
+            self.heartbeat_thread = threading.Thread(target=self._run_heartbeat_loop, daemon=False)
+            self.heartbeat_thread.start()
+
+    def _run_heartbeat_loop(self):
+        """Run the heartbeat loop in background thread"""
+        while not self._heartbeat_shutdown_event.is_set():
+            try:
+                # Wait for heartbeat interval or shutdown signal
+                if self._heartbeat_shutdown_event.wait(self.heartbeat_interval):
+                    break  # Shutdown requested
+
+                # Send heartbeat if SSE client is available and connected
+                if self.sse_client and self.sse_client.is_connected():
+                    success = self.sse_client.send_heartbeat()
+                    if success:
+                        logging.debug("Heartbeat sent successfully")
+                    else:
+                        logging.warning("Failed to send heartbeat")
+                else:
+                    logging.debug("Skipping heartbeat - SSE client not connected")
+
+            except Exception as e:
+                logging.error(f"Error in heartbeat loop: {e}")
+                # Continue the loop even if heartbeat fails
+
+        logging.info("Heartbeat loop stopped")
 
     def _handle_sse_instruction(self, instruction_data: dict):
         """Handle incoming SSE instruction messages"""
@@ -259,9 +295,10 @@ class RateLimitedFilesystemEventHandler(FileSystemEventHandler):
         logging.error(f"SSE Error: {error}")
 
     def stop_sse_stream(self):
-        """Stop the SSE stream"""
+        """Stop the SSE stream and heartbeat timer"""
         # Signal shutdown to prevent reconnection attempts
         self._sse_shutdown_event.set()
+        self._heartbeat_shutdown_event.set()
 
         if self.sse_client:
             self.sse_client.stop()
@@ -271,6 +308,12 @@ class RateLimitedFilesystemEventHandler(FileSystemEventHandler):
             self.sse_thread.join(timeout=10)  # Increased timeout for graceful shutdown
             if self.sse_thread.is_alive():
                 logging.warning("SSE thread did not stop within timeout period")
+
+        if self.heartbeat_thread and self.heartbeat_thread.is_alive():
+            logging.info("Waiting for heartbeat thread to stop...")
+            self.heartbeat_thread.join(timeout=5)
+            if self.heartbeat_thread.is_alive():
+                logging.warning("Heartbeat thread did not stop within timeout period")
 
     def _instruments_match(self, inst1: MicroscopeData, inst2: MicroscopeData) -> bool:
         """Check if two instrument records are equivalent."""
