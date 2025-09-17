@@ -15,11 +15,10 @@ spec:
       labels:
         app: smartem-worker
     spec:
-      imagePullSecrets:
-      - name: ghcr-secret
       containers:
       - name: smartem-worker
-        image: ghcr.io/diamondlightsource/smartem-backend:latest
+        image: smartem-decisions:latest
+        imagePullPolicy: Never
         env:
         - name: ROLE
           value: "worker"
