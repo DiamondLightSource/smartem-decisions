@@ -208,7 +208,7 @@ def check_for_new_migrations(db_url: str) -> bool:
 
 def main() -> None:
     """Main function to check for schema drift."""
-    print("🔍 Checking for database schema drift...")
+    print("   Checking for database schema drift...")
     print()
 
     # Ensure we're in the project root
@@ -220,16 +220,16 @@ def main() -> None:
 
     try:
         # Run existing migrations
-        print("🔄 Applying existing migrations...")
+        print("Applying existing migrations...")
         run_existing_migrations(db_url)
 
         # Check for drift
-        print("🔍 Checking for schema drift...")
+        print("   Checking for schema drift...")
         has_drift = check_for_new_migrations(db_url)
 
         if has_drift:
             print()
-            print("❌ SCHEMA DRIFT DETECTED!")
+            print("SCHEMA DRIFT DETECTED!")
             print()
             print("Your SQLModel definitions have changed but migrations haven't been updated.")
             print("This means the database schema is out of sync with your model definitions.")
@@ -242,7 +242,7 @@ def main() -> None:
             print()
             sys.exit(1)
         else:
-            print("✅ No schema drift detected - database schema is in sync!")
+            print("No schema drift detected - database schema is in sync!")
             print()
 
     finally:

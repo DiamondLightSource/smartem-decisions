@@ -34,7 +34,7 @@ def run_command(cmd, description):
         if result.stderr:
             print("STDERR:", result.stderr)
     except subprocess.CalledProcessError as e:
-        print(f"❌ Command failed: {e}")
+        print(f"   Command failed: {e}")
         print(f"STDOUT: {e.stdout}")
         print(f"STDERR: {e.stderr}")
 
@@ -56,7 +56,7 @@ def create_sample_recording():
     time.sleep(2)
 
     # Simulate file operations with delays
-    print("✏️  Creating files...")
+    print("      Creating files...")
     (test_dir / "file1.txt").write_text("Initial content")
     time.sleep(3)  # 3 second delay
 
@@ -70,7 +70,7 @@ def create_sample_recording():
     (test_dir / "subdir" / "nested.txt").write_text("Nested file content")
     time.sleep(4)  # 4 second delay
 
-    print("🔄 Modifying file...")
+    print("   Modifying file...")
     (test_dir / "file1.txt").write_text("Completely new content")
     time.sleep(1)  # 1 second delay
 
@@ -78,7 +78,7 @@ def create_sample_recording():
     recording_proc.terminate()
     recording_proc.wait()
 
-    print("✅ Recording completed!")
+    print("   Recording completed!")
     return "demo_recording.tar.gz"
 
 
@@ -130,7 +130,7 @@ def demo_playback_modes(recording_file):
 
     # 5. Exact timing (for comparison)
     print(f"\n{'=' * 50}")
-    print("⏱️  Exact Mode Replay (Original Timing)")
+    print("      Exact Mode Replay (Original Timing)")
     print("Note: This would take ~10 seconds with original delays")
     print("Skipping for demo, but you can run:")
     print(f"python fsrecorder.py replay {recording_file} target_exact --exact")

@@ -41,14 +41,14 @@ def use_original_athena_spec():
             with open(dest, "w") as f:
                 json.dump(original_spec, f, indent=2)
 
-            print(f"✅ Athena API spec (from original) saved to {dest}")
+            print(f"   Athena API spec (from original) saved to {dest}")
             return True
         else:
-            print(f"❌ Original Athena swagger file not found at {source}")
+            print(f"   Original Athena swagger file not found at {source}")
             return False
 
     except Exception as e:
-        print(f"❌ Error processing original Athena spec: {e}")
+        print(f"   Error processing original Athena spec: {e}")
         return False
 
 
@@ -86,11 +86,11 @@ def generate_smartem_from_implementation():
         with open(docs_path, "w") as f:
             json.dump(openapi_spec, f, indent=2)
 
-        print(f"✅ SmartEM API spec (from implementation) saved to {docs_path}")
+        print(f"   SmartEM API spec (from implementation) saved to {docs_path}")
         return True
 
     except Exception as e:
-        print(f"❌ Error generating SmartEM spec: {e}")
+        print(f"   Error generating SmartEM spec: {e}")
         print("Full error traceback:")
         import traceback
 
@@ -111,10 +111,10 @@ def ensure_api_docs_in_build():
                 if api_dest.exists():
                     shutil.rmtree(api_dest)
                 shutil.copytree(api_source, api_dest)
-                print(f"✅ API docs copied to build directory: {api_dest}")
+                print(f"   API docs copied to build directory: {api_dest}")
                 return True
     except Exception as e:
-        print(f"⚠️  Could not copy API docs to build directory: {e}")
+        print(f"      Could not copy API docs to build directory: {e}")
     return False
 
 
@@ -137,4 +137,4 @@ if __name__ == "__main__":
         print("  • Athena API: Uses external spec as source of truth")
         print("  • SmartEM API: Generated from implementation")
     else:
-        print("⚠️  Some API documentation generation failed. Check errors above.")
+        print("      Some API documentation generation failed. Check errors above.")

@@ -13,7 +13,7 @@ The SmartEM Decisions platform operates in a distributed environment where backe
 whilst agent services execute on Windows workstations directly connected to scientific equipment.
 The communication system bridges this divide whilst meeting high-throughput requirements.
 
-**Implementation Status**: ✅ **COMPLETED** - This POC implementation provides a production-ready backend-to-agent
+**Implementation Status**: **COMPLETED** - This POC implementation provides a production-ready backend-to-agent
 communication system with full SSE streaming, RabbitMQ integration, database persistence, and comprehensive
 connection management.
 
@@ -375,7 +375,7 @@ class SSERetryManager:
 
 This POC implementation provides a complete working system with the following implemented components:
 
-### ✅ Completed Features
+### Completed Features
 
 #### 1. Database Schema & Migration (Alembic)
 - **AgentSession**: Session management for agent connections

@@ -42,16 +42,16 @@ jobs:
       if: github.event_name != 'schedule'
       run: |
         if [ ! -f .secrets.baseline ]; then
-          echo "❌ .secrets.baseline not found!"
+          echo "   .secrets.baseline not found!"
           echo "This likely means the pre-commit setup is incomplete."
           exit 1
         fi
-        echo "✅ Found .secrets.baseline"
+        echo "   Found .secrets.baseline"
     
     - name: Run detect-secrets scan (CI mode)
       if: github.event_name != 'schedule'
       run: |
-        echo "🔍 Scanning for secrets..."
+        echo "   Scanning for secrets..."
         detect-secrets scan \
           --baseline .secrets.baseline \
           --exclude-files '^docs/assets/' \
@@ -68,13 +68,13 @@ jobs:
         
         # Check if baseline contains any unaudited secrets (null values)
         if grep -q '"is_secret": null' .secrets.baseline; then
-          echo "❌ Found unaudited secrets in baseline!"
+          echo "   Found unaudited secrets in baseline!"
           echo "Please run: detect-secrets audit .secrets.baseline"
           echo "Review and mark each finding as true/false positive"
           detect-secrets audit .secrets.baseline --report
           exit 1
         else
-          echo "✅ All secrets in baseline have been audited"
+          echo "   All secrets in baseline have been audited"
           detect-secrets audit .secrets.baseline --report
         fi
     
@@ -112,7 +112,7 @@ jobs:
     - name: Full repository scan
       if: github.event_name == 'schedule'
       run: |
-        echo "🔍 Performing comprehensive repository scan..."
+        echo "   Performing comprehensive repository scan..."
         detect-secrets scan \
           --exclude-files '^docs/assets/' \
           --exclude-files '^build/' \
@@ -137,7 +137,7 @@ jobs:
     - name: Generate scan report
       if: github.event_name == 'schedule'
       run: |
-        echo "📊 Generating security scan report..."
+        echo "   Generating security scan report..."
         echo "## Security Scan Report" > security_report.md
         echo "**Date:** $(date)" >> security_report.md
         echo "**Repository:** ${{ github.repository }}" >> security_report.md
@@ -192,7 +192,7 @@ jobs:
     
     - name: Update baseline
       run: |
-        echo "🔄 Updating secrets baseline..."
+        echo "   Updating secrets baseline..."
         cp .secrets.baseline .secrets.baseline.backup
         detect-secrets scan \
           --exclude-files '^docs/assets/' \
@@ -210,7 +210,7 @@ jobs:
           echo "📝 Baseline has changes"
         else
           echo "changes=false" >> $GITHUB_OUTPUT
-          echo "✅ No changes to baseline"
+          echo "   No changes to baseline"
         fi
     
     - name: Create maintenance PR

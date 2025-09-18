@@ -281,7 +281,7 @@ class RateLimitedFilesystemEventHandler(FileSystemEventHandler):
         session_id = connection_data.get("session_id")
         connection_id = connection_data.get("connection_id")
 
-        print("\n🔗 SSE CONNECTION ESTABLISHED:")
+        print("\nSSE CONNECTION ESTABLISHED:")
         print(f"   Agent ID: {agent_id}")
         print(f"   Session ID: {session_id}")
         print(f"   Connection ID: {connection_id}")
@@ -291,7 +291,7 @@ class RateLimitedFilesystemEventHandler(FileSystemEventHandler):
 
     def _handle_sse_error(self, error: Exception):
         """Handle SSE errors"""
-        print(f"\n❌ SSE ERROR: {error}")
+        print(f"\nSSE ERROR: {error}")
         logging.error(f"SSE Error: {error}")
 
     def stop_sse_stream(self):
