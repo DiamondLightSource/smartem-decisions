@@ -57,11 +57,11 @@ def main():
         version = response_data.get("version", "unknown")
         timestamp = response_data.get("timestamp", "unknown")
 
-        print(f"✅ SmartEM API is UP - {endpoint} responded with {status_code} in {response_time:.3f}s")
+        print(f"SmartEM API is UP - {endpoint} responded with {status_code} in {response_time:.3f}s")
         print(f"   Status: {status}, Version: {version}, Time: {timestamp}")
         sys.exit(0)
     else:
-        print("❌ SmartEM API is DOWN - all endpoints failed")
+        print("SmartEM API is DOWN - all endpoints failed")
         sys.exit(1)
 
 

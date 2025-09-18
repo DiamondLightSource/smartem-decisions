@@ -86,14 +86,14 @@ async def demo_natural_language_queries():
     ]
 
     for i, query in enumerate(queries, 1):
-        print(f"\n🔍 Example {i}: {query['description']}")
-        print(f'❓ Question: "{query["question"]}"')
+        print(f"\nExample {i}: {query['description']}")
+        print(f' Question: "{query["question"]}"')
 
         try:
             answer = await interface.ask(query["question"], query["context"])
-            print(f"💬 Answer: {answer}")
+            print(f" Answer: {answer}")
         except Exception as e:
-            print(f"❌ Error: {str(e)}")
+            print(f" Error: {str(e)}")
 
         print("-" * 40)
 
@@ -101,7 +101,7 @@ async def demo_natural_language_queries():
 async def demo_direct_queries():
     """Show direct filesystem adapter queries"""
 
-    print("\n🔬 Direct SmartEM Data Queries")
+    print("\n Direct SmartEM Data Queries")
     print("=" * 60)
 
     adapter = FilesystemAdapter()
@@ -111,24 +111,24 @@ async def demo_direct_queries():
     )
 
     # 1. Parse EPU directory
-    print("\n📂 Parsing EPU Directory Structure...")
+    print("\n Parsing EPU Directory Structure...")
     result = await adapter.parse_epu_directory(test_path)
 
     if result.success:
         data = result.data or {}
-        print("✅ Success!")
-        print(f"   📁 Grids: {data.get('grid_count', 0)}")
-        print(f"   🔢 Grid squares: {data.get('total_gridsquares', 0)}")
+        print("   Success!")
+        print(f"      Grids: {data.get('grid_count', 0)}")
+        print(f"      Grid squares: {data.get('total_gridsquares', 0)}")
 
         if data.get("grids"):
             grid = data["grids"][0]
-            print(f"   🆔 Grid UUID: {grid.get('uuid', 'N/A')}")
-            print(f"   📁 Data directory: {grid.get('data_dir', 'N/A')}")
+            print(f"      Grid UUID: {grid.get('uuid', 'N/A')}")
+            print(f"      Data directory: {grid.get('data_dir', 'N/A')}")
     else:
-        print(f"❌ Failed: {result.error}")
+        print(f" Failed: {result.error}")
 
     # 2. Quality analysis
-    print("\n🎯 Quality Metrics Analysis...")
+    print("\n Quality Metrics Analysis...")
     for threshold in [0.3, 0.5, 0.8]:
         quality_result = await adapter.query_quality_metrics(test_path, threshold)
         if quality_result.success:
@@ -140,24 +140,24 @@ async def demo_direct_queries():
 def show_mcp_capabilities():
     """Show what the MCP interface can do"""
 
-    print("\n🚀 SmartEM MCP Capabilities")
+    print("\n   SmartEM MCP Capabilities")
     print("=" * 60)
 
     capabilities = [
-        "📂 Parse EPU microscopy directories",
-        "🔍 Natural language querying of session data",
-        "📊 Quality metrics analysis and filtering",
-        "🗂️  Grid square and foil hole enumeration",
-        "🔗 Integration with SmartEM API (when available)",
-        "💬 Interactive command-line interface",
-        "🔌 Claude Code MCP protocol integration",
-        "⚡ Both filesystem and API data sources",
+        " Parse EPU microscopy directories",
+        " Natural language querying of session data",
+        " Quality metrics analysis and filtering",
+        "  Grid square and foil hole enumeration",
+        " Integration with SmartEM API (when available)",
+        " Interactive command-line interface",
+        " Claude Code MCP protocol integration",
+        " Both filesystem and API data sources",
     ]
 
     for capability in capabilities:
         print(f"  {capability}")
 
-    print("\n📋 Available Tools:")
+    print("\n   Available Tools:")
     tools = [
         "parse_epu_directory - Extract comprehensive session data",
         "query_quality_metrics - Find low-quality items",
@@ -168,7 +168,7 @@ def show_mcp_capabilities():
     for tool in tools:
         print(f"  • {tool}")
 
-    print("\n🎛️  Usage Examples:")
+    print("\n  Usage Examples:")
     examples = [
         'smartem-mcp client parse --path "/path/to/epu"',
         'smartem-mcp client quality --path "/path/to/epu" --threshold 0.3',
