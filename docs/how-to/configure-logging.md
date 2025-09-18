@@ -10,15 +10,15 @@ Use the `-v` and `-vv` flags to control verbosity across all SmartEM components:
 ```bash
 # ERROR level only (default - minimal output)
 python -m smartem_backend.consumer
-python -m smartem_backend.run_api
+python -m smartem_backend.api_server
 
 # INFO level and above (-v flag)
 python -m smartem_backend.consumer -v
-python -m smartem_backend.run_api -v
+python -m smartem_backend.api_server -v
 
 # DEBUG level and above (-vv flag - most verbose)
 python -m smartem_backend.consumer -vv
-python -m smartem_backend.run_api -vv
+python -m smartem_backend.api_server -vv
 ```
 
 ### SmartEM Agent CLI
@@ -65,9 +65,9 @@ For the HTTP API, you can also control logging via environment variables:
 
 ```bash
 # Set log level via environment variable (equivalent to -v/-vv flags)
-SMARTEM_LOG_LEVEL=ERROR python -m smartem_backend.run_api
-SMARTEM_LOG_LEVEL=INFO python -m smartem_backend.run_api 
-SMARTEM_LOG_LEVEL=DEBUG python -m smartem_backend.run_api
+SMARTEM_LOG_LEVEL=ERROR python -m smartem_backend.api_server
+SMARTEM_LOG_LEVEL=INFO python -m smartem_backend.api_server 
+SMARTEM_LOG_LEVEL=DEBUG python -m smartem_backend.api_server
 ```
 
 ## Log Levels
@@ -121,21 +121,21 @@ SMARTEM_LOG_LEVEL=DEBUG python -m smartem_backend.run_api
 ```bash
 # Use DEBUG level for comprehensive troubleshooting
 python -m smartem_agent watch /data -vv
-python -m smartem_backend.run_api -vv
+python -m smartem_backend.api_server -vv
 ```
 
 ### Testing Environment
 ```bash
 # Use INFO level for verification without noise
 python -m smartem_agent watch /data -v
-python -m smartem_backend.run_api -v
+python -m smartem_backend.api_server -v
 ```
 
 ### Production Environment
 ```bash
 # Use ERROR level (default) for minimal logging overhead
 python -m smartem_agent watch /data
-python -m smartem_backend.run_api
+python -m smartem_backend.api_server
 
 # Or INFO level with log rotation for operational monitoring
 python -m smartem_agent watch /data \

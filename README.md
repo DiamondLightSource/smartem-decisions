@@ -95,8 +95,8 @@ source .venv/bin/activate
 pip install -e .[dev] # or .[backend] for production
 
 # Start services with verbosity controls:
-python -m smartem_backend.run_api -v               # HTTP API with INFO logging
-python -m smartem_backend.consumer -v           # Message queue consumer with INFO logging  
+python -m smartem_backend.api_server               # HTTP API server
+python -m smartem_backend.consumer -v              # Message queue consumer with INFO logging
 python -m smartem_agent watch /path/to/data -v     # File watcher with INFO logging
 
 # For testing file watcher with simulated EPU data:
