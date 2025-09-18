@@ -3,6 +3,7 @@ import json
 import logging
 import os
 import uuid
+from contextlib import asynccontextmanager
 from datetime import datetime, timedelta
 
 from fastapi import Depends, FastAPI, HTTPException, Request, status
@@ -131,21 +132,14 @@ def get_db():
 # Create a dependency object at module level to avoid B008 linting errors
 DB_DEPENDENCY = Depends(get_db)
 
-
-app = FastAPI(
-    title="SmartEM Decisions Backend API",
-    description="API for accessing and managing electron microscopy data",
-    version=__version__,
-    redoc_url=None,
-)
-
 # Get connection manager instance
 connection_manager = get_connection_manager()
 
 
-@app.on_event("startup")
-async def startup_event():
-    """Start background services on application startup."""
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Manage application lifespan events."""
+    # Startup
     logger.info("Starting SmartEM Backend services...")
     try:
         await connection_manager.start()
@@ -153,16 +147,24 @@ async def startup_event():
     except Exception as e:
         logger.error(f"Failed to start connection manager: {e}")
 
+    yield
 
-@app.on_event("shutdown")
-async def shutdown_event():
-    """Stop background services on application shutdown."""
+    # Shutdown
     logger.info("Stopping SmartEM Backend services...")
     try:
         await connection_manager.stop()
         logger.info("Connection manager stopped successfully")
     except Exception as e:
         logger.error(f"Failed to stop connection manager: {e}")
+
+
+app = FastAPI(
+    title="SmartEM Decisions Backend API",
+    description="API for accessing and managing electron microscopy data",
+    version=__version__,
+    redoc_url=None,
+    lifespan=lifespan,
+)
 
 
 # Configure logging based on environment variable
@@ -1762,3 +1764,12 @@ async def create_test_session(session_data: dict, db: SqlAlchemySession = DB_DEP
         "status": "created",
         "created_at": session.created_at.isoformat(),
     }
+
+
+if __name__ == "__main__":
+    import uvicorn
+
+    port = int(os.getenv("HTTP_API_PORT", "8000"))
+    host = os.getenv("HTTP_API_HOST", "127.0.0.1")
+
+    uvicorn.run("smartem_backend.api_server:app", host=host, port=port, reload=False, log_level="info")
