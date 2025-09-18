@@ -29,13 +29,13 @@ async def run_client(args):
                 if args.json:
                     print(json.dumps(result, indent=2, default=str))
                 else:
-                    print(f"✅ Successfully parsed EPU directory: {args.path}")
+                    print(f"Successfully parsed EPU directory: {args.path}")
                     print(f"   Grids: {result.get('grid_count', 0)}")
                     print(f"   Grid squares: {result.get('total_gridsquares', 0)}")
                     if result.get("acquisition"):
                         print(f"   Acquisition: {result['acquisition'].get('name', 'Unknown')}")
             except Exception as e:
-                print(f"❌ Failed to parse directory: {str(e)}")
+                print(f"Failed to parse directory: {str(e)}")
                 return 1
 
         elif args.client_command == "quality":
@@ -49,7 +49,7 @@ async def run_client(args):
                     print(json.dumps(result, indent=2, default=str))
                 else:
                     items = result.get("low_quality_items", [])
-                    print(f"✅ Quality analysis complete (threshold: {args.threshold})")
+                    print(f"Quality analysis complete (threshold: {args.threshold})")
                     print(f"   Found {len(items)} low-quality items")
                     if items:
                         for item in items[:5]:  # Show first 5
@@ -57,7 +57,7 @@ async def run_client(args):
                         if len(items) > 5:
                             print(f"   ... and {len(items) - 5} more")
             except Exception as e:
-                print(f"❌ Quality analysis failed: {str(e)}")
+                print(f"Quality analysis failed: {str(e)}")
                 return 1
 
         elif args.client_command == "acquisitions":
@@ -67,11 +67,11 @@ async def run_client(args):
                     print(json.dumps(result, indent=2, default=str))
                 else:
                     acquisitions = result.get("acquisitions", [])
-                    print(f"✅ Found {len(acquisitions)} recent acquisitions")
+                    print(f"Found {len(acquisitions)} recent acquisitions")
                     for acq in acquisitions:
                         print(f"   - {acq.get('name', 'Unknown')} (ID: {acq.get('id', 'N/A')})")
             except Exception as e:
-                print(f"❌ Failed to query acquisitions: {str(e)}")
+                print(f"Failed to query acquisitions: {str(e)}")
                 return 1
 
         elif args.client_command == "grid":
@@ -85,11 +85,11 @@ async def run_client(args):
                     print(json.dumps(result, indent=2, default=str))
                 else:
                     grid = result.get("grid", {})
-                    print(f"✅ Grid {args.grid_id} status:")
+                    print(f"Grid {args.grid_id} status:")
                     print(f"   Status: {grid.get('status', 'Unknown')}")
                     print(f"   Created: {grid.get('created_at', 'Unknown')}")
             except Exception as e:
-                print(f"❌ Failed to get grid status: {str(e)}")
+                print(f"Failed to get grid status: {str(e)}")
                 return 1
 
         else:
@@ -133,33 +133,33 @@ async def run_interactive(args):
                     result = await client.parse_epu_directory(path)
                     grid_count = result.get("grid_count", 0)
                     total_squares = result.get("total_gridsquares", 0)
-                    print(f"🔍 Parsed {grid_count} grids, {total_squares} grid squares")
+                    print(f"   Parsed {grid_count} grids, {total_squares} grid squares")
 
                 elif tool_cmd == "quality" and len(parts) >= 2:
                     path = parts[1]
                     threshold = float(parts[2]) if len(parts) > 2 else 0.5
                     result = await client.find_low_quality_items(path, threshold)
                     items = result.get("low_quality_items", [])
-                    print(f"🔍 Found {len(items)} low-quality items (threshold: {threshold})")
+                    print(f"   Found {len(items)} low-quality items (threshold: {threshold})")
 
                 elif tool_cmd == "acquisitions":
                     limit = int(parts[1]) if len(parts) > 1 else 10
                     result = await client.query_recent_acquisitions(limit)
                     acquisitions = result.get("acquisitions", [])
-                    print(f"🔍 Found {len(acquisitions)} recent acquisitions")
+                    print(f"   Found {len(acquisitions)} recent acquisitions")
 
                 elif tool_cmd == "grid" and len(parts) >= 2:
                     grid_id = parts[1]
                     result = await client.get_grid_status(grid_id)
                     grid = result.get("grid", {})
-                    print(f"🔍 Grid {grid_id}: {grid.get('status', 'Unknown')}")
+                    print(f"   Grid {grid_id}: {grid.get('status', 'Unknown')}")
 
                 else:
-                    print("❌ Invalid command format")
+                    print("Invalid command format")
                     print("Use: parse <path> | quality <path> [threshold] | acquisitions [limit] | grid <id>")
 
             except Exception as e:
-                print(f"❌ Error: {str(e)}")
+                print(f"Error: {str(e)}")
 
             print()
 
@@ -270,10 +270,10 @@ Examples:
             return 1
 
     except KeyboardInterrupt:
-        print("\n⚠️  Interrupted by user")
+        print("\nInterrupted by user")
         return 130
     except Exception as e:
-        print(f"❌ Unexpected error: {str(e)}")
+        print(f"Unexpected error: {str(e)}")
         return 1
 
 

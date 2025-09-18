@@ -24,17 +24,17 @@ Our schema drift detection system automatically catches these mismatches in CI/C
 
 The schema drift check runs automatically:
 
-- ✅ On every pull request to `main`
-- ✅ On every push to `main`
-- ✅ On manual workflow dispatch
-- ❌ Skipped for draft PRs with `[WIP]` prefix
+- On every pull request to `main`
+- On every push to `main`
+- On manual workflow dispatch
+- Skipped for draft PRs with `[WIP]` prefix
 
 ## What Happens When Drift is Detected
 
 If schema drift is detected, the CI build will fail with a clear error message:
 
 ```
-❌ SCHEMA DRIFT DETECTED!
+SCHEMA DRIFT DETECTED!
 
 Your SQLModel definitions have changed but migrations haven't been updated.
 This means the database schema is out of sync with your model definitions.
@@ -198,7 +198,7 @@ def main():
         if has_drift:
             sys.exit(1)  # Fail CI
         else:
-            print("✅ No drift detected")
+            print("No drift detected")
 
     finally:
         # 5. Clean up
