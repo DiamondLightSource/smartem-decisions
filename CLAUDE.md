@@ -52,8 +52,8 @@ sphinx-build -E docs build/html
 sphinx-autobuild docs build/html  # Live reload
 
 # Database migrations
-alembic upgrade head
-alembic revision --autogenerate -m "Description"
+python -m alembic upgrade head
+python -m alembic revision --autogenerate -m "Description"
 ```
 
 ## Project Architecture

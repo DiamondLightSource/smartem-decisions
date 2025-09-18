@@ -23,12 +23,27 @@ This includes Alembic as a dependency.
 
 ## Basic Usage
 
+### Initial Database Setup
+
+For a completely new database, run the following command to apply all migrations from scratch:
+
+```bash
+python -m alembic upgrade head
+```
+
+This will:
+1. Create the Alembic version tracking table
+2. Apply migration 001: Create user preferences table
+3. Apply baseline migration (6e6302f1ccb6): Create all core SmartEM schema tables (acquisition, grid, gridsquare, micrograph, foilhole, atlas, quality prediction models, etc.)
+4. Apply migration 002: Add performance indexes for acquisition datetime queries
+5. Apply remaining migrations including agent communication tables
+
 ### Running Migrations
 
 Apply all pending migrations to bring your database up to the latest schema:
 
 ```bash
-alembic upgrade head
+python -m alembic upgrade head
 ```
 
 ### Checking Migration Status
@@ -36,13 +51,13 @@ alembic upgrade head
 See the current database version:
 
 ```bash
-alembic current
+python -m alembic current
 ```
 
 View migration history:
 
 ```bash
-alembic history --verbose
+python -m alembic history --verbose
 ```
 
 ### Rolling Back Migrations
@@ -50,13 +65,13 @@ alembic history --verbose
 Downgrade to a specific revision:
 
 ```bash
-alembic downgrade <revision_id>
+python -m alembic downgrade <revision_id>
 ```
 
 Rollback one migration:
 
 ```bash
-alembic downgrade -1
+python -m alembic downgrade -1
 ```
 
 ## Creating New Migrations
@@ -66,7 +81,7 @@ alembic downgrade -1
 When you modify SQLModel classes in `src/smartem_backend/model/database.py`, generate a migration automatically:
 
 ```bash
-alembic revision --autogenerate -m "Add new field to Grid model"
+python -m alembic revision --autogenerate -m "Add new field to Grid model"
 ```
 
 **Important**: Always review auto-generated migrations before applying them. Alembic may not detect all changes (like column renames or complex constraints).
@@ -76,7 +91,7 @@ alembic revision --autogenerate -m "Add new field to Grid model"
 For data migrations or complex schema changes, create an empty migration:
 
 ```bash
-alembic revision -m "Seed initial user data"
+python -m alembic revision -m "Seed initial user data"
 ```
 
 Edit the generated file in `src/smartem_backend/migrations/versions/` to add your custom logic.
@@ -171,7 +186,7 @@ def downgrade() -> None:
 pg_dump smartem_production > backup_$(date +%Y%m%d_%H%M%S).sql
 
 # 2. Apply migrations
-alembic upgrade head
+python -m alembic upgrade head
 
 # 3. Verify application works
 # 4. Clean up old backups (optional)
@@ -181,7 +196,7 @@ alembic upgrade head
 
 ```bash
 # Apply migrations to staging first
-alembic upgrade head
+python -m alembic upgrade head
 
 # Test application functionality
 # Run integration tests
@@ -194,23 +209,46 @@ alembic upgrade head
 **Migration conflicts**: When multiple developers create migrations simultaneously:
 ```bash
 # Resolve by creating a merge migration
-alembic merge <rev1> <rev2> -m "Merge migrations"
+python -m alembic merge <rev1> <rev2> -m "Merge migrations"
 ```
 
 **Failed migration**: If a migration fails partway through:
 ```bash
 # Check current state
-alembic current
+python -m alembic current
 
 # Fix data/schema issues manually
 # Mark migration as complete (if safe)
-alembic stamp <revision_id>
+python -m alembic stamp <revision_id>
 ```
 
 **Model out of sync**: When models don't match database:
 ```bash
 # Generate migration to sync
-alembic revision --autogenerate -m "Sync models with database"
+python -m alembic revision --autogenerate -m "Sync models with database"
+```
+
+### Migration-Specific Issues
+
+**Missing baseline schema**: If you encounter errors like "relation 'gridsquare' does not exist" when running migrations:
+
+This indicates that migration 002 is trying to create indexes on tables that don't exist yet. This happens when the baseline schema migration is missing or not properly applied. The fix is to ensure the baseline migration (6e6302f1ccb6) is applied before migration 002.
+
+```bash
+# Solution: Run the complete migration sequence from scratch
+python -m alembic downgrade base
+python -m alembic upgrade head
+```
+
+**Enum type conflicts**: If you encounter "type already exists" errors:
+
+This can happen when enum types exist from previous schema creation attempts but don't match the migration expectations.
+
+```bash
+# Clean up existing enum types and restart migrations
+python -m alembic downgrade base
+# Then apply migrations fresh
+python -m alembic upgrade head
 ```
 
 ### Database Connection Issues
