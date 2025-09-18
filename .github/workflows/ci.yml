@@ -30,6 +30,11 @@ jobs:
     if: needs.check.outputs.branch-pr == ''
     uses: ./.github/workflows/security-scan.yml
 
+  schema-drift:
+    needs: check
+    if: needs.check.outputs.branch-pr == ''
+    uses: ./.github/workflows/_schema_drift.yml
+
 # TODO restore
 #  lint:
 #    needs: check

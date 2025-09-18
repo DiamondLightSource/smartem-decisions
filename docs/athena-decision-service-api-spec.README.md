@@ -32,7 +32,7 @@ The API documentation generation process:
 
 ### Updating the Specification
 
-⚠️ **Important**: This file should only be updated when the external Athena service changes their API specification.
+**Important**: This file should only be updated when the external Athena service changes their API specification.
 
 **Process for updates**:
 1. Obtain the new specification from the Athena service maintainers

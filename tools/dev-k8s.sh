@@ -22,6 +22,7 @@ load_env_file() {
         log_error "Missing .dev.env file at: $env_file"
         log_error "Please copy .dev.env.example to .dev.env and configure your credentials"
         log_error "Example file location: $PROJECT_ROOT/.dev.env.example"
+        log_error "Or use --docker-password parameter with 'gh auth token'"
         exit 1
     fi
     
@@ -39,15 +40,31 @@ validate_credentials() {
     
     # Check GHCR credentials (supporting both old and new variable names for compatibility)
     [[ -z "${DOCKER_USERNAME:-}" ]] && missing_vars+=("DOCKER_USERNAME")
-    [[ -z "${DOCKER_PASSWORD:-}" ]] && missing_vars+=("DOCKER_PASSWORD")
     [[ -z "${DOCKER_EMAIL:-}" ]] && missing_vars+=("DOCKER_EMAIL")
+
+    # Try to get token from gh auth if DOCKER_PASSWORD is not set
+    if [[ -z "${DOCKER_PASSWORD:-}" ]]; then
+        if command -v gh &> /dev/null && gh auth status &> /dev/null; then
+            log_info "DOCKER_PASSWORD not set, attempting to use 'gh auth token'"
+            DOCKER_PASSWORD=$(gh auth token 2>/dev/null)
+            if [[ -n "$DOCKER_PASSWORD" ]]; then
+                log_info "Successfully obtained token from 'gh auth token'"
+                export DOCKER_PASSWORD
+            else
+                log_warn "Failed to obtain token from 'gh auth token'"
+                missing_vars+=("DOCKER_PASSWORD")
+            fi
+        else
+            missing_vars+=("DOCKER_PASSWORD")
+        fi
+    fi
     
     if [[ ${#missing_vars[@]} -gt 0 ]]; then
-        log_error "Missing required environment variables in .dev.env:"
+        log_error "Missing required environment variables:"
         for var in "${missing_vars[@]}"; do
             log_error "  - $var"
         done
-        log_error "Please check .dev.env.example for required variables"
+        log_error "Please check .dev.env.example for required variables or use --docker-password parameter"
         exit 1
     fi
     
@@ -184,12 +201,12 @@ cleanup_environment() {
 # Ensure GHCR secret exists
 ensure_ghcr_secret() {
     log_info "Ensuring GHCR secret exists..."
-    
+
     if kubectl get secret ghcr-secret -n "$NAMESPACE" &> /dev/null; then
         log_success "GHCR secret already exists"
         return 0
     fi
-    
+
     log_info "Creating GHCR secret..."
     kubectl create secret docker-registry ghcr-secret \
         --docker-server=ghcr.io \
@@ -197,8 +214,66 @@ ensure_ghcr_secret() {
         --docker-password="$DOCKER_PASSWORD" \
         --docker-email="$DOCKER_EMAIL" \
         --namespace="$NAMESPACE"
-    
+
     log_success "GHCR secret created successfully"
+}
+
+# Ensure application secrets exist
+ensure_app_secrets() {
+    log_info "Ensuring application secrets exist..."
+
+    if kubectl get secret smartem-secrets -n "$NAMESPACE" &> /dev/null; then
+        log_success "Application secrets already exist"
+        return 0
+    fi
+
+    log_info "Creating application secrets..."
+    kubectl create secret generic smartem-secrets \
+        --from-literal=POSTGRES_USER=username \
+        --from-literal=POSTGRES_PASSWORD=password \
+        --from-literal=RABBITMQ_USER=username \
+        --from-literal=RABBITMQ_PASSWORD=password \
+        --namespace="$NAMESPACE"
+
+    log_success "Application secrets created successfully"
+}
+
+# Build and import local image for development
+ensure_local_image() {
+    log_info "Ensuring local SmartEM image is available..."
+
+    local image_name="smartem-decisions:latest"
+    local temp_tar="/tmp/smartem-decisions-local.tar"
+
+    # Check if image exists in Docker
+    if ! docker image inspect "$image_name" &> /dev/null; then
+        log_info "Building SmartEM image..."
+        cd "$PROJECT_ROOT"
+        docker build -t "$image_name" .
+    else
+        log_info "SmartEM image already exists in Docker"
+    fi
+
+    # Export and import to K3s (only if we have permissions)
+    if command -v k3s &> /dev/null; then
+        log_info "Importing image to K3s..."
+        docker save "$image_name" -o "$temp_tar"
+
+        # Try to import with different methods based on available permissions
+        if sudo -n k3s ctr images import "$temp_tar" 2>/dev/null; then
+            log_success "Image imported to K3s successfully"
+        elif k3s ctr images import "$temp_tar" 2>/dev/null; then
+            log_success "Image imported to K3s successfully"
+        else
+            log_warning "Could not import image to K3s (permission/access issue)"
+            log_warning "SmartEM containers may fail to start"
+        fi
+
+        # Cleanup
+        rm -f "$temp_tar"
+    else
+        log_warning "K3s not available, skipping image import"
+    fi
 }
 
 # Deploy the environment
@@ -212,7 +287,13 @@ deploy_environment() {
     
     # Ensure GHCR secret exists after namespace is created
     ensure_ghcr_secret
-    
+
+    # Ensure application secrets exist after namespace is created
+    ensure_app_secrets
+
+    # Ensure local image is built and available for development
+    ensure_local_image
+
     log_success "Deployment initiated"
 }
 
@@ -260,10 +341,10 @@ print_access_urls() {
     log_success "Development environment is ready!"
     echo ""
     echo -e "${GREEN}🌐 Access URLs:${NC}"
-    echo -e "  ${BLUE}📊 Adminer (Database UI):${NC}     http://localhost:30808"
-    echo -e "  ${BLUE}🐰 RabbitMQ Management:${NC}       http://localhost:30673"
-    echo -e "  ${BLUE}📡 SmartEM HTTP API:${NC}          http://localhost:30080"
-    echo -e "  ${BLUE}📚 API Documentation:${NC}         http://localhost:30080/docs"
+    echo -e "  ${BLUE}   Adminer (Database UI):${NC}     http://localhost:30808"
+    echo -e "  ${BLUE}   RabbitMQ Management:${NC}       http://localhost:30673"
+    echo -e "  ${BLUE}   SmartEM HTTP API:${NC}          http://localhost:30080"
+    echo -e "  ${BLUE}   API Documentation:${NC}         http://localhost:30080/docs"
     echo ""
     echo -e "${YELLOW}💡 Quick Commands:${NC}"
     echo -e "  View all resources:    ${BLUE}kubectl get all -n $NAMESPACE${NC}"
@@ -292,8 +373,47 @@ show_status() {
     fi
 }
 
+# Parse command line arguments
+parse_arguments() {
+    while [[ $# -gt 0 ]]; do
+        case $1 in
+            --docker-password)
+                DOCKER_PASSWORD="$2"
+                export DOCKER_PASSWORD
+                log_info "Using provided docker password"
+                shift 2
+                ;;
+            --docker-password=*)
+                DOCKER_PASSWORD="${1#*=}"
+                export DOCKER_PASSWORD
+                log_info "Using provided docker password"
+                shift
+                ;;
+            -*)
+                log_error "Unknown option: $1"
+                echo "Use '$0 help' for usage information"
+                exit 1
+                ;;
+            *)
+                # This is the command, stop parsing options
+                COMMAND="$1"
+                shift
+                break
+                ;;
+        esac
+    done
+}
+
+# Parse arguments first
+COMMAND="${1:-up}"
+if [[ "$1" == --* ]]; then
+    parse_arguments "$@"
+else
+    shift || true  # Remove the command from arguments if it exists
+fi
+
 # Main command processing
-case "${1:-up}" in
+case "$COMMAND" in
     "up")
         check_kubectl
         load_env_file
@@ -340,7 +460,7 @@ case "${1:-up}" in
     "help"|"-h"|"--help")
         echo "SmartEM Backend Development Environment Manager"
         echo ""
-        echo "Usage: $0 [COMMAND]"
+        echo "Usage: $0 [OPTIONS] [COMMAND]"
         echo ""
         echo "Commands:"
         echo "  up       Start the development environment (default)"
@@ -350,12 +470,17 @@ case "${1:-up}" in
         echo "  logs     Show logs for a service (default: smartem-http-api)"
         echo "  help     Show this help message"
         echo ""
+        echo "Options:"
+        echo "  --docker-password TOKEN   Use specific docker password/token"
+        echo "                            (optional - auto-detects from 'gh auth token' if not set)"
+        echo ""
         echo "Examples:"
-        echo "  $0                    # Start environment"
-        echo "  $0 up                 # Start environment"
-        echo "  $0 down               # Stop environment"
-        echo "  $0 status             # Check status"
-        echo "  $0 logs smartem-worker # Show worker logs"
+        echo "  $0                              # Start environment (auto-detects token)"
+        echo "  $0 up                           # Start environment"
+        echo "  $0 down                         # Stop environment"
+        echo "  $0 status                       # Check status"
+        echo "  $0 logs smartem-worker          # Show worker logs"
+        echo "  $0 --docker-password \"\$(gh auth token)\" up   # Explicit token override"
         ;;
     *)
         log_error "Unknown command: $1"

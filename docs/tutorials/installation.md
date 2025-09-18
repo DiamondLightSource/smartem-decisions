@@ -71,10 +71,10 @@ You can also verify that all components are correctly installed by running:
 
 ```bash
 # Test core functionality
-python -c "import smartem_backend, smartem_agent, smartem_common; print('✅ Core components imported successfully')"
+python -c "import smartem_backend, smartem_agent, smartem_common; print('Core components imported successfully')"
 
 # Test MCP functionality (if installed with MCP support)
-python -c "import smartem_mcp; print('✅ MCP components available')"
+python -c "import smartem_mcp; print('MCP components available')"
 ```
 
 ## Next Steps

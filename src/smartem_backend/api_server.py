@@ -1,15 +1,24 @@
+import asyncio
 import json
 import logging
 import os
-from datetime import datetime
+import uuid
+from contextlib import asynccontextmanager
+from datetime import datetime, timedelta
 
 from fastapi import Depends, FastAPI, HTTPException, Request, status
-from sqlalchemy import text
+from sqlalchemy import and_, desc, or_, text
 from sqlalchemy.orm import Session as SqlAlchemySession
 from sqlalchemy.orm import sessionmaker
+from sse_starlette.sse import EventSourceResponse
 
+from smartem_backend.agent_connection_manager import get_connection_manager
 from smartem_backend.model.database import (
     Acquisition,
+    AgentConnection,
+    AgentInstruction,
+    AgentInstructionAcknowledgement,
+    AgentSession,
     Atlas,
     AtlasTile,
     AtlasTileGridSquarePosition,
@@ -42,8 +51,12 @@ from smartem_backend.model.http_request import (
     MicrographCreateRequest,
     MicrographUpdateRequest,
 )
+from smartem_backend.model.http_request import (
+    AgentInstructionAcknowledgement as AgentInstructionAcknowledgementRequest,
+)
 from smartem_backend.model.http_response import (
     AcquisitionResponse,
+    AgentInstructionAcknowledgementResponse,
     AtlasResponse,
     AtlasTileGridSquarePositionResponse,
     AtlasTileResponse,
@@ -119,13 +132,40 @@ def get_db():
 # Create a dependency object at module level to avoid B008 linting errors
 DB_DEPENDENCY = Depends(get_db)
 
+# Get connection manager instance
+connection_manager = get_connection_manager()
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Manage application lifespan events."""
+    # Startup
+    logger.info("Starting SmartEM Backend services...")
+    try:
+        await connection_manager.start()
+        logger.info("Connection manager started successfully")
+    except Exception as e:
+        logger.error(f"Failed to start connection manager: {e}")
+
+    yield
+
+    # Shutdown
+    logger.info("Stopping SmartEM Backend services...")
+    try:
+        await connection_manager.stop()
+        logger.info("Connection manager stopped successfully")
+    except Exception as e:
+        logger.error(f"Failed to stop connection manager: {e}")
+
 
 app = FastAPI(
     title="SmartEM Decisions Backend API",
     description="API for accessing and managing electron microscopy data",
     version=__version__,
     redoc_url=None,
+    lifespan=lifespan,
 )
+
 
 # Configure logging based on environment variable
 # SMARTEM_LOG_LEVEL can be: ERROR (default), INFO, DEBUG
@@ -1142,3 +1182,594 @@ def create_foilhole_micrograph(
         response_data["status"] = MicrographStatus.NONE
 
     return MicrographResponse(**response_data)
+
+
+# ============ Agent Communication Endpoints ============
+
+
+@app.get("/agent/{agent_id}/session/{session_id}/instructions/stream")
+async def stream_instructions(
+    agent_id: str, session_id: str, db: SqlAlchemySession = DB_DEPENDENCY
+) -> EventSourceResponse:
+    """SSE endpoint for streaming instructions to agents for a specific session"""
+
+    async def event_generator():
+        connection_id = str(uuid.uuid4())
+
+        try:
+            # Validate session exists and belongs to agent
+            try:
+                session = db.query(AgentSession).filter(AgentSession.session_id == session_id).first()
+                if not session:
+                    raise ValueError(f"Session {session_id} not found")
+                if session.agent_id != agent_id:
+                    raise ValueError(f"Session {session_id} does not belong to agent {agent_id}")
+                if session.status != "active":
+                    raise ValueError(f"Session {session_id} is not active (status: {session.status})")
+            except ValueError as e:
+                logger.error(f"Session validation failed for agent {agent_id}, session {session_id}: {e}")
+                yield {
+                    "event": "error",
+                    "data": json.dumps({"type": "error", "error": "session_validation_failed", "message": str(e)}),
+                }
+                return
+
+            # Create database connection record
+            try:
+                connection = AgentConnection(
+                    connection_id=connection_id,
+                    session_id=session_id,
+                    agent_id=agent_id,
+                    connection_type="sse",
+                    client_info={"connected_at": datetime.now().isoformat()},
+                    status="active",
+                    created_at=datetime.now(),
+                    last_heartbeat_at=datetime.now(),
+                )
+                db.add(connection)
+                db.commit()
+                db.refresh(connection)
+                logger.info(f"Created connection {connection_id} for agent {agent_id} in session {session_id}")
+            except Exception as e:
+                logger.error(f"Failed to create connection record: {e}")
+                yield {
+                    "event": "error",
+                    "data": json.dumps(
+                        {
+                            "type": "error",
+                            "error": "connection_creation_failed",
+                            "message": "Failed to register connection",
+                        }
+                    ),
+                }
+                return
+
+            # Send initial connection acknowledgment
+            yield {
+                "event": "connection",
+                "data": json.dumps(
+                    {
+                        "type": "connection",
+                        "agent_id": agent_id,
+                        "session_id": session_id,
+                        "connection_id": connection_id,
+                        "status": "connected",
+                    }
+                ),
+            }
+
+            heartbeat_counter = 0
+
+            while True:
+                # Send heartbeat every 30 seconds
+                if heartbeat_counter % 6 == 0:  # Every 6th iteration (30 seconds)
+                    # Update connection heartbeat
+                    connection_obj = (
+                        db.query(AgentConnection).filter(AgentConnection.connection_id == connection_id).first()
+                    )
+                    if connection_obj and connection_obj.status == "active":
+                        connection_obj.last_heartbeat_at = datetime.now()
+                        db.commit()
+                    yield {
+                        "event": "heartbeat",
+                        "data": json.dumps(
+                            {
+                                "type": "heartbeat",
+                                "timestamp": datetime.now().isoformat(),
+                                "connection_id": connection_id,
+                            }
+                        ),
+                    }
+
+                # Check for pending instructions
+                try:
+                    pending_instructions = (
+                        db.query(AgentInstruction)
+                        .filter(
+                            and_(
+                                AgentInstruction.session_id == session_id,
+                                AgentInstruction.status == "pending",
+                                or_(
+                                    AgentInstruction.expires_at.is_(None), AgentInstruction.expires_at > datetime.now()
+                                ),
+                            )
+                        )
+                        .order_by(
+                            AgentInstruction.priority.desc(),  # High priority first
+                            AgentInstruction.sequence_number.asc(),  # Lower sequence numbers first
+                            AgentInstruction.created_at.asc(),  # Older instructions first
+                        )
+                        .all()
+                    )
+
+                    for instruction in pending_instructions:
+                        # Mark as sent
+                        if instruction.status == "pending":
+                            instruction.status = "sent"
+                            instruction.sent_at = datetime.now()
+                            db.commit()
+                            db.refresh(instruction)
+
+                        # Send instruction to agent
+                        instruction_data = {
+                            "type": "instruction",
+                            "instruction_id": instruction.instruction_id,
+                            "agent_id": agent_id,
+                            "session_id": session_id,
+                            "instruction_type": instruction.instruction_type,
+                            "payload": instruction.payload,
+                            "sequence_number": instruction.sequence_number,
+                            "priority": instruction.priority,
+                            "created_at": instruction.created_at.isoformat(),
+                            "expires_at": instruction.expires_at.isoformat() if instruction.expires_at else None,
+                            "metadata": instruction.instruction_metadata,
+                        }
+
+                        yield {"event": "instruction", "data": json.dumps(instruction_data)}
+
+                        logger.info(f"Sent instruction {instruction.instruction_id} to agent {agent_id}")
+
+                except Exception as e:
+                    logger.error(f"Error processing instructions for session {session_id}: {e}")
+
+                # Update session activity
+                session.last_activity_at = datetime.now()
+                db.commit()
+
+                # Wait 5 seconds before next poll
+                await asyncio.sleep(5)
+                heartbeat_counter += 1
+
+        except asyncio.CancelledError:
+            logger.info(f"SSE connection closed for agent {agent_id}, session {session_id}")
+            # Connection closed by client
+            connection_obj = db.query(AgentConnection).filter(AgentConnection.connection_id == connection_id).first()
+            if connection_obj:
+                connection_obj.status = "closed"
+                connection_obj.closed_at = datetime.now()
+                connection_obj.close_reason = "client_disconnect"
+                db.commit()
+                logger.info(f"Closed connection {connection_id} with reason: client_disconnect")
+            raise
+        except Exception as e:
+            logger.error(f"SSE stream error for agent {agent_id}: {e}")
+            # Unexpected error
+            connection_obj = db.query(AgentConnection).filter(AgentConnection.connection_id == connection_id).first()
+            if connection_obj:
+                connection_obj.status = "closed"
+                connection_obj.closed_at = datetime.now()
+                connection_obj.close_reason = f"error: {str(e)}"
+                db.commit()
+                logger.info(f"Closed connection {connection_id} with reason: error: {str(e)}")
+            raise
+
+    return EventSourceResponse(event_generator())
+
+
+@app.post(
+    "/agent/{agent_id}/session/{session_id}/instructions/{instruction_id}/ack",
+    response_model=AgentInstructionAcknowledgementResponse,
+)
+async def acknowledge_instruction(
+    agent_id: str,
+    session_id: str,
+    instruction_id: str,
+    acknowledgement: AgentInstructionAcknowledgementRequest,
+    db: SqlAlchemySession = DB_DEPENDENCY,
+) -> AgentInstructionAcknowledgementResponse:
+    """HTTP endpoint for instruction acknowledgements with database persistence"""
+
+    try:
+        # Validate session exists and belongs to agent
+        session = db.query(AgentSession).filter(AgentSession.session_id == session_id).first()
+        if not session:
+            raise HTTPException(status_code=404, detail=f"Session {session_id} not found")
+        if session.agent_id != agent_id:
+            raise HTTPException(status_code=403, detail=f"Session {session_id} does not belong to agent {agent_id}")
+        if session.status != "active":
+            raise HTTPException(status_code=400, detail=f"Session {session_id} is not active")
+
+        # Validate agent has an active connection
+        active_connections = (
+            db.query(AgentConnection)
+            .filter(and_(AgentConnection.agent_id == agent_id, AgentConnection.status == "active"))
+            .order_by(desc(AgentConnection.last_heartbeat_at))
+            .all()
+        )
+        if not active_connections:
+            raise HTTPException(status_code=404, detail="Agent not connected")
+
+        # Find matching connection for this session
+        session_connection = next((conn for conn in active_connections if conn.session_id == session_id), None)
+        if not session_connection:
+            raise HTTPException(status_code=400, detail="No active connection for this session")
+
+        # Get and validate instruction
+        instruction = db.query(AgentInstruction).filter(AgentInstruction.instruction_id == instruction_id).first()
+        if not instruction:
+            raise HTTPException(status_code=404, detail="Instruction not found")
+
+        if instruction.session_id != session_id:
+            raise HTTPException(status_code=400, detail="Instruction does not belong to this session")
+
+        if instruction.agent_id != agent_id:
+            raise HTTPException(status_code=400, detail="Instruction does not belong to this agent")
+
+        # Mark instruction as acknowledged in the database
+        if instruction.status == "sent":
+            instruction.status = "acknowledged"
+            instruction.acknowledged_at = datetime.now()
+            db.commit()
+            db.refresh(instruction)
+        else:
+            raise HTTPException(status_code=400, detail="Instruction cannot be acknowledged (invalid status)")
+
+        # Create acknowledgement record for audit trail
+        ack_record = AgentInstructionAcknowledgement(
+            instruction_id=instruction_id,
+            agent_id=agent_id,
+            session_id=session_id,
+            status=acknowledgement.status,
+            result=acknowledgement.result,
+            error_message=acknowledgement.error_message,
+            acknowledgement_metadata=getattr(acknowledgement, "metadata", None) or {},
+            created_at=datetime.now(),
+            processed_at=datetime.now() if acknowledgement.status in ["processed", "failed"] else None,
+        )
+        db.add(ack_record)
+        db.commit()
+        db.refresh(ack_record)
+
+        logger.info(f"Created acknowledgement for instruction {instruction_id} with status {acknowledgement.status}")
+
+        # Update session activity
+        session.last_activity_at = datetime.now()
+        db.commit()
+
+        # Update connection heartbeat
+        session_connection.last_heartbeat_at = datetime.now()
+        db.commit()
+
+        logger.info(
+            f"Instruction {instruction_id} acknowledged by agent {agent_id} with status: {acknowledgement.status}"
+        )
+
+        return AgentInstructionAcknowledgementResponse(
+            status="success",
+            instruction_id=instruction_id,
+            acknowledged_at=ack_record.created_at.isoformat(),
+            agent_id=agent_id,
+            session_id=session_id,
+        )
+
+    except ValueError as e:
+        logger.error(f"Acknowledgement validation error: {e}")
+        raise HTTPException(status_code=400, detail=str(e)) from None
+    except Exception as e:
+        logger.error(f"Acknowledgement processing error: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error") from None
+
+
+@app.post("/agent/{agent_id}/session/{session_id}/heartbeat")
+async def agent_heartbeat(agent_id: str, session_id: str, db: SqlAlchemySession = DB_DEPENDENCY):
+    """
+    Agent heartbeat endpoint to update connection health status.
+
+    Args:
+        agent_id: The agent identifier
+        session_id: The session identifier
+        db: Database session
+
+    Returns:
+        Heartbeat response with status and timestamp
+    """
+    try:
+        # Find active connection for this agent and session
+        connection = (
+            db.query(AgentConnection)
+            .filter(
+                and_(
+                    AgentConnection.agent_id == agent_id,
+                    AgentConnection.session_id == session_id,
+                    AgentConnection.status == "active",
+                )
+            )
+            .first()
+        )
+
+        if not connection:
+            raise HTTPException(status_code=404, detail="No active connection found for agent and session")
+
+        # Update heartbeat timestamp
+        now = datetime.now()
+        connection.last_heartbeat_at = now
+        db.commit()
+
+        # Also update session activity
+        session = db.query(AgentSession).filter(AgentSession.session_id == session_id).first()
+        if session:
+            session.last_activity_at = now
+            db.commit()
+
+        logger.info(f"Heartbeat received from agent {agent_id} session {session_id}")
+
+        return {
+            "status": "success",
+            "agent_id": agent_id,
+            "session_id": session_id,
+            "heartbeat_timestamp": now.isoformat(),
+            "connection_id": connection.connection_id,
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Heartbeat processing error for agent {agent_id}: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error") from None
+
+
+# Debug endpoints for development
+@app.get("/debug/agent-connections")
+async def get_active_connections(db: SqlAlchemySession = DB_DEPENDENCY):
+    """Debug endpoint to view active agent connections"""
+    # Get all active connections
+    all_connections = (
+        db.query(AgentConnection)
+        .filter(AgentConnection.status == "active")
+        .order_by(AgentConnection.last_heartbeat_at.desc())
+        .all()
+    )
+
+    connections_data = []
+    for conn in all_connections:
+        connections_data.append(
+            {
+                "connection_id": conn.connection_id,
+                "agent_id": conn.agent_id,
+                "session_id": conn.session_id,
+                "connection_type": conn.connection_type,
+                "status": conn.status,
+                "created_at": conn.created_at.isoformat(),
+                "last_heartbeat_at": conn.last_heartbeat_at.isoformat(),
+                "client_info": conn.client_info,
+            }
+        )
+
+    return {"active_connections": connections_data, "total_count": len(connections_data)}
+
+
+@app.get("/debug/session/{session_id}/instructions")
+async def get_session_instructions(session_id: str, db: SqlAlchemySession = DB_DEPENDENCY):
+    """Debug endpoint to view instructions for a session"""
+    # Get all instructions for the session
+    instructions = (
+        db.query(AgentInstruction)
+        .filter(AgentInstruction.session_id == session_id)
+        .order_by(AgentInstruction.created_at.desc())
+        .all()
+    )
+
+    instructions_data = []
+    for instr in instructions:
+        # Get acknowledgements for this instruction
+        acknowledgements = (
+            db.query(AgentInstructionAcknowledgement)
+            .filter(AgentInstructionAcknowledgement.instruction_id == instr.instruction_id)
+            .order_by(desc(AgentInstructionAcknowledgement.created_at))
+            .all()
+        )
+
+        instructions_data.append(
+            {
+                "instruction_id": instr.instruction_id,
+                "agent_id": instr.agent_id,
+                "instruction_type": instr.instruction_type,
+                "payload": instr.payload,
+                "sequence_number": instr.sequence_number,
+                "priority": instr.priority,
+                "status": instr.status,
+                "created_at": instr.created_at.isoformat(),
+                "sent_at": instr.sent_at.isoformat() if instr.sent_at else None,
+                "acknowledged_at": instr.acknowledged_at.isoformat() if instr.acknowledged_at else None,
+                "expires_at": instr.expires_at.isoformat() if instr.expires_at else None,
+                "metadata": instr.metadata,
+                "acknowledgements_count": len(acknowledgements),
+            }
+        )
+
+    # Get acknowledgement statistics
+    from sqlalchemy import func
+
+    ack_stats_query = (
+        db.query(AgentInstructionAcknowledgement.status, func.count().label("count"))
+        .filter(AgentInstructionAcknowledgement.session_id == session_id)
+        .group_by(AgentInstructionAcknowledgement.status)
+        .all()
+    )
+    ack_stats = dict(ack_stats_query)
+
+    return {
+        "session_id": session_id,
+        "instructions": instructions_data,
+        "total_instructions": len(instructions_data),
+        "acknowledgement_statistics": ack_stats,
+    }
+
+
+# Additional debug endpoints for session and connection management
+@app.get("/debug/sessions")
+async def get_active_sessions(db: SqlAlchemySession = DB_DEPENDENCY):
+    """Debug endpoint to view all active sessions"""
+    sessions = (
+        db.query(AgentSession)
+        .filter(AgentSession.status == "active")
+        .order_by(AgentSession.last_activity_at.desc())
+        .all()
+    )
+
+    sessions_data = []
+    for session in sessions:
+        sessions_data.append(
+            {
+                "session_id": session.session_id,
+                "agent_id": session.agent_id,
+                "acquisition_uuid": session.acquisition_uuid,
+                "name": session.name,
+                "description": session.description,
+                "status": session.status,
+                "created_at": session.created_at.isoformat(),
+                "started_at": session.started_at.isoformat() if session.started_at else None,
+                "last_activity_at": session.last_activity_at.isoformat(),
+                "experimental_parameters": session.experimental_parameters,
+            }
+        )
+
+    return {"active_sessions": sessions_data, "total_count": len(sessions_data)}
+
+
+@app.get("/debug/connection-stats")
+async def get_connection_stats():
+    """Get real-time connection and session statistics"""
+    return connection_manager.get_connection_stats()
+
+
+@app.post("/debug/sessions/create-managed")
+async def create_managed_session(session_data: dict):
+    """Create a session using the connection manager"""
+    try:
+        session_id = connection_manager.create_session(
+            agent_id=session_data.get("agent_id", "test-agent"),
+            acquisition_uuid=session_data.get("acquisition_uuid"),
+            name=session_data.get("name"),
+            description=session_data.get("description"),
+            experimental_parameters=session_data.get("experimental_parameters", {}),
+        )
+
+        return {
+            "session_id": session_id,
+            "status": "created",
+            "created_via": "connection_manager",
+            "timestamp": datetime.now().isoformat(),
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to create session: {str(e)}") from e
+
+
+@app.delete("/debug/sessions/{session_id}/close")
+async def close_managed_session(session_id: str):
+    """Close a session using the connection manager"""
+    success = connection_manager.close_session(session_id)
+    if success:
+        return {
+            "session_id": session_id,
+            "status": "closed",
+            "closed_via": "connection_manager",
+            "timestamp": datetime.now().isoformat(),
+        }
+    else:
+        raise HTTPException(status_code=500, detail="Failed to close session")
+
+
+@app.post("/debug/session/{session_id}/create-instruction")
+async def create_test_instruction(session_id: str, instruction_data: dict, db: SqlAlchemySession = DB_DEPENDENCY):
+    """Debug endpoint to create test instructions"""
+    # Validate session exists
+    session = db.query(AgentSession).filter(AgentSession.session_id == session_id).first()
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+
+    # Create instruction with provided data
+    expires_at = None
+    expires_in_minutes = instruction_data.get("expires_in_minutes", 60)
+    if expires_in_minutes:
+        expires_at = datetime.now() + timedelta(minutes=expires_in_minutes)
+
+    instruction = AgentInstruction(
+        instruction_id=str(uuid.uuid4()),
+        session_id=session_id,
+        agent_id=session.agent_id,
+        instruction_type=instruction_data.get("instruction_type", "test.instruction"),
+        payload=instruction_data.get("payload", {"test": True}),
+        sequence_number=instruction_data.get("sequence_number"),
+        priority=instruction_data.get("priority", "normal"),
+        status="pending",
+        created_at=datetime.now(),
+        expires_at=expires_at,
+        instruction_metadata=instruction_data.get("metadata", {}),
+    )
+    db.add(instruction)
+    db.commit()
+    db.refresh(instruction)
+
+    logger.info(f"Created instruction {instruction.instruction_id} for session {session_id}")
+
+    return {
+        "instruction_id": instruction.instruction_id,
+        "status": "created",
+        "created_at": instruction.created_at.isoformat(),
+    }
+
+
+@app.post("/debug/sessions/create")
+async def create_test_session(session_data: dict, db: SqlAlchemySession = DB_DEPENDENCY):
+    """Debug endpoint to create test sessions"""
+    # Validate acquisition exists if provided
+    acquisition_uuid = session_data.get("acquisition_uuid")
+    if acquisition_uuid:
+        acquisition = db.query(Acquisition).filter(Acquisition.uuid == acquisition_uuid).first()
+        if not acquisition:
+            raise HTTPException(status_code=404, detail=f"Acquisition {acquisition_uuid} not found")
+
+    # Create session with provided data
+    session = AgentSession(
+        session_id=session_data.get("session_id", str(uuid.uuid4())),
+        agent_id=session_data.get("agent_id", "test-agent"),
+        acquisition_uuid=acquisition_uuid,
+        name=session_data.get("name", "Test Session"),
+        description=session_data.get("description", "Debug session for testing"),
+        experimental_parameters=session_data.get("experimental_parameters", {}),
+        status="active",
+        created_at=datetime.now(),
+        last_activity_at=datetime.now(),
+    )
+    db.add(session)
+    db.commit()
+    db.refresh(session)
+
+    logger.info(f"Created agent session {session.session_id} for agent {session.agent_id}")
+
+    return {
+        "session_id": session.session_id,
+        "agent_id": session.agent_id,
+        "status": "created",
+        "created_at": session.created_at.isoformat(),
+    }
+
+
+if __name__ == "__main__":
+    import uvicorn
+
+    port = int(os.getenv("HTTP_API_PORT", "8000"))
+    host = os.getenv("HTTP_API_HOST", "127.0.0.1")
+
+    uvicorn.run("smartem_backend.api_server:app", host=host, port=port, reload=False, log_level="info")

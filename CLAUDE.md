@@ -12,6 +12,7 @@
   passes cleanly
 - **New line at end of file**: All files must end with a newline (pre-commit enforces this)
 - **No Comments**: Code should be self-explanatory - avoid explanatory comments
+- **No Emojis**: Never use emojis or font icons in Python code, print statements, or documentation. Use plain text only
 - **Modern Python**: Use Python 3.12 typing features (no legacy `typing` imports where unnecessary)
 - **Line Length**: 120 characters maximum (ruff enforces this)
 - **Import Sorting**: Use ruff's import sorting (I001 rule)
@@ -52,8 +53,8 @@ sphinx-build -E docs build/html
 sphinx-autobuild docs build/html  # Live reload
 
 # Database migrations
-alembic upgrade head
-alembic revision --autogenerate -m "Description"
+python -m alembic upgrade head
+python -m alembic revision --autogenerate -m "Description"
 ```
 
 ## Project Architecture
@@ -65,7 +66,7 @@ alembic revision --autogenerate -m "Description"
 
 ## Scientific Domain Context
 - **Cryo-EM workflows**: Real-time microscopy data processing and decision making
-- **High-throughput**: Handle 1000+ images/hour processing requirements
+- **High-throughput**: Handle high-frequency processing requirements
 - **Research reproducibility**: Maintain data provenance and scientific rigor
 - **Open source**: Apache 2.0 licensed research software
 

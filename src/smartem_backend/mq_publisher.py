@@ -2,6 +2,9 @@ from smartem_backend.model.mq_event import (
     AcquisitionCreatedEvent,
     AcquisitionDeletedEvent,
     AcquisitionUpdatedEvent,
+    AgentInstructionCreatedEvent,
+    AgentInstructionExpiredEvent,
+    AgentInstructionUpdatedEvent,
     AtlasCreatedEvent,
     AtlasDeletedEvent,
     AtlasTileCreatedEvent,
@@ -278,3 +281,49 @@ def publish_model_parameter_update(grid_uuid: str, model_name: str, key: str, va
         group=group,
     )
     return rmq_publisher.publish_event(MessageQueueEventType.MODEL_PARAMETER_UPDATE, event)
+
+
+# ========== Agent Communication Events ==========
+
+
+def publish_agent_instruction_created(instruction_id, session_id, agent_id, instruction_type, payload, **kwargs):
+    """Publish agent instruction created event to RabbitMQ"""
+    event = AgentInstructionCreatedEvent(
+        event_type=MessageQueueEventType.AGENT_INSTRUCTION_CREATED,
+        instruction_id=instruction_id,
+        session_id=session_id,
+        agent_id=agent_id,
+        instruction_type=instruction_type,
+        payload=payload,
+        sequence_number=kwargs.get("sequence_number"),
+        priority=kwargs.get("priority", "normal"),
+        expires_at=kwargs.get("expires_at"),
+        instruction_metadata=kwargs.get("instruction_metadata"),
+    )
+    return rmq_publisher.publish_event(MessageQueueEventType.AGENT_INSTRUCTION_CREATED, event)
+
+
+def publish_agent_instruction_updated(instruction_id, session_id, agent_id, status, acknowledged_at=None):
+    """Publish agent instruction updated event to RabbitMQ"""
+    event = AgentInstructionUpdatedEvent(
+        event_type=MessageQueueEventType.AGENT_INSTRUCTION_UPDATED,
+        instruction_id=instruction_id,
+        session_id=session_id,
+        agent_id=agent_id,
+        status=status,
+        acknowledged_at=acknowledged_at,
+    )
+    return rmq_publisher.publish_event(MessageQueueEventType.AGENT_INSTRUCTION_UPDATED, event)
+
+
+def publish_agent_instruction_expired(instruction_id, session_id, agent_id, expires_at, retry_count):
+    """Publish agent instruction expired event to RabbitMQ"""
+    event = AgentInstructionExpiredEvent(
+        event_type=MessageQueueEventType.AGENT_INSTRUCTION_EXPIRED,
+        instruction_id=instruction_id,
+        session_id=session_id,
+        agent_id=agent_id,
+        expires_at=expires_at,
+        retry_count=retry_count,
+    )
+    return rmq_publisher.publish_event(MessageQueueEventType.AGENT_INSTRUCTION_EXPIRED, event)

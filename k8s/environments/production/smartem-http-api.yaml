@@ -19,7 +19,8 @@ spec:
       - name: ghcr-secret
       containers:
       - name: smartem-http-api
-        image: ghcr.io/diamondlightsource/smartem-backend:latest
+        image: ghcr.io/diamondlightsource/smartem-decisions:latest
+        imagePullPolicy: Always
         ports:
         - containerPort: 8000
         env:
