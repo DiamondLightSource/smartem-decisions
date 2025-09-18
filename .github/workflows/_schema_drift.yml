@@ -1,0 +1,54 @@
+name: Schema Drift Check
+
+on:
+  workflow_call:
+
+jobs:
+  schema-drift:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: test_user
+          POSTGRES_PASSWORD: test_password  # pragma: allowlist secret
+          POSTGRES_DB: postgres
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e .[all]
+
+      - name: Set up test environment variables
+        run: |  # pragma: allowlist secret
+          echo "POSTGRES_HOST=localhost" >> $GITHUB_ENV
+          echo "POSTGRES_PORT=5432" >> $GITHUB_ENV
+          echo "POSTGRES_USER=test_user" >> $GITHUB_ENV
+          echo "POSTGRES_PASSWORD=test_password" >> $GITHUB_ENV
+          echo "POSTGRES_DB=test_db" >> $GITHUB_ENV
+
+      - name: Check for schema drift
+        run: |
+          python tools/check_schema_drift.py
+
+      - name: Schema drift check summary
+        if: failure()
+        run: |
+          echo "::error title=Schema Drift Detected::Database schema is out of sync with SQLModel definitions. Run 'alembic revision --autogenerate' to create missing migrations."
