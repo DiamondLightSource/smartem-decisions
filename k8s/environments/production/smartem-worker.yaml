@@ -20,6 +20,7 @@ spec:
       containers:
       - name: smartem-worker
         image: ghcr.io/diamondlightsource/smartem-decisions:latest
+        imagePullPolicy: Always
         env:
         - name: ROLE
           value: "worker"

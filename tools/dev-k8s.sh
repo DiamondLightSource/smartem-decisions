@@ -201,12 +201,12 @@ cleanup_environment() {
 # Ensure GHCR secret exists
 ensure_ghcr_secret() {
     log_info "Ensuring GHCR secret exists..."
-    
+
     if kubectl get secret ghcr-secret -n "$NAMESPACE" &> /dev/null; then
         log_success "GHCR secret already exists"
         return 0
     fi
-    
+
     log_info "Creating GHCR secret..."
     kubectl create secret docker-registry ghcr-secret \
         --docker-server=ghcr.io \
@@ -214,8 +214,66 @@ ensure_ghcr_secret() {
         --docker-password="$DOCKER_PASSWORD" \
         --docker-email="$DOCKER_EMAIL" \
         --namespace="$NAMESPACE"
-    
+
     log_success "GHCR secret created successfully"
+}
+
+# Ensure application secrets exist
+ensure_app_secrets() {
+    log_info "Ensuring application secrets exist..."
+
+    if kubectl get secret smartem-secrets -n "$NAMESPACE" &> /dev/null; then
+        log_success "Application secrets already exist"
+        return 0
+    fi
+
+    log_info "Creating application secrets..."
+    kubectl create secret generic smartem-secrets \
+        --from-literal=POSTGRES_USER=username \
+        --from-literal=POSTGRES_PASSWORD=password \
+        --from-literal=RABBITMQ_USER=username \
+        --from-literal=RABBITMQ_PASSWORD=password \
+        --namespace="$NAMESPACE"
+
+    log_success "Application secrets created successfully"
+}
+
+# Build and import local image for development
+ensure_local_image() {
+    log_info "Ensuring local SmartEM image is available..."
+
+    local image_name="smartem-decisions:latest"
+    local temp_tar="/tmp/smartem-decisions-local.tar"
+
+    # Check if image exists in Docker
+    if ! docker image inspect "$image_name" &> /dev/null; then
+        log_info "Building SmartEM image..."
+        cd "$PROJECT_ROOT"
+        docker build -t "$image_name" .
+    else
+        log_info "SmartEM image already exists in Docker"
+    fi
+
+    # Export and import to K3s (only if we have permissions)
+    if command -v k3s &> /dev/null; then
+        log_info "Importing image to K3s..."
+        docker save "$image_name" -o "$temp_tar"
+
+        # Try to import with different methods based on available permissions
+        if sudo -n k3s ctr images import "$temp_tar" 2>/dev/null; then
+            log_success "Image imported to K3s successfully"
+        elif k3s ctr images import "$temp_tar" 2>/dev/null; then
+            log_success "Image imported to K3s successfully"
+        else
+            log_warning "Could not import image to K3s (permission/access issue)"
+            log_warning "SmartEM containers may fail to start"
+        fi
+
+        # Cleanup
+        rm -f "$temp_tar"
+    else
+        log_warning "K3s not available, skipping image import"
+    fi
 }
 
 # Deploy the environment
@@ -229,7 +287,13 @@ deploy_environment() {
     
     # Ensure GHCR secret exists after namespace is created
     ensure_ghcr_secret
-    
+
+    # Ensure application secrets exist after namespace is created
+    ensure_app_secrets
+
+    # Ensure local image is built and available for development
+    ensure_local_image
+
     log_success "Deployment initiated"
 }
 
