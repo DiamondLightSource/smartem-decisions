@@ -19,56 +19,111 @@ connection management.
 
 ```mermaid
 graph TB
-    subgraph k8s["Kubernetes Cluster"]
-        subgraph core["Core Services"]
-            api["SmartEM Core API"]
-            comm["Communication Service"]
-            dp["Data Processing & ML"]
+    subgraph k8s["Kubernetes Cluster - Diamond Light Source"]
+        subgraph packages["SmartEM Packages"]
+            subgraph backend["smartem_backend"]
+                api_server["api_server.py<br/>FastAPI + SSE Endpoints"]
+                consumer["consumer.py<br/>RabbitMQ Event Processing"]
+                conn_mgr["agent_connection_manager.py<br/>Connection Health Monitoring"]
+            end
+
+            subgraph common["smartem_common"]
+                schemas["schemas.py<br/>Shared Data Models"]
+                utils["utils.py<br/>Common Utilities"]
+            end
+
+            subgraph athena["athena_api"]
+                athena_client["client.py<br/>External API Integration"]
+            end
+
+            subgraph mcp["smartem_mcp"]
+                mcp_server["server.py<br/>Model Context Protocol"]
+            end
         end
-        
-        subgraph infra["Infrastructure"]
-            db[("PostgreSQL")]
-            mq[("RabbitMQ")]
+
+        subgraph infra["Infrastructure Services"]
+            db[("PostgreSQL<br/>AgentSession, AgentInstruction<br/>AgentConnection, AgentInstructionAcknowledgement")]
+            mq[("RabbitMQ<br/>Event Communication<br/>Instruction Lifecycle")]
         end
     end
-    
-    subgraph isolation["Network Boundary"]
-        subgraph agents["Agent Workstations"]
-            agent1["Agent 1 (Windows)"]
-            agent2["Agent 2 (Windows)"]
-            agentN["Agent N (Windows)"]
+
+    subgraph boundary["Network Boundary - Windows Workstations"]
+        subgraph agents["Agent Software (Windows)"]
+            subgraph agent_pkg["smartem_agent"]
+                fs_watcher["fs_watcher.py<br/>File System Monitoring"]
+                fs_parser["fs_parser.py<br/>EPU Data Parsing"]
+                sse_client["SSEAgentClient<br/>Stream Connection"]
+            end
         end
-        
+
         subgraph equipment["Scientific Equipment"]
-            em1["Electron Microscope 1"]
-            em2["Electron Microscope 2"]
-            emN["Electron Microscope N"]
+            subgraph scope1["Microscope Workstation 1"]
+                epu1["EPU Software<br/>(ThermoFisher)"]
+                em1["Cryo-EM Microscope 1"]
+                gpfs1["GPFS Storage<br/>Image Data"]
+            end
+
+            subgraph scope2["Microscope Workstation 2"]
+                epu2["EPU Software<br/>(ThermoFisher)"]
+                em2["Cryo-EM Microscope 2"]
+                gpfs2["GPFS Storage<br/>Image Data"]
+            end
+
+            subgraph scopeN["Microscope Workstation N"]
+                epuN["EPU Software<br/>(ThermoFisher)"]
+                emN["Cryo-EM Microscope N"]
+                gpfsN["GPFS Storage<br/>Image Data"]
+            end
         end
     end
-    
-    api --> db
-    api --> mq
-    dp --> mq
-    comm --> mq
-    comm --> db
-    
-    comm -.->|SSE Stream| agent1
-    comm -.->|SSE Stream| agent2
-    comm -.->|SSE Stream| agentN
-    
-    agent1 -.->|HTTP ACK| comm
-    agent2 -.->|HTTP ACK| comm
-    agentN -.->|HTTP ACK| comm
-    
-    agent1 --> em1
-    agent2 --> em2
-    agentN --> emN
-    
-    classDef k8s fill:#e6f3ff,stroke:#666
-    classDef isolation fill:#fff5e6,stroke:#666
-    
-    class k8s k8s
-    class isolation isolation
+
+    %% Database and message queue connections
+    api_server --> db
+    api_server --> mq
+    consumer --> db
+    consumer --> mq
+    conn_mgr --> db
+    conn_mgr --> mq
+
+    %% SSE streaming connections
+    api_server -.->|"SSE: /agent/{id}/session/{sid}/instructions/stream"| sse_client
+
+    %% HTTP acknowledgement connections
+    sse_client -.->|"HTTP: /agent/{id}/session/{sid}/instructions/{iid}/ack"| api_server
+
+    %% File system monitoring
+    fs_watcher --> fs_parser
+    fs_parser --> sse_client
+
+    %% Equipment integration
+    epu1 --> gpfs1
+    epu2 --> gpfs2
+    epuN --> gpfsN
+
+    fs_watcher -.->|"Monitor EPU Output"| gpfs1
+    fs_watcher -.->|"Monitor EPU Output"| gpfs2
+    fs_watcher -.->|"Monitor EPU Output"| gpfsN
+
+    %% External API integration
+    consumer --> athena_client
+
+    %% Package dependencies
+    backend -.-> common
+    agent_pkg -.-> common
+    fs_parser -.-> schemas
+
+    %% Styling
+    classDef k8s fill:#e1f5fe,stroke:#0277bd,stroke-width:2px
+    classDef boundary fill:#fff3e0,stroke:#ef6c00,stroke-width:2px
+    classDef database fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
+    classDef equipment fill:#e8f5e8,stroke:#2e7d32,stroke-width:2px
+    classDef communication fill:#fff8e1,stroke:#f57f17,stroke-width:2px
+
+    class k8s,packages,backend,common,athena,mcp,infra k8s
+    class boundary,agents,agent_pkg,equipment boundary
+    class db,mq database
+    class scope1,scope2,scopeN,epu1,epu2,epuN,em1,em2,emN,gpfs1,gpfs2,gpfsN equipment
+    class api_server,sse_client,fs_watcher communication
 ```
 
 ### Service Architecture
