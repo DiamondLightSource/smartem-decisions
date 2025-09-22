@@ -37,53 +37,79 @@ print(f"Hello smartem_backend {__version__}")
 ## Architecture Overview
 
 ```mermaid
- graph TD
-    subgraph k8s["Kubernetes Cluster (Scientific Compute)"]
-        subgraph core["Core Services"]
-            api["SmartEM Core Service & API"]
-            dp["Data Processing Pipeline & ML Services"]
-        end
-
-        subgraph infrastructure["Infrastructure Components"]
-            log["Logging Backend (Graylog)"]
-            db[("Persistent App State (PostgreSQL)")]
-            mq[("Event Broker\n(RabbitMQ)")]
-        end
+flowchart TD
+    %% Equipment and Data Collection Layer
+    subgraph facility["Diamond Light Source Facility"]
+        microscope["Cryo-EM Microscope"]
+        athena_hw["Athena Hardware"]
+        epu["EPU Software<br/>(ThermoFisher)"]
+        gpfs[("GPFS Storage")]
     end
 
-    subgraph ext["Acquisition Systems (external)"]
-        direction TB
-        em["Electron Microscope (ThermoFisher)"]
-        gpfs[("GPFS")]
-        epu["EPU Workstation (Windows with cygwin)"]
-        athena["Athena HTTP API Server"]
+    %% Agent Layer
+    subgraph agent["smartem_agent (Windows)"]
+        fs_watcher["File System Watcher"]
+        fs_parser["EPU Data Parser"]
+        sse_client["SSE Client"]
     end
 
-    %% Internal connections
-    api --> db
-    api --> mq
-    dp --> mq
-    api --> log
+    %% Backend Services Layer
+    subgraph backend["smartem_backend (Kubernetes)"]
+        api_server["FastAPI Server<br/>SSE + HTTP API"]
+        consumer["RabbitMQ Consumer"]
+        conn_mgr["Connection Manager"]
+    end
 
-    %% External connections
-    em --> epu
+    %% Infrastructure Layer
+    subgraph infra["Infrastructure (Kubernetes)"]
+        db[("PostgreSQL<br/>Sessions & Instructions")]
+        mq[("RabbitMQ<br/>Event Streaming")]
+        log["Logging<br/>(Graylog)"]
+    end
+
+    %% Additional Packages
+    common["smartem_common<br/>(Shared Schemas)"]
+    athena_api["athena_api<br/>(API Client)"]
+
+    %% Data Flow Connections
+    microscope --> epu
+    athena_hw --> microscope
     epu --> gpfs
-    epu --> athena
-    api --> athena
-    epu --> api
+    gpfs --> fs_watcher
+    fs_watcher --> fs_parser
+    fs_parser --> sse_client
+
+    %% Backend Communication
+    sse_client <-.->|"SSE Streams &<br/>HTTP ACKs"| api_server
+
+    %% Backend Internal
+    api_server --> db
+    api_server --> mq
+    api_server --> log
+    consumer --> db
+    consumer --> mq
+    conn_mgr --> db
+
+    %% External Integration
+    api_server --> athena_api
+    athena_api --> athena_hw
+
+    %% Package Dependencies
+    backend -.-> common
+    agent -.-> common
 
     %% Styling
-    classDef k8s fill:#e6f3ff,stroke:#666
-    classDef core fill:#f9f9f9,stroke:#666
-    classDef infra fill:#f5f5f5,stroke:#666
-    classDef ext fill:#fff5e6,stroke:#666
+    classDef facility fill:#e8f5e8,stroke:#28a745,stroke-width:2px
+    classDef agent fill:#fff5e6,stroke:#e67e22,stroke-width:2px
+    classDef backend fill:#e6f3ff,stroke:#0066cc,stroke-width:2px
+    classDef infra fill:#f5f5f5,stroke:#666,stroke-width:2px
+    classDef packages fill:#f9f9f9,stroke:#999,stroke-width:1px
 
-    class k8s k8s
-    class core core
-    class infrastructure infra
-    class ext ext
-    %% Link styling
-    linkStyle 0,1,2,3,4,5,6,7,8 stroke:#666
+    class facility facility
+    class agent agent
+    class backend backend
+    class infra infra
+    class common,athena_api packages
 ```
 
 ## Development Setup
