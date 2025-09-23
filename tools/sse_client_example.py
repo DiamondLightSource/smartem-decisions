@@ -11,6 +11,7 @@ Prerequisites:
 """
 
 import logging
+import os
 import signal
 import sys
 import time
@@ -76,6 +77,66 @@ def handle_instruction(instruction_data: dict):
             )
             print(f"   Image acquired in {processing_time_ms}ms")
 
+        elif instruction_type == "microscope.control.reorder_gridsquares":
+            gridsquare_ids = payload.get("gridsquare_ids", [])
+            priority = payload.get("priority", "normal")
+            reason = payload.get("reason", "")
+            print(f"   Reordering grid squares: {gridsquare_ids}")
+            print(f"   Priority: {priority}, Reason: {reason}")
+
+            # Simulate reordering processing
+            time.sleep(0.3)  # Simulate 300ms processing time
+
+            processing_time_ms = int((time.time() - start_time) * 1000)
+
+            client.acknowledge_instruction(
+                instruction_id=instruction_id,
+                status="processed",
+                result=f"Reordered {len(gridsquare_ids)} grid squares with {priority} priority",
+                processing_time_ms=processing_time_ms,
+            )
+            print(f"   Grid squares reordered in {processing_time_ms}ms")
+
+        elif instruction_type == "microscope.control.skip_gridsquares":
+            gridsquare_ids = payload.get("gridsquare_ids", [])
+            reason = payload.get("reason", "")
+            print(f"   Skipping grid squares: {gridsquare_ids}")
+            print(f"   Reason: {reason}")
+
+            # Simulate skipping processing
+            time.sleep(0.2)  # Simulate 200ms processing time
+
+            processing_time_ms = int((time.time() - start_time) * 1000)
+
+            client.acknowledge_instruction(
+                instruction_id=instruction_id,
+                status="processed",
+                result=f"Skipped {len(gridsquare_ids)} grid squares",
+                processing_time_ms=processing_time_ms,
+            )
+            print(f"   Grid squares skipped in {processing_time_ms}ms")
+
+        elif instruction_type == "microscope.control.reorder_foilholes":
+            gridsquare_id = payload.get("gridsquare_id")
+            foilhole_ids = payload.get("foilhole_ids", [])
+            priority = payload.get("priority", "normal")
+            reason = payload.get("reason", "")
+            print(f"   Reordering foilholes in grid square {gridsquare_id}: {foilhole_ids}")
+            print(f"   Priority: {priority}, Reason: {reason}")
+
+            # Simulate foilhole reordering
+            time.sleep(0.4)  # Simulate 400ms processing time
+
+            processing_time_ms = int((time.time() - start_time) * 1000)
+
+            client.acknowledge_instruction(
+                instruction_id=instruction_id,
+                status="processed",
+                result=f"Reordered {len(foilhole_ids)} foilholes in {gridsquare_id}",
+                processing_time_ms=processing_time_ms,
+            )
+            print(f"   Foilholes reordered in {processing_time_ms}ms")
+
         else:
             # Unknown instruction type
             processing_time_ms = int((time.time() - start_time) * 1000)
@@ -124,7 +185,7 @@ if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 
     # Configuration
-    BASE_URL = "http://localhost:8000"  # SmartEM backend URL
+    BASE_URL = os.getenv("BASE_URL", "http://localhost:8000")  # SmartEM backend URL
     AGENT_ID = "microscope-01"  # Unique identifier for this agent/microscope
     SESSION_ID = f"session-{datetime.now().strftime('%Y%m%d-%H%M%S')}"  # Current session
 

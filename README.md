@@ -79,6 +79,15 @@ flowchart TD
     fs_watcher --> fs_parser
     fs_parser --> sse_client
 
+    %% External Processing → RabbitMQ → Backend
+    subgraph external["External Processing Systems"]
+        ml_pipeline["ML Pipeline<br/>(Quality Predictions)"]
+        image_proc["Image Processing<br/>(Motion/CTF/Particles)"]
+    end
+
+    ml_pipeline -.->|"Model Predictions<br/>Parameter Updates"| mq
+    image_proc -.->|"Processing Results<br/>Quality Metrics"| mq
+
     %% Backend Communication
     sse_client <-.->|"SSE Streams &<br/>HTTP ACKs"| api_server
 
@@ -92,7 +101,7 @@ flowchart TD
 
     %% External Integration
     api_server --> athena_api
-    athena_api --> athena_hw
+    athena_api -.->|"Control Commands<br/>(reorder, skip)"| athena_hw
 
     %% Package Dependencies
     backend -.-> common
@@ -104,12 +113,14 @@ flowchart TD
     classDef backend fill:#e6f3ff,stroke:#0066cc,stroke-width:2px
     classDef infra fill:#f5f5f5,stroke:#666,stroke-width:2px
     classDef packages fill:#f9f9f9,stroke:#999,stroke-width:1px
+    classDef external fill:#f8f9fa,stroke:#6c757d,stroke-width:2px
 
     class facility facility
     class agent agent
     class backend backend
     class infra infra
     class common,athena_api packages
+    class external,ml_pipeline,image_proc external
 ```
 
 ## Development Setup
@@ -127,6 +138,13 @@ python -m smartem_agent watch /path/to/data -v     # File watcher with INFO logg
 
 # For testing file watcher with simulated EPU data:
 python tools/fsrecorder/fsrecorder.py replay recording.tar.gz /path/to/data --fast
+
+# For testing external message processing:
+python tools/external_message_simulator.py list-messages           # See available message types
+python tools/external_message_simulator.py workflow-simulation --gridsquare-id "DEV_001"
+
+# For testing agent-backend communication:
+python tools/sse_client_example.py                                 # Test SSE instruction delivery
 ```
 
 ## Administrative Utilities

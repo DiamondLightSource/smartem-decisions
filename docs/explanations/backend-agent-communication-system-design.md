@@ -541,70 +541,349 @@ graph LR
 - Implement replay request mechanism from agent on startup
 
 
-## Extensibility Design
+## External Message Types and Transformation Pipeline
 
-### JSON Message Vocabulary
+### External Message Types
 
-The system supports **extensible JSON message vocabulary** for future instruction types:
+The system processes external RabbitMQ messages from data processing pipelines and machine learning components
+to trigger real-time decision-making and microscope control instructions. These external messages represent
+completion events from various stages of the cryo-EM data processing workflow:
+
+**Primary External Message Types:**
+- **MOTION_CORRECTION_COMPLETE**: Indicates completion of motion correction processing for collected images
+- **CTF_COMPLETE**: Signals completion of contrast transfer function (CTF) estimation for image quality assessment
+- **PARTICLE_PICKING_COMPLETE**: Notifies completion of automated particle identification in micrographs
+- **PARTICLE_SELECTION_COMPLETE**: Indicates completion of particle quality assessment and selection
+- **GRIDSQUARE_MODEL_PREDICTION**: Provides machine learning predictions for gridsquare quality and suitability
+- **FOILHOLE_MODEL_PREDICTION**: Delivers ML predictions for individual foilhole targeting recommendations
+- **MODEL_PARAMETER_UPDATE**: Communicates updates to ML model parameters affecting decision thresholds
+
+These external messages contain scientific data processing results, quality metrics, and ML predictions that drive
+the backend's decision logic for microscope control instructions.
+
+### Message Transformation Pipeline
+
+The transformation pipeline converts external data processing events into actionable SSE instructions for agents.
+This pipeline operates within the `consumer.py` component and implements the core business logic for scientific
+decision-making:
+
+```mermaid
+graph TB
+    subgraph external["External Systems"]
+        ml_pipeline["ML Pipeline"]
+        image_proc["Image Processing"]
+        ctf_est["CTF Estimation"]
+        particle_pick["Particle Picking"]
+    end
+
+    subgraph rabbitmq["Message Queue"]
+        ext_queue["External Event Queue"]
+    end
+
+    subgraph backend["Backend Processing"]
+        consumer["consumer.py"]
+        decision_logic["Decision Logic Engine"]
+        threshold_eval["Threshold Evaluation"]
+        instruction_gen["Instruction Generator"]
+    end
+
+    subgraph communication["Communication System"]
+        sse_stream["SSE Instruction Stream"]
+        agent_client["Agent Clients"]
+    end
+
+    subgraph microscope["Microscope Control"]
+        athena_api["Athena API"]
+        epu_control["EPU Software"]
+    end
+
+    ml_pipeline --> ext_queue
+    image_proc --> ext_queue
+    ctf_est --> ext_queue
+    particle_pick --> ext_queue
+
+    ext_queue --> consumer
+    consumer --> decision_logic
+    decision_logic --> threshold_eval
+    threshold_eval --> instruction_gen
+
+    instruction_gen --> sse_stream
+    sse_stream --> agent_client
+    agent_client --> athena_api
+    athena_api --> epu_control
+```
+
+**Transformation Process:**
+
+1. **Message Reception**: External messages arrive via dedicated RabbitMQ queues with processing results
+2. **Data Extraction**: Consumer extracts quality metrics, coordinates, and prediction values from message payloads
+3. **Decision Logic Application**: Business rules evaluate data against configurable quality thresholds
+4. **Instruction Generation**: Decision outcomes generate specific microscope control instructions
+5. **Traceability Injection**: Instructions include metadata linking back to originating external messages
+6. **SSE Delivery**: Generated instructions are queued for real-time delivery to appropriate agents
+
+**Quality Threshold Examples:**
+```json
+{
+  "gridsquare_quality_threshold": 0.7,
+  "foilhole_ice_thickness_max": 150.0,
+  "ctf_resolution_minimum": 4.0,
+  "motion_correction_drift_max": 2.0
+}
+```
+
+### Athena API Control Instructions
+
+The system generates specific instruction types that correspond to Athena API control capabilities for microscope
+workflow management. These instructions represent the actionable outputs of the decision-making process:
+
+**Primary Control Instruction Types:**
+
+#### athena.control.reorder_foilholes
+Reorders foilhole acquisition sequence based on ML predictions and quality assessments:
 
 ```json
 {
   "instruction_id": "uuid-v4",
-  "instruction_type": "microscope.control.move_stage",
+  "instruction_type": "athena.control.reorder_foilholes",
   "version": "1.0",
-  "timestamp": "2025-08-26T10:30:00Z",
+  "timestamp": "2025-09-23T10:30:00Z",
   "payload": {
-    "stage_position": {
-      "x": 1000.0,
-      "y": 500.0,
-      "z": 0.0
-    },
-    "speed": "normal"
+    "gridsquare_id": "GS_001_002",
+    "foilhole_order": [
+      {"foilhole_id": "FH_001", "priority_score": 0.95},
+      {"foilhole_id": "FH_003", "priority_score": 0.87},
+      {"foilhole_id": "FH_002", "priority_score": 0.72}
+    ],
+    "reorder_reason": "ml_prediction_update"
   },
   "metadata": {
     "session_id": "session-uuid",
-    "experiment_id": "exp-uuid",
-    "priority": "normal"
+    "originating_message_id": "external-msg-uuid",
+    "decision_timestamp": "2025-09-23T10:29:45Z",
+    "quality_threshold": 0.7
   }
 }
 ```
 
+#### athena.control.reorder_gridsquares
+Reorders gridsquare acquisition sequence based on overall quality assessments:
+
+```json
+{
+  "instruction_id": "uuid-v4",
+  "instruction_type": "athena.control.reorder_gridsquares",
+  "version": "1.0",
+  "timestamp": "2025-09-23T10:35:00Z",
+  "payload": {
+    "gridsquare_order": [
+      {"gridsquare_id": "GS_001_003", "quality_score": 0.92},
+      {"gridsquare_id": "GS_001_001", "quality_score": 0.88},
+      {"gridsquare_id": "GS_001_002", "quality_score": 0.74}
+    ],
+    "reorder_strategy": "quality_optimised"
+  },
+  "metadata": {
+    "session_id": "session-uuid",
+    "originating_message_id": "gridsquare-prediction-uuid",
+    "model_version": "v2.1.0",
+    "prediction_confidence": 0.89
+  }
+}
+```
+
+#### athena.control.skip_gridsquares
+Skips gridsquares that fail to meet quality thresholds:
+
+```json
+{
+  "instruction_id": "uuid-v4",
+  "instruction_type": "athena.control.skip_gridsquares",
+  "version": "1.0",
+  "timestamp": "2025-09-23T10:40:00Z",
+  "payload": {
+    "gridsquares_to_skip": [
+      {
+        "gridsquare_id": "GS_001_005",
+        "skip_reason": "quality_below_threshold",
+        "quality_score": 0.45
+      },
+      {
+        "gridsquare_id": "GS_001_007",
+        "skip_reason": "ice_contamination_detected",
+        "contamination_level": 0.85
+      }
+    ],
+    "skip_strategy": "quality_based"
+  },
+  "metadata": {
+    "session_id": "session-uuid",
+    "originating_message_id": "quality-assessment-uuid",
+    "threshold_applied": 0.6,
+    "assessment_method": "ml_classification"
+  }
+}
+```
+
+### Complete Message Flow Diagram
+
+The following diagram illustrates the complete message flow from external systems through to microscope control:
+
+```mermaid
+sequenceDiagram
+    participant ExtSys as External Systems<br/>(ML Pipeline, Image Processing)
+    participant MQ as RabbitMQ<br/>(External Events)
+    participant Consumer as Backend Consumer<br/>(consumer.py)
+    participant DB as PostgreSQL<br/>(Instruction Storage)
+    participant SSE as SSE Stream<br/>(Real-time Delivery)
+    participant Agent as Agent Client<br/>(Windows Workstation)
+    participant Athena as Athena API<br/>(Microscope Control)
+    participant EPU as EPU Software<br/>(ThermoFisher)
+
+    Note over ExtSys: Data processing completes
+    ExtSys->>MQ: MOTION_CORRECTION_COMPLETE<br/>CTF_COMPLETE<br/>PARTICLE_PICKING_COMPLETE<br/>ML_PREDICTION
+
+    MQ->>Consumer: External event delivery
+
+    Note over Consumer: Message transformation pipeline
+    Consumer->>Consumer: Extract quality metrics<br/>Apply decision thresholds<br/>Generate control instructions
+
+    Consumer->>DB: Store instruction with traceability<br/>(originating_message_id)
+    Consumer->>MQ: Publish instruction event
+
+    MQ->>SSE: Instruction ready for delivery
+    SSE->>Agent: Stream instruction via SSE<br/>(athena.control.*)
+
+    Agent->>SSE: HTTP acknowledgement
+    SSE->>DB: Update delivery status
+
+    Note over Agent: Process microscope control instruction
+    Agent->>Athena: Execute control command<br/>(reorder_foilholes, skip_gridsquares)
+
+    Athena->>EPU: Apply workflow changes
+    EPU->>Agent: Execution confirmation
+
+    Agent->>SSE: Final execution status
+    SSE->>DB: Update instruction completion
+
+    Note over DB: Complete audit trail<br/>External message → Decision → Execution
+```
+
+**Key Message Flow Characteristics:**
+
+1. **Scientific Traceability**: Every instruction maintains linkage to originating external messages for reproducibility
+2. **Real-time Processing**: Sub-second transformation from external events to microscope control instructions
+3. **Quality-driven Decisions**: Business logic applies configurable thresholds to scientific data
+4. **Comprehensive Audit Trail**: Full tracking from data processing results through to microscope actions
+5. **Failure Recovery**: Instruction replay capability maintains workflow continuity during system interruptions
+
+**Message Transformation Examples:**
+
+- **CTF_COMPLETE** with resolution < 4.0Å → **athena.control.skip_gridsquares** (poor quality)
+- **GRIDSQUARE_MODEL_PREDICTION** with score > 0.8 → **athena.control.reorder_gridsquares** (prioritise high-quality)
+- **FOILHOLE_MODEL_PREDICTION** with updated rankings → **athena.control.reorder_foilholes** (optimise sequence)
+
+This transformation pipeline ensures that scientific data processing results directly drive microscope control decisions
+with full traceability and audit capabilities for research reproducibility.
+
+## Extensibility Design
+
+### JSON Message Vocabulary
+
+The system implements **comprehensive JSON message vocabulary** for microscope control instructions:
+
+**Core Message Structure:**
+```json
+{
+  "instruction_id": "uuid-v4",
+  "instruction_type": "athena.control.*",
+  "version": "1.0",
+  "timestamp": "2025-09-23T10:30:00Z",
+  "payload": {
+    // Instruction-specific data
+  },
+  "metadata": {
+    "session_id": "session-uuid",
+    "originating_message_id": "external-msg-uuid",
+    "decision_timestamp": "2025-09-23T10:29:45Z",
+    "quality_threshold": 0.7
+  }
+}
+```
+
+**Implemented Instruction Types:**
+- `athena.control.reorder_foilholes`: Reorder foilhole acquisition sequence based on ML predictions
+- `athena.control.reorder_gridsquares`: Reorder gridsquare acquisition sequence based on quality assessment
+- `athena.control.skip_gridsquares`: Skip gridsquares that fail quality thresholds
+
+**Enhanced Metadata for Scientific Traceability:**
+- `originating_message_id`: Links instruction back to external processing event
+- `decision_timestamp`: Records when decision logic was applied
+- `quality_threshold`: Documents threshold values used in decision-making
+- `model_version`: Tracks ML model version for reproducibility
+- `prediction_confidence`: Records confidence level of ML predictions
+
 **Extensibility Features**:
-- Version field for message schema evolution
-- Flexible payload structure for instruction-specific data
-- Metadata section for cross-cutting concerns
-- Type-safe instruction validation using Pydantic models
+- Version field for message schema evolution across instruction types
+- Flexible payload structure accommodating diverse microscope control requirements
+- Enhanced metadata section supporting scientific traceability and reproducibility
+- Type-safe instruction validation using Pydantic models for data integrity
+- Originating message linkage for complete audit trails from data processing to execution
+- Configurable quality thresholds enabling adaptive decision-making
 
-### Future ML Integration
+### Implemented ML Integration
 
-The architecture supports future **machine learning and data processing integration**:
+The architecture provides **production machine learning and data processing integration**:
 
 ```mermaid
 graph TB
-    subgraph ml["ML Pipeline Integration (Future)"]
-        model["Prediction Models"]
-        pipeline["Processing Pipeline"]
-        feedback["Feedback Loop"]
+    subgraph ml["ML Pipeline Integration (Implemented)"]
+        model["Prediction Models<br/>(Gridsquare/Foilhole)"]
+        pipeline["Processing Pipeline<br/>(Motion/CTF/Particles)"]
+        feedback["Execution Feedback<br/>(Future Enhancement)"]
     end
-    
+
     subgraph comm["Communication System"]
-        service["Communication Service"]
+        consumer["Message Consumer<br/>(consumer.py)"]
+        decision["Decision Logic Engine"]
         instructions["Instruction Generation"]
+        service["SSE Communication Service"]
     end
-    
+
     subgraph agents["Agent Layer"]
         agent["Agent Execution"]
+        athena["Athena API Integration"]
         results["Execution Results"]
     end
-    
+
     model --> pipeline
-    pipeline --> instructions
+    pipeline --> consumer
+    consumer --> decision
+    decision --> instructions
     instructions --> service
     service --> agent
-    agent --> results
+    agent --> athena
+    athena --> results
     results -.->|Future| feedback
     feedback -.->|Future| model
+
+    classDef implemented fill:#d4edda,stroke:#155724,stroke-width:2px
+    classDef future fill:#fff3cd,stroke:#856404,stroke-width:2px
+
+    class model,pipeline,consumer,decision,instructions,service,agent,athena,results implemented
+    class feedback future
 ```
+
+**Current ML Integration Features:**
+- **Real-time Processing Results**: Integration with motion correction, CTF estimation, and particle picking pipelines
+- **ML Model Predictions**: Gridsquare and foilhole quality prediction integration
+- **Quality-driven Decisions**: Automated decision-making based on configurable quality thresholds
+- **Scientific Traceability**: Full audit trail from ML predictions to microscope actions
+
+**Future Enhancement Areas:**
+- **Execution Feedback Loop**: Collection of execution results to improve ML model predictions
+- **Adaptive Thresholds**: Dynamic threshold adjustment based on session performance
+- **Predictive Analytics**: Advanced analytics for experiment outcome prediction
 
 ## Traceability and Monitoring
 
