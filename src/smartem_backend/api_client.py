@@ -844,7 +844,7 @@ class SSEAgentClient:
             try:
                 response = requests.post(
                     ack_url,
-                    json=acknowledgement.model_dump(),
+                    json=acknowledgement.model_dump(mode="json"),
                     headers={"Content-Type": "application/json"},
                     timeout=self.timeout,
                 )

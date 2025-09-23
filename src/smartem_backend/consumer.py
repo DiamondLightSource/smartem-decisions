@@ -6,6 +6,7 @@ import logging
 import signal
 import sys
 import time
+import uuid
 from collections.abc import Callable
 from datetime import datetime
 from typing import Any
@@ -57,6 +58,7 @@ from smartem_backend.model.mq_event import (
     MicrographUpdatedEvent,
     ModelParameterUpdateEvent,
 )
+from smartem_backend.mq_publisher import publish_agent_instruction_created
 from smartem_backend.utils import get_db_engine, load_conf, rmq_consumer, setup_logger
 
 load_dotenv(override=False)  # Don't override existing env vars as these might be coming from k8s
@@ -624,6 +626,142 @@ def handle_model_parameter_update(event_data: dict[str, Any]) -> None:
         logger.error(f"Error processing model parameter update event: {e}")
 
 
+# ============ External Message Processing Events ============
+
+
+def handle_external_gridsquare_model_prediction(event_data: dict[str, Any]) -> None:
+    """
+    Handle external grid square model prediction event by generating agent instructions
+
+    Args:
+        event_data: External event data with payload containing prediction results
+    """
+    try:
+        payload = event_data.get("payload", {})
+        gridsquare_id = payload.get("gridsquare_id")
+        quality_score = payload.get("prediction_results", {}).get("quality_score", 0.0)
+
+        logger.info(f"External gridsquare prediction: {gridsquare_id} with quality {quality_score}")
+
+        # Decision logic based on quality score
+        if quality_score >= 0.8:
+            # High quality - instruct to reorder this gridsquare to priority
+            instruction_type = "microscope.control.reorder_gridsquares"
+            instruction_payload = {
+                "gridsquare_ids": [gridsquare_id],
+                "priority": "high",
+                "reason": f"High quality prediction: {quality_score:.3f}",
+            }
+        elif quality_score <= 0.3:
+            # Low quality - instruct to skip this gridsquare
+            instruction_type = "microscope.control.skip_gridsquares"
+            instruction_payload = {
+                "gridsquare_ids": [gridsquare_id],
+                "reason": f"Low quality prediction: {quality_score:.3f}",
+            }
+        else:
+            # Medium quality - no specific action needed
+            logger.info(f"Medium quality gridsquare {gridsquare_id} ({quality_score:.3f}) - no action needed")
+            return
+
+        # Generate instruction for all active agent sessions
+        active_sessions = get_active_agent_sessions()
+        for session in active_sessions:
+            instruction_id = str(uuid.uuid4())
+
+            success = publish_agent_instruction_created(
+                instruction_id=instruction_id,
+                session_id=session.session_id,
+                agent_id=session.agent_id,
+                instruction_type=instruction_type,
+                payload=instruction_payload,
+                priority="normal",
+            )
+
+            if success:
+                logger.info(f"Generated instruction {instruction_id} for agent {session.agent_id}")
+            else:
+                logger.error(f"Failed to generate instruction for agent {session.agent_id}")
+
+    except Exception as e:
+        logger.error(f"Error processing external gridsquare model prediction: {e}")
+
+
+def handle_external_foilhole_model_prediction(event_data: dict[str, Any]) -> None:
+    """
+    Handle external foilhole model prediction event by generating agent instructions
+
+    Args:
+        event_data: External event data with payload containing prediction results
+    """
+    try:
+        payload = event_data.get("payload", {})
+        gridsquare_id = payload.get("gridsquare_id")
+        foilholes = payload.get("foilhole_predictions", [])
+
+        # Count high quality foilholes
+        high_quality_foilholes = [fh for fh in foilholes if fh.get("quality_score", 0) >= 0.8]
+
+        if len(high_quality_foilholes) > 0:
+            # Instruct to reorder high quality foilholes
+            instruction_type = "microscope.control.reorder_foilholes"
+            instruction_payload = {
+                "gridsquare_id": gridsquare_id,
+                "foilhole_ids": [fh["foilhole_id"] for fh in high_quality_foilholes],
+                "priority": "high",
+                "reason": f"Found {len(high_quality_foilholes)} high quality foilholes",
+            }
+
+            # Generate instruction for all active agent sessions
+            active_sessions = get_active_agent_sessions()
+            for session in active_sessions:
+                instruction_id = str(uuid.uuid4())
+
+                success = publish_agent_instruction_created(
+                    instruction_id=instruction_id,
+                    session_id=session.session_id,
+                    agent_id=session.agent_id,
+                    instruction_type=instruction_type,
+                    payload=instruction_payload,
+                    priority="normal",
+                )
+
+                if success:
+                    logger.info(f"Generated foilhole reorder instruction {instruction_id} for agent {session.agent_id}")
+                else:
+                    logger.error(f"Failed to generate foilhole instruction for agent {session.agent_id}")
+        else:
+            logger.info(f"No high quality foilholes found for gridsquare {gridsquare_id}")
+
+    except Exception as e:
+        logger.error(f"Error processing external foilhole model prediction: {e}")
+
+
+def get_active_agent_sessions():
+    """Get all currently active agent sessions"""
+    with Session(db_engine) as session:
+        # Find sessions that are active (have recent connections)
+        return session.query(AgentSession).filter(AgentSession.status == "active").all()
+
+
+def handle_gridsquare_model_prediction_router(event_data: dict[str, Any]) -> None:
+    """Route gridsquare model prediction events based on source"""
+    source = event_data.get("source", "")
+    if source == "external_simulator":
+        handle_external_gridsquare_model_prediction(event_data)
+    else:
+        handle_gridsquare_model_prediction(event_data)
+
+
+def handle_foilhole_model_prediction_router(event_data: dict[str, Any]) -> None:
+    """Route foilhole model prediction events based on source"""
+    source = event_data.get("source", "")
+    if source == "external_simulator":
+        handle_external_foilhole_model_prediction(event_data)
+    else:
+        handle_foilhole_model_prediction(event_data)
+
+
 # ============ Agent Communication Events ============
 
 
@@ -770,8 +908,8 @@ def get_event_handlers() -> dict[str, Callable]:
         MessageQueueEventType.MICROGRAPH_CREATED.value: handle_micrograph_created,
         MessageQueueEventType.MICROGRAPH_UPDATED.value: handle_micrograph_updated,
         MessageQueueEventType.MICROGRAPH_DELETED.value: handle_micrograph_deleted,
-        MessageQueueEventType.GRIDSQUARE_MODEL_PREDICTION.value: handle_gridsquare_model_prediction,
-        MessageQueueEventType.FOILHOLE_MODEL_PREDICTION.value: handle_foilhole_model_prediction,
+        MessageQueueEventType.GRIDSQUARE_MODEL_PREDICTION.value: handle_gridsquare_model_prediction_router,
+        MessageQueueEventType.FOILHOLE_MODEL_PREDICTION.value: handle_foilhole_model_prediction_router,
         MessageQueueEventType.MODEL_PARAMETER_UPDATE.value: handle_model_parameter_update,
         MessageQueueEventType.AGENT_INSTRUCTION_CREATED.value: handle_agent_instruction_created,
         MessageQueueEventType.AGENT_INSTRUCTION_UPDATED.value: handle_agent_instruction_updated,
