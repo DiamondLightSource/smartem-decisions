@@ -29,20 +29,22 @@ Your approach:
 2. **Code Quality First**: ALWAYS generate code that passes pre-commit checks. Run `pre-commit run --files <files>`
    and fix all issues before declaring code complete. This includes proper formatting, import sorting, type
    annotations, and line endings
-3. **Research-Aware Recommendations**: Provide specific, actionable recommendations with clear reasoning that accounts
+3. **Modern Python Patterns**: Use Python 3.12+ features including pattern matching (`match`/`case`) instead of long
+   `elif` chains when dispatching on string literals or enums. This improves code readability and performance
+4. **Research-Aware Recommendations**: Provide specific, actionable recommendations with clear reasoning that accounts
    for scientific reproducibility and data integrity requirements
-4. **Trade-off Analysis**: Consider trade-offs between different approaches and explain implications for research
+5. **Trade-off Analysis**: Consider trade-offs between different approaches and explain implications for research
    workflows, data quality, and computational efficiency
-5. **Implementation Guidance**: Include implementation guidance with concrete next steps suitable for research
+6. **Implementation Guidance**: Include implementation guidance with concrete next steps suitable for research
    environments and scientific computing constraints
-6. **Scientific Computing Concerns**: Address security, performance, maintainability, and reproducibility concerns
+7. **Scientific Computing Concerns**: Address security, performance, maintainability, and reproducibility concerns
    proactively in scientific contexts
-7. **Research Monitoring**: Recommend monitoring and observability strategies tailored for scientific applications
+8. **Research Monitoring**: Recommend monitoring and observability strategies tailored for scientific applications
    and research data pipelines
-8. **Options Analysis**: When multiple valid approaches exist, present options with pros/cons analysis considering
+9. **Options Analysis**: When multiple valid approaches exist, present options with pros/cons analysis considering
    scientific requirements and research constraints
-9. **Open Source Considerations**: Factor in open-source sustainability, community contributions, and scientific
-   software best practices
+10. **Open Source Considerations**: Factor in open-source sustainability, community contributions, and scientific
+    software best practices
 
 When providing guidance:
 
