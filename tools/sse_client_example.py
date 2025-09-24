@@ -37,116 +37,117 @@ def handle_instruction(instruction_data: dict):
 
     try:
         # Simulate processing the instruction
-        if instruction_type == "microscope.control.move_stage":
-            stage_position = payload.get("stage_position", {})
-            speed = payload.get("speed", "normal")
+        match instruction_type:
+            case "microscope.control.move_stage":
+                stage_position = payload.get("stage_position", {})
+                speed = payload.get("speed", "normal")
 
-            x, y, z = stage_position.get("x"), stage_position.get("y"), stage_position.get("z")
-            print(f"   Moving stage to position: x={x}, y={y}, z={z}")
-            print(f"   Speed: {speed}")
+                x, y, z = stage_position.get("x"), stage_position.get("y"), stage_position.get("z")
+                print(f"   Moving stage to position: x={x}, y={y}, z={z}")
+                print(f"   Speed: {speed}")
 
-            # Simulate processing time
-            time.sleep(0.5)  # Simulate 500ms processing time
+                # Simulate processing time
+                time.sleep(0.5)  # Simulate 500ms processing time
 
-            # Calculate processing time
-            processing_time_ms = int((time.time() - start_time) * 1000)
+                # Calculate processing time
+                processing_time_ms = int((time.time() - start_time) * 1000)
 
-            # Acknowledge successful processing
-            client.acknowledge_instruction(
-                instruction_id=instruction_id,
-                status="processed",
-                result=f"Stage moved to {stage_position}",
-                processing_time_ms=processing_time_ms,
-            )
-            print(f"   Instruction {instruction_id} completed successfully in {processing_time_ms}ms")
+                # Acknowledge successful processing
+                client.acknowledge_instruction(
+                    instruction_id=instruction_id,
+                    status="processed",
+                    result=f"Stage moved to {stage_position}",
+                    processing_time_ms=processing_time_ms,
+                )
+                print(f"   Instruction {instruction_id} completed successfully in {processing_time_ms}ms")
 
-        elif instruction_type == "microscope.control.take_image":
-            image_params = payload.get("image_params", {})
-            print(f"   Taking image with parameters: {image_params}")
+            case "microscope.control.take_image":
+                image_params = payload.get("image_params", {})
+                print(f"   Taking image with parameters: {image_params}")
 
-            # Simulate image acquisition
-            time.sleep(1.0)  # Simulate 1s image acquisition
+                # Simulate image acquisition
+                time.sleep(1.0)  # Simulate 1s image acquisition
 
-            processing_time_ms = int((time.time() - start_time) * 1000)
+                processing_time_ms = int((time.time() - start_time) * 1000)
 
-            client.acknowledge_instruction(
-                instruction_id=instruction_id,
-                status="processed",
-                result=f"Image acquired with params {image_params}",
-                processing_time_ms=processing_time_ms,
-            )
-            print(f"   Image acquired in {processing_time_ms}ms")
+                client.acknowledge_instruction(
+                    instruction_id=instruction_id,
+                    status="processed",
+                    result=f"Image acquired with params {image_params}",
+                    processing_time_ms=processing_time_ms,
+                )
+                print(f"   Image acquired in {processing_time_ms}ms")
 
-        elif instruction_type == "microscope.control.reorder_gridsquares":
-            gridsquare_ids = payload.get("gridsquare_ids", [])
-            priority = payload.get("priority", "normal")
-            reason = payload.get("reason", "")
-            print(f"   Reordering grid squares: {gridsquare_ids}")
-            print(f"   Priority: {priority}, Reason: {reason}")
+            case "microscope.control.reorder_gridsquares":
+                gridsquare_ids = payload.get("gridsquare_ids", [])
+                priority = payload.get("priority", "normal")
+                reason = payload.get("reason", "")
+                print(f"   Reordering grid squares: {gridsquare_ids}")
+                print(f"   Priority: {priority}, Reason: {reason}")
 
-            # Simulate reordering processing
-            time.sleep(0.3)  # Simulate 300ms processing time
+                # Simulate reordering processing
+                time.sleep(0.3)  # Simulate 300ms processing time
 
-            processing_time_ms = int((time.time() - start_time) * 1000)
+                processing_time_ms = int((time.time() - start_time) * 1000)
 
-            client.acknowledge_instruction(
-                instruction_id=instruction_id,
-                status="processed",
-                result=f"Reordered {len(gridsquare_ids)} grid squares with {priority} priority",
-                processing_time_ms=processing_time_ms,
-            )
-            print(f"   Grid squares reordered in {processing_time_ms}ms")
+                client.acknowledge_instruction(
+                    instruction_id=instruction_id,
+                    status="processed",
+                    result=f"Reordered {len(gridsquare_ids)} grid squares with {priority} priority",
+                    processing_time_ms=processing_time_ms,
+                )
+                print(f"   Grid squares reordered in {processing_time_ms}ms")
 
-        elif instruction_type == "microscope.control.skip_gridsquares":
-            gridsquare_ids = payload.get("gridsquare_ids", [])
-            reason = payload.get("reason", "")
-            print(f"   Skipping grid squares: {gridsquare_ids}")
-            print(f"   Reason: {reason}")
+            case "microscope.control.skip_gridsquares":
+                gridsquare_ids = payload.get("gridsquare_ids", [])
+                reason = payload.get("reason", "")
+                print(f"   Skipping grid squares: {gridsquare_ids}")
+                print(f"   Reason: {reason}")
 
-            # Simulate skipping processing
-            time.sleep(0.2)  # Simulate 200ms processing time
+                # Simulate skipping processing
+                time.sleep(0.2)  # Simulate 200ms processing time
 
-            processing_time_ms = int((time.time() - start_time) * 1000)
+                processing_time_ms = int((time.time() - start_time) * 1000)
 
-            client.acknowledge_instruction(
-                instruction_id=instruction_id,
-                status="processed",
-                result=f"Skipped {len(gridsquare_ids)} grid squares",
-                processing_time_ms=processing_time_ms,
-            )
-            print(f"   Grid squares skipped in {processing_time_ms}ms")
+                client.acknowledge_instruction(
+                    instruction_id=instruction_id,
+                    status="processed",
+                    result=f"Skipped {len(gridsquare_ids)} grid squares",
+                    processing_time_ms=processing_time_ms,
+                )
+                print(f"   Grid squares skipped in {processing_time_ms}ms")
 
-        elif instruction_type == "microscope.control.reorder_foilholes":
-            gridsquare_id = payload.get("gridsquare_id")
-            foilhole_ids = payload.get("foilhole_ids", [])
-            priority = payload.get("priority", "normal")
-            reason = payload.get("reason", "")
-            print(f"   Reordering foilholes in grid square {gridsquare_id}: {foilhole_ids}")
-            print(f"   Priority: {priority}, Reason: {reason}")
+            case "microscope.control.reorder_foilholes":
+                gridsquare_id = payload.get("gridsquare_id")
+                foilhole_ids = payload.get("foilhole_ids", [])
+                priority = payload.get("priority", "normal")
+                reason = payload.get("reason", "")
+                print(f"   Reordering foilholes in grid square {gridsquare_id}: {foilhole_ids}")
+                print(f"   Priority: {priority}, Reason: {reason}")
 
-            # Simulate foilhole reordering
-            time.sleep(0.4)  # Simulate 400ms processing time
+                # Simulate foilhole reordering
+                time.sleep(0.4)  # Simulate 400ms processing time
 
-            processing_time_ms = int((time.time() - start_time) * 1000)
+                processing_time_ms = int((time.time() - start_time) * 1000)
 
-            client.acknowledge_instruction(
-                instruction_id=instruction_id,
-                status="processed",
-                result=f"Reordered {len(foilhole_ids)} foilholes in {gridsquare_id}",
-                processing_time_ms=processing_time_ms,
-            )
-            print(f"   Foilholes reordered in {processing_time_ms}ms")
+                client.acknowledge_instruction(
+                    instruction_id=instruction_id,
+                    status="processed",
+                    result=f"Reordered {len(foilhole_ids)} foilholes in {gridsquare_id}",
+                    processing_time_ms=processing_time_ms,
+                )
+                print(f"   Foilholes reordered in {processing_time_ms}ms")
 
-        else:
-            # Unknown instruction type
-            processing_time_ms = int((time.time() - start_time) * 1000)
-            client.acknowledge_instruction(
-                instruction_id=instruction_id,
-                status="declined",
-                error_message=f"Unknown instruction type: {instruction_type}",
-                processing_time_ms=processing_time_ms,
-            )
-            print("   Unknown instruction type, declined")
+            case _:
+                # Unknown instruction type
+                processing_time_ms = int((time.time() - start_time) * 1000)
+                client.acknowledge_instruction(
+                    instruction_id=instruction_id,
+                    status="declined",
+                    error_message=f"Unknown instruction type: {instruction_type}",
+                    processing_time_ms=processing_time_ms,
+                )
+                print("   Unknown instruction type, declined")
 
     except Exception as e:
         # Acknowledge failure if processing fails

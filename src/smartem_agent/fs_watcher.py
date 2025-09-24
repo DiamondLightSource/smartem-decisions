@@ -225,55 +225,99 @@ class RateLimitedFilesystemEventHandler(FileSystemEventHandler):
         print(f"   Payload: {payload}")
         print(f"   Timestamp: {instruction_data.get('created_at')}")
 
-        # Log to standard logging as well
         logging.info(f"SSE Instruction - ID: {instruction_id}, Type: {instruction_type}, Payload: {payload}")
 
-        # Process the instruction based on type
+        start_time = time.time()
         try:
             result = self._process_instruction(instruction_type, payload)
+            processing_time_ms = int((time.time() - start_time) * 1000)
 
-            # Acknowledge successful processing
             self.sse_client.acknowledge_instruction(
-                instruction_id=instruction_id, status="processed", result=result or "Instruction processed successfully"
+                instruction_id=instruction_id,
+                status="processed",
+                result=result or "Instruction processed successfully",
+                processing_time_ms=processing_time_ms,
             )
-            logging.info(f"Processed and acknowledged instruction {instruction_id}")
+            logging.info(f"Processed and acknowledged instruction {instruction_id} in {processing_time_ms}ms")
 
         except Exception as e:
+            processing_time_ms = int((time.time() - start_time) * 1000)
             logging.error(f"Failed to process instruction {instruction_id}: {e}")
-            # Acknowledge failure
             try:
                 self.sse_client.acknowledge_instruction(
-                    instruction_id=instruction_id, status="failed", error_message=str(e)
+                    instruction_id=instruction_id,
+                    status="failed",
+                    error_message=str(e),
+                    processing_time_ms=processing_time_ms,
                 )
             except Exception as ack_error:
                 logging.error(f"Failed to acknowledge instruction failure {instruction_id}: {ack_error}")
 
     def _process_instruction(self, instruction_type: str, payload: dict) -> str:
-        """Process different types of instructions
+        """Process different types of instructions including microscope control commands"""
 
-        This method can be extended to handle various instruction types.
-        For now, it provides basic logging and status reporting functionality.
-        """
-        if instruction_type == "agent.status.request":
-            # Return current agent status
-            return f"Agent watching {self.watch_dir}, {len(self.changed_files)} files in queue"
+        match instruction_type:
+            case "agent.status.request":
+                return f"Agent watching {self.watch_dir}, {len(self.changed_files)} files in queue"
 
-        elif instruction_type == "agent.config.update":
-            # Handle configuration updates (example)
-            if "log_interval" in payload:
-                old_interval = self.log_interval
-                self.log_interval = float(payload["log_interval"])
-                return f"Log interval updated from {old_interval} to {self.log_interval}"
+            case "agent.config.update":
+                if "log_interval" in payload:
+                    old_interval = self.log_interval
+                    self.log_interval = float(payload["log_interval"])
+                    return f"Log interval updated from {old_interval} to {self.log_interval}"
+                return "No supported config updates in payload"
 
-        elif instruction_type == "agent.info.datastore":
-            # Return datastore information
-            grid_count = len(self.datastore.grids) if self.datastore else 0
-            return f"Datastore contains {grid_count} grids"
+            case "agent.info.datastore":
+                grid_count = len(self.datastore.grids) if self.datastore else 0
+                return f"Datastore contains {grid_count} grids"
 
-        else:
-            # Log unknown instruction types but don't fail
-            logging.warning(f"Unknown instruction type: {instruction_type}")
-            return f"Logged unknown instruction type: {instruction_type}"
+            case "microscope.control.move_stage":
+                stage_position = payload.get("stage_position", {})
+                speed = payload.get("speed", "normal")
+                x, y, z = stage_position.get("x"), stage_position.get("y"), stage_position.get("z")
+
+                logging.info(f"Moving stage to position: x={x}, y={y}, z={z}, speed={speed}")
+                time.sleep(0.5)
+                return f"Stage moved to {stage_position}"
+
+            case "microscope.control.take_image":
+                image_params = payload.get("image_params", {})
+                logging.info(f"Taking image with parameters: {image_params}")
+                time.sleep(1.0)
+                return f"Image acquired with params {image_params}"
+
+            case "microscope.control.reorder_gridsquares":
+                gridsquare_ids = payload.get("gridsquare_ids", [])
+                priority = payload.get("priority", "normal")
+                reason = payload.get("reason", "")
+
+                logging.info(f"Reordering grid squares: {gridsquare_ids}, priority: {priority}, reason: {reason}")
+                time.sleep(0.3)
+                return f"Reordered {len(gridsquare_ids)} grid squares with {priority} priority"
+
+            case "microscope.control.skip_gridsquares":
+                gridsquare_ids = payload.get("gridsquare_ids", [])
+                reason = payload.get("reason", "")
+
+                logging.info(f"Skipping grid squares: {gridsquare_ids}, reason: {reason}")
+                time.sleep(0.2)
+                return f"Skipped {len(gridsquare_ids)} grid squares"
+
+            case "microscope.control.reorder_foilholes":
+                gridsquare_id = payload.get("gridsquare_id")
+                foilhole_ids = payload.get("foilhole_ids", [])
+                priority = payload.get("priority", "normal")
+                reason = payload.get("reason", "")
+
+                logging.info(
+                    f"Reordering foilholes in {gridsquare_id}: {foilhole_ids}, priority: {priority}, reason: {reason}"
+                )
+                time.sleep(0.4)
+                return f"Reordered {len(foilhole_ids)} foilholes in {gridsquare_id}"
+
+            case _:
+                logging.warning(f"Unknown instruction type: {instruction_type}")
+                return f"Logged unknown instruction type: {instruction_type}"
 
     def _handle_sse_connection(self, connection_data: dict):
         """Handle SSE connection events"""

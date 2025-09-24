@@ -695,33 +695,34 @@ class SSEAgentClient:
                     data = json.loads(event.data)
                     event_type = data.get("type")
 
-                    if event_type == "connection":
-                        self._connection_id = data.get("connection_id")
-                        self.logger.info(f"Connected with connection_id: {self._connection_id}")
-                        if connection_callback:
-                            connection_callback(data)
+                    match event_type:
+                        case "connection":
+                            self._connection_id = data.get("connection_id")
+                            self.logger.info(f"Connected with connection_id: {self._connection_id}")
+                            if connection_callback:
+                                connection_callback(data)
 
-                    elif event_type == "heartbeat":
-                        self.logger.debug(f"Heartbeat received at {data.get('timestamp')}")
+                        case "heartbeat":
+                            self.logger.debug(f"Heartbeat received at {data.get('timestamp')}")
 
-                    elif event_type == "instruction":
-                        self._stats["instructions_received"] += 1
-                        self._stats["last_instruction_time"] = datetime.now().isoformat()
-                        self.logger.info(
-                            f"Instruction received: {data.get('instruction_id')} - {data.get('instruction_type')}"
-                        )
-                        instruction_callback(data)
+                        case "instruction":
+                            self._stats["instructions_received"] += 1
+                            self._stats["last_instruction_time"] = datetime.now().isoformat()
+                            self.logger.info(
+                                f"Instruction received: {data.get('instruction_id')} - {data.get('instruction_type')}"
+                            )
+                            instruction_callback(data)
 
-                    elif event_type == "error":
-                        error_msg = data.get("message", "Unknown error")
-                        error = ConnectionError(f"Server error: {error_msg}")
-                        self.logger.error(f"Server error received: {error_msg}")
-                        if error_callback:
-                            error_callback(error)
-                        break
+                        case "error":
+                            error_msg = data.get("message", "Unknown error")
+                            error = ConnectionError(f"Server error: {error_msg}")
+                            self.logger.error(f"Server error received: {error_msg}")
+                            if error_callback:
+                                error_callback(error)
+                            break
 
-                    else:
-                        self.logger.warning(f"Unknown event type: {event_type}")
+                        case _:
+                            self.logger.warning(f"Unknown event type: {event_type}")
 
                 except json.JSONDecodeError as e:
                     self.logger.error(f"Failed to parse SSE data: {e}")
