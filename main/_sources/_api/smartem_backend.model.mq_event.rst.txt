@@ -44,6 +44,9 @@
         
         
         
+        
+        
+        
 
 .. automodule:: smartem_backend.model.mq_event
     :members:
@@ -63,6 +66,9 @@
         AcquisitionDeletedEvent
         AcquisitionEventBase
         AcquisitionUpdatedEvent
+        AgentInstructionCreatedEvent
+        AgentInstructionExpiredEvent
+        AgentInstructionUpdatedEvent
         AtlasCreatedEvent
         AtlasDeletedEvent
         AtlasEventBase

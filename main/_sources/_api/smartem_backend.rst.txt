@@ -13,6 +13,8 @@
         :template: custom-module-template.rst
         :recursive:
     
+        agent_connection_manager
+        agent_data_cleanup
         api_client
         api_server
         cli

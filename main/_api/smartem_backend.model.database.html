@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>smartem_backend.model.database &#8212; smartem-decisions 0.1.dev316+g7c6b40fab.d20250923 documentation</title>
+    <title>smartem_backend.model.database &#8212; smartem-decisions 0.1.dev331+g9707a53d7.d20250924 documentation</title>
   
   
   
@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../_static/documentation_options.js?v=03473287"></script>
+    <script src="../_static/documentation_options.js?v=144d9203"></script>
     <script src="../_static/doctools.js?v=9bcbadda"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -398,6 +398,8 @@
   <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
   <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
 <li class="toctree-l1 current active has-children"><a class="reference internal" href="smartem_backend.html">API</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="smartem_backend.agent_connection_manager.html"><code class="docutils literal notranslate"><span class="pre">smartem_backend.agent_connection_manager</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="smartem_backend.agent_data_cleanup.html"><code class="docutils literal notranslate"><span class="pre">smartem_backend.agent_data_cleanup</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="smartem_backend.api_client.html"><code class="docutils literal notranslate"><span class="pre">smartem_backend.api_client</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="smartem_backend.api_server.html"><code class="docutils literal notranslate"><span class="pre">smartem_backend.api_server</span></code></a></li>
 <li class="toctree-l2 has-children"><a class="reference internal" href="smartem_backend.cli.html"><code class="docutils literal notranslate"><span class="pre">smartem_backend.cli</span></code></a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
@@ -501,6 +503,18 @@
 <tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">Acquisition</span></code></p></td>
 <td><p></p></td>
 </tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#smartem_backend.model.database.AgentConnection" title="smartem_backend.model.database.AgentConnection"><code class="xref py py-obj docutils literal notranslate"><span class="pre">AgentConnection</span></code></a></p></td>
+<td><p>Tracks active SSE connections from agents.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#smartem_backend.model.database.AgentInstruction" title="smartem_backend.model.database.AgentInstruction"><code class="xref py py-obj docutils literal notranslate"><span class="pre">AgentInstruction</span></code></a></p></td>
+<td><p>Represents instructions sent to microscopy agents with full lifecycle tracking.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#smartem_backend.model.database.AgentInstructionAcknowledgement" title="smartem_backend.model.database.AgentInstructionAcknowledgement"><code class="xref py py-obj docutils literal notranslate"><span class="pre">AgentInstructionAcknowledgement</span></code></a></p></td>
+<td><p>Stores the history of instruction acknowledgements from agents.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#smartem_backend.model.database.AgentSession" title="smartem_backend.model.database.AgentSession"><code class="xref py py-obj docutils literal notranslate"><span class="pre">AgentSession</span></code></a></p></td>
+<td><p>Represents a microscopy session conducted by an agent.</p></td>
+</tr>
 <tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">Atlas</span></code></p></td>
 <td><p></p></td>
 </tr>
@@ -540,6 +554,38 @@
 </tbody>
 </table>
 </div>
+<dl class="py class">
+<dt class="sig sig-object py" id="smartem_backend.model.database.AgentSession">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">smartem_backend.model.database.</span></span><span class="sig-name descname"><span class="pre">AgentSession</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">id:</span> <span class="pre">int</span> <span class="pre">|</span> <span class="pre">None</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">session_id:</span> <span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">agent_id:</span> <span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">acquisition_uuid:</span> <span class="pre">str</span> <span class="pre">|</span> <span class="pre">None</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name:</span> <span class="pre">str</span> <span class="pre">|</span> <span class="pre">None</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">description:</span> <span class="pre">str</span> <span class="pre">|</span> <span class="pre">None</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">experimental_parameters:</span> <span class="pre">dict</span> <span class="pre">|</span> <span class="pre">None</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">status:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">'active'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">created_at:</span> <span class="pre">~datetime.datetime</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">started_at:</span> <span class="pre">~datetime.datetime</span> <span class="pre">|</span> <span class="pre">None</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ended_at:</span> <span class="pre">~datetime.datetime</span> <span class="pre">|</span> <span class="pre">None</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">last_activity_at:</span> <span class="pre">~datetime.datetime</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/smartem_backend/model/database.html#AgentSession"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#smartem_backend.model.database.AgentSession" title="Link to this definition">#</a></dt>
+<dd><p>Represents a microscopy session conducted by an agent.
+Sessions group related instructions and provide experimental context.
+Backend-originated entity using BIGSERIAL primary key for scalability.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="smartem_backend.model.database.AgentInstruction">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">smartem_backend.model.database.</span></span><span class="sig-name descname"><span class="pre">AgentInstruction</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">id:</span> <span class="pre">int</span> <span class="pre">|</span> <span class="pre">None</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">instruction_id:</span> <span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">session_id:</span> <span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">agent_id:</span> <span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">instruction_type:</span> <span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">payload:</span> <span class="pre">dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sequence_number:</span> <span class="pre">int</span> <span class="pre">|</span> <span class="pre">None</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">priority:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">'normal'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">status:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">'pending'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">created_at:</span> <span class="pre">~datetime.datetime</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sent_at:</span> <span class="pre">~datetime.datetime</span> <span class="pre">|</span> <span class="pre">None</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">acknowledged_at:</span> <span class="pre">~datetime.datetime</span> <span class="pre">|</span> <span class="pre">None</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">expires_at:</span> <span class="pre">~datetime.datetime</span> <span class="pre">|</span> <span class="pre">None</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">retry_count:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_retries:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">3</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">instruction_metadata:</span> <span class="pre">dict</span> <span class="pre">|</span> <span class="pre">None</span> <span class="pre">=</span> <span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/smartem_backend/model/database.html#AgentInstruction"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#smartem_backend.model.database.AgentInstruction" title="Link to this definition">#</a></dt>
+<dd><p>Represents instructions sent to microscopy agents with full lifecycle tracking.
+Instructions contain the command payload and track delivery/acknowledgement status.
+Backend-originated entity using BIGSERIAL primary key for scalability.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="smartem_backend.model.database.AgentConnection">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">smartem_backend.model.database.</span></span><span class="sig-name descname"><span class="pre">AgentConnection</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">id:</span> <span class="pre">int</span> <span class="pre">|</span> <span class="pre">None</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">connection_id:</span> <span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">session_id:</span> <span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">agent_id:</span> <span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">connection_type:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">'sse'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">client_info:</span> <span class="pre">dict</span> <span class="pre">|</span> <span class="pre">None</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">status:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">'active'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">created_at:</span> <span class="pre">~datetime.datetime</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">last_heartbeat_at:</span> <span class="pre">~datetime.datetime</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">closed_at:</span> <span class="pre">~datetime.datetime</span> <span class="pre">|</span> <span class="pre">None</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">close_reason:</span> <span class="pre">str</span> <span class="pre">|</span> <span class="pre">None</span> <span class="pre">=</span> <span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/smartem_backend/model/database.html#AgentConnection"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#smartem_backend.model.database.AgentConnection" title="Link to this definition">#</a></dt>
+<dd><p>Tracks active SSE connections from agents.
+Used for connection health monitoring and cleanup.
+Backend-originated entity using BIGSERIAL primary key for scalability.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="smartem_backend.model.database.AgentInstructionAcknowledgement">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">smartem_backend.model.database.</span></span><span class="sig-name descname"><span class="pre">AgentInstructionAcknowledgement</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">acknowledgement_id:</span> <span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">instruction_id:</span> <span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">agent_id:</span> <span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">session_id:</span> <span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">status:</span> <span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">result:</span> <span class="pre">str</span> <span class="pre">|</span> <span class="pre">None</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">error_message:</span> <span class="pre">str</span> <span class="pre">|</span> <span class="pre">None</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">processing_time_ms:</span> <span class="pre">int</span> <span class="pre">|</span> <span class="pre">None</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">acknowledgement_metadata:</span> <span class="pre">dict</span> <span class="pre">|</span> <span class="pre">None</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">created_at:</span> <span class="pre">~datetime.datetime</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">processed_at:</span> <span class="pre">~datetime.datetime</span> <span class="pre">|</span> <span class="pre">None</span> <span class="pre">=</span> <span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/smartem_backend/model/database.html#AgentInstructionAcknowledgement"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#smartem_backend.model.database.AgentInstructionAcknowledgement" title="Link to this definition">#</a></dt>
+<dd><p>Stores the history of instruction acknowledgements from agents.
+Provides audit trail for instruction processing and scientific reproducibility.
+Agent-originated entity using UUID primary key for distributed creation.</p>
+</dd></dl>
+
 </section>
 
 
@@ -580,6 +626,21 @@
                 <dialog id="pst-secondary-sidebar-modal"></dialog>
                 <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
 
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#smartem_backend.model.database.AgentSession"><code class="docutils literal notranslate"><span class="pre">AgentSession</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#smartem_backend.model.database.AgentInstruction"><code class="docutils literal notranslate"><span class="pre">AgentInstruction</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#smartem_backend.model.database.AgentConnection"><code class="docutils literal notranslate"><span class="pre">AgentConnection</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#smartem_backend.model.database.AgentInstructionAcknowledgement"><code class="docutils literal notranslate"><span class="pre">AgentInstructionAcknowledgement</span></code></a></li>
+</ul>
+  </nav></div>
 
   <div class="sidebar-secondary-item">
 

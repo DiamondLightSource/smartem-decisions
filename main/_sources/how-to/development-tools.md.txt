@@ -86,6 +86,63 @@ watch -n 1 'echo "Size: $(du -sh .)"; echo "Files: $(find . -type f | wc -l)"'
 
 This tool is particularly useful for monitoring EPU data acquisition progress or debugging processing pipeline performance.
 
+## Message Testing and Communication Tools
+
+### External Message Simulator
+
+Comprehensive CLI tool for simulating external data processing messages that would normally come from ML pipelines and image processing systems:
+
+```bash
+# List all available message types
+python tools/external_message_simulator.py list-messages
+
+# Individual message simulation examples
+python tools/external_message_simulator.py motion-correction --foilhole-id "FH_001_001_001" --quality-score 0.85
+python tools/external_message_simulator.py ctf-complete --foilhole-id "FH_001_001_001" --resolution 3.2
+python tools/external_message_simulator.py gridsquare-prediction --gridsquare-id "GS_001_001" --prediction-score 0.85
+python tools/external_message_simulator.py model-update --model-name "ResNet-50"
+
+# Complete workflow simulation for a single grid square
+python tools/external_message_simulator.py workflow-simulation --gridsquare-id "DEV_001"
+
+# Batch simulation with different quality scenarios
+python tools/external_message_simulator.py batch-simulation --gridsquare-count 5 --scenario mixed
+python tools/external_message_simulator.py batch-simulation --gridsquare-count 3 --scenario good
+python tools/external_message_simulator.py batch-simulation --gridsquare-count 2 --scenario poor
+```
+
+**Available Message Types:**
+- `MOTION_CORRECTION_COMPLETE` - Motion correction processing finished
+- `CTF_COMPLETE` - CTF estimation completed
+- `PARTICLE_PICKING_COMPLETE` - Particle identification finished
+- `PARTICLE_SELECTION_COMPLETE` - Particle quality assessment done
+- `GRIDSQUARE_MODEL_PREDICTION` - ML prediction for grid square quality
+- `FOILHOLE_MODEL_PREDICTION` - ML prediction for foilhole targeting
+- `MODEL_PARAMETER_UPDATE` - ML model parameter updates
+
+### SSE Client Testing
+
+Example client for testing agent-backend communication via Server-Sent Events:
+
+```bash
+# Start the SSE client to receive instructions from backend
+python tools/sse_client_example.py
+
+# The client will:
+# 1. Auto-create a new session with the backend
+# 2. Connect to the SSE stream for real-time instructions
+# 3. Acknowledge received instructions
+# 4. Measure processing time for performance testing
+```
+
+This tool is particularly useful for:
+- Testing the complete agent-backend communication pipeline
+- Validating instruction delivery and acknowledgement mechanisms
+- Performance testing of SSE communication
+- Development of new agent integrations
+
+Both tools work together to simulate the complete external data flow into the SmartEM system, enabling comprehensive testing without requiring actual microscopy equipment or external processing systems.
+
 ## Additional Development Commands
 
 ### Pre-commit Workflow

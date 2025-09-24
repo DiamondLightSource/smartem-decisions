@@ -1,0 +1,804 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="./" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Database Schema Drift Prevention &#8212; smartem-decisions 0.1.dev331+g9707a53d7.d20250924 documentation</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+<link href="_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="_static/graphviz.css?v=4ae1632d" />
+    <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="_static/sphinx-design.min.css?v=95c83b7e" />
+  
+  <!-- So that users can add custom icons -->
+  <script src="_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
+<link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
+
+    <script src="_static/documentation_options.js?v=144d9203"></script>
+    <script src="_static/doctools.js?v=9bcbadda"></script>
+    <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="_static/copybutton.js?v=30646c52"></script>
+    <script src="_static/design-tabs.js?v=f930bc37"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'database-schema-drift-prevention';</script>
+    <script>
+        DOCUMENTATION_OPTIONS.theme_version = '0.16.1';
+        DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://DiamondLightSource.github.io/smartem-decisions/switcher.json';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = 'main';
+        DOCUMENTATION_OPTIONS.show_version_warning_banner =
+            false;
+        </script>
+    <link rel="icon" href="_static/dls-logo.svg"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="main" />
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="_static/dls-logo.svg" class="logo__image only-light" alt=""/>
+    <img src="_static/dls-logo.svg" class="logo__image only-dark pst-js-only" alt=""/>
+  
+  
+    <p class="title logo__title">smartem-decisions</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="tutorials.html">
+    Tutorials
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="how-to.html">
+    How-to Guides
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="explanations.html">
+    Explanations
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="reference.html">
+    Reference
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/DiamondLightSource/smartem-decisions" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://pypi.org/project/smartem-decisions" title="PyPI" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fas fa-cube fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">PyPI</span></a>
+        </li>
+</ul></div>
+      
+        <div class="navbar-item">
+<div class="version-switcher__container dropdown pst-js-only">
+  <button id="pst-version-switcher-button-2"
+    type="button"
+    class="version-switcher__button btn btn-sm dropdown-toggle"
+    data-bs-toggle="dropdown"
+    aria-haspopup="listbox"
+    aria-controls="pst-version-switcher-list-2"
+    aria-label="Version switcher list"
+  >
+    Choose version  <!-- this text may get changed later by javascript -->
+    <span class="caret"></span>
+  </button>
+  <div id="pst-version-switcher-list-2"
+    class="version-switcher__menu dropdown-menu list-group-flush py-0"
+    role="listbox" aria-labelledby="pst-version-switcher-button-2">
+    <!-- dropdown will be populated by javascript on page load -->
+  </div>
+</div></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+    <button class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+        
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar hide-on-wide">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="tutorials.html">
+    Tutorials
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="how-to.html">
+    How-to Guides
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="explanations.html">
+    Explanations
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="reference.html">
+    Reference
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/DiamondLightSource/smartem-decisions" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://pypi.org/project/smartem-decisions" title="PyPI" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fas fa-cube fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">PyPI</span></a>
+        </li>
+</ul></div>
+        
+          <div class="navbar-item">
+<div class="version-switcher__container dropdown pst-js-only">
+  <button id="pst-version-switcher-button-3"
+    type="button"
+    class="version-switcher__button btn btn-sm dropdown-toggle"
+    data-bs-toggle="dropdown"
+    aria-haspopup="listbox"
+    aria-controls="pst-version-switcher-list-3"
+    aria-label="Version switcher list"
+  >
+    Choose version  <!-- this text may get changed later by javascript -->
+    <span class="caret"></span>
+  </button>
+  <div id="pst-version-switcher-list-3"
+    class="version-switcher__menu dropdown-menu list-group-flush py-0"
+    role="listbox" aria-labelledby="pst-version-switcher-button-3">
+    <!-- dropdown will be populated by javascript on page load -->
+  </div>
+</div></div>
+        
+      </div>
+    
+  </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Database Schema Drift Prevention</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section id="database-schema-drift-prevention">
+<h1>Database Schema Drift Prevention<a class="headerlink" href="#database-schema-drift-prevention" title="Link to this heading">#</a></h1>
+<p>This document explains the automated schema drift detection system implemented in SmartEM Decisions to ensure database schema consistency across environments.</p>
+<section id="what-is-schema-drift">
+<h2>What is Schema Drift?<a class="headerlink" href="#what-is-schema-drift" title="Link to this heading">#</a></h2>
+<p>Schema drift occurs when SQLModel definitions (your Python data models) change but the corresponding Alembic database migrations haven’t been updated. This creates a mismatch between:</p>
+<ul class="simple">
+<li><p>What your code expects the database schema to look like (SQLModel definitions)</p></li>
+<li><p>What the actual database schema looks like (current migration state)</p></li>
+</ul>
+<p>This can lead to runtime errors, deployment failures, and data integrity issues.</p>
+</section>
+<section id="how-our-detection-works">
+<h2>How Our Detection Works<a class="headerlink" href="#how-our-detection-works" title="Link to this heading">#</a></h2>
+<p>Our schema drift detection system automatically catches these mismatches in CI/CD by:</p>
+<ol class="arabic simple">
+<li><p><strong>Setting up a temporary database</strong> - Creates a clean PostgreSQL database for testing</p></li>
+<li><p><strong>Applying existing migrations</strong> - Runs all current Alembic migrations to establish the “official” schema state</p></li>
+<li><p><strong>Comparing with SQLModel definitions</strong> - Uses Alembic’s autogenerate feature to detect what new migrations would be needed</p></li>
+<li><p><strong>Reporting drift</strong> - Fails the CI build if any schema changes are detected</p></li>
+</ol>
+</section>
+<section id="when-the-check-runs">
+<h2>When the Check Runs<a class="headerlink" href="#when-the-check-runs" title="Link to this heading">#</a></h2>
+<p>The schema drift check runs automatically:</p>
+<ul class="simple">
+<li><p>On every pull request to <code class="docutils literal notranslate"><span class="pre">main</span></code></p></li>
+<li><p>On every push to <code class="docutils literal notranslate"><span class="pre">main</span></code></p></li>
+<li><p>On manual workflow dispatch</p></li>
+<li><p>Skipped for draft PRs with <code class="docutils literal notranslate"><span class="pre">[WIP]</span></code> prefix</p></li>
+</ul>
+</section>
+<section id="what-happens-when-drift-is-detected">
+<h2>What Happens When Drift is Detected<a class="headerlink" href="#what-happens-when-drift-is-detected" title="Link to this heading">#</a></h2>
+<p>If schema drift is detected, the CI build will fail with a clear error message:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>SCHEMA DRIFT DETECTED!
+
+Your SQLModel definitions have changed but migrations haven&#39;t been updated.
+This means the database schema is out of sync with your model definitions.
+
+To fix this:
+1. Run: alembic revision --autogenerate -m &#39;description of changes&#39;
+2. Review the generated migration file
+3. Test the migration: alembic upgrade head
+4. Commit the new migration file
+</pre></div>
+</div>
+</section>
+<section id="how-to-fix-schema-drift">
+<h2>How to Fix Schema Drift<a class="headerlink" href="#how-to-fix-schema-drift" title="Link to this heading">#</a></h2>
+<p>When you modify SQLModel definitions (add/remove fields, change types, etc.), follow these steps:</p>
+<section id="generate-the-migration">
+<h3>1. Generate the Migration<a class="headerlink" href="#generate-the-migration" title="Link to this heading">#</a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Activate your virtual environment</span>
+<span class="nb">source</span><span class="w"> </span>.venv/bin/activate
+
+<span class="c1"># Generate a new migration based on model changes</span>
+alembic<span class="w"> </span>revision<span class="w"> </span>--autogenerate<span class="w"> </span>-m<span class="w"> </span><span class="s2">&quot;Add user_preferences table&quot;</span>
+</pre></div>
+</div>
+</section>
+<section id="review-the-generated-migration">
+<h3>2. Review the Generated Migration<a class="headerlink" href="#review-the-generated-migration" title="Link to this heading">#</a></h3>
+<p>Alembic will create a new file in <code class="docutils literal notranslate"><span class="pre">src/smartem_backend/migrations/versions/</span></code>. <strong>Always review this file</strong> to ensure:</p>
+<ul class="simple">
+<li><p>The changes match your intentions</p></li>
+<li><p>No unintended schema modifications are included</p></li>
+<li><p>Data migration logic is correct (if needed)</p></li>
+</ul>
+</section>
+<section id="test-the-migration">
+<h3>3. Test the Migration<a class="headerlink" href="#test-the-migration" title="Link to this heading">#</a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Test applying the migration</span>
+alembic<span class="w"> </span>upgrade<span class="w"> </span>head
+
+<span class="c1"># Test downgrading (optional but recommended)</span>
+alembic<span class="w"> </span>downgrade<span class="w"> </span>-1
+alembic<span class="w"> </span>upgrade<span class="w"> </span>head
+</pre></div>
+</div>
+</section>
+<section id="commit-the-migration">
+<h3>4. Commit the Migration<a class="headerlink" href="#commit-the-migration" title="Link to this heading">#</a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git<span class="w"> </span>add<span class="w"> </span>src/smartem_backend/migrations/versions/<span class="o">[</span>new_migration_file<span class="o">]</span>.py
+git<span class="w"> </span>commit<span class="w"> </span>-m<span class="w"> </span><span class="s2">&quot;Add migration for user preferences table&quot;</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="running-the-check-locally">
+<h2>Running the Check Locally<a class="headerlink" href="#running-the-check-locally" title="Link to this heading">#</a></h2>
+<p>You can run the schema drift check locally before pushing:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Ensure you have a PostgreSQL instance running and .dev.env configured</span>
+python<span class="w"> </span>tools/check_schema_drift.py
+</pre></div>
+</div>
+<p>The script will:</p>
+<ul class="simple">
+<li><p>Create a temporary database</p></li>
+<li><p>Apply existing migrations</p></li>
+<li><p>Check for drift</p></li>
+<li><p>Clean up the temporary database</p></li>
+<li><p>Exit with code 0 (success) or 1 (drift detected)</p></li>
+</ul>
+</section>
+<section id="advanced-usage">
+<h2>Advanced Usage<a class="headerlink" href="#advanced-usage" title="Link to this heading">#</a></h2>
+<section id="custom-database-configuration">
+<h3>Custom Database Configuration<a class="headerlink" href="#custom-database-configuration" title="Link to this heading">#</a></h3>
+<p>The script uses environment variables from <code class="docutils literal notranslate"><span class="pre">.dev.env</span></code>:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nv">POSTGRES_HOST</span><span class="o">=</span>localhost
+<span class="nv">POSTGRES_PORT</span><span class="o">=</span><span class="m">5432</span>
+<span class="nv">POSTGRES_USER</span><span class="o">=</span>your_user
+<span class="nv">POSTGRES_PASSWORD</span><span class="o">=</span>your_password
+</pre></div>
+</div>
+</section>
+<section id="debugging-migration-issues">
+<h3>Debugging Migration Issues<a class="headerlink" href="#debugging-migration-issues" title="Link to this heading">#</a></h3>
+<p>If you encounter issues with the drift detection:</p>
+<ol class="arabic simple">
+<li><p><strong>Check migration files</strong> - Ensure all migration files are committed</p></li>
+<li><p><strong>Verify database connectivity</strong> - Test connection with your PostgreSQL instance</p></li>
+<li><p><strong>Review SQLModel imports</strong> - Make sure all models are properly imported in <code class="docutils literal notranslate"><span class="pre">smartem_backend/model/database.py</span></code></p></li>
+<li><p><strong>Check Alembic configuration</strong> - Verify <code class="docutils literal notranslate"><span class="pre">alembic.ini</span></code> and <code class="docutils literal notranslate"><span class="pre">env.py</span></code> are correctly configured</p></li>
+</ol>
+</section>
+<section id="ci-cd-integration-details">
+<h3>CI/CD Integration Details<a class="headerlink" href="#ci-cd-integration-details" title="Link to this heading">#</a></h3>
+<p>The schema drift check is implemented as a reusable GitHub Actions workflow:</p>
+<ul class="simple">
+<li><p><strong>Workflow file</strong>: <code class="docutils literal notranslate"><span class="pre">.github/workflows/_schema_drift.yml</span></code></p></li>
+<li><p><strong>Called from</strong>: <code class="docutils literal notranslate"><span class="pre">.github/workflows/ci.yml</span></code></p></li>
+<li><p><strong>Dependencies</strong>: Runs after basic checks pass</p></li>
+<li><p><strong>Services</strong>: Uses PostgreSQL 15 service container</p></li>
+</ul>
+</section>
+</section>
+<section id="best-practices">
+<h2>Best Practices<a class="headerlink" href="#best-practices" title="Link to this heading">#</a></h2>
+<section id="for-developers">
+<h3>For Developers<a class="headerlink" href="#for-developers" title="Link to this heading">#</a></h3>
+<ol class="arabic simple">
+<li><p><strong>Always run locally first</strong> - Test schema changes before pushing</p></li>
+<li><p><strong>Descriptive migration messages</strong> - Use clear, descriptive names for migrations</p></li>
+<li><p><strong>Small, focused changes</strong> - Avoid large schema changes in single migrations</p></li>
+<li><p><strong>Review autogenerated migrations</strong> - Don’t blindly trust autogenerate output</p></li>
+</ol>
+</section>
+<section id="for-reviews">
+<h3>For Reviews<a class="headerlink" href="#for-reviews" title="Link to this heading">#</a></h3>
+<p>When reviewing PRs with database changes:</p>
+<ol class="arabic simple">
+<li><p><strong>Check for migration files</strong> - Ensure SQLModel changes include corresponding migrations</p></li>
+<li><p><strong>Review migration logic</strong> - Verify the migration does what it claims</p></li>
+<li><p><strong>Consider data safety</strong> - Check for potentially destructive operations</p></li>
+<li><p><strong>Test migration reversal</strong> - Ensure migrations can be safely downgraded</p></li>
+</ol>
+</section>
+</section>
+<section id="troubleshooting">
+<h2>Troubleshooting<a class="headerlink" href="#troubleshooting" title="Link to this heading">#</a></h2>
+<section id="common-issues">
+<h3>Common Issues<a class="headerlink" href="#common-issues" title="Link to this heading">#</a></h3>
+<p><strong>Issue</strong>: “Environment variable POSTGRES_X not set”</p>
+<ul class="simple">
+<li><p><strong>Solution</strong>: Ensure <code class="docutils literal notranslate"><span class="pre">.dev.env</span></code> is properly configured with database credentials</p></li>
+</ul>
+<p><strong>Issue</strong>: “Error creating temporary database”</p>
+<ul class="simple">
+<li><p><strong>Solution</strong>: Verify PostgreSQL is running and credentials are correct</p></li>
+</ul>
+<p><strong>Issue</strong>: “Error running existing migrations”</p>
+<ul class="simple">
+<li><p><strong>Solution</strong>: Check that all migration files are valid and database is accessible</p></li>
+</ul>
+<p><strong>Issue</strong>: False positive drift detection</p>
+<ul class="simple">
+<li><p><strong>Solution</strong>: Ensure all SQLModel classes are imported in the migration env.py</p></li>
+</ul>
+</section>
+<section id="getting-help">
+<h3>Getting Help<a class="headerlink" href="#getting-help" title="Link to this heading">#</a></h3>
+<p>If you encounter issues with the schema drift detection system:</p>
+<ol class="arabic simple">
+<li><p>Check the CI logs for specific error messages</p></li>
+<li><p>Run the check locally for faster debugging</p></li>
+<li><p>Verify your local database setup matches the expected configuration</p></li>
+<li><p>Consult the team for complex migration scenarios</p></li>
+</ol>
+</section>
+</section>
+<section id="technical-implementation">
+<h2>Technical Implementation<a class="headerlink" href="#technical-implementation" title="Link to this heading">#</a></h2>
+<section id="script-architecture">
+<h3>Script Architecture<a class="headerlink" href="#script-architecture" title="Link to this heading">#</a></h3>
+<p>The <code class="docutils literal notranslate"><span class="pre">check_schema_drift.py</span></code> script follows this flow:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">():</span>
+    <span class="c1"># 1. Create temporary database</span>
+    <span class="n">db_url</span> <span class="o">=</span> <span class="n">setup_test_database</span><span class="p">()</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="c1"># 2. Apply existing migrations</span>
+        <span class="n">run_existing_migrations</span><span class="p">(</span><span class="n">db_url</span><span class="p">)</span>
+
+        <span class="c1"># 3. Check for new migrations needed</span>
+        <span class="n">has_drift</span> <span class="o">=</span> <span class="n">check_for_new_migrations</span><span class="p">(</span><span class="n">db_url</span><span class="p">)</span>
+
+        <span class="c1"># 4. Report results</span>
+        <span class="k">if</span> <span class="n">has_drift</span><span class="p">:</span>
+            <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>  <span class="c1"># Fail CI</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;No drift detected&quot;</span><span class="p">)</span>
+
+    <span class="k">finally</span><span class="p">:</span>
+        <span class="c1"># 5. Clean up</span>
+        <span class="n">cleanup_test_database</span><span class="p">(</span><span class="n">db_url</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="security-considerations">
+<h3>Security Considerations<a class="headerlink" href="#security-considerations" title="Link to this heading">#</a></h3>
+<ul class="simple">
+<li><p>Temporary databases use unique names to avoid conflicts</p></li>
+<li><p>Database credentials are loaded from environment variables</p></li>
+<li><p>Temporary resources are always cleaned up, even on failure</p></li>
+<li><p>No production data is accessed during drift detection</p></li>
+</ul>
+<p>This system ensures that database schema changes are always properly tracked through migrations, maintaining consistency across development, testing, and production environments.</p>
+</section>
+</section>
+</section>
+
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#what-is-schema-drift">What is Schema Drift?</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#how-our-detection-works">How Our Detection Works</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#when-the-check-runs">When the Check Runs</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#what-happens-when-drift-is-detected">What Happens When Drift is Detected</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#how-to-fix-schema-drift">How to Fix Schema Drift</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#generate-the-migration">1. Generate the Migration</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#review-the-generated-migration">2. Review the Generated Migration</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#test-the-migration">3. Test the Migration</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#commit-the-migration">4. Commit the Migration</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#running-the-check-locally">Running the Check Locally</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#advanced-usage">Advanced Usage</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#custom-database-configuration">Custom Database Configuration</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#debugging-migration-issues">Debugging Migration Issues</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#ci-cd-integration-details">CI/CD Integration Details</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#best-practices">Best Practices</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#for-developers">For Developers</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#for-reviews">For Reviews</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#troubleshooting">Troubleshooting</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#common-issues">Common Issues</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#getting-help">Getting Help</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#technical-implementation">Technical Implementation</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#script-architecture">Script Architecture</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#security-considerations">Security Considerations</a></li>
+</ul>
+</li>
+</ul>
+  </nav></div>
+
+  <div class="sidebar-secondary-item">
+
+  
+  <div class="tocsection editthispage">
+    <a href="https://github.com/DiamondLightSource/smartem-decisions/edit/main/docs/database-schema-drift-prevention.md">
+      <i class="fa-solid fa-pencil"></i>
+      
+      
+        
+          Edit on GitHub
+        
+      
+    </a>
+  </div>
+</div>
+
+  <div class="sidebar-secondary-item">
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/database-schema-drift-prevention.md.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div></div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf"></script>
+<script defer src="_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.16.1.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>

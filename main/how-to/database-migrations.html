@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Database Migrations &#8212; smartem-decisions 0.1.dev316+g7c6b40fab.d20250923 documentation</title>
+    <title>Database Migrations &#8212; smartem-decisions 0.1.dev331+g9707a53d7.d20250924 documentation</title>
   
   
   
@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../_static/documentation_options.js?v=03473287"></script>
+    <script src="../_static/documentation_options.js?v=144d9203"></script>
     <script src="../_static/doctools.js?v=9bcbadda"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -409,6 +409,7 @@
 <li class="toctree-l1"><a class="reference internal" href="run-agent.html">Run SmartEM Agent (EPU Agent)</a></li>
 <li class="toctree-l1"><a class="reference internal" href="run-backend.html">Run SmartEM Backend</a></li>
 <li class="toctree-l1"><a class="reference internal" href="run-container.html">Run in a container</a></li>
+<li class="toctree-l1"><a class="reference internal" href="troubleshoot-cli.html">SmartEM CLI Troubleshooting Guide</a></li>
 <li class="toctree-l1"><a class="reference internal" href="use-core-http-api-client.html">How to Use the SmartEM API Client</a></li>
 <li class="toctree-l1"><a class="reference internal" href="use-mcp-interface.html">Using SmartEM MCP Interface</a></li>
 </ul>
@@ -494,32 +495,47 @@
 </section>
 <section id="basic-usage">
 <h2>Basic Usage<a class="headerlink" href="#basic-usage" title="Link to this heading">#</a></h2>
+<section id="initial-database-setup">
+<h3>Initial Database Setup<a class="headerlink" href="#initial-database-setup" title="Link to this heading">#</a></h3>
+<p>For a completely new database, run the following command to apply all migrations from scratch:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>-m<span class="w"> </span>alembic<span class="w"> </span>upgrade<span class="w"> </span>head
+</pre></div>
+</div>
+<p>This will:</p>
+<ol class="arabic simple">
+<li><p>Create the Alembic version tracking table</p></li>
+<li><p>Apply migration 001: Create user preferences table</p></li>
+<li><p>Apply baseline migration (6e6302f1ccb6): Create all core SmartEM schema tables (acquisition, grid, gridsquare, micrograph, foilhole, atlas, quality prediction models, etc.)</p></li>
+<li><p>Apply migration 002: Add performance indexes for acquisition datetime queries</p></li>
+<li><p>Apply remaining migrations including agent communication tables</p></li>
+</ol>
+</section>
 <section id="running-migrations">
 <h3>Running Migrations<a class="headerlink" href="#running-migrations" title="Link to this heading">#</a></h3>
 <p>Apply all pending migrations to bring your database up to the latest schema:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>alembic<span class="w"> </span>upgrade<span class="w"> </span>head
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>-m<span class="w"> </span>alembic<span class="w"> </span>upgrade<span class="w"> </span>head
 </pre></div>
 </div>
 </section>
 <section id="checking-migration-status">
 <h3>Checking Migration Status<a class="headerlink" href="#checking-migration-status" title="Link to this heading">#</a></h3>
 <p>See the current database version:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>alembic<span class="w"> </span>current
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>-m<span class="w"> </span>alembic<span class="w"> </span>current
 </pre></div>
 </div>
 <p>View migration history:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>alembic<span class="w"> </span><span class="nb">history</span><span class="w"> </span>--verbose
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>-m<span class="w"> </span>alembic<span class="w"> </span><span class="nb">history</span><span class="w"> </span>--verbose
 </pre></div>
 </div>
 </section>
 <section id="rolling-back-migrations">
 <h3>Rolling Back Migrations<a class="headerlink" href="#rolling-back-migrations" title="Link to this heading">#</a></h3>
 <p>Downgrade to a specific revision:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>alembic<span class="w"> </span>downgrade<span class="w"> </span>&lt;revision_id&gt;
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>-m<span class="w"> </span>alembic<span class="w"> </span>downgrade<span class="w"> </span>&lt;revision_id&gt;
 </pre></div>
 </div>
 <p>Rollback one migration:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>alembic<span class="w"> </span>downgrade<span class="w"> </span>-1
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>-m<span class="w"> </span>alembic<span class="w"> </span>downgrade<span class="w"> </span>-1
 </pre></div>
 </div>
 </section>
@@ -529,7 +545,7 @@
 <section id="auto-generating-migrations">
 <h3>Auto-generating Migrations<a class="headerlink" href="#auto-generating-migrations" title="Link to this heading">#</a></h3>
 <p>When you modify SQLModel classes in <code class="docutils literal notranslate"><span class="pre">src/smartem_backend/model/database.py</span></code>, generate a migration automatically:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>alembic<span class="w"> </span>revision<span class="w"> </span>--autogenerate<span class="w"> </span>-m<span class="w"> </span><span class="s2">&quot;Add new field to Grid model&quot;</span>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>-m<span class="w"> </span>alembic<span class="w"> </span>revision<span class="w"> </span>--autogenerate<span class="w"> </span>-m<span class="w"> </span><span class="s2">&quot;Add new field to Grid model&quot;</span>
 </pre></div>
 </div>
 <p><strong>Important</strong>: Always review auto-generated migrations before applying them. Alembic may not detect all changes (like column renames or complex constraints).</p>
@@ -537,7 +553,7 @@
 <section id="manual-migrations">
 <h3>Manual Migrations<a class="headerlink" href="#manual-migrations" title="Link to this heading">#</a></h3>
 <p>For data migrations or complex schema changes, create an empty migration:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>alembic<span class="w"> </span>revision<span class="w"> </span>-m<span class="w"> </span><span class="s2">&quot;Seed initial user data&quot;</span>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>-m<span class="w"> </span>alembic<span class="w"> </span>revision<span class="w"> </span>-m<span class="w"> </span><span class="s2">&quot;Seed initial user data&quot;</span>
 </pre></div>
 </div>
 <p>Edit the generated file in <code class="docutils literal notranslate"><span class="pre">src/smartem_backend/migrations/versions/</span></code> to add your custom logic.</p>
@@ -640,7 +656,7 @@
 pg_dump<span class="w"> </span>smartem_production<span class="w"> </span>&gt;<span class="w"> </span>backup_<span class="k">$(</span>date<span class="w"> </span>+%Y%m%d_%H%M%S<span class="k">)</span>.sql
 
 <span class="c1"># 2. Apply migrations</span>
-alembic<span class="w"> </span>upgrade<span class="w"> </span>head
+python<span class="w"> </span>-m<span class="w"> </span>alembic<span class="w"> </span>upgrade<span class="w"> </span>head
 
 <span class="c1"># 3. Verify application works</span>
 <span class="c1"># 4. Clean up old backups (optional)</span>
@@ -650,7 +666,7 @@ alembic<span class="w"> </span>upgrade<span class="w"> </span>head
 <section id="staging-environment">
 <h3>Staging Environment<a class="headerlink" href="#staging-environment" title="Link to this heading">#</a></h3>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Apply migrations to staging first</span>
-alembic<span class="w"> </span>upgrade<span class="w"> </span>head
+python<span class="w"> </span>-m<span class="w"> </span>alembic<span class="w"> </span>upgrade<span class="w"> </span>head
 
 <span class="c1"># Test application functionality</span>
 <span class="c1"># Run integration tests</span>
@@ -664,21 +680,39 @@ alembic<span class="w"> </span>upgrade<span class="w"> </span>head
 <h3>Common Issues<a class="headerlink" href="#common-issues" title="Link to this heading">#</a></h3>
 <p><strong>Migration conflicts</strong>: When multiple developers create migrations simultaneously:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Resolve by creating a merge migration</span>
-alembic<span class="w"> </span>merge<span class="w"> </span>&lt;rev1&gt;<span class="w"> </span>&lt;rev2&gt;<span class="w"> </span>-m<span class="w"> </span><span class="s2">&quot;Merge migrations&quot;</span>
+python<span class="w"> </span>-m<span class="w"> </span>alembic<span class="w"> </span>merge<span class="w"> </span>&lt;rev1&gt;<span class="w"> </span>&lt;rev2&gt;<span class="w"> </span>-m<span class="w"> </span><span class="s2">&quot;Merge migrations&quot;</span>
 </pre></div>
 </div>
 <p><strong>Failed migration</strong>: If a migration fails partway through:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Check current state</span>
-alembic<span class="w"> </span>current
+python<span class="w"> </span>-m<span class="w"> </span>alembic<span class="w"> </span>current
 
 <span class="c1"># Fix data/schema issues manually</span>
 <span class="c1"># Mark migration as complete (if safe)</span>
-alembic<span class="w"> </span>stamp<span class="w"> </span>&lt;revision_id&gt;
+python<span class="w"> </span>-m<span class="w"> </span>alembic<span class="w"> </span>stamp<span class="w"> </span>&lt;revision_id&gt;
 </pre></div>
 </div>
 <p><strong>Model out of sync</strong>: When models don’t match database:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Generate migration to sync</span>
-alembic<span class="w"> </span>revision<span class="w"> </span>--autogenerate<span class="w"> </span>-m<span class="w"> </span><span class="s2">&quot;Sync models with database&quot;</span>
+python<span class="w"> </span>-m<span class="w"> </span>alembic<span class="w"> </span>revision<span class="w"> </span>--autogenerate<span class="w"> </span>-m<span class="w"> </span><span class="s2">&quot;Sync models with database&quot;</span>
+</pre></div>
+</div>
+</section>
+<section id="migration-specific-issues">
+<h3>Migration-Specific Issues<a class="headerlink" href="#migration-specific-issues" title="Link to this heading">#</a></h3>
+<p><strong>Missing baseline schema</strong>: If you encounter errors like “relation ‘gridsquare’ does not exist” when running migrations:</p>
+<p>This indicates that migration 002 is trying to create indexes on tables that don’t exist yet. This happens when the baseline schema migration is missing or not properly applied. The fix is to ensure the baseline migration (6e6302f1ccb6) is applied before migration 002.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Solution: Run the complete migration sequence from scratch</span>
+python<span class="w"> </span>-m<span class="w"> </span>alembic<span class="w"> </span>downgrade<span class="w"> </span>base
+python<span class="w"> </span>-m<span class="w"> </span>alembic<span class="w"> </span>upgrade<span class="w"> </span>head
+</pre></div>
+</div>
+<p><strong>Enum type conflicts</strong>: If you encounter “type already exists” errors:</p>
+<p>This can happen when enum types exist from previous schema creation attempts but don’t match the migration expectations.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Clean up existing enum types and restart migrations</span>
+python<span class="w"> </span>-m<span class="w"> </span>alembic<span class="w"> </span>downgrade<span class="w"> </span>base
+<span class="c1"># Then apply migrations fresh</span>
+python<span class="w"> </span>-m<span class="w"> </span>alembic<span class="w"> </span>upgrade<span class="w"> </span>head
 </pre></div>
 </div>
 </section>
@@ -766,6 +800,7 @@ alembic<span class="w"> </span>revision<span class="w"> </span>--autogenerate<sp
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#overview">Overview</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#prerequisites">Prerequisites</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#basic-usage">Basic Usage</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#initial-database-setup">Initial Database Setup</a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#running-migrations">Running Migrations</a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#checking-migration-status">Checking Migration Status</a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#rolling-back-migrations">Rolling Back Migrations</a></li>
@@ -795,6 +830,7 @@ alembic<span class="w"> </span>revision<span class="w"> </span>--autogenerate<sp
 </li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#troubleshooting">Troubleshooting</a><ul class="nav section-nav flex-column">
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#common-issues">Common Issues</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#migration-specific-issues">Migration-Specific Issues</a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#database-connection-issues">Database Connection Issues</a></li>
 </ul>
 </li>

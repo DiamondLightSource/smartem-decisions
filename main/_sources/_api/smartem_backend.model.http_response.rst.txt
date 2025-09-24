@@ -8,6 +8,7 @@
         
         
         
+        
 
 .. automodule:: smartem_backend.model.http_response
     :members:
@@ -24,6 +25,7 @@
         :nosignatures:
     
         AcquisitionResponse
+        AgentInstructionAcknowledgementResponse
         AtlasResponse
         AtlasTileGridSquarePositionResponse
         AtlasTileResponse

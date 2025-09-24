@@ -29,6 +29,9 @@
         
         
         
+        
+        
+        
 
 .. automodule:: smartem_backend.mq_publisher
     :members:
@@ -47,6 +50,9 @@
         publish_acquisition_created
         publish_acquisition_deleted
         publish_acquisition_updated
+        publish_agent_instruction_created
+        publish_agent_instruction_expired
+        publish_agent_instruction_updated
         publish_atlas_created
         publish_atlas_deleted
         publish_atlas_tile_created

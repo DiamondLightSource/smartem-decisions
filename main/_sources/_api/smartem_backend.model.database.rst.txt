@@ -13,6 +13,10 @@
         
         
         
+        
+        
+        
+        
 
 .. automodule:: smartem_backend.model.database
     :members:
@@ -29,6 +33,10 @@
         :nosignatures:
     
         Acquisition
+        AgentConnection
+        AgentInstruction
+        AgentInstructionAcknowledgement
+        AgentSession
         Atlas
         AtlasTile
         AtlasTileGridSquarePosition

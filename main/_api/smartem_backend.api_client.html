@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>smartem_backend.api_client &#8212; smartem-decisions 0.1.dev316+g7c6b40fab.d20250923 documentation</title>
+    <title>smartem_backend.api_client &#8212; smartem-decisions 0.1.dev331+g9707a53d7.d20250924 documentation</title>
   
   
   
@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../_static/documentation_options.js?v=03473287"></script>
+    <script src="../_static/documentation_options.js?v=144d9203"></script>
     <script src="../_static/doctools.js?v=9bcbadda"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -59,7 +59,7 @@
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="smartem_backend.api_server" href="smartem_backend.api_server.html" />
-    <link rel="prev" title="smartem_backend" href="smartem_backend.html" />
+    <link rel="prev" title="smartem_backend.agent_data_cleanup" href="smartem_backend.agent_data_cleanup.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
   <meta name="docsearch:version" content="main" />
@@ -398,6 +398,8 @@
   <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
   <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
 <li class="toctree-l1 current active has-children"><a class="reference internal" href="smartem_backend.html">API</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="smartem_backend.agent_connection_manager.html"><code class="docutils literal notranslate"><span class="pre">smartem_backend.agent_connection_manager</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="smartem_backend.agent_data_cleanup.html"><code class="docutils literal notranslate"><span class="pre">smartem_backend.agent_data_cleanup</span></code></a></li>
 <li class="toctree-l2 current active"><a class="current reference internal" href="#"><code class="docutils literal notranslate"><span class="pre">smartem_backend.api_client</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="smartem_backend.api_server.html"><code class="docutils literal notranslate"><span class="pre">smartem_backend.api_server</span></code></a></li>
 <li class="toctree-l2 has-children"><a class="reference internal" href="smartem_backend.cli.html"><code class="docutils literal notranslate"><span class="pre">smartem_backend.cli</span></code></a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
@@ -498,7 +500,10 @@
 <tr class="row-odd"><td><p><a class="reference internal" href="#smartem_backend.api_client.EntityConverter" title="smartem_backend.api_client.EntityConverter"><code class="xref py py-obj docutils literal notranslate"><span class="pre">EntityConverter</span></code></a></p></td>
 <td><p>Handles conversions between EPU data model and API request/response models.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#smartem_backend.api_client.SmartEMAPIClient" title="smartem_backend.api_client.SmartEMAPIClient"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SmartEMAPIClient</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#smartem_backend.api_client.SSEAgentClient" title="smartem_backend.api_client.SSEAgentClient"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SSEAgentClient</span></code></a></p></td>
+<td><p>SSE client for agents to receive real-time instructions from the backend.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#smartem_backend.api_client.SmartEMAPIClient" title="smartem_backend.api_client.SmartEMAPIClient"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SmartEMAPIClient</span></code></a></p></td>
 <td><p>SmartEM API client that provides synchronous HTTP interface.</p></td>
 </tr>
 </tbody>
@@ -846,6 +851,135 @@ and maintains a cache of entity IDs.</p>
 <dd><p>Create a new micrograph for a specific foil hole</p>
 </dd></dl>
 
+<dl class="py method">
+<dt class="sig sig-object py" id="smartem_backend.api_client.SmartEMAPIClient.acknowledge_instruction">
+<span class="sig-name descname"><span class="pre">acknowledge_instruction</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">agent_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">session_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">instruction_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">acknowledgement</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="smartem_backend.model.http_request.html#smartem_backend.model.http_request.AgentInstructionAcknowledgement" title="smartem_backend.model.http_request.AgentInstructionAcknowledgement"><span class="pre">AgentInstructionAcknowledgement</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="smartem_backend.model.http_response.html#smartem_backend.model.http_response.AgentInstructionAcknowledgementResponse" title="smartem_backend.model.http_response.AgentInstructionAcknowledgementResponse"><span class="pre">AgentInstructionAcknowledgementResponse</span></a></span></span><a class="reference internal" href="../_modules/smartem_backend/api_client.html#SmartEMAPIClient.acknowledge_instruction"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#smartem_backend.api_client.SmartEMAPIClient.acknowledge_instruction" title="Link to this definition">#</a></dt>
+<dd><p>Acknowledge an instruction from the agent</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="smartem_backend.api_client.SmartEMAPIClient.get_active_connections">
+<span class="sig-name descname"><span class="pre">get_active_connections</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.13)"><span class="pre">dict</span></a></span></span><a class="reference internal" href="../_modules/smartem_backend/api_client.html#SmartEMAPIClient.get_active_connections"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#smartem_backend.api_client.SmartEMAPIClient.get_active_connections" title="Link to this definition">#</a></dt>
+<dd><p>Get active agent connections (debug endpoint)</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="smartem_backend.api_client.SmartEMAPIClient.get_session_instructions">
+<span class="sig-name descname"><span class="pre">get_session_instructions</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">session_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.13)"><span class="pre">dict</span></a></span></span><a class="reference internal" href="../_modules/smartem_backend/api_client.html#SmartEMAPIClient.get_session_instructions"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#smartem_backend.api_client.SmartEMAPIClient.get_session_instructions" title="Link to this definition">#</a></dt>
+<dd><p>Get instructions for a session (debug endpoint)</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="smartem_backend.api_client.SSEAgentClient">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">smartem_backend.api_client.</span></span><span class="sig-name descname"><span class="pre">SSEAgentClient</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">base_url</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">agent_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">session_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">timeout</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><span class="pre">int</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">30</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_retries</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><span class="pre">int</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">initial_retry_delay</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><span class="pre">float</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_retry_delay</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><span class="pre">float</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">60.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/smartem_backend/api_client.html#SSEAgentClient"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#smartem_backend.api_client.SSEAgentClient" title="Link to this definition">#</a></dt>
+<dd><p>SSE client for agents to receive real-time instructions from the backend.
+This is separate from the main ApiClient as it handles long-lived connections.</p>
+<p>Initialize SSE client for agent communication</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>base_url</strong> – Base URL of the API server</p></li>
+<li><p><strong>agent_id</strong> – Unique identifier for this agent/microscope</p></li>
+<li><p><strong>session_id</strong> – Current microscopy session ID</p></li>
+<li><p><strong>timeout</strong> – Connection timeout in seconds</p></li>
+<li><p><strong>max_retries</strong> – Maximum number of reconnection attempts</p></li>
+<li><p><strong>initial_retry_delay</strong> – Initial delay between retries in seconds</p></li>
+<li><p><strong>max_retry_delay</strong> – Maximum delay between retries in seconds</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="smartem_backend.api_client.SSEAgentClient.stream_instructions">
+<span class="sig-name descname"><span class="pre">stream_instructions</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">instruction_callback</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Callable" title="(in Python v3.13)"><span class="pre">Callable</span></a><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.13)"><span class="pre">dict</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.13)"><span class="pre">None</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">connection_callback</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Callable" title="(in Python v3.13)"><span class="pre">Callable</span></a><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.13)"><span class="pre">dict</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.13)"><span class="pre">None</span></a><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.13)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">error_callback</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Callable" title="(in Python v3.13)"><span class="pre">Callable</span></a><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#Exception" title="(in Python v3.13)"><span class="pre">Exception</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.13)"><span class="pre">None</span></a><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.13)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.13)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../_modules/smartem_backend/api_client.html#SSEAgentClient.stream_instructions"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#smartem_backend.api_client.SSEAgentClient.stream_instructions" title="Link to this definition">#</a></dt>
+<dd><p>Start streaming instructions via SSE (blocking)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>instruction_callback</strong> – Called when an instruction is received</p></li>
+<li><p><strong>connection_callback</strong> – Called when connection events occur (optional)</p></li>
+<li><p><strong>error_callback</strong> – Called when errors occur (optional)</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="smartem_backend.api_client.SSEAgentClient.stream_instructions_async">
+<em class="property"><span class="k"><span class="pre">async</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">stream_instructions_async</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">instruction_callback</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Callable" title="(in Python v3.13)"><span class="pre">Callable</span></a><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.13)"><span class="pre">dict</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.13)"><span class="pre">None</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">connection_callback</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Callable" title="(in Python v3.13)"><span class="pre">Callable</span></a><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.13)"><span class="pre">dict</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.13)"><span class="pre">None</span></a><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.13)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">error_callback</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Callable" title="(in Python v3.13)"><span class="pre">Callable</span></a><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#Exception" title="(in Python v3.13)"><span class="pre">Exception</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.13)"><span class="pre">None</span></a><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.13)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">auto_retry</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.13)"><span class="pre">bool</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.13)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../_modules/smartem_backend/api_client.html#SSEAgentClient.stream_instructions_async"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#smartem_backend.api_client.SSEAgentClient.stream_instructions_async" title="Link to this definition">#</a></dt>
+<dd><p>Start streaming instructions via SSE (async with auto-retry and exponential backoff)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>instruction_callback</strong> – Called when an instruction is received</p></li>
+<li><p><strong>connection_callback</strong> – Called when connection events occur (optional)</p></li>
+<li><p><strong>error_callback</strong> – Called when errors occur (optional)</p></li>
+<li><p><strong>auto_retry</strong> – Whether to automatically retry on connection failures</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="smartem_backend.api_client.SSEAgentClient.acknowledge_instruction">
+<span class="sig-name descname"><span class="pre">acknowledge_instruction</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">instruction_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">status</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">result</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.13)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">error_message</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.13)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">processing_time_ms</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><span class="pre">int</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.13)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">retry_count</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><span class="pre">int</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">3</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="smartem_backend.model.http_response.html#smartem_backend.model.http_response.AgentInstructionAcknowledgementResponse" title="smartem_backend.model.http_response.AgentInstructionAcknowledgementResponse"><span class="pre">AgentInstructionAcknowledgementResponse</span></a></span></span><a class="reference internal" href="../_modules/smartem_backend/api_client.html#SSEAgentClient.acknowledge_instruction"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#smartem_backend.api_client.SSEAgentClient.acknowledge_instruction" title="Link to this definition">#</a></dt>
+<dd><p>Acknowledge an instruction with retry logic</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>instruction_id</strong> – ID of the instruction to acknowledge</p></li>
+<li><p><strong>status</strong> – Status of acknowledgement (‘received’, ‘processed’, ‘failed’, ‘declined’)</p></li>
+<li><p><strong>result</strong> – Optional result message</p></li>
+<li><p><strong>error_message</strong> – Optional error message if status is ‘failed’</p></li>
+<li><p><strong>processing_time_ms</strong> – Time taken to process the instruction in milliseconds</p></li>
+<li><p><strong>retry_count</strong> – Number of retry attempts for acknowledgement</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="smartem_backend.api_client.SSEAgentClient.get_stats">
+<span class="sig-name descname"><span class="pre">get_stats</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.13)"><span class="pre">dict</span></a></span></span><a class="reference internal" href="../_modules/smartem_backend/api_client.html#SSEAgentClient.get_stats"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#smartem_backend.api_client.SSEAgentClient.get_stats" title="Link to this definition">#</a></dt>
+<dd><p>Get client connection and performance statistics.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="smartem_backend.api_client.SSEAgentClient.reset_stats">
+<span class="sig-name descname"><span class="pre">reset_stats</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.13)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../_modules/smartem_backend/api_client.html#SSEAgentClient.reset_stats"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#smartem_backend.api_client.SSEAgentClient.reset_stats" title="Link to this definition">#</a></dt>
+<dd><p>Reset client statistics.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="smartem_backend.api_client.SSEAgentClient.is_connected">
+<span class="sig-name descname"><span class="pre">is_connected</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.13)"><span class="pre">bool</span></a></span></span><a class="reference internal" href="../_modules/smartem_backend/api_client.html#SSEAgentClient.is_connected"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#smartem_backend.api_client.SSEAgentClient.is_connected" title="Link to this definition">#</a></dt>
+<dd><p>Check if the client is currently connected and streaming.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="smartem_backend.api_client.SSEAgentClient.send_heartbeat">
+<span class="sig-name descname"><span class="pre">send_heartbeat</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">retry_count</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><span class="pre">int</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">3</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.13)"><span class="pre">bool</span></a></span></span><a class="reference internal" href="../_modules/smartem_backend/api_client.html#SSEAgentClient.send_heartbeat"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#smartem_backend.api_client.SSEAgentClient.send_heartbeat" title="Link to this definition">#</a></dt>
+<dd><p>Send a heartbeat to the backend to update connection health status</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>retry_count</strong> – Number of retry attempts for heartbeat</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>True if heartbeat was sent successfully, False otherwise</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.13)">bool</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="smartem_backend.api_client.SSEAgentClient.stop">
+<span class="sig-name descname"><span class="pre">stop</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/smartem_backend/api_client.html#SSEAgentClient.stop"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#smartem_backend.api_client.SSEAgentClient.stop" title="Link to this definition">#</a></dt>
+<dd><p>Stop the SSE stream</p>
+</dd></dl>
+
 </dd></dl>
 
 </section>
@@ -861,12 +995,12 @@ and maintains a cache of entity IDs.</p>
                   
 <div class="prev-next-area">
     <a class="left-prev"
-       href="smartem_backend.html"
+       href="smartem_backend.agent_data_cleanup.html"
        title="previous page">
       <i class="fa-solid fa-angle-left"></i>
       <div class="prev-next-info">
         <p class="prev-next-subtitle">previous</p>
-        <p class="prev-next-title"><code class="docutils literal notranslate"><span class="pre">smartem_backend</span></code></p>
+        <p class="prev-next-title"><code class="docutils literal notranslate"><span class="pre">smartem_backend.agent_data_cleanup</span></code></p>
       </div>
     </a>
     <a class="right-next"
@@ -954,6 +1088,20 @@ and maintains a cache of entity IDs.</p>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#smartem_backend.api_client.SmartEMAPIClient.delete_micrograph"><code class="docutils literal notranslate"><span class="pre">SmartEMAPIClient.delete_micrograph()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#smartem_backend.api_client.SmartEMAPIClient.get_foilhole_micrographs"><code class="docutils literal notranslate"><span class="pre">SmartEMAPIClient.get_foilhole_micrographs()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#smartem_backend.api_client.SmartEMAPIClient.create_foilhole_micrograph"><code class="docutils literal notranslate"><span class="pre">SmartEMAPIClient.create_foilhole_micrograph()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#smartem_backend.api_client.SmartEMAPIClient.acknowledge_instruction"><code class="docutils literal notranslate"><span class="pre">SmartEMAPIClient.acknowledge_instruction()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#smartem_backend.api_client.SmartEMAPIClient.get_active_connections"><code class="docutils literal notranslate"><span class="pre">SmartEMAPIClient.get_active_connections()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#smartem_backend.api_client.SmartEMAPIClient.get_session_instructions"><code class="docutils literal notranslate"><span class="pre">SmartEMAPIClient.get_session_instructions()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#smartem_backend.api_client.SSEAgentClient"><code class="docutils literal notranslate"><span class="pre">SSEAgentClient</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#smartem_backend.api_client.SSEAgentClient.stream_instructions"><code class="docutils literal notranslate"><span class="pre">SSEAgentClient.stream_instructions()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#smartem_backend.api_client.SSEAgentClient.stream_instructions_async"><code class="docutils literal notranslate"><span class="pre">SSEAgentClient.stream_instructions_async()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#smartem_backend.api_client.SSEAgentClient.acknowledge_instruction"><code class="docutils literal notranslate"><span class="pre">SSEAgentClient.acknowledge_instruction()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#smartem_backend.api_client.SSEAgentClient.get_stats"><code class="docutils literal notranslate"><span class="pre">SSEAgentClient.get_stats()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#smartem_backend.api_client.SSEAgentClient.reset_stats"><code class="docutils literal notranslate"><span class="pre">SSEAgentClient.reset_stats()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#smartem_backend.api_client.SSEAgentClient.is_connected"><code class="docutils literal notranslate"><span class="pre">SSEAgentClient.is_connected()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#smartem_backend.api_client.SSEAgentClient.send_heartbeat"><code class="docutils literal notranslate"><span class="pre">SSEAgentClient.send_heartbeat()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#smartem_backend.api_client.SSEAgentClient.stop"><code class="docutils literal notranslate"><span class="pre">SSEAgentClient.stop()</span></code></a></li>
 </ul>
 </li>
 </ul>

@@ -7,7 +7,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Index &#8212; smartem-decisions 0.1.dev316+g7c6b40fab.d20250923 documentation</title>
+    <title>Index &#8212; smartem-decisions 0.1.dev331+g9707a53d7.d20250924 documentation</title>
   
   
   
@@ -40,7 +40,7 @@
   <link rel="preload" as="script" href="_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="_static/documentation_options.js?v=03473287"></script>
+    <script src="_static/documentation_options.js?v=144d9203"></script>
     <script src="_static/doctools.js?v=9bcbadda"></script>
     <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/clipboard.min.js?v=a7894cd8"></script>
@@ -391,6 +391,8 @@
   <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
   <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
 <li class="toctree-l1 has-children"><a class="reference internal" href="_api/smartem_backend.html">API</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="_api/smartem_backend.agent_connection_manager.html"><code class="docutils literal notranslate"><span class="pre">smartem_backend.agent_connection_manager</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="_api/smartem_backend.agent_data_cleanup.html"><code class="docutils literal notranslate"><span class="pre">smartem_backend.agent_data_cleanup</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="_api/smartem_backend.api_client.html"><code class="docutils literal notranslate"><span class="pre">smartem_backend.api_client</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="_api/smartem_backend.api_server.html"><code class="docutils literal notranslate"><span class="pre">smartem_backend.api_server</span></code></a></li>
 <li class="toctree-l2 has-children"><a class="reference internal" href="_api/smartem_backend.cli.html"><code class="docutils literal notranslate"><span class="pre">smartem_backend.cli</span></code></a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
@@ -477,6 +479,14 @@
 <h2 id="A">A</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="_api/smartem_backend.api_server.html#smartem_backend.api_server.acknowledge_instruction">acknowledge_instruction() (in module smartem_backend.api_server)</a>
+
+      <ul>
+        <li><a href="_api/smartem_backend.api_client.html#smartem_backend.api_client.SmartEMAPIClient.acknowledge_instruction">(smartem_backend.api_client.SmartEMAPIClient method)</a>
+</li>
+        <li><a href="_api/smartem_backend.api_client.html#smartem_backend.api_client.SSEAgentClient.acknowledge_instruction">(smartem_backend.api_client.SSEAgentClient method)</a>
+</li>
+      </ul></li>
       <li><a href="_api/smartem_backend.api_client.html#smartem_backend.api_client.EntityConverter.acquisition_to_request">acquisition_to_request() (smartem_backend.api_client.EntityConverter static method)</a>
 </li>
       <li><a href="_api/smartem_backend.model.mq_event.html#smartem_backend.model.mq_event.AcquisitionCreatedEvent">AcquisitionCreatedEvent (class in smartem_backend.model.mq_event)</a>
@@ -487,12 +497,40 @@
 </li>
       <li><a href="_api/smartem_backend.model.mq_event.html#smartem_backend.model.mq_event.AcquisitionUpdatedEvent">AcquisitionUpdatedEvent (class in smartem_backend.model.mq_event)</a>
 </li>
+      <li><a href="_api/smartem_backend.api_server.html#smartem_backend.api_server.agent_heartbeat">agent_heartbeat() (in module smartem_backend.api_server)</a>
+</li>
+      <li><a href="_api/smartem_backend.model.database.html#smartem_backend.model.database.AgentConnection">AgentConnection (class in smartem_backend.model.database)</a>
+</li>
+      <li><a href="_api/smartem_backend.agent_connection_manager.html#smartem_backend.agent_connection_manager.AgentConnectionManager">AgentConnectionManager (class in smartem_backend.agent_connection_manager)</a>
+</li>
+      <li><a href="_api/smartem_backend.agent_data_cleanup.html#smartem_backend.agent_data_cleanup.AgentDataCleanupService">AgentDataCleanupService (class in smartem_backend.agent_data_cleanup)</a>
+</li>
+      <li><a href="_api/smartem_backend.agent_data_cleanup.html#smartem_backend.agent_data_cleanup.AgentDataRetentionPolicy">AgentDataRetentionPolicy (class in smartem_backend.agent_data_cleanup)</a>
+</li>
+      <li><a href="_api/smartem_backend.model.database.html#smartem_backend.model.database.AgentInstruction">AgentInstruction (class in smartem_backend.model.database)</a>
+</li>
+      <li><a href="_api/smartem_backend.model.database.html#smartem_backend.model.database.AgentInstructionAcknowledgement">AgentInstructionAcknowledgement (class in smartem_backend.model.database)</a>
+
+      <ul>
+        <li><a href="_api/smartem_backend.model.http_request.html#smartem_backend.model.http_request.AgentInstructionAcknowledgement">(class in smartem_backend.model.http_request)</a>
+</li>
+      </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="_api/smartem_backend.model.http_response.html#smartem_backend.model.http_response.AgentInstructionAcknowledgementResponse">AgentInstructionAcknowledgementResponse (class in smartem_backend.model.http_response)</a>
+</li>
+      <li><a href="_api/smartem_backend.model.mq_event.html#smartem_backend.model.mq_event.AgentInstructionCreatedEvent">AgentInstructionCreatedEvent (class in smartem_backend.model.mq_event)</a>
+</li>
+      <li><a href="_api/smartem_backend.model.mq_event.html#smartem_backend.model.mq_event.AgentInstructionExpiredEvent">AgentInstructionExpiredEvent (class in smartem_backend.model.mq_event)</a>
+</li>
+      <li><a href="_api/smartem_backend.model.mq_event.html#smartem_backend.model.mq_event.AgentInstructionUpdatedEvent">AgentInstructionUpdatedEvent (class in smartem_backend.model.mq_event)</a>
+</li>
+      <li><a href="_api/smartem_backend.model.database.html#smartem_backend.model.database.AgentSession">AgentSession (class in smartem_backend.model.database)</a>
+</li>
       <li><a href="_api/smartem_backend.api_client.html#smartem_backend.api_client.EntityConverter.atlas_tile_to_request">atlas_tile_to_request() (smartem_backend.api_client.EntityConverter static method)</a>
 </li>
       <li><a href="_api/smartem_backend.api_client.html#smartem_backend.api_client.EntityConverter.atlas_to_request">atlas_to_request() (smartem_backend.api_client.EntityConverter static method)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="_api/smartem_backend.model.mq_event.html#smartem_backend.model.mq_event.AtlasCreatedEvent">AtlasCreatedEvent (class in smartem_backend.model.mq_event)</a>
 </li>
       <li><a href="_api/smartem_backend.model.mq_event.html#smartem_backend.model.mq_event.AtlasDeletedEvent">AtlasDeletedEvent (class in smartem_backend.model.mq_event)</a>
@@ -521,12 +559,24 @@
 </li>
       <li><a href="_api/smartem_backend.api_server.html#smartem_backend.api_server.check_rabbitmq_health">check_rabbitmq_health() (in module smartem_backend.api_server)</a>
 </li>
+      <li><a href="_api/smartem_backend.agent_data_cleanup.html#smartem_backend.agent_data_cleanup.AgentDataCleanupService.cleanup_completed_sessions">cleanup_completed_sessions() (smartem_backend.agent_data_cleanup.AgentDataCleanupService method)</a>
+</li>
+      <li><a href="_api/smartem_backend.agent_data_cleanup.html#smartem_backend.agent_data_cleanup.AgentDataCleanupService.cleanup_old_acknowledgements">cleanup_old_acknowledgements() (smartem_backend.agent_data_cleanup.AgentDataCleanupService method)</a>
+</li>
+      <li><a href="_api/smartem_backend.agent_data_cleanup.html#smartem_backend.agent_data_cleanup.AgentDataCleanupService.cleanup_old_instructions">cleanup_old_instructions() (smartem_backend.agent_data_cleanup.AgentDataCleanupService method)</a>
+</li>
+      <li><a href="_api/smartem_backend.agent_data_cleanup.html#smartem_backend.agent_data_cleanup.AgentDataCleanupService.cleanup_stale_connections">cleanup_stale_connections() (smartem_backend.agent_data_cleanup.AgentDataCleanupService method)</a>
+</li>
       <li><a href="_api/smartem_backend.api_client.html#smartem_backend.api_client.SmartEMAPIClient.close">close() (smartem_backend.api_client.SmartEMAPIClient method)</a>
 
       <ul>
         <li><a href="_api/smartem_backend.utils.html#smartem_backend.utils.RabbitMQConnection.close">(smartem_backend.utils.RabbitMQConnection method)</a>
 </li>
       </ul></li>
+      <li><a href="_api/smartem_backend.api_server.html#smartem_backend.api_server.close_managed_session">close_managed_session() (in module smartem_backend.api_server)</a>
+</li>
+      <li><a href="_api/smartem_backend.agent_connection_manager.html#smartem_backend.agent_connection_manager.AgentConnectionManager.close_session">close_session() (smartem_backend.agent_connection_manager.AgentConnectionManager method)</a>
+</li>
       <li><a href="_api/smartem_backend.utils.html#smartem_backend.utils.RabbitMQConnection.connect">connect() (smartem_backend.utils.RabbitMQConnection method)</a>
 </li>
       <li><a href="_api/smartem_backend.utils.html#smartem_backend.utils.RabbitMQConsumer.consume">consume() (smartem_backend.utils.RabbitMQConsumer method)</a>
@@ -537,14 +587,14 @@
         <li><a href="_api/smartem_backend.api_client.html#smartem_backend.api_client.SmartEMAPIClient.create_acquisition">(smartem_backend.api_client.SmartEMAPIClient method)</a>
 </li>
       </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="_api/smartem_backend.api_server.html#smartem_backend.api_server.create_acquisition_grid">create_acquisition_grid() (in module smartem_backend.api_server)</a>
 
       <ul>
         <li><a href="_api/smartem_backend.api_client.html#smartem_backend.api_client.SmartEMAPIClient.create_acquisition_grid">(smartem_backend.api_client.SmartEMAPIClient method)</a>
 </li>
       </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="_api/smartem_backend.api_server.html#smartem_backend.api_server.create_atlas_tile_for_atlas">create_atlas_tile_for_atlas() (in module smartem_backend.api_server)</a>
 
       <ul>
@@ -575,6 +625,14 @@
         <li><a href="_api/smartem_backend.api_client.html#smartem_backend.api_client.SmartEMAPIClient.create_gridsquare_foilhole">(smartem_backend.api_client.SmartEMAPIClient method)</a>
 </li>
       </ul></li>
+      <li><a href="_api/smartem_backend.api_server.html#smartem_backend.api_server.create_managed_session">create_managed_session() (in module smartem_backend.api_server)</a>
+</li>
+      <li><a href="_api/smartem_backend.agent_connection_manager.html#smartem_backend.agent_connection_manager.AgentConnectionManager.create_session">create_session() (smartem_backend.agent_connection_manager.AgentConnectionManager method)</a>
+</li>
+      <li><a href="_api/smartem_backend.api_server.html#smartem_backend.api_server.create_test_instruction">create_test_instruction() (in module smartem_backend.api_server)</a>
+</li>
+      <li><a href="_api/smartem_backend.api_server.html#smartem_backend.api_server.create_test_session">create_test_session() (in module smartem_backend.api_server)</a>
+</li>
   </ul></td>
 </tr></table>
 
@@ -625,6 +683,8 @@
         <li><a href="_api/smartem_backend.api_client.html#smartem_backend.api_client.SmartEMAPIClient.delete_micrograph">(smartem_backend.api_client.SmartEMAPIClient method)</a>
 </li>
       </ul></li>
+      <li><a href="_api/smartem_backend.agent_data_cleanup.html#smartem_backend.agent_data_cleanup.AgentDataRetentionPolicy.development">development() (smartem_backend.agent_data_cleanup.AgentDataRetentionPolicy class method)</a>
+</li>
   </ul></td>
 </tr></table>
 
@@ -679,6 +739,16 @@
         <li><a href="_api/smartem_backend.api_client.html#smartem_backend.api_client.SmartEMAPIClient.get_acquisitions">(smartem_backend.api_client.SmartEMAPIClient method)</a>
 </li>
       </ul></li>
+      <li><a href="_api/smartem_backend.consumer.html#smartem_backend.consumer.get_active_agent_sessions">get_active_agent_sessions() (in module smartem_backend.consumer)</a>
+</li>
+      <li><a href="_api/smartem_backend.api_server.html#smartem_backend.api_server.get_active_connections">get_active_connections() (in module smartem_backend.api_server)</a>
+
+      <ul>
+        <li><a href="_api/smartem_backend.api_client.html#smartem_backend.api_client.SmartEMAPIClient.get_active_connections">(smartem_backend.api_client.SmartEMAPIClient method)</a>
+</li>
+      </ul></li>
+      <li><a href="_api/smartem_backend.api_server.html#smartem_backend.api_server.get_active_sessions">get_active_sessions() (in module smartem_backend.api_server)</a>
+</li>
       <li><a href="_api/smartem_backend.api_server.html#smartem_backend.api_server.get_atlas">get_atlas() (in module smartem_backend.api_server)</a>
 
       <ul>
@@ -709,6 +779,16 @@
         <li><a href="_api/smartem_backend.api_client.html#smartem_backend.api_client.SmartEMAPIClient.get_atlases">(smartem_backend.api_client.SmartEMAPIClient method)</a>
 </li>
       </ul></li>
+      <li><a href="_api/smartem_backend.agent_connection_manager.html#smartem_backend.agent_connection_manager.get_connection_manager">get_connection_manager() (in module smartem_backend.agent_connection_manager)</a>
+</li>
+      <li><a href="_api/smartem_backend.api_server.html#smartem_backend.api_server.get_connection_stats">get_connection_stats() (in module smartem_backend.api_server)</a>
+
+      <ul>
+        <li><a href="_api/smartem_backend.agent_connection_manager.html#smartem_backend.agent_connection_manager.AgentConnectionManager.get_connection_stats">(smartem_backend.agent_connection_manager.AgentConnectionManager method)</a>
+</li>
+      </ul></li>
+      <li><a href="_api/smartem_backend.agent_data_cleanup.html#smartem_backend.agent_data_cleanup.AgentDataCleanupService.get_data_usage_statistics">get_data_usage_statistics() (smartem_backend.agent_data_cleanup.AgentDataCleanupService method)</a>
+</li>
       <li><a href="_api/smartem_backend.utils.html#smartem_backend.utils.get_db_engine">get_db_engine() (in module smartem_backend.utils)</a>
 </li>
       <li><a href="_api/smartem_backend.consumer.html#smartem_backend.consumer.get_event_handlers">get_event_handlers() (in module smartem_backend.consumer)</a>
@@ -743,14 +823,14 @@
         <li><a href="_api/smartem_backend.api_client.html#smartem_backend.api_client.SmartEMAPIClient.get_grid_atlas">(smartem_backend.api_client.SmartEMAPIClient method)</a>
 </li>
       </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="_api/smartem_backend.api_server.html#smartem_backend.api_server.get_grid_gridsquares">get_grid_gridsquares() (in module smartem_backend.api_server)</a>
 
       <ul>
         <li><a href="_api/smartem_backend.api_client.html#smartem_backend.api_client.SmartEMAPIClient.get_grid_gridsquares">(smartem_backend.api_client.SmartEMAPIClient method)</a>
 </li>
       </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="_api/smartem_backend.api_server.html#smartem_backend.api_server.get_grids">get_grids() (in module smartem_backend.api_server)</a>
 
       <ul>
@@ -795,6 +875,14 @@
         <li><a href="_api/smartem_backend.api_client.html#smartem_backend.api_client.SmartEMAPIClient.get_micrographs">(smartem_backend.api_client.SmartEMAPIClient method)</a>
 </li>
       </ul></li>
+      <li><a href="_api/smartem_backend.api_server.html#smartem_backend.api_server.get_session_instructions">get_session_instructions() (in module smartem_backend.api_server)</a>
+
+      <ul>
+        <li><a href="_api/smartem_backend.api_client.html#smartem_backend.api_client.SmartEMAPIClient.get_session_instructions">(smartem_backend.api_client.SmartEMAPIClient method)</a>
+</li>
+      </ul></li>
+      <li><a href="_api/smartem_backend.api_client.html#smartem_backend.api_client.SSEAgentClient.get_stats">get_stats() (smartem_backend.api_client.SSEAgentClient method)</a>
+</li>
       <li><a href="_api/smartem_backend.api_server.html#smartem_backend.api_server.get_status">get_status() (in module smartem_backend.api_server)</a>
 
       <ul>
@@ -843,11 +931,21 @@
 </li>
       <li><a href="_api/smartem_backend.consumer.html#smartem_backend.consumer.handle_acquisition_updated">handle_acquisition_updated() (in module smartem_backend.consumer)</a>
 </li>
+      <li><a href="_api/smartem_backend.consumer.html#smartem_backend.consumer.handle_agent_instruction_created">handle_agent_instruction_created() (in module smartem_backend.consumer)</a>
+</li>
+      <li><a href="_api/smartem_backend.consumer.html#smartem_backend.consumer.handle_agent_instruction_expired">handle_agent_instruction_expired() (in module smartem_backend.consumer)</a>
+</li>
+      <li><a href="_api/smartem_backend.consumer.html#smartem_backend.consumer.handle_agent_instruction_updated">handle_agent_instruction_updated() (in module smartem_backend.consumer)</a>
+</li>
       <li><a href="_api/smartem_backend.consumer.html#smartem_backend.consumer.handle_atlas_created">handle_atlas_created() (in module smartem_backend.consumer)</a>
 </li>
       <li><a href="_api/smartem_backend.consumer.html#smartem_backend.consumer.handle_atlas_deleted">handle_atlas_deleted() (in module smartem_backend.consumer)</a>
 </li>
       <li><a href="_api/smartem_backend.consumer.html#smartem_backend.consumer.handle_atlas_updated">handle_atlas_updated() (in module smartem_backend.consumer)</a>
+</li>
+      <li><a href="_api/smartem_backend.consumer.html#smartem_backend.consumer.handle_external_foilhole_model_prediction">handle_external_foilhole_model_prediction() (in module smartem_backend.consumer)</a>
+</li>
+      <li><a href="_api/smartem_backend.consumer.html#smartem_backend.consumer.handle_external_gridsquare_model_prediction">handle_external_gridsquare_model_prediction() (in module smartem_backend.consumer)</a>
 </li>
       <li><a href="_api/smartem_backend.consumer.html#smartem_backend.consumer.handle_foilhole_created">handle_foilhole_created() (in module smartem_backend.consumer)</a>
 </li>
@@ -855,16 +953,18 @@
 </li>
       <li><a href="_api/smartem_backend.consumer.html#smartem_backend.consumer.handle_foilhole_model_prediction">handle_foilhole_model_prediction() (in module smartem_backend.consumer)</a>
 </li>
+      <li><a href="_api/smartem_backend.consumer.html#smartem_backend.consumer.handle_foilhole_model_prediction_router">handle_foilhole_model_prediction_router() (in module smartem_backend.consumer)</a>
+</li>
       <li><a href="_api/smartem_backend.consumer.html#smartem_backend.consumer.handle_foilhole_updated">handle_foilhole_updated() (in module smartem_backend.consumer)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="_api/smartem_backend.consumer.html#smartem_backend.consumer.handle_grid_created">handle_grid_created() (in module smartem_backend.consumer)</a>
 </li>
       <li><a href="_api/smartem_backend.consumer.html#smartem_backend.consumer.handle_grid_deleted">handle_grid_deleted() (in module smartem_backend.consumer)</a>
 </li>
       <li><a href="_api/smartem_backend.consumer.html#smartem_backend.consumer.handle_grid_registered">handle_grid_registered() (in module smartem_backend.consumer)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="_api/smartem_backend.consumer.html#smartem_backend.consumer.handle_grid_updated">handle_grid_updated() (in module smartem_backend.consumer)</a>
 </li>
       <li><a href="_api/smartem_backend.consumer.html#smartem_backend.consumer.handle_gridsquare_created">handle_gridsquare_created() (in module smartem_backend.consumer)</a>
@@ -878,6 +978,8 @@
       <li><a href="_api/smartem_backend.consumer.html#smartem_backend.consumer.handle_gridsquare_lowmag_updated">handle_gridsquare_lowmag_updated() (in module smartem_backend.consumer)</a>
 </li>
       <li><a href="_api/smartem_backend.consumer.html#smartem_backend.consumer.handle_gridsquare_model_prediction">handle_gridsquare_model_prediction() (in module smartem_backend.consumer)</a>
+</li>
+      <li><a href="_api/smartem_backend.consumer.html#smartem_backend.consumer.handle_gridsquare_model_prediction_router">handle_gridsquare_model_prediction_router() (in module smartem_backend.consumer)</a>
 </li>
       <li><a href="_api/smartem_backend.consumer.html#smartem_backend.consumer.handle_gridsquare_registered">handle_gridsquare_registered() (in module smartem_backend.consumer)</a>
 </li>
@@ -903,12 +1005,16 @@
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="_api/smartem_backend.cli.initialise_prediction_model_weights.html#smartem_backend.cli.initialise_prediction_model_weights.initialise_prediction_model_for_grid">initialise_prediction_model_for_grid() (in module smartem_backend.cli.initialise_prediction_model_weights)</a>
 </li>
+      <li><a href="_api/smartem_backend.api_client.html#smartem_backend.api_client.SSEAgentClient.is_connected">is_connected() (smartem_backend.api_client.SSEAgentClient method)</a>
+</li>
   </ul></td>
 </tr></table>
 
 <h2 id="L">L</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="_api/smartem_backend.api_server.html#smartem_backend.api_server.lifespan">lifespan() (in module smartem_backend.api_server)</a>
+</li>
       <li><a href="_api/smartem_backend.api_client.html#smartem_backend.api_client.SmartEMAPIClient.link_atlas_tile_and_gridsquare">link_atlas_tile_and_gridsquare() (smartem_backend.api_client.SmartEMAPIClient method)</a>
 </li>
   </ul></td>
@@ -923,8 +1029,12 @@
 <h2 id="M">M</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="_api/smartem_backend.consumer.html#smartem_backend.consumer.main">main() (in module smartem_backend.consumer)</a>
+      <li><a href="_api/smartem_backend.agent_data_cleanup.html#smartem_backend.agent_data_cleanup.main">main() (in module smartem_backend.agent_data_cleanup)</a>
+
+      <ul>
+        <li><a href="_api/smartem_backend.consumer.html#smartem_backend.consumer.main">(in module smartem_backend.consumer)</a>
 </li>
+      </ul></li>
       <li><a href="_api/smartem_backend.model.mq_event.html#smartem_backend.model.mq_event.MessageQueueEventType">MessageQueueEventType (class in smartem_backend.model.mq_event)</a>
 </li>
       <li><a href="_api/smartem_backend.api_client.html#smartem_backend.api_client.EntityConverter.micrograph_to_request">micrograph_to_request() (smartem_backend.api_client.EntityConverter static method)</a>
@@ -942,6 +1052,10 @@
 
       <ul>
         <li><a href="_api/smartem_backend.html#module-smartem_backend">smartem_backend</a>
+</li>
+        <li><a href="_api/smartem_backend.agent_connection_manager.html#module-smartem_backend.agent_connection_manager">smartem_backend.agent_connection_manager</a>
+</li>
+        <li><a href="_api/smartem_backend.agent_data_cleanup.html#module-smartem_backend.agent_data_cleanup">smartem_backend.agent_data_cleanup</a>
 </li>
         <li><a href="_api/smartem_backend.api_client.html#module-smartem_backend.api_client">smartem_backend.api_client</a>
 </li>
@@ -1004,6 +1118,12 @@
 </li>
       <li><a href="_api/smartem_backend.mq_publisher.html#smartem_backend.mq_publisher.publish_acquisition_updated">publish_acquisition_updated() (in module smartem_backend.mq_publisher)</a>
 </li>
+      <li><a href="_api/smartem_backend.mq_publisher.html#smartem_backend.mq_publisher.publish_agent_instruction_created">publish_agent_instruction_created() (in module smartem_backend.mq_publisher)</a>
+</li>
+      <li><a href="_api/smartem_backend.mq_publisher.html#smartem_backend.mq_publisher.publish_agent_instruction_expired">publish_agent_instruction_expired() (in module smartem_backend.mq_publisher)</a>
+</li>
+      <li><a href="_api/smartem_backend.mq_publisher.html#smartem_backend.mq_publisher.publish_agent_instruction_updated">publish_agent_instruction_updated() (in module smartem_backend.mq_publisher)</a>
+</li>
       <li><a href="_api/smartem_backend.mq_publisher.html#smartem_backend.mq_publisher.publish_atlas_created">publish_atlas_created() (in module smartem_backend.mq_publisher)</a>
 </li>
       <li><a href="_api/smartem_backend.mq_publisher.html#smartem_backend.mq_publisher.publish_atlas_deleted">publish_atlas_deleted() (in module smartem_backend.mq_publisher)</a>
@@ -1024,10 +1144,10 @@
 </li>
       <li><a href="_api/smartem_backend.mq_publisher.html#smartem_backend.mq_publisher.publish_foilhole_model_prediction">publish_foilhole_model_prediction() (in module smartem_backend.mq_publisher)</a>
 </li>
-      <li><a href="_api/smartem_backend.mq_publisher.html#smartem_backend.mq_publisher.publish_foilhole_updated">publish_foilhole_updated() (in module smartem_backend.mq_publisher)</a>
-</li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="_api/smartem_backend.mq_publisher.html#smartem_backend.mq_publisher.publish_foilhole_updated">publish_foilhole_updated() (in module smartem_backend.mq_publisher)</a>
+</li>
       <li><a href="_api/smartem_backend.mq_publisher.html#smartem_backend.mq_publisher.publish_grid_created">publish_grid_created() (in module smartem_backend.mq_publisher)</a>
 </li>
       <li><a href="_api/smartem_backend.mq_publisher.html#smartem_backend.mq_publisher.publish_grid_deleted">publish_grid_deleted() (in module smartem_backend.mq_publisher)</a>
@@ -1068,11 +1188,15 @@
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="_api/smartem_backend.utils.html#smartem_backend.utils.RabbitMQConnection">RabbitMQConnection (class in smartem_backend.utils)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="_api/smartem_backend.utils.html#smartem_backend.utils.RabbitMQConsumer">RabbitMQConsumer (class in smartem_backend.utils)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="_api/smartem_backend.utils.html#smartem_backend.utils.RabbitMQPublisher">RabbitMQPublisher (class in smartem_backend.utils)</a>
+</li>
+      <li><a href="_api/smartem_backend.api_client.html#smartem_backend.api_client.SSEAgentClient.reset_stats">reset_stats() (smartem_backend.api_client.SSEAgentClient method)</a>
+</li>
+      <li><a href="_api/smartem_backend.agent_data_cleanup.html#smartem_backend.agent_data_cleanup.AgentDataCleanupService.run_full_cleanup">run_full_cleanup() (smartem_backend.agent_data_cleanup.AgentDataCleanupService method)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -1080,6 +1204,10 @@
 <h2 id="S">S</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="_api/smartem_backend.agent_data_cleanup.html#smartem_backend.agent_data_cleanup.AgentDataRetentionPolicy.scientific_compliance">scientific_compliance() (smartem_backend.agent_data_cleanup.AgentDataRetentionPolicy class method)</a>
+</li>
+      <li><a href="_api/smartem_backend.api_client.html#smartem_backend.api_client.SSEAgentClient.send_heartbeat">send_heartbeat() (smartem_backend.api_client.SSEAgentClient method)</a>
+</li>
       <li><a href="_api/smartem_backend.utils.html#smartem_backend.utils.setup_logger">setup_logger() (in module smartem_backend.utils)</a>
 </li>
       <li><a href="_api/smartem_backend.utils.html#smartem_backend.utils.setup_postgres_connection">setup_postgres_connection() (in module smartem_backend.utils)</a>
@@ -1097,6 +1225,20 @@
 
       <ul>
         <li><a href="_api/smartem_backend.html#module-smartem_backend">module</a>
+</li>
+      </ul></li>
+      <li>
+    smartem_backend.agent_connection_manager
+
+      <ul>
+        <li><a href="_api/smartem_backend.agent_connection_manager.html#module-smartem_backend.agent_connection_manager">module</a>
+</li>
+      </ul></li>
+      <li>
+    smartem_backend.agent_data_cleanup
+
+      <ul>
+        <li><a href="_api/smartem_backend.agent_data_cleanup.html#module-smartem_backend.agent_data_cleanup">module</a>
 </li>
       </ul></li>
       <li>
@@ -1155,8 +1297,6 @@
         <li><a href="_api/smartem_backend.consumer.html#module-smartem_backend.consumer">module</a>
 </li>
       </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li>
     smartem_backend.log_manager
 
@@ -1164,6 +1304,8 @@
         <li><a href="_api/smartem_backend.log_manager.html#module-smartem_backend.log_manager">module</a>
 </li>
       </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li>
     smartem_backend.model
 
@@ -1236,7 +1378,29 @@
       </ul></li>
       <li><a href="_api/smartem_backend.api_client.html#smartem_backend.api_client.SmartEMAPIClient">SmartEMAPIClient (class in smartem_backend.api_client)</a>
 </li>
+      <li><a href="_api/smartem_backend.api_client.html#smartem_backend.api_client.SSEAgentClient">SSEAgentClient (class in smartem_backend.api_client)</a>
+</li>
+      <li><a href="_api/smartem_backend.agent_connection_manager.html#smartem_backend.agent_connection_manager.AgentConnectionManager.start">start() (smartem_backend.agent_connection_manager.AgentConnectionManager method)</a>
+</li>
+      <li><a href="_api/smartem_backend.agent_connection_manager.html#smartem_backend.agent_connection_manager.start_connection_manager">start_connection_manager() (in module smartem_backend.agent_connection_manager)</a>
+</li>
+      <li><a href="_api/smartem_backend.agent_connection_manager.html#smartem_backend.agent_connection_manager.AgentConnectionManager.stop">stop() (smartem_backend.agent_connection_manager.AgentConnectionManager method)</a>
+
+      <ul>
+        <li><a href="_api/smartem_backend.api_client.html#smartem_backend.api_client.SSEAgentClient.stop">(smartem_backend.api_client.SSEAgentClient method)</a>
+</li>
+      </ul></li>
+      <li><a href="_api/smartem_backend.agent_connection_manager.html#smartem_backend.agent_connection_manager.stop_connection_manager">stop_connection_manager() (in module smartem_backend.agent_connection_manager)</a>
+</li>
       <li><a href="_api/smartem_backend.utils.html#smartem_backend.utils.RabbitMQConsumer.stop_consuming">stop_consuming() (smartem_backend.utils.RabbitMQConsumer method)</a>
+</li>
+      <li><a href="_api/smartem_backend.api_server.html#smartem_backend.api_server.stream_instructions">stream_instructions() (in module smartem_backend.api_server)</a>
+
+      <ul>
+        <li><a href="_api/smartem_backend.api_client.html#smartem_backend.api_client.SSEAgentClient.stream_instructions">(smartem_backend.api_client.SSEAgentClient method)</a>
+</li>
+      </ul></li>
+      <li><a href="_api/smartem_backend.api_client.html#smartem_backend.api_client.SSEAgentClient.stream_instructions_async">stream_instructions_async() (smartem_backend.api_client.SSEAgentClient method)</a>
 </li>
   </ul></td>
 </tr></table>

@@ -1,0 +1,1339 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>SmartEM Agent CLI Reference &#8212; smartem-decisions 0.1.dev331+g9707a53d7.d20250924 documentation</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+<link href="../_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=4ae1632d" />
+    <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinx-design.min.css?v=95c83b7e" />
+  
+  <!-- So that users can add custom icons -->
+  <script src="../_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
+<link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
+
+    <script src="../_static/documentation_options.js?v=144d9203"></script>
+    <script src="../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../_static/copybutton.js?v=30646c52"></script>
+    <script src="../_static/design-tabs.js?v=f930bc37"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'reference/cli-reference';</script>
+    <script>
+        DOCUMENTATION_OPTIONS.theme_version = '0.16.1';
+        DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://DiamondLightSource.github.io/smartem-decisions/switcher.json';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = 'main';
+        DOCUMENTATION_OPTIONS.show_version_warning_banner =
+            false;
+        </script>
+    <link rel="icon" href="../_static/dls-logo.svg"/>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="main" />
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../_static/dls-logo.svg" class="logo__image only-light" alt=""/>
+    <img src="../_static/dls-logo.svg" class="logo__image only-dark pst-js-only" alt=""/>
+  
+  
+    <p class="title logo__title">smartem-decisions</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../tutorials.html">
+    Tutorials
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../how-to.html">
+    How-to Guides
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../explanations.html">
+    Explanations
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../reference.html">
+    Reference
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/DiamondLightSource/smartem-decisions" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://pypi.org/project/smartem-decisions" title="PyPI" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fas fa-cube fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">PyPI</span></a>
+        </li>
+</ul></div>
+      
+        <div class="navbar-item">
+<div class="version-switcher__container dropdown pst-js-only">
+  <button id="pst-version-switcher-button-2"
+    type="button"
+    class="version-switcher__button btn btn-sm dropdown-toggle"
+    data-bs-toggle="dropdown"
+    aria-haspopup="listbox"
+    aria-controls="pst-version-switcher-list-2"
+    aria-label="Version switcher list"
+  >
+    Choose version  <!-- this text may get changed later by javascript -->
+    <span class="caret"></span>
+  </button>
+  <div id="pst-version-switcher-list-2"
+    class="version-switcher__menu dropdown-menu list-group-flush py-0"
+    role="listbox" aria-labelledby="pst-version-switcher-button-2">
+    <!-- dropdown will be populated by javascript on page load -->
+  </div>
+</div></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+    <button class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+        
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar hide-on-wide">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../tutorials.html">
+    Tutorials
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../how-to.html">
+    How-to Guides
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../explanations.html">
+    Explanations
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../reference.html">
+    Reference
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/DiamondLightSource/smartem-decisions" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://pypi.org/project/smartem-decisions" title="PyPI" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fas fa-cube fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">PyPI</span></a>
+        </li>
+</ul></div>
+        
+          <div class="navbar-item">
+<div class="version-switcher__container dropdown pst-js-only">
+  <button id="pst-version-switcher-button-3"
+    type="button"
+    class="version-switcher__button btn btn-sm dropdown-toggle"
+    data-bs-toggle="dropdown"
+    aria-haspopup="listbox"
+    aria-controls="pst-version-switcher-list-3"
+    aria-label="Version switcher list"
+  >
+    Choose version  <!-- this text may get changed later by javascript -->
+    <span class="caret"></span>
+  </button>
+  <div id="pst-version-switcher-list-3"
+    class="version-switcher__menu dropdown-menu list-group-flush py-0"
+    role="listbox" aria-labelledby="pst-version-switcher-button-3">
+    <!-- dropdown will be populated by javascript on page load -->
+  </div>
+</div></div>
+        
+      </div>
+    
+  </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">SmartEM Agent CLI Reference</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section id="smartem-agent-cli-reference">
+<h1>SmartEM Agent CLI Reference<a class="headerlink" href="#smartem-agent-cli-reference" title="Link to this heading">#</a></h1>
+<p>The SmartEM Agent provides a comprehensive command-line interface for parsing, validating, and monitoring EPU (Electron Physical User) microscopy data. This reference documents all available commands, parameters, and usage patterns.</p>
+<section id="command-overview">
+<h2>Command Overview<a class="headerlink" href="#command-overview" title="Link to this heading">#</a></h2>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>-m<span class="w"> </span>smartem_agent<span class="w"> </span><span class="o">[</span>COMMAND<span class="o">]</span><span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span>
+</pre></div>
+</div>
+<p>The CLI is organised into the following command groups:</p>
+<ul class="simple">
+<li><p><strong><a class="reference internal" href="#parse-commands"><span class="xref myst">parse</span></a></strong> - Parse various EPU data files and structures</p></li>
+<li><p><strong><a class="reference internal" href="#validate-command"><span class="xref myst">validate</span></a></strong> - Validate EPU project directory structure</p></li>
+<li><p><strong><a class="reference internal" href="#watch-command"><span class="xref myst">watch</span></a></strong> - Monitor directories for real-time data processing</p></li>
+</ul>
+</section>
+<section id="global-options">
+<h2>Global Options<a class="headerlink" href="#global-options" title="Link to this heading">#</a></h2>
+<p>All commands support the following verbosity options:</p>
+<div class="pst-scrollable-table-container"><table class="table">
+<thead>
+<tr class="row-odd"><th class="head"><p>Option</p></th>
+<th class="head"><p>Short</p></th>
+<th class="head"><p>Type</p></th>
+<th class="head"><p>Default</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">--verbose</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">-v</span></code></p></td>
+<td><p>count</p></td>
+<td><p>0</p></td>
+<td><p>Increase verbosity (-v for INFO, -vv for DEBUG)</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p><strong>Verbosity Levels:</strong></p>
+<ul class="simple">
+<li><p><strong>0 (default)</strong>: ERROR level - Only critical errors are shown</p></li>
+<li><p><strong>1 (-v)</strong>: INFO level - General information and warnings</p></li>
+<li><p><strong>2 (-vv)</strong>: DEBUG level - Detailed debugging information</p></li>
+</ul>
+</section>
+<section id="parse-commands">
+<h2>Parse Commands<a class="headerlink" href="#parse-commands" title="Link to this heading">#</a></h2>
+<p>Parse commands extract and process data from EPU files without persisting to the backend API. These are primarily used for development, debugging, and data validation purposes.</p>
+<section id="parse-dir">
+<h3>parse dir<a class="headerlink" href="#parse-dir" title="Link to this heading">#</a></h3>
+<p>Parse an entire EPU output directory structure that may contain multiple grids.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>-m<span class="w"> </span>smartem_agent<span class="w"> </span>parse<span class="w"> </span>dir<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span><span class="w"> </span>EPU_OUTPUT_DIR
+</pre></div>
+</div>
+<p><strong>Parameters:</strong></p>
+<div class="pst-scrollable-table-container"><table class="table">
+<thead>
+<tr class="row-odd"><th class="head"><p>Parameter</p></th>
+<th class="head"><p>Type</p></th>
+<th class="head"><p>Required</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">epu_output_dir</span></code></p></td>
+<td><p>str</p></td>
+<td><p>Yes</p></td>
+<td><p>Path to EPU output directory containing multiple grid directories</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">--verbose</span></code></p></td>
+<td><p>count</p></td>
+<td><p>No</p></td>
+<td><p>Verbosity level (see <a class="reference internal" href="#global-options"><span class="xref myst">Global Options</span></a>)</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p><strong>Example:</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>-m<span class="w"> </span>smartem_agent<span class="w"> </span>parse<span class="w"> </span>dir<span class="w"> </span>/data/microscopy/session_20240115<span class="w"> </span>-v
+</pre></div>
+</div>
+<p><strong>Use Cases:</strong></p>
+<ul class="simple">
+<li><p>Batch processing of multiple grid datasets</p></li>
+<li><p>Session-level data analysis and validation</p></li>
+<li><p>Quality control across entire microscopy sessions</p></li>
+</ul>
+</section>
+<section id="parse-grid">
+<h3>parse grid<a class="headerlink" href="#parse-grid" title="Link to this heading">#</a></h3>
+<p>Parse a single grid data directory containing EPU acquisition files.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>-m<span class="w"> </span>smartem_agent<span class="w"> </span>parse<span class="w"> </span>grid<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span><span class="w"> </span>GRID_DATA_DIR
+</pre></div>
+</div>
+<p><strong>Parameters:</strong></p>
+<div class="pst-scrollable-table-container"><table class="table">
+<thead>
+<tr class="row-odd"><th class="head"><p>Parameter</p></th>
+<th class="head"><p>Type</p></th>
+<th class="head"><p>Required</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">grid_data_dir</span></code></p></td>
+<td><p>str</p></td>
+<td><p>Yes</p></td>
+<td><p>Path to individual grid data directory</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">--verbose</span></code></p></td>
+<td><p>count</p></td>
+<td><p>No</p></td>
+<td><p>Verbosity level (see <a class="reference internal" href="#global-options"><span class="xref myst">Global Options</span></a>)</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p><strong>Example:</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>-m<span class="w"> </span>smartem_agent<span class="w"> </span>parse<span class="w"> </span>grid<span class="w"> </span>/data/microscopy/session_20240115/Grid_001<span class="w"> </span>-vv
+</pre></div>
+</div>
+<p><strong>Use Cases:</strong></p>
+<ul class="simple">
+<li><p>Single grid analysis and debugging</p></li>
+<li><p>Grid-specific data extraction</p></li>
+<li><p>Verification of individual acquisition datasets</p></li>
+</ul>
+</section>
+<section id="parse-session">
+<h3>parse session<a class="headerlink" href="#parse-session" title="Link to this heading">#</a></h3>
+<p>Parse an EPU session manifest file (typically <code class="docutils literal notranslate"><span class="pre">EpuSession.dm</span></code>).</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>-m<span class="w"> </span>smartem_agent<span class="w"> </span>parse<span class="w"> </span>session<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span><span class="w"> </span>PATH
+</pre></div>
+</div>
+<p><strong>Parameters:</strong></p>
+<div class="pst-scrollable-table-container"><table class="table">
+<thead>
+<tr class="row-odd"><th class="head"><p>Parameter</p></th>
+<th class="head"><p>Type</p></th>
+<th class="head"><p>Required</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">path</span></code></p></td>
+<td><p>str</p></td>
+<td><p>Yes</p></td>
+<td><p>Path to EPU session manifest file</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">--verbose</span></code></p></td>
+<td><p>count</p></td>
+<td><p>No</p></td>
+<td><p>Verbosity level (see <a class="reference internal" href="#global-options"><span class="xref myst">Global Options</span></a>)</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p><strong>Example:</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>-m<span class="w"> </span>smartem_agent<span class="w"> </span>parse<span class="w"> </span>session<span class="w"> </span>/data/microscopy/Grid_001/EpuSession.dm
+</pre></div>
+</div>
+<p><strong>Output:</strong> Session metadata including acquisition parameters, timestamps, and instrument configuration.</p>
+</section>
+<section id="parse-atlas">
+<h3>parse atlas<a class="headerlink" href="#parse-atlas" title="Link to this heading">#</a></h3>
+<p>Parse an atlas manifest file (typically <code class="docutils literal notranslate"><span class="pre">Atlas/Atlas.dm</span></code>).</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>-m<span class="w"> </span>smartem_agent<span class="w"> </span>parse<span class="w"> </span>atlas<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span><span class="w"> </span>PATH
+</pre></div>
+</div>
+<p><strong>Parameters:</strong></p>
+<div class="pst-scrollable-table-container"><table class="table">
+<thead>
+<tr class="row-odd"><th class="head"><p>Parameter</p></th>
+<th class="head"><p>Type</p></th>
+<th class="head"><p>Required</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">path</span></code></p></td>
+<td><p>str</p></td>
+<td><p>Yes</p></td>
+<td><p>Path to atlas manifest file</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">--verbose</span></code></p></td>
+<td><p>count</p></td>
+<td><p>No</p></td>
+<td><p>Verbosity level (see <a class="reference internal" href="#global-options"><span class="xref myst">Global Options</span></a>)</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p><strong>Example:</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>-m<span class="w"> </span>smartem_agent<span class="w"> </span>parse<span class="w"> </span>atlas<span class="w"> </span>/data/microscopy/Grid_001/Sample*/Atlas/Atlas.dm
+</pre></div>
+</div>
+<p><strong>Output:</strong> Atlas information including grid square positions, tile arrangements, and overview image metadata.</p>
+</section>
+<section id="parse-gridsquare-metadata">
+<h3>parse gridsquare-metadata<a class="headerlink" href="#parse-gridsquare-metadata" title="Link to this heading">#</a></h3>
+<p>Parse grid square metadata files (typically <code class="docutils literal notranslate"><span class="pre">Metadata/GridSquare_*.dm</span></code>).</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>-m<span class="w"> </span>smartem_agent<span class="w"> </span>parse<span class="w"> </span>gridsquare-metadata<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span><span class="w"> </span>PATH
+</pre></div>
+</div>
+<p><strong>Parameters:</strong></p>
+<div class="pst-scrollable-table-container"><table class="table">
+<thead>
+<tr class="row-odd"><th class="head"><p>Parameter</p></th>
+<th class="head"><p>Type</p></th>
+<th class="head"><p>Required</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">path</span></code></p></td>
+<td><p>str</p></td>
+<td><p>Yes</p></td>
+<td><p>Path to grid square metadata file</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">--verbose</span></code></p></td>
+<td><p>count</p></td>
+<td><p>No</p></td>
+<td><p>Verbosity level (see <a class="reference internal" href="#global-options"><span class="xref myst">Global Options</span></a>)</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p><strong>Example:</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>-m<span class="w"> </span>smartem_agent<span class="w"> </span>parse<span class="w"> </span>gridsquare-metadata<span class="w"> </span>/data/microscopy/Grid_001/Metadata/GridSquare_12345.dm
+</pre></div>
+</div>
+<p><strong>Output:</strong> Grid square-specific metadata including foil hole positions and targeting information.</p>
+</section>
+<section id="parse-gridsquare">
+<h3>parse gridsquare<a class="headerlink" href="#parse-gridsquare" title="Link to this heading">#</a></h3>
+<p>Parse grid square manifest files (typically <code class="docutils literal notranslate"><span class="pre">Images-Disc*/GridSquare_*/GridSquare_*.xml</span></code>).</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>-m<span class="w"> </span>smartem_agent<span class="w"> </span>parse<span class="w"> </span>gridsquare<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span><span class="w"> </span>PATH
+</pre></div>
+</div>
+<p><strong>Parameters:</strong></p>
+<div class="pst-scrollable-table-container"><table class="table">
+<thead>
+<tr class="row-odd"><th class="head"><p>Parameter</p></th>
+<th class="head"><p>Type</p></th>
+<th class="head"><p>Required</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">path</span></code></p></td>
+<td><p>str</p></td>
+<td><p>Yes</p></td>
+<td><p>Path to grid square manifest file</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">--verbose</span></code></p></td>
+<td><p>count</p></td>
+<td><p>No</p></td>
+<td><p>Verbosity level (see <a class="reference internal" href="#global-options"><span class="xref myst">Global Options</span></a>)</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p><strong>Example:</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>-m<span class="w"> </span>smartem_agent<span class="w"> </span>parse<span class="w"> </span>gridsquare<span class="w"> </span>/data/microscopy/Grid_001/Images-Disc1/GridSquare_12345/GridSquare_20240115_143022.xml
+</pre></div>
+</div>
+<p><strong>Output:</strong> Grid square acquisition details and image collection parameters.</p>
+</section>
+<section id="parse-foilhole">
+<h3>parse foilhole<a class="headerlink" href="#parse-foilhole" title="Link to this heading">#</a></h3>
+<p>Parse foil hole manifest files (typically <code class="docutils literal notranslate"><span class="pre">Images-Disc*/GridSquare_*/Data/FoilHole_*.xml</span></code>).</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>-m<span class="w"> </span>smartem_agent<span class="w"> </span>parse<span class="w"> </span>foilhole<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span><span class="w"> </span>PATH
+</pre></div>
+</div>
+<p><strong>Parameters:</strong></p>
+<div class="pst-scrollable-table-container"><table class="table">
+<thead>
+<tr class="row-odd"><th class="head"><p>Parameter</p></th>
+<th class="head"><p>Type</p></th>
+<th class="head"><p>Required</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">path</span></code></p></td>
+<td><p>str</p></td>
+<td><p>Yes</p></td>
+<td><p>Path to foil hole manifest file</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">--verbose</span></code></p></td>
+<td><p>count</p></td>
+<td><p>No</p></td>
+<td><p>Verbosity level (see <a class="reference internal" href="#global-options"><span class="xref myst">Global Options</span></a>)</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p><strong>Example:</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>-m<span class="w"> </span>smartem_agent<span class="w"> </span>parse<span class="w"> </span>foilhole<span class="w"> </span>/data/microscopy/Grid_001/Images-Disc1/GridSquare_12345/Data/FoilHole_1234567_Data_20240115_143045_fractions.xml
+</pre></div>
+</div>
+<p><strong>Output:</strong> Foil hole targeting information and acquisition metadata.</p>
+</section>
+<section id="parse-micrograph">
+<h3>parse micrograph<a class="headerlink" href="#parse-micrograph" title="Link to this heading">#</a></h3>
+<p>Parse micrograph manifest files (typically <code class="docutils literal notranslate"><span class="pre">Images-Disc*/GridSquare_*/FoilHoles/FoilHole_*.xml</span></code>).</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>-m<span class="w"> </span>smartem_agent<span class="w"> </span>parse<span class="w"> </span>micrograph<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span><span class="w"> </span>PATH
+</pre></div>
+</div>
+<p><strong>Parameters:</strong></p>
+<div class="pst-scrollable-table-container"><table class="table">
+<thead>
+<tr class="row-odd"><th class="head"><p>Parameter</p></th>
+<th class="head"><p>Type</p></th>
+<th class="head"><p>Required</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">path</span></code></p></td>
+<td><p>str</p></td>
+<td><p>Yes</p></td>
+<td><p>Path to micrograph manifest file</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">--verbose</span></code></p></td>
+<td><p>count</p></td>
+<td><p>No</p></td>
+<td><p>Verbosity level (see <a class="reference internal" href="#global-options"><span class="xref myst">Global Options</span></a>)</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p><strong>Example:</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>-m<span class="w"> </span>smartem_agent<span class="w"> </span>parse<span class="w"> </span>micrograph<span class="w"> </span>/data/microscopy/Grid_001/Images-Disc1/GridSquare_12345/FoilHoles/FoilHole_1234567_20240115_143045.xml
+</pre></div>
+</div>
+<p><strong>Output:</strong> Individual micrograph metadata including exposure parameters and image quality metrics.</p>
+</section>
+</section>
+<section id="validate-command">
+<h2>Validate Command<a class="headerlink" href="#validate-command" title="Link to this heading">#</a></h2>
+<p>The validate command checks EPU project directory structure for completeness and compliance with expected formats.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>-m<span class="w"> </span>smartem_agent<span class="w"> </span>validate<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span><span class="w"> </span>PATH
+</pre></div>
+</div>
+<p><strong>Parameters:</strong></p>
+<div class="pst-scrollable-table-container"><table class="table">
+<thead>
+<tr class="row-odd"><th class="head"><p>Parameter</p></th>
+<th class="head"><p>Type</p></th>
+<th class="head"><p>Required</p></th>
+<th class="head"><p>Default</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">path</span></code></p></td>
+<td><p>str</p></td>
+<td><p>Yes</p></td>
+<td><p>-</p></td>
+<td><p>Path to EPU project directory to validate</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">--verbose</span></code></p></td>
+<td><p>count</p></td>
+<td><p>No</p></td>
+<td><p>0</p></td>
+<td><p>Verbosity level (see <a class="reference internal" href="#global-options"><span class="xref myst">Global Options</span></a>)</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p><strong>Exit Codes:</strong></p>
+<ul class="simple">
+<li><p><strong>0</strong>: Directory structure is valid</p></li>
+<li><p><strong>1</strong>: Directory structure is invalid (validation errors found)</p></li>
+</ul>
+<p><strong>Example:</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>-m<span class="w"> </span>smartem_agent<span class="w"> </span>validate<span class="w"> </span>/data/microscopy/Grid_001<span class="w"> </span>-v
+</pre></div>
+</div>
+<p><strong>Validation Checks:</strong></p>
+<ul class="simple">
+<li><p>Presence of required EPU session files</p></li>
+<li><p>Directory structure compliance</p></li>
+<li><p>File naming convention adherence</p></li>
+<li><p>Metadata file accessibility</p></li>
+</ul>
+<p><strong>Output:</strong></p>
+<ul class="simple">
+<li><p><strong>Valid structure</strong>: Confirmation message with no errors</p></li>
+<li><p><strong>Invalid structure</strong>: Detailed list of structural issues and missing components</p></li>
+</ul>
+</section>
+<section id="watch-command">
+<h2>Watch Command<a class="headerlink" href="#watch-command" title="Link to this heading">#</a></h2>
+<p>The watch command provides real-time monitoring of EPU data directories, automatically processing new files and communicating with the SmartEM backend.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>-m<span class="w"> </span>smartem_agent<span class="w"> </span>watch<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span><span class="w"> </span>PATH
+</pre></div>
+</div>
+<section id="parameters">
+<h3>Parameters<a class="headerlink" href="#parameters" title="Link to this heading">#</a></h3>
+<div class="pst-scrollable-table-container"><table class="table">
+<thead>
+<tr class="row-odd"><th class="head"><p>Parameter</p></th>
+<th class="head"><p>Type</p></th>
+<th class="head"><p>Required</p></th>
+<th class="head"><p>Default</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">path</span></code></p></td>
+<td><p>Path</p></td>
+<td><p>Yes</p></td>
+<td><p>-</p></td>
+<td><p>Directory to monitor for file changes</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">--dry-run</span></code></p></td>
+<td><p>bool</p></td>
+<td><p>No</p></td>
+<td><p>False</p></td>
+<td><p>Run without making API calls to backend</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">--api-url</span></code></p></td>
+<td><p>str</p></td>
+<td><p>No</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">http://127.0.0.1:8000</span></code></p></td>
+<td><p>Backend API endpoint URL</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">--log-file</span></code></p></td>
+<td><p>str</p></td>
+<td><p>No</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">fs_changes.log</span></code></p></td>
+<td><p>Log file path for change events</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">--log-interval</span></code></p></td>
+<td><p>float</p></td>
+<td><p>No</p></td>
+<td><p>10.0</p></td>
+<td><p>Logging interval in seconds</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">--agent-id</span></code></p></td>
+<td><p>str</p></td>
+<td><p>No</p></td>
+<td><p>None</p></td>
+<td><p>Agent identifier for SSE connection</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">--session-id</span></code></p></td>
+<td><p>str</p></td>
+<td><p>No</p></td>
+<td><p>None</p></td>
+<td><p>Session identifier for SSE connection</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">--sse-timeout</span></code></p></td>
+<td><p>int</p></td>
+<td><p>No</p></td>
+<td><p>30</p></td>
+<td><p>SSE connection timeout in seconds</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">--heartbeat-interval</span></code></p></td>
+<td><p>int</p></td>
+<td><p>No</p></td>
+<td><p>60</p></td>
+<td><p>Agent heartbeat interval in seconds (0 to disable)</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">--verbose</span></code></p></td>
+<td><p>count</p></td>
+<td><p>No</p></td>
+<td><p>0</p></td>
+<td><p>Verbosity level (see <a class="reference internal" href="#global-options"><span class="xref myst">Global Options</span></a>)</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="core-parameters">
+<h3>Core Parameters<a class="headerlink" href="#core-parameters" title="Link to this heading">#</a></h3>
+<section id="path">
+<h4>path<a class="headerlink" href="#path" title="Link to this heading">#</a></h4>
+<p><strong>Type:</strong> Path (required)
+<strong>Description:</strong> The root directory to monitor for EPU data files. Must be an existing directory containing or expected to contain EPU acquisition data.</p>
+<p><strong>Example:</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>-m<span class="w"> </span>smartem_agent<span class="w"> </span>watch<span class="w"> </span>/data/microscopy/active_session
+</pre></div>
+</div>
+</section>
+<section id="dry-run">
+<h4>–dry-run<a class="headerlink" href="#dry-run" title="Link to this heading">#</a></h4>
+<p><strong>Type:</strong> Boolean flag
+<strong>Default:</strong> False
+<strong>Description:</strong> Run the agent in simulation mode without making API calls to the backend. Useful for testing file monitoring and parsing without affecting production systems.</p>
+<p><strong>Example:</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>-m<span class="w"> </span>smartem_agent<span class="w"> </span>watch<span class="w"> </span>/data/test<span class="w"> </span>--dry-run
+</pre></div>
+</div>
+<p><strong>Behaviour:</strong></p>
+<ul class="simple">
+<li><p>File monitoring and parsing operate normally</p></li>
+<li><p>No data is sent to the backend API</p></li>
+<li><p>Uses in-memory data storage only</p></li>
+<li><p>Ideal for development and testing scenarios</p></li>
+</ul>
+</section>
+</section>
+<section id="api-integration-parameters">
+<h3>API Integration Parameters<a class="headerlink" href="#api-integration-parameters" title="Link to this heading">#</a></h3>
+<section id="api-url">
+<h4>–api-url<a class="headerlink" href="#api-url" title="Link to this heading">#</a></h4>
+<p><strong>Type:</strong> String
+<strong>Default:</strong> <code class="docutils literal notranslate"><span class="pre">http://127.0.0.1:8000</span></code>
+<strong>Description:</strong> URL of the SmartEM backend API endpoint. The agent will attempt to connect to this URL for data persistence and real-time communication.</p>
+<p><strong>Examples:</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Local development</span>
+python<span class="w"> </span>-m<span class="w"> </span>smartem_agent<span class="w"> </span>watch<span class="w"> </span>/data<span class="w"> </span>--api-url<span class="w"> </span>http://localhost:8000
+
+<span class="c1"># Production deployment</span>
+python<span class="w"> </span>-m<span class="w"> </span>smartem_agent<span class="w"> </span>watch<span class="w"> </span>/data<span class="w"> </span>--api-url<span class="w"> </span>https://smartem.facility.ac.uk/api
+</pre></div>
+</div>
+<p><strong>Connection Validation:</strong> The agent validates API connectivity at startup and exits with error code 1 if the API is unreachable (unless using <code class="docutils literal notranslate"><span class="pre">--dry-run</span></code>).</p>
+</section>
+<section id="agent-id">
+<h4>–agent-id<a class="headerlink" href="#agent-id" title="Link to this heading">#</a></h4>
+<p><strong>Type:</strong> String (optional)
+<strong>Description:</strong> Unique identifier for this agent instance. Required for real-time communication with the backend via Server-Sent Events (SSE).</p>
+<p><strong>Format Recommendations:</strong></p>
+<ul class="simple">
+<li><p>Use descriptive names: <code class="docutils literal notranslate"><span class="pre">microscope-01</span></code>, <code class="docutils literal notranslate"><span class="pre">titan-krios-lab2</span></code></p></li>
+<li><p>Include facility/location information for multi-site deployments</p></li>
+<li><p>Ensure uniqueness across all agent instances</p></li>
+</ul>
+</section>
+<section id="session-id">
+<h4>–session-id<a class="headerlink" href="#session-id" title="Link to this heading">#</a></h4>
+<p><strong>Type:</strong> String (optional)
+<strong>Description:</strong> Session identifier linking this agent to a specific microscopy session. Required for real-time communication with the backend.</p>
+<p><strong>Usage:</strong> Typically generated by the backend or provided by the acquisition software. Used to group related data and instructions.</p>
+</section>
+</section>
+<section id="real-time-communication-parameters">
+<h3>Real-Time Communication Parameters<a class="headerlink" href="#real-time-communication-parameters" title="Link to this heading">#</a></h3>
+<section id="sse-timeout">
+<h4>–sse-timeout<a class="headerlink" href="#sse-timeout" title="Link to this heading">#</a></h4>
+<p><strong>Type:</strong> Integer
+<strong>Default:</strong> 30 seconds
+<strong>Description:</strong> Timeout for Server-Sent Events (SSE) connections to the backend. Controls how long the agent waits for backend responses.</p>
+<p><strong>Recommendations:</strong></p>
+<ul class="simple">
+<li><p><strong>Local networks:</strong> 10-30 seconds</p></li>
+<li><p><strong>Remote/unstable connections:</strong> 60-120 seconds</p></li>
+<li><p><strong>High-latency networks:</strong> 120+ seconds</p></li>
+</ul>
+</section>
+<section id="heartbeat-interval">
+<h4>–heartbeat-interval<a class="headerlink" href="#heartbeat-interval" title="Link to this heading">#</a></h4>
+<p><strong>Type:</strong> Integer
+<strong>Default:</strong> 60 seconds
+<strong>Description:</strong> Interval between heartbeat messages sent to the backend to maintain connection health monitoring. Set to 0 to disable heartbeats.</p>
+<p><strong>Connection Health:</strong> The backend considers connections stale after 2 minutes without heartbeats, so values should be well below 120 seconds.</p>
+<p><strong>Examples:</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Standard monitoring (every minute)</span>
+python<span class="w"> </span>-m<span class="w"> </span>smartem_agent<span class="w"> </span>watch<span class="w"> </span>/data<span class="w"> </span>--agent-id<span class="w"> </span>agent-01<span class="w"> </span>--session-id<span class="w"> </span>session-123
+
+<span class="c1"># Frequent monitoring (every 30 seconds)</span>
+python<span class="w"> </span>-m<span class="w"> </span>smartem_agent<span class="w"> </span>watch<span class="w"> </span>/data<span class="w"> </span>--agent-id<span class="w"> </span>agent-01<span class="w"> </span>--session-id<span class="w"> </span>session-123<span class="w"> </span>--heartbeat-interval<span class="w"> </span><span class="m">30</span>
+
+<span class="c1"># Disable heartbeats (not recommended for production)</span>
+python<span class="w"> </span>-m<span class="w"> </span>smartem_agent<span class="w"> </span>watch<span class="w"> </span>/data<span class="w"> </span>--agent-id<span class="w"> </span>agent-01<span class="w"> </span>--session-id<span class="w"> </span>session-123<span class="w"> </span>--heartbeat-interval<span class="w"> </span><span class="m">0</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="logging-parameters">
+<h3>Logging Parameters<a class="headerlink" href="#logging-parameters" title="Link to this heading">#</a></h3>
+<section id="log-file">
+<h4>–log-file<a class="headerlink" href="#log-file" title="Link to this heading">#</a></h4>
+<p><strong>Type:</strong> String
+<strong>Default:</strong> <code class="docutils literal notranslate"><span class="pre">fs_changes.log</span></code>
+<strong>Description:</strong> Path to log file for filesystem change events. The agent writes structured JSON logs of all detected file changes to this file.</p>
+<p><strong>Log Content:</strong> File creation, modification events, timestamps, file sizes, and processing status.</p>
+</section>
+<section id="log-interval">
+<h4>–log-interval<a class="headerlink" href="#log-interval" title="Link to this heading">#</a></h4>
+<p><strong>Type:</strong> Float
+<strong>Default:</strong> 10.0 seconds
+<strong>Description:</strong> Batching interval for filesystem change logging. Events are collected and written to the log file at this interval to improve performance.</p>
+<p><strong>Performance Impact:</strong></p>
+<ul class="simple">
+<li><p><strong>Lower values (1-5s):</strong> More responsive logging, higher I/O overhead</p></li>
+<li><p><strong>Higher values (30-60s):</strong> Better performance, less frequent updates</p></li>
+<li><p><strong>Very high values (&gt;60s):</strong> Risk of log loss on unexpected shutdown</p></li>
+</ul>
+</section>
+</section>
+<section id="usage-examples">
+<h3>Usage Examples<a class="headerlink" href="#usage-examples" title="Link to this heading">#</a></h3>
+<section id="basic-monitoring">
+<h4>Basic Monitoring<a class="headerlink" href="#basic-monitoring" title="Link to this heading">#</a></h4>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Monitor directory with default settings</span>
+python<span class="w"> </span>-m<span class="w"> </span>smartem_agent<span class="w"> </span>watch<span class="w"> </span>/data/microscopy/Grid_001
+</pre></div>
+</div>
+</section>
+<section id="production-deployment-with-real-time-communication">
+<h4>Production Deployment with Real-Time Communication<a class="headerlink" href="#production-deployment-with-real-time-communication" title="Link to this heading">#</a></h4>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>-m<span class="w"> </span>smartem_agent<span class="w"> </span>watch<span class="w"> </span>/data/microscopy/active_session<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--api-url<span class="w"> </span>https://smartem-backend.facility.ac.uk<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--agent-id<span class="w"> </span>microscope-titan-01<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--session-id<span class="w"> </span>session-20240115-001<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--heartbeat-interval<span class="w"> </span><span class="m">45</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--verbose
+</pre></div>
+</div>
+</section>
+<section id="development-and-testing">
+<h4>Development and Testing<a class="headerlink" href="#development-and-testing" title="Link to this heading">#</a></h4>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Dry run with debug logging</span>
+python<span class="w"> </span>-m<span class="w"> </span>smartem_agent<span class="w"> </span>watch<span class="w"> </span>/data/test_data<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--dry-run<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--log-interval<span class="w"> </span><span class="m">5</span>.0<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--verbose<span class="w"> </span>--verbose
+</pre></div>
+</div>
+</section>
+<section id="high-performance-production-setup">
+<h4>High-Performance Production Setup<a class="headerlink" href="#high-performance-production-setup" title="Link to this heading">#</a></h4>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>-m<span class="w"> </span>smartem_agent<span class="w"> </span>watch<span class="w"> </span>/data/high_throughput<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--api-url<span class="w"> </span>http://backend:8000<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--agent-id<span class="w"> </span>facility-workstation-03<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--session-id<span class="w"> </span>batch-processing-session<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--log-interval<span class="w"> </span><span class="m">30</span>.0<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--sse-timeout<span class="w"> </span><span class="m">120</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--heartbeat-interval<span class="w"> </span><span class="m">30</span>
+</pre></div>
+</div>
+</section>
+</section>
+</section>
+<section id="file-pattern-matching">
+<h2>File Pattern Matching<a class="headerlink" href="#file-pattern-matching" title="Link to this heading">#</a></h2>
+<p>All commands that process EPU data use consistent file pattern matching to identify relevant files:</p>
+<p><strong>Supported Patterns:</strong></p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">EpuSession.dm</span></code> - EPU session files</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">Metadata/GridSquare_*.dm</span></code> - Grid square metadata</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">Images-Disc*/GridSquare_*/GridSquare_*_*.xml</span></code> - Grid square manifests</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">Images-Disc*/GridSquare_*/Data/FoilHole_*_Data_*_*_*_*.xml</span></code> - Foil hole data</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">Images-Disc*/GridSquare_*/FoilHoles/FoilHole_*_*_*.xml</span></code> - Foil hole positions</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">Sample*/Atlas/Atlas.dm</span></code> - Atlas files</p></li>
+</ul>
+<p><strong>Pattern Matching Rules:</strong></p>
+<ul class="simple">
+<li><p>Recursive directory traversal for nested structures</p></li>
+<li><p>Case-sensitive matching</p></li>
+<li><p>Wildcards support standard shell globbing patterns</p></li>
+<li><p>Both Windows and Linux path separators are supported</p></li>
+</ul>
+</section>
+<section id="exit-codes">
+<h2>Exit Codes<a class="headerlink" href="#exit-codes" title="Link to this heading">#</a></h2>
+<div class="pst-scrollable-table-container"><table class="table">
+<thead>
+<tr class="row-odd"><th class="head"><p>Code</p></th>
+<th class="head"><p>Condition</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>0</p></td>
+<td><p>Success</p></td>
+<td><p>Command completed successfully</p></td>
+</tr>
+<tr class="row-odd"><td><p>1</p></td>
+<td><p>Validation Error</p></td>
+<td><p>Directory validation failed (validate command)</p></td>
+</tr>
+<tr class="row-even"><td><p>1</p></td>
+<td><p>API Connection Error</p></td>
+<td><p>Unable to connect to backend API</p></td>
+</tr>
+<tr class="row-odd"><td><p>1</p></td>
+<td><p>Directory Not Found</p></td>
+<td><p>Specified directory does not exist</p></td>
+</tr>
+<tr class="row-even"><td><p>1</p></td>
+<td><p>Permission Error</p></td>
+<td><p>Insufficient permissions to access directory or files</p></td>
+</tr>
+<tr class="row-odd"><td><p>2</p></td>
+<td><p>Keyboard Interrupt</p></td>
+<td><p>User terminated command with Ctrl+C</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="integration-notes">
+<h2>Integration Notes<a class="headerlink" href="#integration-notes" title="Link to this heading">#</a></h2>
+<section id="backend-api-requirements">
+<h3>Backend API Requirements<a class="headerlink" href="#backend-api-requirements" title="Link to this heading">#</a></h3>
+<p>The watch command requires a compatible SmartEM backend API with the following endpoints:</p>
+<ul class="simple">
+<li><p><strong>Status endpoint</strong>: <code class="docutils literal notranslate"><span class="pre">GET</span> <span class="pre">/status</span></code> - For connectivity validation</p></li>
+<li><p><strong>Data persistence</strong>: Various endpoints for storing parsed EPU data</p></li>
+<li><p><strong>SSE endpoint</strong>: <code class="docutils literal notranslate"><span class="pre">GET</span> <span class="pre">/agent/{agent_id}/session/{session_id}/instructions/stream</span></code> - For real-time communication</p></li>
+<li><p><strong>Heartbeat endpoint</strong>: <code class="docutils literal notranslate"><span class="pre">POST</span> <span class="pre">/agent/{agent_id}/session/{session_id}/heartbeat</span></code> - For connection health</p></li>
+</ul>
+</section>
+<section id="environment-considerations">
+<h3>Environment Considerations<a class="headerlink" href="#environment-considerations" title="Link to this heading">#</a></h3>
+<p><strong>File System Permissions:</strong></p>
+<ul class="simple">
+<li><p>Read access to EPU data directories</p></li>
+<li><p>Write access to log file location</p></li>
+<li><p>Appropriate permissions for recursive directory traversal</p></li>
+</ul>
+<p><strong>Network Requirements:</strong></p>
+<ul class="simple">
+<li><p>HTTP/HTTPS connectivity to backend API</p></li>
+<li><p>Stable connection for SSE streaming (when using real-time features)</p></li>
+<li><p>Consideration of firewall and proxy configurations</p></li>
+</ul>
+<p><strong>Resource Requirements:</strong></p>
+<ul class="simple">
+<li><p>Memory usage scales with directory size and file count</p></li>
+<li><p>CPU usage depends on file processing frequency</p></li>
+<li><p>Network bandwidth for real-time data transmission</p></li>
+</ul>
+</section>
+<section id="performance-considerations">
+<h3>Performance Considerations<a class="headerlink" href="#performance-considerations" title="Link to this heading">#</a></h3>
+<p><strong>Large Directory Structures:</strong></p>
+<ul class="simple">
+<li><p>Initial directory parsing can be resource-intensive</p></li>
+<li><p>Consider using <code class="docutils literal notranslate"><span class="pre">--log-interval</span></code> tuning for high-frequency file changes</p></li>
+<li><p>Monitor memory usage with very large datasets</p></li>
+</ul>
+<p><strong>Network Latency:</strong></p>
+<ul class="simple">
+<li><p>Adjust <code class="docutils literal notranslate"><span class="pre">--sse-timeout</span></code> for high-latency connections</p></li>
+<li><p>Consider <code class="docutils literal notranslate"><span class="pre">--heartbeat-interval</span></code> tuning based on network stability</p></li>
+<li><p>Use <code class="docutils literal notranslate"><span class="pre">--dry-run</span></code> for local testing and development</p></li>
+</ul>
+<p>This CLI reference provides comprehensive coverage of all SmartEM Agent command-line functionality. For additional help with specific use cases or troubleshooting, refer to the <a class="reference internal" href="#troubleshoot-cli.md"><span class="xref myst">CLI Troubleshooting Guide</span></a>.</p>
+</section>
+</section>
+</section>
+
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#command-overview">Command Overview</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#global-options">Global Options</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#parse-commands">Parse Commands</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#parse-dir">parse dir</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#parse-grid">parse grid</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#parse-session">parse session</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#parse-atlas">parse atlas</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#parse-gridsquare-metadata">parse gridsquare-metadata</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#parse-gridsquare">parse gridsquare</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#parse-foilhole">parse foilhole</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#parse-micrograph">parse micrograph</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#validate-command">Validate Command</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#watch-command">Watch Command</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#parameters">Parameters</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#core-parameters">Core Parameters</a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#path">path</a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#dry-run">–dry-run</a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#api-integration-parameters">API Integration Parameters</a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#api-url">–api-url</a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#agent-id">–agent-id</a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#session-id">–session-id</a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#real-time-communication-parameters">Real-Time Communication Parameters</a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#sse-timeout">–sse-timeout</a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#heartbeat-interval">–heartbeat-interval</a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#logging-parameters">Logging Parameters</a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#log-file">–log-file</a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#log-interval">–log-interval</a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#usage-examples">Usage Examples</a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#basic-monitoring">Basic Monitoring</a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#production-deployment-with-real-time-communication">Production Deployment with Real-Time Communication</a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#development-and-testing">Development and Testing</a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#high-performance-production-setup">High-Performance Production Setup</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#file-pattern-matching">File Pattern Matching</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#exit-codes">Exit Codes</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#integration-notes">Integration Notes</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#backend-api-requirements">Backend API Requirements</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#environment-considerations">Environment Considerations</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#performance-considerations">Performance Considerations</a></li>
+</ul>
+</li>
+</ul>
+  </nav></div>
+
+  <div class="sidebar-secondary-item">
+
+  
+  <div class="tocsection editthispage">
+    <a href="https://github.com/DiamondLightSource/smartem-decisions/edit/main/docs/reference/cli-reference.md">
+      <i class="fa-solid fa-pencil"></i>
+      
+      
+        
+          Edit on GitHub
+        
+      
+    </a>
+  </div>
+</div>
+
+  <div class="sidebar-secondary-item">
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/reference/cli-reference.md.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div></div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf"></script>
+<script defer src="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.16.1.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>

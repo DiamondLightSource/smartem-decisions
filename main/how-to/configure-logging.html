@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Configure Logging and Verbosity &#8212; smartem-decisions 0.1.dev316+g7c6b40fab.d20250923 documentation</title>
+    <title>Configure Logging and Verbosity &#8212; smartem-decisions 0.1.dev331+g9707a53d7.d20250924 documentation</title>
   
   
   
@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../_static/documentation_options.js?v=03473287"></script>
+    <script src="../_static/documentation_options.js?v=144d9203"></script>
     <script src="../_static/doctools.js?v=9bcbadda"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -409,6 +409,7 @@
 <li class="toctree-l1"><a class="reference internal" href="run-agent.html">Run SmartEM Agent (EPU Agent)</a></li>
 <li class="toctree-l1"><a class="reference internal" href="run-backend.html">Run SmartEM Backend</a></li>
 <li class="toctree-l1"><a class="reference internal" href="run-container.html">Run in a container</a></li>
+<li class="toctree-l1"><a class="reference internal" href="troubleshoot-cli.html">SmartEM CLI Troubleshooting Guide</a></li>
 <li class="toctree-l1"><a class="reference internal" href="use-core-http-api-client.html">How to Use the SmartEM API Client</a></li>
 <li class="toctree-l1"><a class="reference internal" href="use-mcp-interface.html">Using SmartEM MCP Interface</a></li>
 </ul>
@@ -473,34 +474,71 @@
                   
   <section id="configure-logging-and-verbosity">
 <h1>Configure Logging and Verbosity<a class="headerlink" href="#configure-logging-and-verbosity" title="Link to this heading">#</a></h1>
-<p>All SmartEM Backend services support configurable logging levels to help with debugging and reduce noise in production environments.</p>
+<p>All SmartEM services support configurable logging levels to help with debugging and reduce noise in production environments.</p>
 <section id="command-line-verbosity">
 <h2>Command Line Verbosity<a class="headerlink" href="#command-line-verbosity" title="Link to this heading">#</a></h2>
-<p>Use the <code class="docutils literal notranslate"><span class="pre">-v</span></code> and <code class="docutils literal notranslate"><span class="pre">-vv</span></code> flags to control verbosity:</p>
+<p>Use the <code class="docutils literal notranslate"><span class="pre">-v</span></code> and <code class="docutils literal notranslate"><span class="pre">-vv</span></code> flags to control verbosity across all SmartEM components:</p>
+<section id="backend-services">
+<h3>Backend Services<a class="headerlink" href="#backend-services" title="Link to this heading">#</a></h3>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># ERROR level only (default - minimal output)</span>
 python<span class="w"> </span>-m<span class="w"> </span>smartem_backend.consumer
-python<span class="w"> </span>-m<span class="w"> </span>smartem_backend.run_api
-python<span class="w"> </span>-m<span class="w"> </span>smartem_agent<span class="w"> </span>watch<span class="w"> </span>/path/to/data
+python<span class="w"> </span>-m<span class="w"> </span>smartem_backend.api_server
 
 <span class="c1"># INFO level and above (-v flag)</span>
 python<span class="w"> </span>-m<span class="w"> </span>smartem_backend.consumer<span class="w"> </span>-v
-python<span class="w"> </span>-m<span class="w"> </span>smartem_backend.run_api<span class="w"> </span>-v
-python<span class="w"> </span>-m<span class="w"> </span>smartem_agent<span class="w"> </span>watch<span class="w"> </span>/path/to/data<span class="w"> </span>-v
+python<span class="w"> </span>-m<span class="w"> </span>smartem_backend.api_server<span class="w"> </span>-v
 
 <span class="c1"># DEBUG level and above (-vv flag - most verbose)</span>
 python<span class="w"> </span>-m<span class="w"> </span>smartem_backend.consumer<span class="w"> </span>-vv
-python<span class="w"> </span>-m<span class="w"> </span>smartem_backend.run_api<span class="w"> </span>-vv
-python<span class="w"> </span>-m<span class="w"> </span>smartem_agent<span class="w"> </span>watch<span class="w"> </span>/path/to/data<span class="w"> </span>-vv
+python<span class="w"> </span>-m<span class="w"> </span>smartem_backend.api_server<span class="w"> </span>-vv
 </pre></div>
 </div>
+</section>
+<section id="smartem-agent-cli">
+<h3>SmartEM Agent CLI<a class="headerlink" href="#smartem-agent-cli" title="Link to this heading">#</a></h3>
+<p>All agent commands support consistent verbosity flags:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># ERROR level only (default - minimal output)</span>
+python<span class="w"> </span>-m<span class="w"> </span>smartem_agent<span class="w"> </span>watch<span class="w"> </span>/path/to/data
+python<span class="w"> </span>-m<span class="w"> </span>smartem_agent<span class="w"> </span>validate<span class="w"> </span>/path/to/data
+python<span class="w"> </span>-m<span class="w"> </span>smartem_agent<span class="w"> </span>parse<span class="w"> </span>dir<span class="w"> </span>/path/to/data
+
+<span class="c1"># INFO level and above (-v flag)</span>
+python<span class="w"> </span>-m<span class="w"> </span>smartem_agent<span class="w"> </span>watch<span class="w"> </span>/path/to/data<span class="w"> </span>-v
+python<span class="w"> </span>-m<span class="w"> </span>smartem_agent<span class="w"> </span>validate<span class="w"> </span>/path/to/data<span class="w"> </span>-v
+python<span class="w"> </span>-m<span class="w"> </span>smartem_agent<span class="w"> </span>parse<span class="w"> </span>session<span class="w"> </span>/path/to/EpuSession.dm<span class="w"> </span>-v
+
+<span class="c1"># DEBUG level and above (-vv flag - most verbose)</span>
+python<span class="w"> </span>-m<span class="w"> </span>smartem_agent<span class="w"> </span>watch<span class="w"> </span>/path/to/data<span class="w"> </span>-vv
+python<span class="w"> </span>-m<span class="w"> </span>smartem_agent<span class="w"> </span>parse<span class="w"> </span>dir<span class="w"> </span>/path/to/data<span class="w"> </span>-vv
+</pre></div>
+</div>
+</section>
+<section id="agent-specific-logging-features">
+<h3>Agent-Specific Logging Features<a class="headerlink" href="#agent-specific-logging-features" title="Link to this heading">#</a></h3>
+<p>The watch command provides additional logging controls:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Custom log file and interval</span>
+python<span class="w"> </span>-m<span class="w"> </span>smartem_agent<span class="w"> </span>watch<span class="w"> </span>/data<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--log-file<span class="w"> </span>/var/log/smartem/agent.log<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--log-interval<span class="w"> </span><span class="m">30</span>.0<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-v
+
+<span class="c1"># Real-time communication logging</span>
+python<span class="w"> </span>-m<span class="w"> </span>smartem_agent<span class="w"> </span>watch<span class="w"> </span>/data<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--agent-id<span class="w"> </span>microscope-01<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--session-id<span class="w"> </span>session-123<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--heartbeat-interval<span class="w"> </span><span class="m">60</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-vv<span class="w">  </span><span class="c1"># Shows heartbeat and SSE communication details</span>
+</pre></div>
+</div>
+</section>
 </section>
 <section id="environment-variable-control">
 <h2>Environment Variable Control<a class="headerlink" href="#environment-variable-control" title="Link to this heading">#</a></h2>
 <p>For the HTTP API, you can also control logging via environment variables:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Set log level via environment variable (equivalent to -v/-vv flags)</span>
-<span class="nv">SMARTEM_LOG_LEVEL</span><span class="o">=</span>ERROR<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>smartem_backend.run_api
-<span class="nv">SMARTEM_LOG_LEVEL</span><span class="o">=</span>INFO<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>smartem_backend.run_api<span class="w"> </span>
-<span class="nv">SMARTEM_LOG_LEVEL</span><span class="o">=</span>DEBUG<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>smartem_backend.run_api
+<span class="nv">SMARTEM_LOG_LEVEL</span><span class="o">=</span>ERROR<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>smartem_backend.api_server
+<span class="nv">SMARTEM_LOG_LEVEL</span><span class="o">=</span>INFO<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>smartem_backend.api_server<span class="w"> </span>
+<span class="nv">SMARTEM_LOG_LEVEL</span><span class="o">=</span>DEBUG<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>smartem_backend.api_server
 </pre></div>
 </div>
 </section>
@@ -511,7 +549,136 @@ python<span class="w"> </span>-m<span class="w"> </span>smartem_agent<span class
 <li><p><strong>INFO</strong> (<code class="docutils literal notranslate"><span class="pre">-v</span></code>): Informational messages, warnings, and errors</p></li>
 <li><p><strong>DEBUG</strong> (<code class="docutils literal notranslate"><span class="pre">-vv</span></code>): All messages including detailed debugging information</p></li>
 </ul>
-<p>This verbosity control helps reduce log noise during normal operation while providing detailed output when troubleshooting issues.</p>
+</section>
+<section id="log-content-by-component">
+<h2>Log Content by Component<a class="headerlink" href="#log-content-by-component" title="Link to this heading">#</a></h2>
+<section id="backend-services-error-level">
+<h3>Backend Services (ERROR level)<a class="headerlink" href="#backend-services-error-level" title="Link to this heading">#</a></h3>
+<ul class="simple">
+<li><p>Database connection errors</p></li>
+<li><p>API startup failures</p></li>
+<li><p>Critical system errors</p></li>
+</ul>
+</section>
+<section id="backend-services-info-level">
+<h3>Backend Services (INFO level)<a class="headerlink" href="#backend-services-info-level" title="Link to this heading">#</a></h3>
+<ul class="simple">
+<li><p>Service startup and shutdown</p></li>
+<li><p>API request summaries</p></li>
+<li><p>Database connection status</p></li>
+<li><p>Configuration information</p></li>
+</ul>
+</section>
+<section id="backend-services-debug-level">
+<h3>Backend Services (DEBUG level)<a class="headerlink" href="#backend-services-debug-level" title="Link to this heading">#</a></h3>
+<ul class="simple">
+<li><p>Individual API request details</p></li>
+<li><p>Database query execution</p></li>
+<li><p>Message queue operations</p></li>
+<li><p>Detailed error stack traces</p></li>
+</ul>
+</section>
+<section id="smartem-agent-error-level">
+<h3>SmartEM Agent (ERROR level)<a class="headerlink" href="#smartem-agent-error-level" title="Link to this heading">#</a></h3>
+<ul class="simple">
+<li><p>File access permission errors</p></li>
+<li><p>API connection failures</p></li>
+<li><p>Critical parsing errors</p></li>
+</ul>
+</section>
+<section id="smartem-agent-info-level">
+<h3>SmartEM Agent (INFO level)<a class="headerlink" href="#smartem-agent-info-level" title="Link to this heading">#</a></h3>
+<ul class="simple">
+<li><p>File detection and processing</p></li>
+<li><p>Grid square and foil hole creation</p></li>
+<li><p>API communication status</p></li>
+<li><p>SSE connection events</p></li>
+<li><p>Heartbeat transmission status</p></li>
+</ul>
+</section>
+<section id="smartem-agent-debug-level">
+<h3>SmartEM Agent (DEBUG level)<a class="headerlink" href="#smartem-agent-debug-level" title="Link to this heading">#</a></h3>
+<ul class="simple">
+<li><p>Individual file parsing details</p></li>
+<li><p>Filesystem event monitoring</p></li>
+<li><p>Detailed API request/response data</p></li>
+<li><p>SSE message content</p></li>
+<li><p>Heartbeat timing information</p></li>
+<li><p>Connection retry attempts</p></li>
+</ul>
+</section>
+</section>
+<section id="production-logging-recommendations">
+<h2>Production Logging Recommendations<a class="headerlink" href="#production-logging-recommendations" title="Link to this heading">#</a></h2>
+<section id="development-environment">
+<h3>Development Environment<a class="headerlink" href="#development-environment" title="Link to this heading">#</a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Use DEBUG level for comprehensive troubleshooting</span>
+python<span class="w"> </span>-m<span class="w"> </span>smartem_agent<span class="w"> </span>watch<span class="w"> </span>/data<span class="w"> </span>-vv
+python<span class="w"> </span>-m<span class="w"> </span>smartem_backend.api_server<span class="w"> </span>-vv
+</pre></div>
+</div>
+</section>
+<section id="testing-environment">
+<h3>Testing Environment<a class="headerlink" href="#testing-environment" title="Link to this heading">#</a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Use INFO level for verification without noise</span>
+python<span class="w"> </span>-m<span class="w"> </span>smartem_agent<span class="w"> </span>watch<span class="w"> </span>/data<span class="w"> </span>-v
+python<span class="w"> </span>-m<span class="w"> </span>smartem_backend.api_server<span class="w"> </span>-v
+</pre></div>
+</div>
+</section>
+<section id="production-environment">
+<h3>Production Environment<a class="headerlink" href="#production-environment" title="Link to this heading">#</a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Use ERROR level (default) for minimal logging overhead</span>
+python<span class="w"> </span>-m<span class="w"> </span>smartem_agent<span class="w"> </span>watch<span class="w"> </span>/data
+python<span class="w"> </span>-m<span class="w"> </span>smartem_backend.api_server
+
+<span class="c1"># Or INFO level with log rotation for operational monitoring</span>
+python<span class="w"> </span>-m<span class="w"> </span>smartem_agent<span class="w"> </span>watch<span class="w"> </span>/data<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--log-file<span class="w"> </span>/var/log/smartem/agent.log<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--log-interval<span class="w"> </span><span class="m">60</span>.0<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-v
+</pre></div>
+</div>
+</section>
+</section>
+<section id="log-file-management">
+<h2>Log File Management<a class="headerlink" href="#log-file-management" title="Link to this heading">#</a></h2>
+<section id="structured-logging">
+<h3>Structured Logging<a class="headerlink" href="#structured-logging" title="Link to this heading">#</a></h3>
+<p>The agent’s <code class="docutils literal notranslate"><span class="pre">--log-file</span></code> parameter creates structured JSON logs suitable for analysis:</p>
+<div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;timestamp&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2024-01-15T14:30:22.123456&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;event_count&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">5</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;events&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">&quot;timestamp&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2024-01-15T14:30:22.120000&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;event_type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;created&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;source_path&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;/data/Grid_001/EpuSession.dm&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;relative_path&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Grid_001/EpuSession.dm&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;size&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">2048</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;modified&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2024-01-15T14:30:22.119000&quot;</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">]</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</section>
+<section id="log-rotation-and-management">
+<h3>Log Rotation and Management<a class="headerlink" href="#log-rotation-and-management" title="Link to this heading">#</a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Use logrotate or similar tools for production log management</span>
+<span class="c1"># Example logrotate configuration:</span>
+/var/log/smartem/agent.log<span class="w"> </span><span class="o">{</span>
+<span class="w">    </span>daily
+<span class="w">    </span>rotate<span class="w"> </span><span class="m">30</span>
+<span class="w">    </span>compress
+<span class="w">    </span>delaycompress
+<span class="w">    </span>notifempty
+<span class="w">    </span>missingok
+<span class="o">}</span>
+</pre></div>
+</div>
+<p>This verbosity control system helps reduce log noise during normal operation while providing detailed output when troubleshooting issues. The structured logging format facilitates automated monitoring and analysis of system behaviour.</p>
+</section>
 </section>
 </section>
 
@@ -562,9 +729,34 @@ python<span class="w"> </span>-m<span class="w"> </span>smartem_agent<span class
   </div>
   <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
     <ul class="visible nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#command-line-verbosity">Command Line Verbosity</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#command-line-verbosity">Command Line Verbosity</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#backend-services">Backend Services</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#smartem-agent-cli">SmartEM Agent CLI</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#agent-specific-logging-features">Agent-Specific Logging Features</a></li>
+</ul>
+</li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#environment-variable-control">Environment Variable Control</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#log-levels">Log Levels</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#log-content-by-component">Log Content by Component</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#backend-services-error-level">Backend Services (ERROR level)</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#backend-services-info-level">Backend Services (INFO level)</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#backend-services-debug-level">Backend Services (DEBUG level)</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#smartem-agent-error-level">SmartEM Agent (ERROR level)</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#smartem-agent-info-level">SmartEM Agent (INFO level)</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#smartem-agent-debug-level">SmartEM Agent (DEBUG level)</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#production-logging-recommendations">Production Logging Recommendations</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#development-environment">Development Environment</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#testing-environment">Testing Environment</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#production-environment">Production Environment</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#log-file-management">Log File Management</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#structured-logging">Structured Logging</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#log-rotation-and-management">Log Rotation and Management</a></li>
+</ul>
+</li>
 </ul>
   </nav></div>
 

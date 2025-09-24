@@ -7,7 +7,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>smartem_backend.consumer &#8212; smartem-decisions 0.1.dev316+g7c6b40fab.d20250923 documentation</title>
+    <title>smartem_backend.consumer &#8212; smartem-decisions 0.1.dev331+g9707a53d7.d20250924 documentation</title>
   
   
   
@@ -40,7 +40,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../../_static/documentation_options.js?v=03473287"></script>
+    <script src="../../_static/documentation_options.js?v=144d9203"></script>
     <script src="../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -450,7 +450,9 @@
 <span class="kn">import</span><span class="w"> </span><span class="nn">signal</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">uuid</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Callable</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">datetime</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">pika</span>
@@ -465,11 +467,19 @@
 <span class="p">)</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">smartem_backend.cli.random_prior_updates</span><span class="w"> </span><span class="kn">import</span> <span class="n">simulate_processing_pipeline_async</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">smartem_backend.log_manager</span><span class="w"> </span><span class="kn">import</span> <span class="n">LogConfig</span><span class="p">,</span> <span class="n">LogManager</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">smartem_backend.model.database</span><span class="w"> </span><span class="kn">import</span> <span class="n">QualityPrediction</span><span class="p">,</span> <span class="n">QualityPredictionModelParameter</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">smartem_backend.model.database</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">AgentInstruction</span><span class="p">,</span>
+    <span class="n">AgentSession</span><span class="p">,</span>
+    <span class="n">QualityPrediction</span><span class="p">,</span>
+    <span class="n">QualityPredictionModelParameter</span><span class="p">,</span>
+<span class="p">)</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">smartem_backend.model.mq_event</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">AcquisitionCreatedEvent</span><span class="p">,</span>
     <span class="n">AcquisitionDeletedEvent</span><span class="p">,</span>
     <span class="n">AcquisitionUpdatedEvent</span><span class="p">,</span>
+    <span class="n">AgentInstructionCreatedEvent</span><span class="p">,</span>
+    <span class="n">AgentInstructionExpiredEvent</span><span class="p">,</span>
+    <span class="n">AgentInstructionUpdatedEvent</span><span class="p">,</span>
     <span class="n">AtlasCreatedEvent</span><span class="p">,</span>
     <span class="n">AtlasDeletedEvent</span><span class="p">,</span>
     <span class="n">AtlasUpdatedEvent</span><span class="p">,</span>
@@ -492,6 +502,7 @@
     <span class="n">MicrographUpdatedEvent</span><span class="p">,</span>
     <span class="n">ModelParameterUpdateEvent</span><span class="p">,</span>
 <span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">smartem_backend.mq_publisher</span><span class="w"> </span><span class="kn">import</span> <span class="n">publish_agent_instruction_created</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">smartem_backend.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_db_engine</span><span class="p">,</span> <span class="n">load_conf</span><span class="p">,</span> <span class="n">rmq_consumer</span><span class="p">,</span> <span class="n">setup_logger</span>
 
 <span class="n">load_dotenv</span><span class="p">(</span><span class="n">override</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>  <span class="c1"># Don&#39;t override existing env vars as these might be coming from k8s</span>
@@ -1137,6 +1148,282 @@
 
 
 
+<span class="c1"># ============ External Message Processing Events ============</span>
+
+
+<div class="viewcode-block" id="handle_external_gridsquare_model_prediction">
+<a class="viewcode-back" href="../../_api/smartem_backend.consumer.html#smartem_backend.consumer.handle_external_gridsquare_model_prediction">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">handle_external_gridsquare_model_prediction</span><span class="p">(</span><span class="n">event_data</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Handle external grid square model prediction event by generating agent instructions</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        event_data: External event data with payload containing prediction results</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">payload</span> <span class="o">=</span> <span class="n">event_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;payload&quot;</span><span class="p">,</span> <span class="p">{})</span>
+        <span class="n">gridsquare_id</span> <span class="o">=</span> <span class="n">payload</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;gridsquare_id&quot;</span><span class="p">)</span>
+        <span class="n">quality_score</span> <span class="o">=</span> <span class="n">payload</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;prediction_results&quot;</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;quality_score&quot;</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">)</span>
+
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;External gridsquare prediction: </span><span class="si">{</span><span class="n">gridsquare_id</span><span class="si">}</span><span class="s2"> with quality </span><span class="si">{</span><span class="n">quality_score</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Decision logic based on quality score</span>
+        <span class="k">if</span> <span class="n">quality_score</span> <span class="o">&gt;=</span> <span class="mf">0.8</span><span class="p">:</span>
+            <span class="c1"># High quality - instruct to reorder this gridsquare to priority</span>
+            <span class="n">instruction_type</span> <span class="o">=</span> <span class="s2">&quot;microscope.control.reorder_gridsquares&quot;</span>
+            <span class="n">instruction_payload</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="s2">&quot;gridsquare_ids&quot;</span><span class="p">:</span> <span class="p">[</span><span class="n">gridsquare_id</span><span class="p">],</span>
+                <span class="s2">&quot;priority&quot;</span><span class="p">:</span> <span class="s2">&quot;high&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;reason&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;High quality prediction: </span><span class="si">{</span><span class="n">quality_score</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+            <span class="p">}</span>
+        <span class="k">elif</span> <span class="n">quality_score</span> <span class="o">&lt;=</span> <span class="mf">0.3</span><span class="p">:</span>
+            <span class="c1"># Low quality - instruct to skip this gridsquare</span>
+            <span class="n">instruction_type</span> <span class="o">=</span> <span class="s2">&quot;microscope.control.skip_gridsquares&quot;</span>
+            <span class="n">instruction_payload</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="s2">&quot;gridsquare_ids&quot;</span><span class="p">:</span> <span class="p">[</span><span class="n">gridsquare_id</span><span class="p">],</span>
+                <span class="s2">&quot;reason&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;Low quality prediction: </span><span class="si">{</span><span class="n">quality_score</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+            <span class="p">}</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># Medium quality - no specific action needed</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Medium quality gridsquare </span><span class="si">{</span><span class="n">gridsquare_id</span><span class="si">}</span><span class="s2"> (</span><span class="si">{</span><span class="n">quality_score</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">) - no action needed&quot;</span><span class="p">)</span>
+            <span class="k">return</span>
+
+        <span class="c1"># Generate instruction for all active agent sessions</span>
+        <span class="n">active_sessions</span> <span class="o">=</span> <span class="n">get_active_agent_sessions</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">session</span> <span class="ow">in</span> <span class="n">active_sessions</span><span class="p">:</span>
+            <span class="n">instruction_id</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">uuid</span><span class="o">.</span><span class="n">uuid4</span><span class="p">())</span>
+
+            <span class="n">success</span> <span class="o">=</span> <span class="n">publish_agent_instruction_created</span><span class="p">(</span>
+                <span class="n">instruction_id</span><span class="o">=</span><span class="n">instruction_id</span><span class="p">,</span>
+                <span class="n">session_id</span><span class="o">=</span><span class="n">session</span><span class="o">.</span><span class="n">session_id</span><span class="p">,</span>
+                <span class="n">agent_id</span><span class="o">=</span><span class="n">session</span><span class="o">.</span><span class="n">agent_id</span><span class="p">,</span>
+                <span class="n">instruction_type</span><span class="o">=</span><span class="n">instruction_type</span><span class="p">,</span>
+                <span class="n">payload</span><span class="o">=</span><span class="n">instruction_payload</span><span class="p">,</span>
+                <span class="n">priority</span><span class="o">=</span><span class="s2">&quot;normal&quot;</span><span class="p">,</span>
+            <span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">success</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Generated instruction </span><span class="si">{</span><span class="n">instruction_id</span><span class="si">}</span><span class="s2"> for agent </span><span class="si">{</span><span class="n">session</span><span class="o">.</span><span class="n">agent_id</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Failed to generate instruction for agent </span><span class="si">{</span><span class="n">session</span><span class="o">.</span><span class="n">agent_id</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error processing external gridsquare model prediction: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="handle_external_foilhole_model_prediction">
+<a class="viewcode-back" href="../../_api/smartem_backend.consumer.html#smartem_backend.consumer.handle_external_foilhole_model_prediction">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">handle_external_foilhole_model_prediction</span><span class="p">(</span><span class="n">event_data</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Handle external foilhole model prediction event by generating agent instructions</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        event_data: External event data with payload containing prediction results</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">payload</span> <span class="o">=</span> <span class="n">event_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;payload&quot;</span><span class="p">,</span> <span class="p">{})</span>
+        <span class="n">gridsquare_id</span> <span class="o">=</span> <span class="n">payload</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;gridsquare_id&quot;</span><span class="p">)</span>
+        <span class="n">foilholes</span> <span class="o">=</span> <span class="n">payload</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;foilhole_predictions&quot;</span><span class="p">,</span> <span class="p">[])</span>
+
+        <span class="c1"># Count high quality foilholes</span>
+        <span class="n">high_quality_foilholes</span> <span class="o">=</span> <span class="p">[</span><span class="n">fh</span> <span class="k">for</span> <span class="n">fh</span> <span class="ow">in</span> <span class="n">foilholes</span> <span class="k">if</span> <span class="n">fh</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;quality_score&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mf">0.8</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">high_quality_foilholes</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="c1"># Instruct to reorder high quality foilholes</span>
+            <span class="n">instruction_type</span> <span class="o">=</span> <span class="s2">&quot;microscope.control.reorder_foilholes&quot;</span>
+            <span class="n">instruction_payload</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="s2">&quot;gridsquare_id&quot;</span><span class="p">:</span> <span class="n">gridsquare_id</span><span class="p">,</span>
+                <span class="s2">&quot;foilhole_ids&quot;</span><span class="p">:</span> <span class="p">[</span><span class="n">fh</span><span class="p">[</span><span class="s2">&quot;foilhole_id&quot;</span><span class="p">]</span> <span class="k">for</span> <span class="n">fh</span> <span class="ow">in</span> <span class="n">high_quality_foilholes</span><span class="p">],</span>
+                <span class="s2">&quot;priority&quot;</span><span class="p">:</span> <span class="s2">&quot;high&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;reason&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;Found </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">high_quality_foilholes</span><span class="p">)</span><span class="si">}</span><span class="s2"> high quality foilholes&quot;</span><span class="p">,</span>
+            <span class="p">}</span>
+
+            <span class="c1"># Generate instruction for all active agent sessions</span>
+            <span class="n">active_sessions</span> <span class="o">=</span> <span class="n">get_active_agent_sessions</span><span class="p">()</span>
+            <span class="k">for</span> <span class="n">session</span> <span class="ow">in</span> <span class="n">active_sessions</span><span class="p">:</span>
+                <span class="n">instruction_id</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">uuid</span><span class="o">.</span><span class="n">uuid4</span><span class="p">())</span>
+
+                <span class="n">success</span> <span class="o">=</span> <span class="n">publish_agent_instruction_created</span><span class="p">(</span>
+                    <span class="n">instruction_id</span><span class="o">=</span><span class="n">instruction_id</span><span class="p">,</span>
+                    <span class="n">session_id</span><span class="o">=</span><span class="n">session</span><span class="o">.</span><span class="n">session_id</span><span class="p">,</span>
+                    <span class="n">agent_id</span><span class="o">=</span><span class="n">session</span><span class="o">.</span><span class="n">agent_id</span><span class="p">,</span>
+                    <span class="n">instruction_type</span><span class="o">=</span><span class="n">instruction_type</span><span class="p">,</span>
+                    <span class="n">payload</span><span class="o">=</span><span class="n">instruction_payload</span><span class="p">,</span>
+                    <span class="n">priority</span><span class="o">=</span><span class="s2">&quot;normal&quot;</span><span class="p">,</span>
+                <span class="p">)</span>
+
+                <span class="k">if</span> <span class="n">success</span><span class="p">:</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Generated foilhole reorder instruction </span><span class="si">{</span><span class="n">instruction_id</span><span class="si">}</span><span class="s2"> for agent </span><span class="si">{</span><span class="n">session</span><span class="o">.</span><span class="n">agent_id</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Failed to generate foilhole instruction for agent </span><span class="si">{</span><span class="n">session</span><span class="o">.</span><span class="n">agent_id</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;No high quality foilholes found for gridsquare </span><span class="si">{</span><span class="n">gridsquare_id</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error processing external foilhole model prediction: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="get_active_agent_sessions">
+<a class="viewcode-back" href="../../_api/smartem_backend.consumer.html#smartem_backend.consumer.get_active_agent_sessions">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_active_agent_sessions</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get all currently active agent sessions&quot;&quot;&quot;</span>
+    <span class="k">with</span> <span class="n">Session</span><span class="p">(</span><span class="n">db_engine</span><span class="p">)</span> <span class="k">as</span> <span class="n">session</span><span class="p">:</span>
+        <span class="c1"># Find sessions that are active (have recent connections)</span>
+        <span class="k">return</span> <span class="n">session</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">AgentSession</span><span class="p">)</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">AgentSession</span><span class="o">.</span><span class="n">status</span> <span class="o">==</span> <span class="s2">&quot;active&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">all</span><span class="p">()</span></div>
+
+
+
+<div class="viewcode-block" id="handle_gridsquare_model_prediction_router">
+<a class="viewcode-back" href="../../_api/smartem_backend.consumer.html#smartem_backend.consumer.handle_gridsquare_model_prediction_router">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">handle_gridsquare_model_prediction_router</span><span class="p">(</span><span class="n">event_data</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Route gridsquare model prediction events based on source&quot;&quot;&quot;</span>
+    <span class="n">source</span> <span class="o">=</span> <span class="n">event_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;source&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">source</span> <span class="o">==</span> <span class="s2">&quot;external_simulator&quot;</span><span class="p">:</span>
+        <span class="n">handle_external_gridsquare_model_prediction</span><span class="p">(</span><span class="n">event_data</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">handle_gridsquare_model_prediction</span><span class="p">(</span><span class="n">event_data</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="handle_foilhole_model_prediction_router">
+<a class="viewcode-back" href="../../_api/smartem_backend.consumer.html#smartem_backend.consumer.handle_foilhole_model_prediction_router">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">handle_foilhole_model_prediction_router</span><span class="p">(</span><span class="n">event_data</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Route foilhole model prediction events based on source&quot;&quot;&quot;</span>
+    <span class="n">source</span> <span class="o">=</span> <span class="n">event_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;source&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">source</span> <span class="o">==</span> <span class="s2">&quot;external_simulator&quot;</span><span class="p">:</span>
+        <span class="n">handle_external_foilhole_model_prediction</span><span class="p">(</span><span class="n">event_data</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">handle_foilhole_model_prediction</span><span class="p">(</span><span class="n">event_data</span><span class="p">)</span></div>
+
+
+
+<span class="c1"># ============ Agent Communication Events ============</span>
+
+
+<div class="viewcode-block" id="handle_agent_instruction_created">
+<a class="viewcode-back" href="../../_api/smartem_backend.consumer.html#smartem_backend.consumer.handle_agent_instruction_created">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">handle_agent_instruction_created</span><span class="p">(</span><span class="n">event_data</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Handle agent instruction created event by persisting the instruction to the database</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        event_data: Event data for agent instruction created</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">event</span> <span class="o">=</span> <span class="n">AgentInstructionCreatedEvent</span><span class="p">(</span><span class="o">**</span><span class="n">event_data</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Agent instruction created event: </span><span class="si">{</span><span class="n">event</span><span class="o">.</span><span class="n">model_dump</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Persist instruction to database</span>
+        <span class="k">with</span> <span class="n">Session</span><span class="p">(</span><span class="n">db_engine</span><span class="p">)</span> <span class="k">as</span> <span class="n">session</span><span class="p">:</span>
+            <span class="c1"># Verify the session exists</span>
+            <span class="n">session_obj</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">AgentSession</span><span class="p">)</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">AgentSession</span><span class="o">.</span><span class="n">session_id</span> <span class="o">==</span> <span class="n">event</span><span class="o">.</span><span class="n">session_id</span><span class="p">)</span><span class="o">.</span><span class="n">first</span><span class="p">()</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">session_obj</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Session </span><span class="si">{</span><span class="n">event</span><span class="o">.</span><span class="n">session_id</span><span class="si">}</span><span class="s2"> not found for instruction </span><span class="si">{</span><span class="n">event</span><span class="o">.</span><span class="n">instruction_id</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="k">return</span>
+
+            <span class="n">instruction</span> <span class="o">=</span> <span class="n">AgentInstruction</span><span class="p">(</span>
+                <span class="n">instruction_id</span><span class="o">=</span><span class="n">event</span><span class="o">.</span><span class="n">instruction_id</span><span class="p">,</span>
+                <span class="n">session_id</span><span class="o">=</span><span class="n">event</span><span class="o">.</span><span class="n">session_id</span><span class="p">,</span>
+                <span class="n">agent_id</span><span class="o">=</span><span class="n">event</span><span class="o">.</span><span class="n">agent_id</span><span class="p">,</span>
+                <span class="n">instruction_type</span><span class="o">=</span><span class="n">event</span><span class="o">.</span><span class="n">instruction_type</span><span class="p">,</span>
+                <span class="n">payload</span><span class="o">=</span><span class="n">event</span><span class="o">.</span><span class="n">payload</span><span class="p">,</span>
+                <span class="n">sequence_number</span><span class="o">=</span><span class="n">event</span><span class="o">.</span><span class="n">sequence_number</span><span class="p">,</span>
+                <span class="n">priority</span><span class="o">=</span><span class="n">event</span><span class="o">.</span><span class="n">priority</span><span class="p">,</span>
+                <span class="n">status</span><span class="o">=</span><span class="s2">&quot;pending&quot;</span><span class="p">,</span>
+                <span class="n">created_at</span><span class="o">=</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">(),</span>
+                <span class="n">expires_at</span><span class="o">=</span><span class="n">event</span><span class="o">.</span><span class="n">expires_at</span><span class="p">,</span>
+                <span class="n">instruction_metadata</span><span class="o">=</span><span class="n">event</span><span class="o">.</span><span class="n">instruction_metadata</span> <span class="ow">or</span> <span class="p">{},</span>
+            <span class="p">)</span>
+            <span class="n">session</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">instruction</span><span class="p">)</span>
+            <span class="n">session</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span>
+
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Successfully persisted instruction </span><span class="si">{</span><span class="n">event</span><span class="o">.</span><span class="n">instruction_id</span><span class="si">}</span><span class="s2"> to database&quot;</span><span class="p">)</span>
+
+    <span class="k">except</span> <span class="n">ValidationError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Validation error processing agent instruction created event: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error processing agent instruction created event: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="handle_agent_instruction_updated">
+<a class="viewcode-back" href="../../_api/smartem_backend.consumer.html#smartem_backend.consumer.handle_agent_instruction_updated">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">handle_agent_instruction_updated</span><span class="p">(</span><span class="n">event_data</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Handle agent instruction updated event by updating the instruction status</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        event_data: Event data for agent instruction updated</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">event</span> <span class="o">=</span> <span class="n">AgentInstructionUpdatedEvent</span><span class="p">(</span><span class="o">**</span><span class="n">event_data</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Agent instruction updated event: </span><span class="si">{</span><span class="n">event</span><span class="o">.</span><span class="n">model_dump</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Update instruction status in database</span>
+        <span class="k">with</span> <span class="n">Session</span><span class="p">(</span><span class="n">db_engine</span><span class="p">)</span> <span class="k">as</span> <span class="n">session</span><span class="p">:</span>
+            <span class="n">instruction</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="n">session</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">AgentInstruction</span><span class="p">)</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">AgentInstruction</span><span class="o">.</span><span class="n">instruction_id</span> <span class="o">==</span> <span class="n">event</span><span class="o">.</span><span class="n">instruction_id</span><span class="p">)</span><span class="o">.</span><span class="n">first</span><span class="p">()</span>
+            <span class="p">)</span>
+            <span class="k">if</span> <span class="n">instruction</span><span class="p">:</span>
+                <span class="n">instruction</span><span class="o">.</span><span class="n">status</span> <span class="o">=</span> <span class="n">event</span><span class="o">.</span><span class="n">status</span>
+                <span class="k">if</span> <span class="n">event</span><span class="o">.</span><span class="n">acknowledged_at</span><span class="p">:</span>
+                    <span class="n">instruction</span><span class="o">.</span><span class="n">acknowledged_at</span> <span class="o">=</span> <span class="n">event</span><span class="o">.</span><span class="n">acknowledged_at</span>
+                <span class="n">session</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Updated instruction </span><span class="si">{</span><span class="n">event</span><span class="o">.</span><span class="n">instruction_id</span><span class="si">}</span><span class="s2"> status to </span><span class="si">{</span><span class="n">event</span><span class="o">.</span><span class="n">status</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Instruction </span><span class="si">{</span><span class="n">event</span><span class="o">.</span><span class="n">instruction_id</span><span class="si">}</span><span class="s2"> not found for status update&quot;</span><span class="p">)</span>
+
+    <span class="k">except</span> <span class="n">ValidationError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Validation error processing agent instruction updated event: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error processing agent instruction updated event: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="handle_agent_instruction_expired">
+<a class="viewcode-back" href="../../_api/smartem_backend.consumer.html#smartem_backend.consumer.handle_agent_instruction_expired">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">handle_agent_instruction_expired</span><span class="p">(</span><span class="n">event_data</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Handle agent instruction expired event by updating retry logic and status</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        event_data: Event data for agent instruction expired</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">event</span> <span class="o">=</span> <span class="n">AgentInstructionExpiredEvent</span><span class="p">(</span><span class="o">**</span><span class="n">event_data</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Agent instruction expired event: </span><span class="si">{</span><span class="n">event</span><span class="o">.</span><span class="n">model_dump</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Update instruction status in database</span>
+        <span class="k">with</span> <span class="n">Session</span><span class="p">(</span><span class="n">db_engine</span><span class="p">)</span> <span class="k">as</span> <span class="n">session</span><span class="p">:</span>
+            <span class="n">instruction</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="n">session</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">AgentInstruction</span><span class="p">)</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">AgentInstruction</span><span class="o">.</span><span class="n">instruction_id</span> <span class="o">==</span> <span class="n">event</span><span class="o">.</span><span class="n">instruction_id</span><span class="p">)</span><span class="o">.</span><span class="n">first</span><span class="p">()</span>
+            <span class="p">)</span>
+            <span class="k">if</span> <span class="n">instruction</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">event</span><span class="o">.</span><span class="n">retry_count</span> <span class="o">&gt;=</span> <span class="n">instruction</span><span class="o">.</span><span class="n">max_retries</span><span class="p">:</span>
+                    <span class="c1"># Mark as failed after max retries</span>
+                    <span class="n">instruction</span><span class="o">.</span><span class="n">status</span> <span class="o">=</span> <span class="s2">&quot;expired&quot;</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+                        <span class="sa">f</span><span class="s2">&quot;Instruction </span><span class="si">{</span><span class="n">event</span><span class="o">.</span><span class="n">instruction_id</span><span class="si">}</span><span class="s2"> marked as expired after </span><span class="si">{</span><span class="n">event</span><span class="o">.</span><span class="n">retry_count</span><span class="si">}</span><span class="s2"> retries&quot;</span>
+                    <span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="c1"># Reset to pending for retry</span>
+                    <span class="n">instruction</span><span class="o">.</span><span class="n">status</span> <span class="o">=</span> <span class="s2">&quot;pending&quot;</span>
+                    <span class="n">instruction</span><span class="o">.</span><span class="n">retry_count</span> <span class="o">=</span> <span class="n">event</span><span class="o">.</span><span class="n">retry_count</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Instruction </span><span class="si">{</span><span class="n">event</span><span class="o">.</span><span class="n">instruction_id</span><span class="si">}</span><span class="s2"> reset for retry (</span><span class="si">{</span><span class="n">event</span><span class="o">.</span><span class="n">retry_count</span><span class="si">}</span><span class="s2">)&quot;</span><span class="p">)</span>
+
+                <span class="n">session</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Instruction </span><span class="si">{</span><span class="n">event</span><span class="o">.</span><span class="n">instruction_id</span><span class="si">}</span><span class="s2"> not found for expiry handling&quot;</span><span class="p">)</span>
+
+    <span class="k">except</span> <span class="n">ValidationError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Validation error processing agent instruction expired event: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error processing agent instruction expired event: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span></div>
+
+
+
 <span class="c1"># Create a mapping from event types to their handler functions</span>
 <div class="viewcode-block" id="get_event_handlers">
 <a class="viewcode-back" href="../../_api/smartem_backend.consumer.html#smartem_backend.consumer.get_event_handlers">[docs]</a>
@@ -1169,10 +1456,12 @@
         <span class="n">MessageQueueEventType</span><span class="o">.</span><span class="n">MICROGRAPH_CREATED</span><span class="o">.</span><span class="n">value</span><span class="p">:</span> <span class="n">handle_micrograph_created</span><span class="p">,</span>
         <span class="n">MessageQueueEventType</span><span class="o">.</span><span class="n">MICROGRAPH_UPDATED</span><span class="o">.</span><span class="n">value</span><span class="p">:</span> <span class="n">handle_micrograph_updated</span><span class="p">,</span>
         <span class="n">MessageQueueEventType</span><span class="o">.</span><span class="n">MICROGRAPH_DELETED</span><span class="o">.</span><span class="n">value</span><span class="p">:</span> <span class="n">handle_micrograph_deleted</span><span class="p">,</span>
-        <span class="n">MessageQueueEventType</span><span class="o">.</span><span class="n">GRIDSQUARE_MODEL_PREDICTION</span><span class="o">.</span><span class="n">value</span><span class="p">:</span> <span class="n">handle_gridsquare_model_prediction</span><span class="p">,</span>
-        <span class="n">MessageQueueEventType</span><span class="o">.</span><span class="n">FOILHOLE_MODEL_PREDICTION</span><span class="o">.</span><span class="n">value</span><span class="p">:</span> <span class="n">handle_foilhole_model_prediction</span><span class="p">,</span>
+        <span class="n">MessageQueueEventType</span><span class="o">.</span><span class="n">GRIDSQUARE_MODEL_PREDICTION</span><span class="o">.</span><span class="n">value</span><span class="p">:</span> <span class="n">handle_gridsquare_model_prediction_router</span><span class="p">,</span>
+        <span class="n">MessageQueueEventType</span><span class="o">.</span><span class="n">FOILHOLE_MODEL_PREDICTION</span><span class="o">.</span><span class="n">value</span><span class="p">:</span> <span class="n">handle_foilhole_model_prediction_router</span><span class="p">,</span>
         <span class="n">MessageQueueEventType</span><span class="o">.</span><span class="n">MODEL_PARAMETER_UPDATE</span><span class="o">.</span><span class="n">value</span><span class="p">:</span> <span class="n">handle_model_parameter_update</span><span class="p">,</span>
-        <span class="c1"># TODO: Add handlers for all other event types as needed</span>
+        <span class="n">MessageQueueEventType</span><span class="o">.</span><span class="n">AGENT_INSTRUCTION_CREATED</span><span class="o">.</span><span class="n">value</span><span class="p">:</span> <span class="n">handle_agent_instruction_created</span><span class="p">,</span>
+        <span class="n">MessageQueueEventType</span><span class="o">.</span><span class="n">AGENT_INSTRUCTION_UPDATED</span><span class="o">.</span><span class="n">value</span><span class="p">:</span> <span class="n">handle_agent_instruction_updated</span><span class="p">,</span>
+        <span class="n">MessageQueueEventType</span><span class="o">.</span><span class="n">AGENT_INSTRUCTION_EXPIRED</span><span class="o">.</span><span class="n">value</span><span class="p">:</span> <span class="n">handle_agent_instruction_expired</span><span class="p">,</span>
     <span class="p">}</span></div>
 
 

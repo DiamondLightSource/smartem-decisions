@@ -28,10 +28,10 @@ For local development, use the convenient script that provides a docker-compose-
 
 ### Access URLs
 Once the environment is running, you can access:
-- **📊 Adminer (Database UI)**: http://localhost:30808
-- **🐰 RabbitMQ Management**: http://localhost:30673
-- **📡 SmartEM Backend HTTP API**: http://localhost:30080/health
-- **📚 API Documentation**: http://localhost:30080/docs
+- **Adminer (Database UI)**: http://localhost:30808
+- **RabbitMQ Management**: http://localhost:30673
+- **SmartEM Backend HTTP API**: http://localhost:30080/health
+- **API Documentation**: http://localhost:30080/docs
 
 > **Note**: The script automatically handles GitHub Container Registry authentication and waits for all pods to be ready.
 

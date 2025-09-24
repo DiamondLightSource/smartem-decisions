@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>smartem_backend.api_server &#8212; smartem-decisions 0.1.dev316+g7c6b40fab.d20250923 documentation</title>
+    <title>smartem_backend.api_server &#8212; smartem-decisions 0.1.dev331+g9707a53d7.d20250924 documentation</title>
   
   
   
@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../_static/documentation_options.js?v=03473287"></script>
+    <script src="../_static/documentation_options.js?v=144d9203"></script>
     <script src="../_static/doctools.js?v=9bcbadda"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -398,6 +398,8 @@
   <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
   <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
 <li class="toctree-l1 current active has-children"><a class="reference internal" href="smartem_backend.html">API</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="smartem_backend.agent_connection_manager.html"><code class="docutils literal notranslate"><span class="pre">smartem_backend.agent_connection_manager</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="smartem_backend.agent_data_cleanup.html"><code class="docutils literal notranslate"><span class="pre">smartem_backend.agent_data_cleanup</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="smartem_backend.api_client.html"><code class="docutils literal notranslate"><span class="pre">smartem_backend.api_client</span></code></a></li>
 <li class="toctree-l2 current active"><a class="current reference internal" href="#"><code class="docutils literal notranslate"><span class="pre">smartem_backend.api_server</span></code></a></li>
 <li class="toctree-l2 has-children"><a class="reference internal" href="smartem_backend.cli.html"><code class="docutils literal notranslate"><span class="pre">smartem_backend.cli</span></code></a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
@@ -495,32 +497,50 @@
 <p class="rubric">Members</p>
 <div class="pst-scrollable-table-container"><table class="autosummary longtable table">
 <tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#smartem_backend.api_server.acknowledge_instruction" title="smartem_backend.api_server.acknowledge_instruction"><code class="xref py py-obj docutils literal notranslate"><span class="pre">acknowledge_instruction</span></code></a></p></td>
+<td><p>HTTP endpoint for instruction acknowledgements with database persistence</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#smartem_backend.api_server.agent_heartbeat" title="smartem_backend.api_server.agent_heartbeat"><code class="xref py py-obj docutils literal notranslate"><span class="pre">agent_heartbeat</span></code></a></p></td>
+<td><p>Agent heartbeat endpoint to update connection health status.</p></td>
+</tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#smartem_backend.api_server.check_database_health" title="smartem_backend.api_server.check_database_health"><code class="xref py py-obj docutils literal notranslate"><span class="pre">check_database_health</span></code></a></p></td>
 <td><p>Check database connectivity and basic functionality</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#smartem_backend.api_server.check_rabbitmq_health" title="smartem_backend.api_server.check_rabbitmq_health"><code class="xref py py-obj docutils literal notranslate"><span class="pre">check_rabbitmq_health</span></code></a></p></td>
 <td><p>Check RabbitMQ connectivity</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#smartem_backend.api_server.create_acquisition" title="smartem_backend.api_server.create_acquisition"><code class="xref py py-obj docutils literal notranslate"><span class="pre">create_acquisition</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#smartem_backend.api_server.close_managed_session" title="smartem_backend.api_server.close_managed_session"><code class="xref py py-obj docutils literal notranslate"><span class="pre">close_managed_session</span></code></a></p></td>
+<td><p>Close a session using the connection manager</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#smartem_backend.api_server.create_acquisition" title="smartem_backend.api_server.create_acquisition"><code class="xref py py-obj docutils literal notranslate"><span class="pre">create_acquisition</span></code></a></p></td>
 <td><p>Create a new acquisition</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#smartem_backend.api_server.create_acquisition_grid" title="smartem_backend.api_server.create_acquisition_grid"><code class="xref py py-obj docutils literal notranslate"><span class="pre">create_acquisition_grid</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#smartem_backend.api_server.create_acquisition_grid" title="smartem_backend.api_server.create_acquisition_grid"><code class="xref py py-obj docutils literal notranslate"><span class="pre">create_acquisition_grid</span></code></a></p></td>
 <td><p>Create a new grid for a specific acquisition</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#smartem_backend.api_server.create_atlas_tile_for_atlas" title="smartem_backend.api_server.create_atlas_tile_for_atlas"><code class="xref py py-obj docutils literal notranslate"><span class="pre">create_atlas_tile_for_atlas</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#smartem_backend.api_server.create_atlas_tile_for_atlas" title="smartem_backend.api_server.create_atlas_tile_for_atlas"><code class="xref py py-obj docutils literal notranslate"><span class="pre">create_atlas_tile_for_atlas</span></code></a></p></td>
 <td><p>Create a new tile for a specific atlas</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#smartem_backend.api_server.create_foilhole_micrograph" title="smartem_backend.api_server.create_foilhole_micrograph"><code class="xref py py-obj docutils literal notranslate"><span class="pre">create_foilhole_micrograph</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#smartem_backend.api_server.create_foilhole_micrograph" title="smartem_backend.api_server.create_foilhole_micrograph"><code class="xref py py-obj docutils literal notranslate"><span class="pre">create_foilhole_micrograph</span></code></a></p></td>
 <td><p>Create a new micrograph for a specific foil hole</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#smartem_backend.api_server.create_grid_atlas" title="smartem_backend.api_server.create_grid_atlas"><code class="xref py py-obj docutils literal notranslate"><span class="pre">create_grid_atlas</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#smartem_backend.api_server.create_grid_atlas" title="smartem_backend.api_server.create_grid_atlas"><code class="xref py py-obj docutils literal notranslate"><span class="pre">create_grid_atlas</span></code></a></p></td>
 <td><p>Create a new atlas for a grid</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#smartem_backend.api_server.create_grid_gridsquare" title="smartem_backend.api_server.create_grid_gridsquare"><code class="xref py py-obj docutils literal notranslate"><span class="pre">create_grid_gridsquare</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#smartem_backend.api_server.create_grid_gridsquare" title="smartem_backend.api_server.create_grid_gridsquare"><code class="xref py py-obj docutils literal notranslate"><span class="pre">create_grid_gridsquare</span></code></a></p></td>
 <td><p>Create a new grid square for a specific grid</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#smartem_backend.api_server.create_gridsquare_foilhole" title="smartem_backend.api_server.create_gridsquare_foilhole"><code class="xref py py-obj docutils literal notranslate"><span class="pre">create_gridsquare_foilhole</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#smartem_backend.api_server.create_gridsquare_foilhole" title="smartem_backend.api_server.create_gridsquare_foilhole"><code class="xref py py-obj docutils literal notranslate"><span class="pre">create_gridsquare_foilhole</span></code></a></p></td>
 <td><p>Create a new foil hole for a specific grid square</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#smartem_backend.api_server.create_managed_session" title="smartem_backend.api_server.create_managed_session"><code class="xref py py-obj docutils literal notranslate"><span class="pre">create_managed_session</span></code></a></p></td>
+<td><p>Create a session using the connection manager</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#smartem_backend.api_server.create_test_instruction" title="smartem_backend.api_server.create_test_instruction"><code class="xref py py-obj docutils literal notranslate"><span class="pre">create_test_instruction</span></code></a></p></td>
+<td><p>Debug endpoint to create test instructions</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#smartem_backend.api_server.create_test_session" title="smartem_backend.api_server.create_test_session"><code class="xref py py-obj docutils literal notranslate"><span class="pre">create_test_session</span></code></a></p></td>
+<td><p>Debug endpoint to create test sessions</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#smartem_backend.api_server.delete_acquisition" title="smartem_backend.api_server.delete_acquisition"><code class="xref py py-obj docutils literal notranslate"><span class="pre">delete_acquisition</span></code></a></p></td>
 <td><p>Delete an acquisition</p></td>
@@ -552,6 +572,12 @@
 <tr class="row-odd"><td><p><a class="reference internal" href="#smartem_backend.api_server.get_acquisitions" title="smartem_backend.api_server.get_acquisitions"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_acquisitions</span></code></a></p></td>
 <td><p>Get all acquisitions</p></td>
 </tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#smartem_backend.api_server.get_active_connections" title="smartem_backend.api_server.get_active_connections"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_active_connections</span></code></a></p></td>
+<td><p>Debug endpoint to view active agent connections</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#smartem_backend.api_server.get_active_sessions" title="smartem_backend.api_server.get_active_sessions"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_active_sessions</span></code></a></p></td>
+<td><p>Debug endpoint to view all active sessions</p></td>
+</tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#smartem_backend.api_server.get_atlas" title="smartem_backend.api_server.get_atlas"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_atlas</span></code></a></p></td>
 <td><p>Get a single atlas by ID</p></td>
 </tr>
@@ -567,47 +593,53 @@
 <tr class="row-even"><td><p><a class="reference internal" href="#smartem_backend.api_server.get_atlases" title="smartem_backend.api_server.get_atlases"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_atlases</span></code></a></p></td>
 <td><p>Get all atlases</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_db</span></code></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#smartem_backend.api_server.get_connection_stats" title="smartem_backend.api_server.get_connection_stats"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_connection_stats</span></code></a></p></td>
+<td><p>Get real-time connection and session statistics</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_db</span></code></p></td>
 <td><p></p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#smartem_backend.api_server.get_foilhole" title="smartem_backend.api_server.get_foilhole"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_foilhole</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#smartem_backend.api_server.get_foilhole" title="smartem_backend.api_server.get_foilhole"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_foilhole</span></code></a></p></td>
 <td><p>Get a single foil hole by ID</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#smartem_backend.api_server.get_foilhole_micrographs" title="smartem_backend.api_server.get_foilhole_micrographs"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_foilhole_micrographs</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#smartem_backend.api_server.get_foilhole_micrographs" title="smartem_backend.api_server.get_foilhole_micrographs"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_foilhole_micrographs</span></code></a></p></td>
 <td><p>Get all micrographs for a specific foil hole</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#smartem_backend.api_server.get_foilholes" title="smartem_backend.api_server.get_foilholes"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_foilholes</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#smartem_backend.api_server.get_foilholes" title="smartem_backend.api_server.get_foilholes"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_foilholes</span></code></a></p></td>
 <td><p>Get all foil holes</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#smartem_backend.api_server.get_grid" title="smartem_backend.api_server.get_grid"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_grid</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#smartem_backend.api_server.get_grid" title="smartem_backend.api_server.get_grid"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_grid</span></code></a></p></td>
 <td><p>Get a single grid by ID</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#smartem_backend.api_server.get_grid_atlas" title="smartem_backend.api_server.get_grid_atlas"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_grid_atlas</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#smartem_backend.api_server.get_grid_atlas" title="smartem_backend.api_server.get_grid_atlas"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_grid_atlas</span></code></a></p></td>
 <td><p>Get the atlas for a specific grid</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#smartem_backend.api_server.get_grid_gridsquares" title="smartem_backend.api_server.get_grid_gridsquares"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_grid_gridsquares</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#smartem_backend.api_server.get_grid_gridsquares" title="smartem_backend.api_server.get_grid_gridsquares"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_grid_gridsquares</span></code></a></p></td>
 <td><p>Get all grid squares for a specific grid</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#smartem_backend.api_server.get_grids" title="smartem_backend.api_server.get_grids"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_grids</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#smartem_backend.api_server.get_grids" title="smartem_backend.api_server.get_grids"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_grids</span></code></a></p></td>
 <td><p>Get all grids</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#smartem_backend.api_server.get_gridsquare" title="smartem_backend.api_server.get_gridsquare"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_gridsquare</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#smartem_backend.api_server.get_gridsquare" title="smartem_backend.api_server.get_gridsquare"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_gridsquare</span></code></a></p></td>
 <td><p>Get a single grid square by ID</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#smartem_backend.api_server.get_gridsquare_foilholes" title="smartem_backend.api_server.get_gridsquare_foilholes"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_gridsquare_foilholes</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#smartem_backend.api_server.get_gridsquare_foilholes" title="smartem_backend.api_server.get_gridsquare_foilholes"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_gridsquare_foilholes</span></code></a></p></td>
 <td><p>Get all foil holes for a specific grid square</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#smartem_backend.api_server.get_gridsquares" title="smartem_backend.api_server.get_gridsquares"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_gridsquares</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#smartem_backend.api_server.get_gridsquares" title="smartem_backend.api_server.get_gridsquares"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_gridsquares</span></code></a></p></td>
 <td><p>Get all grid squares</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#smartem_backend.api_server.get_health" title="smartem_backend.api_server.get_health"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_health</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#smartem_backend.api_server.get_health" title="smartem_backend.api_server.get_health"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_health</span></code></a></p></td>
 <td><p>Health check endpoint with actual connectivity checks</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#smartem_backend.api_server.get_micrograph" title="smartem_backend.api_server.get_micrograph"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_micrograph</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#smartem_backend.api_server.get_micrograph" title="smartem_backend.api_server.get_micrograph"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_micrograph</span></code></a></p></td>
 <td><p>Get a single micrograph by ID</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#smartem_backend.api_server.get_micrographs" title="smartem_backend.api_server.get_micrographs"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_micrographs</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#smartem_backend.api_server.get_micrographs" title="smartem_backend.api_server.get_micrographs"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_micrographs</span></code></a></p></td>
 <td><p>Get all micrographs</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#smartem_backend.api_server.get_session_instructions" title="smartem_backend.api_server.get_session_instructions"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_session_instructions</span></code></a></p></td>
+<td><p>Debug endpoint to view instructions for a session</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#smartem_backend.api_server.get_status" title="smartem_backend.api_server.get_status"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_status</span></code></a></p></td>
 <td><p>Get API status and configuration information</p></td>
@@ -618,11 +650,17 @@
 <tr class="row-odd"><td><p><a class="reference internal" href="#smartem_backend.api_server.gridsquare_registered" title="smartem_backend.api_server.gridsquare_registered"><code class="xref py py-obj docutils literal notranslate"><span class="pre">gridsquare_registered</span></code></a></p></td>
 <td><p>All holes on a grid square have been registered at square mag</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#smartem_backend.api_server.link_atlas_tile_to_gridsquare" title="smartem_backend.api_server.link_atlas_tile_to_gridsquare"><code class="xref py py-obj docutils literal notranslate"><span class="pre">link_atlas_tile_to_gridsquare</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#smartem_backend.api_server.lifespan" title="smartem_backend.api_server.lifespan"><code class="xref py py-obj docutils literal notranslate"><span class="pre">lifespan</span></code></a></p></td>
+<td><p>Manage application lifespan events.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#smartem_backend.api_server.link_atlas_tile_to_gridsquare" title="smartem_backend.api_server.link_atlas_tile_to_gridsquare"><code class="xref py py-obj docutils literal notranslate"><span class="pre">link_atlas_tile_to_gridsquare</span></code></a></p></td>
 <td><p>Connect a grid square to a tile with its position information</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">log_requests</span></code></p></td>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">log_requests</span></code></p></td>
 <td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#smartem_backend.api_server.stream_instructions" title="smartem_backend.api_server.stream_instructions"><code class="xref py py-obj docutils literal notranslate"><span class="pre">stream_instructions</span></code></a></p></td>
+<td><p>SSE endpoint for streaming instructions to agents for a specific session</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#smartem_backend.api_server.update_acquisition" title="smartem_backend.api_server.update_acquisition"><code class="xref py py-obj docutils literal notranslate"><span class="pre">update_acquisition</span></code></a></p></td>
 <td><p>Update an acquisition</p></td>
@@ -648,6 +686,12 @@
 </tbody>
 </table>
 </div>
+<dl class="py function">
+<dt class="sig sig-object py" id="smartem_backend.api_server.lifespan">
+<span class="sig-prename descclassname"><span class="pre">smartem_backend.api_server.</span></span><span class="sig-name descname"><span class="pre">lifespan</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">app</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">FastAPI</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/smartem_backend/api_server.html#lifespan"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#smartem_backend.api_server.lifespan" title="Link to this definition">#</a></dt>
+<dd><p>Manage application lifespan events.</p>
+</dd></dl>
+
 <dl class="py function">
 <dt class="sig sig-object py" id="smartem_backend.api_server.check_database_health">
 <span class="sig-prename descclassname"><span class="pre">smartem_backend.api_server.</span></span><span class="sig-name descname"><span class="pre">check_database_health</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/smartem_backend/api_server.html#check_database_health"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#smartem_backend.api_server.check_database_health" title="Link to this definition">#</a></dt>
@@ -936,6 +980,84 @@
 <dd><p>Create a new micrograph for a specific foil hole</p>
 </dd></dl>
 
+<dl class="py function">
+<dt class="sig sig-object py" id="smartem_backend.api_server.stream_instructions">
+<em class="property"><span class="k"><span class="pre">async</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">smartem_backend.api_server.</span></span><span class="sig-name descname"><span class="pre">stream_instructions</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">agent_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">session_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">db</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Session</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">Depends(get_db)</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">EventSourceResponse</span></span></span><a class="reference internal" href="../_modules/smartem_backend/api_server.html#stream_instructions"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#smartem_backend.api_server.stream_instructions" title="Link to this definition">#</a></dt>
+<dd><p>SSE endpoint for streaming instructions to agents for a specific session</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="smartem_backend.api_server.acknowledge_instruction">
+<em class="property"><span class="k"><span class="pre">async</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">smartem_backend.api_server.</span></span><span class="sig-name descname"><span class="pre">acknowledge_instruction</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">agent_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">session_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">instruction_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">acknowledgement</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="smartem_backend.model.http_request.html#smartem_backend.model.http_request.AgentInstructionAcknowledgement" title="smartem_backend.model.http_request.AgentInstructionAcknowledgement"><span class="pre">AgentInstructionAcknowledgement</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">db</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Session</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">Depends(get_db)</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="smartem_backend.model.http_response.html#smartem_backend.model.http_response.AgentInstructionAcknowledgementResponse" title="smartem_backend.model.http_response.AgentInstructionAcknowledgementResponse"><span class="pre">AgentInstructionAcknowledgementResponse</span></a></span></span><a class="reference internal" href="../_modules/smartem_backend/api_server.html#acknowledge_instruction"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#smartem_backend.api_server.acknowledge_instruction" title="Link to this definition">#</a></dt>
+<dd><p>HTTP endpoint for instruction acknowledgements with database persistence</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="smartem_backend.api_server.agent_heartbeat">
+<em class="property"><span class="k"><span class="pre">async</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">smartem_backend.api_server.</span></span><span class="sig-name descname"><span class="pre">agent_heartbeat</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">agent_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">session_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">db</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Session</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">Depends(get_db)</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/smartem_backend/api_server.html#agent_heartbeat"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#smartem_backend.api_server.agent_heartbeat" title="Link to this definition">#</a></dt>
+<dd><p>Agent heartbeat endpoint to update connection health status.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>agent_id</strong> – The agent identifier</p></li>
+<li><p><strong>session_id</strong> – The session identifier</p></li>
+<li><p><strong>db</strong> – Database session</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Heartbeat response with status and timestamp</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="smartem_backend.api_server.get_active_connections">
+<em class="property"><span class="k"><span class="pre">async</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">smartem_backend.api_server.</span></span><span class="sig-name descname"><span class="pre">get_active_connections</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">db</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Session</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">Depends(get_db)</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/smartem_backend/api_server.html#get_active_connections"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#smartem_backend.api_server.get_active_connections" title="Link to this definition">#</a></dt>
+<dd><p>Debug endpoint to view active agent connections</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="smartem_backend.api_server.get_session_instructions">
+<em class="property"><span class="k"><span class="pre">async</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">smartem_backend.api_server.</span></span><span class="sig-name descname"><span class="pre">get_session_instructions</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">session_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">db</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Session</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">Depends(get_db)</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/smartem_backend/api_server.html#get_session_instructions"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#smartem_backend.api_server.get_session_instructions" title="Link to this definition">#</a></dt>
+<dd><p>Debug endpoint to view instructions for a session</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="smartem_backend.api_server.get_active_sessions">
+<em class="property"><span class="k"><span class="pre">async</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">smartem_backend.api_server.</span></span><span class="sig-name descname"><span class="pre">get_active_sessions</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">db</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Session</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">Depends(get_db)</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/smartem_backend/api_server.html#get_active_sessions"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#smartem_backend.api_server.get_active_sessions" title="Link to this definition">#</a></dt>
+<dd><p>Debug endpoint to view all active sessions</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="smartem_backend.api_server.get_connection_stats">
+<em class="property"><span class="k"><span class="pre">async</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">smartem_backend.api_server.</span></span><span class="sig-name descname"><span class="pre">get_connection_stats</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/smartem_backend/api_server.html#get_connection_stats"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#smartem_backend.api_server.get_connection_stats" title="Link to this definition">#</a></dt>
+<dd><p>Get real-time connection and session statistics</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="smartem_backend.api_server.create_managed_session">
+<em class="property"><span class="k"><span class="pre">async</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">smartem_backend.api_server.</span></span><span class="sig-name descname"><span class="pre">create_managed_session</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">session_data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.13)"><span class="pre">dict</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/smartem_backend/api_server.html#create_managed_session"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#smartem_backend.api_server.create_managed_session" title="Link to this definition">#</a></dt>
+<dd><p>Create a session using the connection manager</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="smartem_backend.api_server.close_managed_session">
+<em class="property"><span class="k"><span class="pre">async</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">smartem_backend.api_server.</span></span><span class="sig-name descname"><span class="pre">close_managed_session</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">session_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/smartem_backend/api_server.html#close_managed_session"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#smartem_backend.api_server.close_managed_session" title="Link to this definition">#</a></dt>
+<dd><p>Close a session using the connection manager</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="smartem_backend.api_server.create_test_instruction">
+<em class="property"><span class="k"><span class="pre">async</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">smartem_backend.api_server.</span></span><span class="sig-name descname"><span class="pre">create_test_instruction</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">session_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">instruction_data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.13)"><span class="pre">dict</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">db</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Session</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">Depends(get_db)</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/smartem_backend/api_server.html#create_test_instruction"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#smartem_backend.api_server.create_test_instruction" title="Link to this definition">#</a></dt>
+<dd><p>Debug endpoint to create test instructions</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="smartem_backend.api_server.create_test_session">
+<em class="property"><span class="k"><span class="pre">async</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">smartem_backend.api_server.</span></span><span class="sig-name descname"><span class="pre">create_test_session</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">session_data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.13)"><span class="pre">dict</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">db</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Session</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">Depends(get_db)</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/smartem_backend/api_server.html#create_test_session"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#smartem_backend.api_server.create_test_session" title="Link to this definition">#</a></dt>
+<dd><p>Debug endpoint to create test sessions</p>
+</dd></dl>
+
 </section>
 
 
@@ -985,6 +1107,7 @@
   </div>
   <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
     <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#smartem_backend.api_server.lifespan"><code class="docutils literal notranslate"><span class="pre">lifespan()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#smartem_backend.api_server.check_database_health"><code class="docutils literal notranslate"><span class="pre">check_database_health()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#smartem_backend.api_server.check_rabbitmq_health"><code class="docutils literal notranslate"><span class="pre">check_rabbitmq_health()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#smartem_backend.api_server.get_status"><code class="docutils literal notranslate"><span class="pre">get_status()</span></code></a></li>
@@ -1033,6 +1156,17 @@
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#smartem_backend.api_server.delete_micrograph"><code class="docutils literal notranslate"><span class="pre">delete_micrograph()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#smartem_backend.api_server.get_foilhole_micrographs"><code class="docutils literal notranslate"><span class="pre">get_foilhole_micrographs()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#smartem_backend.api_server.create_foilhole_micrograph"><code class="docutils literal notranslate"><span class="pre">create_foilhole_micrograph()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#smartem_backend.api_server.stream_instructions"><code class="docutils literal notranslate"><span class="pre">stream_instructions()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#smartem_backend.api_server.acknowledge_instruction"><code class="docutils literal notranslate"><span class="pre">acknowledge_instruction()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#smartem_backend.api_server.agent_heartbeat"><code class="docutils literal notranslate"><span class="pre">agent_heartbeat()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#smartem_backend.api_server.get_active_connections"><code class="docutils literal notranslate"><span class="pre">get_active_connections()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#smartem_backend.api_server.get_session_instructions"><code class="docutils literal notranslate"><span class="pre">get_session_instructions()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#smartem_backend.api_server.get_active_sessions"><code class="docutils literal notranslate"><span class="pre">get_active_sessions()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#smartem_backend.api_server.get_connection_stats"><code class="docutils literal notranslate"><span class="pre">get_connection_stats()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#smartem_backend.api_server.create_managed_session"><code class="docutils literal notranslate"><span class="pre">create_managed_session()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#smartem_backend.api_server.close_managed_session"><code class="docutils literal notranslate"><span class="pre">close_managed_session()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#smartem_backend.api_server.create_test_instruction"><code class="docutils literal notranslate"><span class="pre">create_test_instruction()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#smartem_backend.api_server.create_test_session"><code class="docutils literal notranslate"><span class="pre">create_test_session()</span></code></a></li>
 </ul>
   </nav></div>
 

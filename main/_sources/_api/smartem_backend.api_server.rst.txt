@@ -50,6 +50,18 @@
         
         
         
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
 
 .. automodule:: smartem_backend.api_server
     :members:
@@ -65,8 +77,11 @@
     .. autosummary::
         :nosignatures:
     
+        acknowledge_instruction
+        agent_heartbeat
         check_database_health
         check_rabbitmq_health
+        close_managed_session
         create_acquisition
         create_acquisition_grid
         create_atlas_tile_for_atlas
@@ -74,6 +89,9 @@
         create_grid_atlas
         create_grid_gridsquare
         create_gridsquare_foilhole
+        create_managed_session
+        create_test_instruction
+        create_test_session
         delete_acquisition
         delete_atlas
         delete_atlas_tile
@@ -84,11 +102,14 @@
         get_acquisition
         get_acquisition_grids
         get_acquisitions
+        get_active_connections
+        get_active_sessions
         get_atlas
         get_atlas_tile
         get_atlas_tiles
         get_atlas_tiles_by_atlas
         get_atlases
+        get_connection_stats
         get_db
         get_foilhole
         get_foilhole_micrographs
@@ -103,11 +124,14 @@
         get_health
         get_micrograph
         get_micrographs
+        get_session_instructions
         get_status
         grid_registered
         gridsquare_registered
+        lifespan
         link_atlas_tile_to_gridsquare
         log_requests
+        stream_instructions
         update_acquisition
         update_atlas
         update_atlas_tile

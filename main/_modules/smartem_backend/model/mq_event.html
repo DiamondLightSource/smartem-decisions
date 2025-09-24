@@ -7,7 +7,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>smartem_backend.model.mq_event &#8212; smartem-decisions 0.1.dev316+g7c6b40fab.d20250923 documentation</title>
+    <title>smartem_backend.model.mq_event &#8212; smartem-decisions 0.1.dev331+g9707a53d7.d20250924 documentation</title>
   
   
   
@@ -40,7 +40,7 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../../../_static/documentation_options.js?v=03473287"></script>
+    <script src="../../../_static/documentation_options.js?v=144d9203"></script>
     <script src="../../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -514,7 +514,12 @@
 
     <span class="n">GRIDSQUARE_MODEL_PREDICTION</span> <span class="o">=</span> <span class="s2">&quot;gridsquare.model_prediction&quot;</span>
     <span class="n">FOILHOLE_MODEL_PREDICTION</span> <span class="o">=</span> <span class="s2">&quot;foilhole.model_prediction&quot;</span>
-    <span class="n">MODEL_PARAMETER_UPDATE</span> <span class="o">=</span> <span class="s2">&quot;gridsquare.model_parameter_update&quot;</span></div>
+    <span class="n">MODEL_PARAMETER_UPDATE</span> <span class="o">=</span> <span class="s2">&quot;gridsquare.model_parameter_update&quot;</span>
+
+    <span class="c1"># Agent communication events</span>
+    <span class="n">AGENT_INSTRUCTION_CREATED</span> <span class="o">=</span> <span class="s2">&quot;agent.instruction.created&quot;</span>
+    <span class="n">AGENT_INSTRUCTION_UPDATED</span> <span class="o">=</span> <span class="s2">&quot;agent.instruction.updated&quot;</span>
+    <span class="n">AGENT_INSTRUCTION_EXPIRED</span> <span class="o">=</span> <span class="s2">&quot;agent.instruction.expired&quot;</span></div>
 
 
 
@@ -959,6 +964,55 @@
     <span class="n">key</span><span class="p">:</span> <span class="nb">str</span>
     <span class="n">value</span><span class="p">:</span> <span class="nb">float</span>
     <span class="n">group</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+
+
+<span class="c1"># ============ Agent Communication Events ============</span>
+
+
+<div class="viewcode-block" id="AgentInstructionCreatedEvent">
+<a class="viewcode-back" href="../../../_api/smartem_backend.model.mq_event.html#smartem_backend.model.mq_event.AgentInstructionCreatedEvent">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">AgentInstructionCreatedEvent</span><span class="p">(</span><span class="n">GenericEventMessageBody</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Event emitted when an agent instruction is created&quot;&quot;&quot;</span>
+
+    <span class="n">event_type</span><span class="p">:</span> <span class="n">MessageQueueEventType</span> <span class="o">=</span> <span class="n">MessageQueueEventType</span><span class="o">.</span><span class="n">AGENT_INSTRUCTION_CREATED</span>
+    <span class="n">instruction_id</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">session_id</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">agent_id</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">instruction_type</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">payload</span><span class="p">:</span> <span class="nb">dict</span>
+    <span class="n">sequence_number</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">priority</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;normal&quot;</span>
+    <span class="n">expires_at</span><span class="p">:</span> <span class="n">datetime</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">instruction_metadata</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span></div>
+
+
+
+<div class="viewcode-block" id="AgentInstructionUpdatedEvent">
+<a class="viewcode-back" href="../../../_api/smartem_backend.model.mq_event.html#smartem_backend.model.mq_event.AgentInstructionUpdatedEvent">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">AgentInstructionUpdatedEvent</span><span class="p">(</span><span class="n">GenericEventMessageBody</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Event emitted when an agent instruction is updated&quot;&quot;&quot;</span>
+
+    <span class="n">event_type</span><span class="p">:</span> <span class="n">MessageQueueEventType</span> <span class="o">=</span> <span class="n">MessageQueueEventType</span><span class="o">.</span><span class="n">AGENT_INSTRUCTION_UPDATED</span>
+    <span class="n">instruction_id</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">session_id</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">agent_id</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">status</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">acknowledged_at</span><span class="p">:</span> <span class="n">datetime</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span></div>
+
+
+
+<div class="viewcode-block" id="AgentInstructionExpiredEvent">
+<a class="viewcode-back" href="../../../_api/smartem_backend.model.mq_event.html#smartem_backend.model.mq_event.AgentInstructionExpiredEvent">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">AgentInstructionExpiredEvent</span><span class="p">(</span><span class="n">GenericEventMessageBody</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Event emitted when an agent instruction expires&quot;&quot;&quot;</span>
+
+    <span class="n">event_type</span><span class="p">:</span> <span class="n">MessageQueueEventType</span> <span class="o">=</span> <span class="n">MessageQueueEventType</span><span class="o">.</span><span class="n">AGENT_INSTRUCTION_EXPIRED</span>
+    <span class="n">instruction_id</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">session_id</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">agent_id</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">expires_at</span><span class="p">:</span> <span class="n">datetime</span>
+    <span class="n">retry_count</span><span class="p">:</span> <span class="nb">int</span></div>
+
 </pre></div>
 
                 </article>

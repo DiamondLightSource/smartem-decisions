@@ -7,7 +7,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>smartem_backend.mq_publisher &#8212; smartem-decisions 0.1.dev316+g7c6b40fab.d20250923 documentation</title>
+    <title>smartem_backend.mq_publisher &#8212; smartem-decisions 0.1.dev331+g9707a53d7.d20250924 documentation</title>
   
   
   
@@ -40,7 +40,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../../_static/documentation_options.js?v=03473287"></script>
+    <script src="../../_static/documentation_options.js?v=144d9203"></script>
     <script src="../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -446,6 +446,9 @@
     <span class="n">AcquisitionCreatedEvent</span><span class="p">,</span>
     <span class="n">AcquisitionDeletedEvent</span><span class="p">,</span>
     <span class="n">AcquisitionUpdatedEvent</span><span class="p">,</span>
+    <span class="n">AgentInstructionCreatedEvent</span><span class="p">,</span>
+    <span class="n">AgentInstructionExpiredEvent</span><span class="p">,</span>
+    <span class="n">AgentInstructionUpdatedEvent</span><span class="p">,</span>
     <span class="n">AtlasCreatedEvent</span><span class="p">,</span>
     <span class="n">AtlasDeletedEvent</span><span class="p">,</span>
     <span class="n">AtlasTileCreatedEvent</span><span class="p">,</span>
@@ -808,6 +811,61 @@
         <span class="n">group</span><span class="o">=</span><span class="n">group</span><span class="p">,</span>
     <span class="p">)</span>
     <span class="k">return</span> <span class="n">rmq_publisher</span><span class="o">.</span><span class="n">publish_event</span><span class="p">(</span><span class="n">MessageQueueEventType</span><span class="o">.</span><span class="n">MODEL_PARAMETER_UPDATE</span><span class="p">,</span> <span class="n">event</span><span class="p">)</span></div>
+
+
+
+<span class="c1"># ========== Agent Communication Events ==========</span>
+
+
+<div class="viewcode-block" id="publish_agent_instruction_created">
+<a class="viewcode-back" href="../../_api/smartem_backend.mq_publisher.html#smartem_backend.mq_publisher.publish_agent_instruction_created">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">publish_agent_instruction_created</span><span class="p">(</span><span class="n">instruction_id</span><span class="p">,</span> <span class="n">session_id</span><span class="p">,</span> <span class="n">agent_id</span><span class="p">,</span> <span class="n">instruction_type</span><span class="p">,</span> <span class="n">payload</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Publish agent instruction created event to RabbitMQ&quot;&quot;&quot;</span>
+    <span class="n">event</span> <span class="o">=</span> <span class="n">AgentInstructionCreatedEvent</span><span class="p">(</span>
+        <span class="n">event_type</span><span class="o">=</span><span class="n">MessageQueueEventType</span><span class="o">.</span><span class="n">AGENT_INSTRUCTION_CREATED</span><span class="p">,</span>
+        <span class="n">instruction_id</span><span class="o">=</span><span class="n">instruction_id</span><span class="p">,</span>
+        <span class="n">session_id</span><span class="o">=</span><span class="n">session_id</span><span class="p">,</span>
+        <span class="n">agent_id</span><span class="o">=</span><span class="n">agent_id</span><span class="p">,</span>
+        <span class="n">instruction_type</span><span class="o">=</span><span class="n">instruction_type</span><span class="p">,</span>
+        <span class="n">payload</span><span class="o">=</span><span class="n">payload</span><span class="p">,</span>
+        <span class="n">sequence_number</span><span class="o">=</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;sequence_number&quot;</span><span class="p">),</span>
+        <span class="n">priority</span><span class="o">=</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;priority&quot;</span><span class="p">,</span> <span class="s2">&quot;normal&quot;</span><span class="p">),</span>
+        <span class="n">expires_at</span><span class="o">=</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;expires_at&quot;</span><span class="p">),</span>
+        <span class="n">instruction_metadata</span><span class="o">=</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;instruction_metadata&quot;</span><span class="p">),</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="n">rmq_publisher</span><span class="o">.</span><span class="n">publish_event</span><span class="p">(</span><span class="n">MessageQueueEventType</span><span class="o">.</span><span class="n">AGENT_INSTRUCTION_CREATED</span><span class="p">,</span> <span class="n">event</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="publish_agent_instruction_updated">
+<a class="viewcode-back" href="../../_api/smartem_backend.mq_publisher.html#smartem_backend.mq_publisher.publish_agent_instruction_updated">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">publish_agent_instruction_updated</span><span class="p">(</span><span class="n">instruction_id</span><span class="p">,</span> <span class="n">session_id</span><span class="p">,</span> <span class="n">agent_id</span><span class="p">,</span> <span class="n">status</span><span class="p">,</span> <span class="n">acknowledged_at</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Publish agent instruction updated event to RabbitMQ&quot;&quot;&quot;</span>
+    <span class="n">event</span> <span class="o">=</span> <span class="n">AgentInstructionUpdatedEvent</span><span class="p">(</span>
+        <span class="n">event_type</span><span class="o">=</span><span class="n">MessageQueueEventType</span><span class="o">.</span><span class="n">AGENT_INSTRUCTION_UPDATED</span><span class="p">,</span>
+        <span class="n">instruction_id</span><span class="o">=</span><span class="n">instruction_id</span><span class="p">,</span>
+        <span class="n">session_id</span><span class="o">=</span><span class="n">session_id</span><span class="p">,</span>
+        <span class="n">agent_id</span><span class="o">=</span><span class="n">agent_id</span><span class="p">,</span>
+        <span class="n">status</span><span class="o">=</span><span class="n">status</span><span class="p">,</span>
+        <span class="n">acknowledged_at</span><span class="o">=</span><span class="n">acknowledged_at</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="n">rmq_publisher</span><span class="o">.</span><span class="n">publish_event</span><span class="p">(</span><span class="n">MessageQueueEventType</span><span class="o">.</span><span class="n">AGENT_INSTRUCTION_UPDATED</span><span class="p">,</span> <span class="n">event</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="publish_agent_instruction_expired">
+<a class="viewcode-back" href="../../_api/smartem_backend.mq_publisher.html#smartem_backend.mq_publisher.publish_agent_instruction_expired">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">publish_agent_instruction_expired</span><span class="p">(</span><span class="n">instruction_id</span><span class="p">,</span> <span class="n">session_id</span><span class="p">,</span> <span class="n">agent_id</span><span class="p">,</span> <span class="n">expires_at</span><span class="p">,</span> <span class="n">retry_count</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Publish agent instruction expired event to RabbitMQ&quot;&quot;&quot;</span>
+    <span class="n">event</span> <span class="o">=</span> <span class="n">AgentInstructionExpiredEvent</span><span class="p">(</span>
+        <span class="n">event_type</span><span class="o">=</span><span class="n">MessageQueueEventType</span><span class="o">.</span><span class="n">AGENT_INSTRUCTION_EXPIRED</span><span class="p">,</span>
+        <span class="n">instruction_id</span><span class="o">=</span><span class="n">instruction_id</span><span class="p">,</span>
+        <span class="n">session_id</span><span class="o">=</span><span class="n">session_id</span><span class="p">,</span>
+        <span class="n">agent_id</span><span class="o">=</span><span class="n">agent_id</span><span class="p">,</span>
+        <span class="n">expires_at</span><span class="o">=</span><span class="n">expires_at</span><span class="p">,</span>
+        <span class="n">retry_count</span><span class="o">=</span><span class="n">retry_count</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="n">rmq_publisher</span><span class="o">.</span><span class="n">publish_event</span><span class="p">(</span><span class="n">MessageQueueEventType</span><span class="o">.</span><span class="n">AGENT_INSTRUCTION_EXPIRED</span><span class="p">,</span> <span class="n">event</span><span class="p">)</span></div>
 
 </pre></div>
 

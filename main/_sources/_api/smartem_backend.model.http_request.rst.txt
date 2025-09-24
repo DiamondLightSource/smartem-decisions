@@ -29,6 +29,7 @@
         
         
         
+        
 
 .. automodule:: smartem_backend.model.http_request
     :members:
@@ -48,6 +49,7 @@
         AcquisitionBaseRequest
         AcquisitionCreateRequest
         AcquisitionUpdateRequest
+        AgentInstructionAcknowledgement
         AtlasBaseFields
         AtlasBaseRequest
         AtlasCreateRequest

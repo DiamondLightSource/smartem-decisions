@@ -1,0 +1,1229 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>SmartEM CLI Troubleshooting Guide &#8212; smartem-decisions 0.1.dev331+g9707a53d7.d20250924 documentation</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+<link href="../_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=4ae1632d" />
+    <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinx-design.min.css?v=95c83b7e" />
+  
+  <!-- So that users can add custom icons -->
+  <script src="../_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
+<link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
+
+    <script src="../_static/documentation_options.js?v=144d9203"></script>
+    <script src="../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../_static/copybutton.js?v=30646c52"></script>
+    <script src="../_static/design-tabs.js?v=f930bc37"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'how-to/troubleshoot-cli';</script>
+    <script>
+        DOCUMENTATION_OPTIONS.theme_version = '0.16.1';
+        DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://DiamondLightSource.github.io/smartem-decisions/switcher.json';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = 'main';
+        DOCUMENTATION_OPTIONS.show_version_warning_banner =
+            false;
+        </script>
+    <link rel="icon" href="../_static/dls-logo.svg"/>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="How to Use the SmartEM API Client" href="use-core-http-api-client.html" />
+    <link rel="prev" title="Run in a container" href="run-container.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="main" />
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../_static/dls-logo.svg" class="logo__image only-light" alt=""/>
+    <img src="../_static/dls-logo.svg" class="logo__image only-dark pst-js-only" alt=""/>
+  
+  
+    <p class="title logo__title">smartem-decisions</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../tutorials.html">
+    Tutorials
+  </a>
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="../how-to.html">
+    How-to Guides
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../explanations.html">
+    Explanations
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../reference.html">
+    Reference
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/DiamondLightSource/smartem-decisions" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://pypi.org/project/smartem-decisions" title="PyPI" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fas fa-cube fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">PyPI</span></a>
+        </li>
+</ul></div>
+      
+        <div class="navbar-item">
+<div class="version-switcher__container dropdown pst-js-only">
+  <button id="pst-version-switcher-button-2"
+    type="button"
+    class="version-switcher__button btn btn-sm dropdown-toggle"
+    data-bs-toggle="dropdown"
+    aria-haspopup="listbox"
+    aria-controls="pst-version-switcher-list-2"
+    aria-label="Version switcher list"
+  >
+    Choose version  <!-- this text may get changed later by javascript -->
+    <span class="caret"></span>
+  </button>
+  <div id="pst-version-switcher-list-2"
+    class="version-switcher__menu dropdown-menu list-group-flush py-0"
+    role="listbox" aria-labelledby="pst-version-switcher-button-2">
+    <!-- dropdown will be populated by javascript on page load -->
+  </div>
+</div></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+    <button class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../tutorials.html">
+    Tutorials
+  </a>
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="../how-to.html">
+    How-to Guides
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../explanations.html">
+    Explanations
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../reference.html">
+    Reference
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/DiamondLightSource/smartem-decisions" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://pypi.org/project/smartem-decisions" title="PyPI" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fas fa-cube fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">PyPI</span></a>
+        </li>
+</ul></div>
+        
+          <div class="navbar-item">
+<div class="version-switcher__container dropdown pst-js-only">
+  <button id="pst-version-switcher-button-3"
+    type="button"
+    class="version-switcher__button btn btn-sm dropdown-toggle"
+    data-bs-toggle="dropdown"
+    aria-haspopup="listbox"
+    aria-controls="pst-version-switcher-list-3"
+    aria-label="Version switcher list"
+  >
+    Choose version  <!-- this text may get changed later by javascript -->
+    <span class="caret"></span>
+  </button>
+  <div id="pst-version-switcher-list-3"
+    class="version-switcher__menu dropdown-menu list-group-flush py-0"
+    role="listbox" aria-labelledby="pst-version-switcher-button-3">
+    <!-- dropdown will be populated by javascript on page load -->
+  </div>
+</div></div>
+        
+      </div>
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+<nav class="bd-docs-nav bd-links"
+     aria-label="Section Navigation">
+  <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
+  <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="use-api-documentation.html">Using the API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="configure-logging.html">Configure Logging and Verbosity</a></li>
+<li class="toctree-l1"><a class="reference internal" href="containerization.html">Containerization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contribute.html">Contribute to the project</a></li>
+<li class="toctree-l1"><a class="reference internal" href="database-migrations.html">Database Migrations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="deploy-kubernetes.html">Kubernetes Deployment</a></li>
+<li class="toctree-l1"><a class="reference internal" href="development-tools.html">Development Tools</a></li>
+<li class="toctree-l1"><a class="reference internal" href="generate-docs.html">Generate Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="manage-kubernetes-secrets.html">Managing Kubernetes Secrets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="run-agent.html">Run SmartEM Agent (EPU Agent)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="run-backend.html">Run SmartEM Backend</a></li>
+<li class="toctree-l1"><a class="reference internal" href="run-container.html">Run in a container</a></li>
+<li class="toctree-l1 current active"><a class="current reference internal" href="#">SmartEM CLI Troubleshooting Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="use-core-http-api-client.html">How to Use the SmartEM API Client</a></li>
+<li class="toctree-l1"><a class="reference internal" href="use-mcp-interface.html">Using SmartEM MCP Interface</a></li>
+</ul>
+</div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="../how-to.html" class="nav-link">How-to Guides</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">SmartEM CLI Troubleshooting Guide</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section id="smartem-cli-troubleshooting-guide">
+<h1>SmartEM CLI Troubleshooting Guide<a class="headerlink" href="#smartem-cli-troubleshooting-guide" title="Link to this heading">#</a></h1>
+<p>This guide provides solutions for common issues encountered when using the SmartEM Agent command-line interface. For comprehensive parameter documentation, see the <a class="reference internal" href="../reference/cli-reference.html"><span class="std std-doc">CLI Reference</span></a>.</p>
+<section id="quick-diagnostics">
+<h2>Quick Diagnostics<a class="headerlink" href="#quick-diagnostics" title="Link to this heading">#</a></h2>
+<section id="check-cli-installation">
+<h3>Check CLI Installation<a class="headerlink" href="#check-cli-installation" title="Link to this heading">#</a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Verify the CLI is accessible</span>
+python<span class="w"> </span>-m<span class="w"> </span>smartem_agent<span class="w"> </span>--help
+
+<span class="c1"># Check version and dependencies</span>
+python<span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;import smartem_agent; print(&#39;SmartEM Agent available&#39;)&quot;</span>
+</pre></div>
+</div>
+</section>
+<section id="test-basic-functionality">
+<h3>Test Basic Functionality<a class="headerlink" href="#test-basic-functionality" title="Link to this heading">#</a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Test with a known good directory</span>
+python<span class="w"> </span>-m<span class="w"> </span>smartem_agent<span class="w"> </span>validate<span class="w"> </span>/path/to/test/data
+
+<span class="c1"># Test API connectivity</span>
+python<span class="w"> </span>-m<span class="w"> </span>smartem_agent<span class="w"> </span>watch<span class="w"> </span>/tmp<span class="w"> </span>--dry-run<span class="w"> </span>--verbose
+</pre></div>
+</div>
+</section>
+</section>
+<section id="common-issues-and-solutions">
+<h2>Common Issues and Solutions<a class="headerlink" href="#common-issues-and-solutions" title="Link to this heading">#</a></h2>
+<section id="command-not-found-errors">
+<h3>1. Command Not Found Errors<a class="headerlink" href="#command-not-found-errors" title="Link to this heading">#</a></h3>
+<section id="error-no-module-named-smartem-agent">
+<h4>Error: <code class="docutils literal notranslate"><span class="pre">No</span> <span class="pre">module</span> <span class="pre">named</span> <span class="pre">'smartem_agent'</span></code><a class="headerlink" href="#error-no-module-named-smartem-agent" title="Link to this heading">#</a></h4>
+<p><strong>Cause:</strong> SmartEM Agent package is not installed or not in Python path.</p>
+<p><strong>Solutions:</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Install in development mode</span>
+pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span>.
+
+<span class="c1"># Install with all dependencies</span>
+pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span>.<span class="o">[</span>all<span class="o">]</span>
+
+<span class="c1"># Verify installation</span>
+pip<span class="w"> </span>list<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>smartem
+</pre></div>
+</div>
+<p><strong>Alternative:</strong> Use the full path to the module:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nv">PYTHONPATH</span><span class="o">=</span>/path/to/smartem-decisions/src<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>smartem_agent<span class="w"> </span>--help
+</pre></div>
+</div>
+</section>
+<section id="error-python-can-t-open-file-smartem-agent">
+<h4>Error: <code class="docutils literal notranslate"><span class="pre">python:</span> <span class="pre">can't</span> <span class="pre">open</span> <span class="pre">file</span> <span class="pre">'smartem_agent'</span></code><a class="headerlink" href="#error-python-can-t-open-file-smartem-agent" title="Link to this heading">#</a></h4>
+<p><strong>Cause:</strong> Trying to run as a script instead of a module.</p>
+<p><strong>Solution:</strong> Use the module syntax:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Correct</span>
+python<span class="w"> </span>-m<span class="w"> </span>smartem_agent<span class="w"> </span>watch<span class="w"> </span>/data
+
+<span class="c1"># Incorrect</span>
+python<span class="w"> </span>smartem_agent<span class="w"> </span>watch<span class="w"> </span>/data
+</pre></div>
+</div>
+</section>
+</section>
+<section id="directory-and-file-access-issues">
+<h3>2. Directory and File Access Issues<a class="headerlink" href="#directory-and-file-access-issues" title="Link to this heading">#</a></h3>
+<section id="error-directory-path-to-data-does-not-exist">
+<h4>Error: <code class="docutils literal notranslate"><span class="pre">Directory</span> <span class="pre">/path/to/data</span> <span class="pre">does</span> <span class="pre">not</span> <span class="pre">exist</span></code><a class="headerlink" href="#error-directory-path-to-data-does-not-exist" title="Link to this heading">#</a></h4>
+<p><strong>Diagnosis:</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Check if directory exists</span>
+ls<span class="w"> </span>-la<span class="w"> </span>/path/to/data
+
+<span class="c1"># Check parent directory</span>
+ls<span class="w"> </span>-la<span class="w"> </span>/path/to/
+
+<span class="c1"># Verify current working directory</span>
+<span class="nb">pwd</span>
+</pre></div>
+</div>
+<p><strong>Solutions:</strong></p>
+<ul class="simple">
+<li><p>Use absolute paths: <code class="docutils literal notranslate"><span class="pre">/full/path/to/directory</span></code></p></li>
+<li><p>Verify directory spelling and case sensitivity</p></li>
+<li><p>Check directory permissions: <code class="docutils literal notranslate"><span class="pre">ls</span> <span class="pre">-ld</span> <span class="pre">/path/to/data</span></code></p></li>
+</ul>
+</section>
+<section id="error-permission-denied">
+<h4>Error: <code class="docutils literal notranslate"><span class="pre">Permission</span> <span class="pre">denied</span></code><a class="headerlink" href="#error-permission-denied" title="Link to this heading">#</a></h4>
+<p><strong>Cause:</strong> Insufficient permissions to read directories or write log files.</p>
+<p><strong>Solutions:</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Check directory permissions</span>
+ls<span class="w"> </span>-la<span class="w"> </span>/path/to/data
+
+<span class="c1"># Check write permissions for log file location</span>
+touch<span class="w"> </span>/path/to/logfile.log<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>rm<span class="w"> </span>/path/to/logfile.log
+
+<span class="c1"># Run with appropriate permissions</span>
+sudo<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>smartem_agent<span class="w"> </span>watch<span class="w"> </span>/data<span class="w">  </span><span class="c1"># Use sparingly</span>
+
+<span class="c1"># Better: Fix directory permissions</span>
+chmod<span class="w"> </span>-R<span class="w"> </span><span class="m">755</span><span class="w"> </span>/path/to/data
+chown<span class="w"> </span>-R<span class="w"> </span><span class="nv">$USER</span>:<span class="nv">$GROUP</span><span class="w"> </span>/path/to/data
+</pre></div>
+</div>
+</section>
+<section id="error-files-not-being-detected-during-watch">
+<h4>Error: Files not being detected during watch<a class="headerlink" href="#error-files-not-being-detected-during-watch" title="Link to this heading">#</a></h4>
+<p><strong>Diagnosis:</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Test with verbose output</span>
+python<span class="w"> </span>-m<span class="w"> </span>smartem_agent<span class="w"> </span>watch<span class="w"> </span>/data<span class="w"> </span>--dry-run<span class="w"> </span>-vv
+
+<span class="c1"># Check file patterns match</span>
+find<span class="w"> </span>/data<span class="w"> </span>-name<span class="w"> </span><span class="s2">&quot;EpuSession.dm&quot;</span><span class="w"> </span>-o<span class="w"> </span>-name<span class="w"> </span><span class="s2">&quot;*.xml&quot;</span>
+
+<span class="c1"># Monitor filesystem events manually</span>
+inotifywait<span class="w"> </span>-m<span class="w"> </span>-r<span class="w"> </span>/data
+</pre></div>
+</div>
+<p><strong>Solutions:</strong></p>
+<ul class="simple">
+<li><p>Verify file patterns match EPU naming conventions</p></li>
+<li><p>Check for symbolic links that might not be followed</p></li>
+<li><p>Ensure files are completely written before processing</p></li>
+<li><p>Consider filesystem-specific issues (NFS, network drives)</p></li>
+</ul>
+</section>
+</section>
+<section id="api-connection-problems">
+<h3>3. API Connection Problems<a class="headerlink" href="#api-connection-problems" title="Link to this heading">#</a></h3>
+<section id="error-api-at-http-127-0-0-1-8000-is-not-reachable">
+<h4>Error: <code class="docutils literal notranslate"><span class="pre">API</span> <span class="pre">at</span> <span class="pre">http://127.0.0.1:8000</span> <span class="pre">is</span> <span class="pre">not</span> <span class="pre">reachable</span></code><a class="headerlink" href="#error-api-at-http-127-0-0-1-8000-is-not-reachable" title="Link to this heading">#</a></h4>
+<p><strong>Diagnosis:</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Test basic connectivity</span>
+curl<span class="w"> </span>-v<span class="w"> </span>http://127.0.0.1:8000/status
+
+<span class="c1"># Check if service is running</span>
+netstat<span class="w"> </span>-tlnp<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span><span class="m">8000</span>
+
+<span class="c1"># Test from Python</span>
+python<span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;import requests; print(requests.get(&#39;http://127.0.0.1:8000/status&#39;).json())&quot;</span>
+</pre></div>
+</div>
+<p><strong>Solutions:</strong></p>
+<ol class="arabic">
+<li><p><strong>Start the backend API:</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span><span class="w"> </span>/path/to/smartem-decisions
+python<span class="w"> </span>-m<span class="w"> </span>smartem_backend.api_server
+</pre></div>
+</div>
+</li>
+<li><p><strong>Use correct API URL:</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Local development</span>
+python<span class="w"> </span>-m<span class="w"> </span>smartem_agent<span class="w"> </span>watch<span class="w"> </span>/data<span class="w"> </span>--api-url<span class="w"> </span>http://localhost:8000
+
+<span class="c1"># Remote server</span>
+python<span class="w"> </span>-m<span class="w"> </span>smartem_agent<span class="w"> </span>watch<span class="w"> </span>/data<span class="w"> </span>--api-url<span class="w"> </span>https://smartem.example.com/api
+</pre></div>
+</div>
+</li>
+<li><p><strong>Network connectivity issues:</strong></p>
+<ul class="simple">
+<li><p>Check firewall settings</p></li>
+<li><p>Verify proxy configuration</p></li>
+<li><p>Test with different network interfaces</p></li>
+<li><p>Use <code class="docutils literal notranslate"><span class="pre">--dry-run</span></code> for offline testing</p></li>
+</ul>
+</li>
+</ol>
+</section>
+<section id="error-sse-connection-failed-or-failed-to-send-heartbeat">
+<h4>Error: <code class="docutils literal notranslate"><span class="pre">SSE</span> <span class="pre">connection</span> <span class="pre">failed</span></code> or <code class="docutils literal notranslate"><span class="pre">Failed</span> <span class="pre">to</span> <span class="pre">send</span> <span class="pre">heartbeat</span></code><a class="headerlink" href="#error-sse-connection-failed-or-failed-to-send-heartbeat" title="Link to this heading">#</a></h4>
+<p><strong>Diagnosis:</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Test SSE endpoint manually</span>
+curl<span class="w"> </span>-H<span class="w"> </span><span class="s2">&quot;Accept: text/event-stream&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">     </span>http://127.0.0.1:8000/agent/test-agent/session/test-session/instructions/stream
+
+<span class="c1"># Check heartbeat endpoint</span>
+curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span><span class="se">\</span>
+<span class="w">     </span>-H<span class="w"> </span><span class="s2">&quot;Content-Type: application/json&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">     </span>http://127.0.0.1:8000/agent/test-agent/session/test-session/heartbeat
+</pre></div>
+</div>
+<p><strong>Solutions:</strong></p>
+<ol class="arabic">
+<li><p><strong>Verify agent and session IDs:</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Ensure IDs exist in backend</span>
+python<span class="w"> </span>-m<span class="w"> </span>smartem_agent<span class="w"> </span>watch<span class="w"> </span>/data<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--agent-id<span class="w"> </span>valid-agent-id<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--session-id<span class="w"> </span>valid-session-id
+</pre></div>
+</div>
+</li>
+<li><p><strong>Adjust timeout settings:</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Increase timeouts for unstable connections</span>
+python<span class="w"> </span>-m<span class="w"> </span>smartem_agent<span class="w"> </span>watch<span class="w"> </span>/data<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--agent-id<span class="w"> </span>agent-01<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--session-id<span class="w"> </span>session-01<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--sse-timeout<span class="w"> </span><span class="m">120</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--heartbeat-interval<span class="w"> </span><span class="m">30</span>
+</pre></div>
+</div>
+</li>
+<li><p><strong>Check backend logs:</strong></p>
+<ul class="simple">
+<li><p>Monitor backend API logs for connection errors</p></li>
+<li><p>Verify database connectivity</p></li>
+<li><p>Check for authentication issues</p></li>
+</ul>
+</li>
+</ol>
+</section>
+</section>
+<section id="parsing-and-validation-errors">
+<h3>4. Parsing and Validation Errors<a class="headerlink" href="#parsing-and-validation-errors" title="Link to this heading">#</a></h3>
+<section id="error-grid-data-dir-is-structurally-invalid">
+<h4>Error: <code class="docutils literal notranslate"><span class="pre">Grid</span> <span class="pre">data</span> <span class="pre">dir</span> <span class="pre">is</span> <span class="pre">structurally</span> <span class="pre">invalid</span></code><a class="headerlink" href="#error-grid-data-dir-is-structurally-invalid" title="Link to this heading">#</a></h4>
+<p><strong>Diagnosis:</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Get detailed validation errors</span>
+python<span class="w"> </span>-m<span class="w"> </span>smartem_agent<span class="w"> </span>validate<span class="w"> </span>/path/to/grid<span class="w"> </span>-vv
+
+<span class="c1"># Check directory structure</span>
+find<span class="w"> </span>/path/to/grid<span class="w"> </span>-type<span class="w"> </span>f<span class="w"> </span>-name<span class="w"> </span><span class="s2">&quot;*.dm&quot;</span><span class="w"> </span>-o<span class="w"> </span>-name<span class="w"> </span><span class="s2">&quot;*.xml&quot;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>head<span class="w"> </span>-20
+</pre></div>
+</div>
+<p><strong>Common Issues:</strong></p>
+<ul class="simple">
+<li><p>Missing <code class="docutils literal notranslate"><span class="pre">EpuSession.dm</span></code> file</p></li>
+<li><p>Incorrect directory naming conventions</p></li>
+<li><p>Incomplete or corrupted files</p></li>
+<li><p>Wrong directory structure (not EPU format)</p></li>
+</ul>
+<p><strong>Solutions:</strong></p>
+<ul class="simple">
+<li><p>Verify the directory contains valid EPU data</p></li>
+<li><p>Check for required files: <code class="docutils literal notranslate"><span class="pre">EpuSession.dm</span></code>, <code class="docutils literal notranslate"><span class="pre">Atlas/Atlas.dm</span></code></p></li>
+<li><p>Ensure directory structure matches EPU conventions</p></li>
+<li><p>Use <code class="docutils literal notranslate"><span class="pre">parse</span> <span class="pre">dir</span></code> command to identify specific parsing issues</p></li>
+</ul>
+</section>
+<section id="error-could-not-extract-instrument-info-or-parsing-failures">
+<h4>Error: <code class="docutils literal notranslate"><span class="pre">Could</span> <span class="pre">not</span> <span class="pre">extract</span> <span class="pre">instrument</span> <span class="pre">info</span></code> or parsing failures<a class="headerlink" href="#error-could-not-extract-instrument-info-or-parsing-failures" title="Link to this heading">#</a></h4>
+<p><strong>Diagnosis:</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Test individual file parsing</span>
+python<span class="w"> </span>-m<span class="w"> </span>smartem_agent<span class="w"> </span>parse<span class="w"> </span>session<span class="w"> </span>/path/to/EpuSession.dm<span class="w"> </span>-vv
+
+<span class="c1"># Check file integrity</span>
+file<span class="w"> </span>/path/to/EpuSession.dm
+hexdump<span class="w"> </span>-C<span class="w"> </span>/path/to/EpuSession.dm<span class="w"> </span><span class="p">|</span><span class="w"> </span>head<span class="w"> </span>-5
+</pre></div>
+</div>
+<p><strong>Solutions:</strong></p>
+<ul class="simple">
+<li><p>Verify files are not corrupted or partially written</p></li>
+<li><p>Check file permissions and accessibility</p></li>
+<li><p>Ensure files are in expected format (not binary corrupted)</p></li>
+<li><p>Look for encoding issues or special characters in paths</p></li>
+</ul>
+</section>
+</section>
+<section id="performance-and-resource-issues">
+<h3>5. Performance and Resource Issues<a class="headerlink" href="#performance-and-resource-issues" title="Link to this heading">#</a></h3>
+<section id="issue-high-memory-usage-or-slow-processing">
+<h4>Issue: High memory usage or slow processing<a class="headerlink" href="#issue-high-memory-usage-or-slow-processing" title="Link to this heading">#</a></h4>
+<p><strong>Diagnosis:</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Monitor resource usage</span>
+top<span class="w"> </span>-p<span class="w"> </span><span class="k">$(</span>pgrep<span class="w"> </span>-f<span class="w"> </span><span class="s2">&quot;smartem_agent&quot;</span><span class="k">)</span>
+htop
+
+<span class="c1"># Check directory size</span>
+du<span class="w"> </span>-sh<span class="w"> </span>/path/to/data
+find<span class="w"> </span>/path/to/data<span class="w"> </span>-type<span class="w"> </span>f<span class="w"> </span><span class="p">|</span><span class="w"> </span>wc<span class="w"> </span>-l
+</pre></div>
+</div>
+<p><strong>Solutions:</strong></p>
+<ol class="arabic">
+<li><p><strong>Optimise logging settings:</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Reduce logging frequency</span>
+python<span class="w"> </span>-m<span class="w"> </span>smartem_agent<span class="w"> </span>watch<span class="w"> </span>/data<span class="w"> </span>--log-interval<span class="w"> </span><span class="m">30</span>.0
+
+<span class="c1"># Reduce verbosity</span>
+python<span class="w"> </span>-m<span class="w"> </span>smartem_agent<span class="w"> </span>watch<span class="w"> </span>/data<span class="w">  </span><span class="c1"># No -v flags</span>
+</pre></div>
+</div>
+</li>
+<li><p><strong>Process smaller datasets:</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Process single grids instead of entire sessions</span>
+python<span class="w"> </span>-m<span class="w"> </span>smartem_agent<span class="w"> </span>watch<span class="w"> </span>/data/Grid_001
+</pre></div>
+</div>
+</li>
+<li><p><strong>System resource limits:</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Increase file descriptor limits</span>
+<span class="nb">ulimit</span><span class="w"> </span>-n<span class="w"> </span><span class="m">4096</span>
+
+<span class="c1"># Monitor disk space</span>
+df<span class="w"> </span>-h<span class="w"> </span>/path/to/data
+</pre></div>
+</div>
+</li>
+</ol>
+</section>
+<section id="issue-oserror-errno-24-too-many-open-files">
+<h4>Issue: <code class="docutils literal notranslate"><span class="pre">OSError:</span> <span class="pre">[Errno</span> <span class="pre">24]</span> <span class="pre">Too</span> <span class="pre">many</span> <span class="pre">open</span> <span class="pre">files</span></code><a class="headerlink" href="#issue-oserror-errno-24-too-many-open-files" title="Link to this heading">#</a></h4>
+<p><strong>Solutions:</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Check current limits</span>
+<span class="nb">ulimit</span><span class="w"> </span>-a
+
+<span class="c1"># Increase file descriptor limit temporarily</span>
+<span class="nb">ulimit</span><span class="w"> </span>-n<span class="w"> </span><span class="m">4096</span>
+
+<span class="c1"># Increase permanently (add to ~/.bashrc)</span>
+<span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;ulimit -n 4096&quot;</span><span class="w"> </span>&gt;&gt;<span class="w"> </span>~/.bashrc
+</pre></div>
+</div>
+</section>
+</section>
+<section id="logging-and-output-issues">
+<h3>6. Logging and Output Issues<a class="headerlink" href="#logging-and-output-issues" title="Link to this heading">#</a></h3>
+<section id="issue-no-log-output-or-missing-log-files">
+<h4>Issue: No log output or missing log files<a class="headerlink" href="#issue-no-log-output-or-missing-log-files" title="Link to this heading">#</a></h4>
+<p><strong>Diagnosis:</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Check log file permissions</span>
+ls<span class="w"> </span>-la<span class="w"> </span>fs_changes.log
+
+<span class="c1"># Verify log directory exists</span>
+ls<span class="w"> </span>-la<span class="w"> </span><span class="k">$(</span>dirname<span class="w"> </span>/path/to/custom.log<span class="k">)</span>
+
+<span class="c1"># Test with different log location</span>
+python<span class="w"> </span>-m<span class="w"> </span>smartem_agent<span class="w"> </span>watch<span class="w"> </span>/data<span class="w"> </span>--log-file<span class="w"> </span>/tmp/test.log
+</pre></div>
+</div>
+<p><strong>Solutions:</strong></p>
+<ul class="simple">
+<li><p>Ensure log directory exists and is writable</p></li>
+<li><p>Use absolute paths for log files</p></li>
+<li><p>Check disk space availability</p></li>
+<li><p>Verify SELinux/AppArmor policies if applicable</p></li>
+</ul>
+</section>
+<section id="issue-verbose-output-not-showing">
+<h4>Issue: Verbose output not showing<a class="headerlink" href="#issue-verbose-output-not-showing" title="Link to this heading">#</a></h4>
+<p><strong>Solutions:</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Ensure correct verbose syntax</span>
+python<span class="w"> </span>-m<span class="w"> </span>smartem_agent<span class="w"> </span>watch<span class="w"> </span>/data<span class="w"> </span>-v<span class="w">      </span><span class="c1"># INFO level</span>
+python<span class="w"> </span>-m<span class="w"> </span>smartem_agent<span class="w"> </span>watch<span class="w"> </span>/data<span class="w"> </span>-vv<span class="w">     </span><span class="c1"># DEBUG level</span>
+
+<span class="c1"># Check if output is being redirected</span>
+python<span class="w"> </span>-m<span class="w"> </span>smartem_agent<span class="w"> </span>watch<span class="w"> </span>/data<span class="w"> </span>-v<span class="w"> </span><span class="m">2</span>&gt;<span class="p">&amp;</span><span class="m">1</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>tee<span class="w"> </span>output.log
+</pre></div>
+</div>
+</section>
+</section>
+<section id="signal-handling-and-process-management">
+<h3>7. Signal Handling and Process Management<a class="headerlink" href="#signal-handling-and-process-management" title="Link to this heading">#</a></h3>
+<section id="issue-process-doesn-t-stop-gracefully-with-ctrl-c">
+<h4>Issue: Process doesn’t stop gracefully with Ctrl+C<a class="headerlink" href="#issue-process-doesn-t-stop-gracefully-with-ctrl-c" title="Link to this heading">#</a></h4>
+<p><strong>Solutions:</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Send SIGTERM for graceful shutdown</span>
+pkill<span class="w"> </span>-TERM<span class="w"> </span>-f<span class="w"> </span><span class="s2">&quot;smartem_agent&quot;</span>
+
+<span class="c1"># Force kill if necessary</span>
+pkill<span class="w"> </span>-9<span class="w"> </span>-f<span class="w"> </span><span class="s2">&quot;smartem_agent&quot;</span>
+
+<span class="c1"># Use timeout for automatic termination</span>
+timeout<span class="w"> </span><span class="m">3600</span><span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>smartem_agent<span class="w"> </span>watch<span class="w"> </span>/data<span class="w">  </span><span class="c1"># Stop after 1 hour</span>
+</pre></div>
+</div>
+</section>
+<section id="issue-background-process-monitoring">
+<h4>Issue: Background process monitoring<a class="headerlink" href="#issue-background-process-monitoring" title="Link to this heading">#</a></h4>
+<p><strong>Solutions:</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Run in background with nohup</span>
+nohup<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>smartem_agent<span class="w"> </span>watch<span class="w"> </span>/data<span class="w"> </span>&gt;<span class="w"> </span>smartem.log<span class="w"> </span><span class="m">2</span>&gt;<span class="p">&amp;</span><span class="m">1</span><span class="w"> </span><span class="p">&amp;</span>
+
+<span class="c1"># Use screen or tmux for persistent sessions</span>
+screen<span class="w"> </span>-S<span class="w"> </span>smartem
+python<span class="w"> </span>-m<span class="w"> </span>smartem_agent<span class="w"> </span>watch<span class="w"> </span>/data
+
+<span class="c1"># Monitor process status</span>
+ps<span class="w"> </span>aux<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>smartem_agent
+</pre></div>
+</div>
+</section>
+</section>
+</section>
+<section id="advanced-troubleshooting">
+<h2>Advanced Troubleshooting<a class="headerlink" href="#advanced-troubleshooting" title="Link to this heading">#</a></h2>
+<section id="debug-mode-activation">
+<h3>Debug Mode Activation<a class="headerlink" href="#debug-mode-activation" title="Link to this heading">#</a></h3>
+<p>Enable maximum debugging output:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>-m<span class="w"> </span>smartem_agent<span class="w"> </span>watch<span class="w"> </span>/data<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--dry-run<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--verbose<span class="w"> </span>--verbose<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--log-interval<span class="w"> </span><span class="m">1</span>.0<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--heartbeat-interval<span class="w"> </span><span class="m">10</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--sse-timeout<span class="w"> </span><span class="m">10</span>
+</pre></div>
+</div>
+</section>
+<section id="network-debugging">
+<h3>Network Debugging<a class="headerlink" href="#network-debugging" title="Link to this heading">#</a></h3>
+<p><strong>Test connectivity chain:</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># 1. Basic network connectivity</span>
+ping<span class="w"> </span>backend-host
+
+<span class="c1"># 2. Port connectivity</span>
+telnet<span class="w"> </span>backend-host<span class="w"> </span><span class="m">8000</span>
+
+<span class="c1"># 3. HTTP connectivity</span>
+curl<span class="w"> </span>-v<span class="w"> </span>http://backend-host:8000/status
+
+<span class="c1"># 4. SSE connectivity</span>
+curl<span class="w"> </span>-v<span class="w"> </span>-H<span class="w"> </span><span class="s2">&quot;Accept: text/event-stream&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">     </span>http://backend-host:8000/agent/test/session/test/instructions/stream
+</pre></div>
+</div>
+</section>
+<section id="file-system-monitoring-debug">
+<h3>File System Monitoring Debug<a class="headerlink" href="#file-system-monitoring-debug" title="Link to this heading">#</a></h3>
+<p><strong>Manual file monitoring:</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Install inotify-tools (Linux)</span>
+sudo<span class="w"> </span>apt-get<span class="w"> </span>install<span class="w"> </span>inotify-tools
+
+<span class="c1"># Monitor directory changes</span>
+inotifywait<span class="w"> </span>-m<span class="w"> </span>-r<span class="w"> </span>--format<span class="w"> </span><span class="s1">&#39;%w%f %e %T&#39;</span><span class="w"> </span>--timefmt<span class="w"> </span><span class="s1">&#39;%Y-%m-%d %H:%M:%S&#39;</span><span class="w"> </span>/data
+
+<span class="c1"># Compare with agent detection</span>
+python<span class="w"> </span>-m<span class="w"> </span>smartem_agent<span class="w"> </span>watch<span class="w"> </span>/data<span class="w"> </span>--dry-run<span class="w"> </span>-vv
+</pre></div>
+</div>
+</section>
+<section id="database-connectivity-issues">
+<h3>Database Connectivity Issues<a class="headerlink" href="#database-connectivity-issues" title="Link to this heading">#</a></h3>
+<p><strong>Test database connection (if using persistent storage):</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Check database connectivity</span>
+psql<span class="w"> </span>-h<span class="w"> </span>database-host<span class="w"> </span>-U<span class="w"> </span>username<span class="w"> </span>-d<span class="w"> </span>smartem_db<span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;SELECT 1;&quot;</span>
+
+<span class="c1"># Verify tables exist</span>
+psql<span class="w"> </span>-h<span class="w"> </span>database-host<span class="w"> </span>-U<span class="w"> </span>username<span class="w"> </span>-d<span class="w"> </span>smartem_db<span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;\\dt&quot;</span>
+
+<span class="c1"># Check for connection pooling issues</span>
+netstat<span class="w"> </span>-an<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>:5432
+</pre></div>
+</div>
+</section>
+</section>
+<section id="environment-specific-issues">
+<h2>Environment-Specific Issues<a class="headerlink" href="#environment-specific-issues" title="Link to this heading">#</a></h2>
+<section id="windows-specific">
+<h3>Windows Specific<a class="headerlink" href="#windows-specific" title="Link to this heading">#</a></h3>
+<p><strong>Path separator issues:</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Use forward slashes or raw strings</span>
+python<span class="w"> </span>-m<span class="w"> </span>smartem_agent<span class="w"> </span>watch<span class="w"> </span><span class="s2">&quot;C:/data/microscopy&quot;</span>
+python<span class="w"> </span>-m<span class="w"> </span>smartem_agent<span class="w"> </span>watch<span class="w"> </span>C:<span class="se">\\</span>data<span class="se">\\</span>microscopy
+</pre></div>
+</div>
+<p><strong>Service account permissions:</strong></p>
+<ul class="simple">
+<li><p>Ensure service account has appropriate file system access</p></li>
+<li><p>Check Windows Defender exclusions for monitoring directories</p></li>
+<li><p>Verify no Group Policy restrictions on file access</p></li>
+</ul>
+</section>
+<section id="linux-unix-specific">
+<h3>Linux/Unix Specific<a class="headerlink" href="#linux-unix-specific" title="Link to this heading">#</a></h3>
+<p><strong>Permission issues:</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Check SELinux status</span>
+sestatus
+
+<span class="c1"># Check AppArmor status</span>
+sudo<span class="w"> </span>apparmor_status
+
+<span class="c1"># Verify no systemd restrictions</span>
+systemctl<span class="w"> </span>status<span class="w"> </span>user@<span class="k">$(</span>id<span class="w"> </span>-u<span class="k">)</span>.service
+</pre></div>
+</div>
+<p><strong>NFS mounted directories:</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Check mount options</span>
+mount<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>nfs
+
+<span class="c1"># Test with local directory first</span>
+python<span class="w"> </span>-m<span class="w"> </span>smartem_agent<span class="w"> </span>watch<span class="w"> </span>/tmp/test_data<span class="w"> </span>--dry-run
+</pre></div>
+</div>
+</section>
+<section id="container-docker-environments">
+<h3>Container/Docker Environments<a class="headerlink" href="#container-docker-environments" title="Link to this heading">#</a></h3>
+<p><strong>Volume mounting issues:</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Verify volume mounts</span>
+docker<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>container-id<span class="w"> </span>ls<span class="w"> </span>-la<span class="w"> </span>/data
+
+<span class="c1"># Check container permissions</span>
+docker<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>container-id<span class="w"> </span>id
+docker<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>container-id<span class="w"> </span>ls<span class="w"> </span>-la<span class="w"> </span>/data
+</pre></div>
+</div>
+<p><strong>Network connectivity in containers:</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Test from within container</span>
+docker<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>container-id<span class="w"> </span>curl<span class="w"> </span>http://backend:8000/status
+
+<span class="c1"># Check container networking</span>
+docker<span class="w"> </span>network<span class="w"> </span>ls
+docker<span class="w"> </span>inspect<span class="w"> </span>network-name
+</pre></div>
+</div>
+</section>
+</section>
+<section id="getting-additional-help">
+<h2>Getting Additional Help<a class="headerlink" href="#getting-additional-help" title="Link to this heading">#</a></h2>
+<section id="collecting-diagnostic-information">
+<h3>Collecting Diagnostic Information<a class="headerlink" href="#collecting-diagnostic-information" title="Link to this heading">#</a></h3>
+<p>Create a diagnostic script:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="ch">#!/bin/bash</span>
+<span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;=== System Information ===&quot;</span>
+uname<span class="w"> </span>-a
+python<span class="w"> </span>--version
+
+<span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;=== SmartEM Agent Status ===&quot;</span>
+python<span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;import smartem_agent; print(&#39;Available&#39;)&quot;</span><span class="w"> </span><span class="m">2</span>&gt;<span class="p">&amp;</span><span class="m">1</span>
+
+<span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;=== Directory Information ===&quot;</span>
+ls<span class="w"> </span>-la<span class="w"> </span>/path/to/data
+
+<span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;=== Network Connectivity ===&quot;</span>
+curl<span class="w"> </span>-s<span class="w"> </span>http://127.0.0.1:8000/status<span class="w"> </span><span class="m">2</span>&gt;<span class="p">&amp;</span><span class="m">1</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;API not reachable&quot;</span>
+
+<span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;=== Process Information ===&quot;</span>
+ps<span class="w"> </span>aux<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>smartem
+
+<span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;=== Resource Usage ===&quot;</span>
+free<span class="w"> </span>-h
+df<span class="w"> </span>-h
+</pre></div>
+</div>
+</section>
+<section id="log-analysis">
+<h3>Log Analysis<a class="headerlink" href="#log-analysis" title="Link to this heading">#</a></h3>
+<p><strong>Extract relevant log entries:</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Filter for errors</span>
+grep<span class="w"> </span>-i<span class="w"> </span>error<span class="w"> </span>fs_changes.log
+
+<span class="c1"># Filter by time range</span>
+awk<span class="w"> </span><span class="s1">&#39;/2024-01-15 14:00:00/,/2024-01-15 15:00:00/&#39;</span><span class="w"> </span>fs_changes.log
+
+<span class="c1"># Analyse patterns</span>
+grep<span class="w"> </span><span class="s2">&quot;Heartbeat sent&quot;</span><span class="w"> </span>fs_changes.log<span class="w"> </span><span class="p">|</span><span class="w"> </span>tail<span class="w"> </span>-20
+</pre></div>
+</div>
+</section>
+<section id="reporting-issues">
+<h3>Reporting Issues<a class="headerlink" href="#reporting-issues" title="Link to this heading">#</a></h3>
+<p>When reporting issues, include:</p>
+<ol class="arabic simple">
+<li><p><strong>Command used:</strong> Full command line with parameters</p></li>
+<li><p><strong>Error message:</strong> Complete error output</p></li>
+<li><p><strong>Environment:</strong> OS, Python version, installation method</p></li>
+<li><p><strong>Directory structure:</strong> Sample of the directory being processed</p></li>
+<li><p><strong>Logs:</strong> Relevant log entries with timestamps</p></li>
+<li><p><strong>Network information:</strong> API URLs, connectivity status</p></li>
+<li><p><strong>System resources:</strong> Available memory, disk space</p></li>
+</ol>
+<p><strong>Example issue report:</strong></p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Command</span><span class="p">:</span> <span class="n">python</span> <span class="o">-</span><span class="n">m</span> <span class="n">smartem_agent</span> <span class="n">watch</span> <span class="o">/</span><span class="n">data</span><span class="o">/</span><span class="n">Grid_001</span> <span class="o">--</span><span class="n">agent</span><span class="o">-</span><span class="nb">id</span> <span class="n">microscope</span><span class="o">-</span><span class="mi">01</span> <span class="o">--</span><span class="n">session</span><span class="o">-</span><span class="nb">id</span> <span class="n">session</span><span class="o">-</span><span class="mi">123</span> <span class="o">-</span><span class="n">v</span>
+
+<span class="n">Error</span><span class="p">:</span> <span class="n">SSE</span> <span class="n">connection</span> <span class="n">failed</span><span class="p">:</span> <span class="n">Connection</span> <span class="n">refused</span>
+
+<span class="n">Environment</span><span class="p">:</span>
+<span class="o">-</span> <span class="n">OS</span><span class="p">:</span> <span class="n">Ubuntu</span> <span class="mf">20.04</span> <span class="n">LTS</span>
+<span class="o">-</span> <span class="n">Python</span><span class="p">:</span> <span class="mf">3.12.1</span>
+<span class="o">-</span> <span class="n">Installation</span><span class="p">:</span> <span class="n">pip</span> <span class="n">install</span> <span class="o">-</span><span class="n">e</span> <span class="o">.</span><span class="p">[</span><span class="nb">all</span><span class="p">]</span>
+
+<span class="n">Directory</span><span class="p">:</span> <span class="o">/</span><span class="n">data</span><span class="o">/</span><span class="n">Grid_001</span> <span class="p">(</span><span class="n">contains</span> <span class="n">EpuSession</span><span class="o">.</span><span class="n">dm</span><span class="p">,</span> <span class="mi">15</span> <span class="n">GridSquare</span> <span class="n">directories</span><span class="p">)</span>
+
+<span class="n">API</span> <span class="n">Status</span><span class="p">:</span> <span class="n">curl</span> <span class="n">http</span><span class="p">:</span><span class="o">//</span><span class="mf">127.0.0.1</span><span class="p">:</span><span class="mi">8000</span><span class="o">/</span><span class="n">status</span> <span class="n">returns</span> <span class="p">{</span><span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="s2">&quot;ok&quot;</span><span class="p">}</span>
+
+<span class="n">Logs</span><span class="p">:</span> <span class="p">(</span><span class="n">attach</span> <span class="n">relevant</span> <span class="n">log</span> <span class="n">entries</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>This comprehensive troubleshooting guide should resolve most common CLI issues. For backend-specific problems, consult the SmartEM Backend documentation.</p>
+</section>
+</section>
+</section>
+
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="run-container.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">Run in a container</p>
+      </div>
+    </a>
+    <a class="right-next"
+       href="use-core-http-api-client.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">How to Use the SmartEM API Client</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#quick-diagnostics">Quick Diagnostics</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#check-cli-installation">Check CLI Installation</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#test-basic-functionality">Test Basic Functionality</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#common-issues-and-solutions">Common Issues and Solutions</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#command-not-found-errors">1. Command Not Found Errors</a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#error-no-module-named-smartem-agent">Error: <code class="docutils literal notranslate"><span class="pre">No</span> <span class="pre">module</span> <span class="pre">named</span> <span class="pre">'smartem_agent'</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#error-python-can-t-open-file-smartem-agent">Error: <code class="docutils literal notranslate"><span class="pre">python:</span> <span class="pre">can't</span> <span class="pre">open</span> <span class="pre">file</span> <span class="pre">'smartem_agent'</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#directory-and-file-access-issues">2. Directory and File Access Issues</a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#error-directory-path-to-data-does-not-exist">Error: <code class="docutils literal notranslate"><span class="pre">Directory</span> <span class="pre">/path/to/data</span> <span class="pre">does</span> <span class="pre">not</span> <span class="pre">exist</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#error-permission-denied">Error: <code class="docutils literal notranslate"><span class="pre">Permission</span> <span class="pre">denied</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#error-files-not-being-detected-during-watch">Error: Files not being detected during watch</a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#api-connection-problems">3. API Connection Problems</a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#error-api-at-http-127-0-0-1-8000-is-not-reachable">Error: <code class="docutils literal notranslate"><span class="pre">API</span> <span class="pre">at</span> <span class="pre">http://127.0.0.1:8000</span> <span class="pre">is</span> <span class="pre">not</span> <span class="pre">reachable</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#error-sse-connection-failed-or-failed-to-send-heartbeat">Error: <code class="docutils literal notranslate"><span class="pre">SSE</span> <span class="pre">connection</span> <span class="pre">failed</span></code> or <code class="docutils literal notranslate"><span class="pre">Failed</span> <span class="pre">to</span> <span class="pre">send</span> <span class="pre">heartbeat</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#parsing-and-validation-errors">4. Parsing and Validation Errors</a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#error-grid-data-dir-is-structurally-invalid">Error: <code class="docutils literal notranslate"><span class="pre">Grid</span> <span class="pre">data</span> <span class="pre">dir</span> <span class="pre">is</span> <span class="pre">structurally</span> <span class="pre">invalid</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#error-could-not-extract-instrument-info-or-parsing-failures">Error: <code class="docutils literal notranslate"><span class="pre">Could</span> <span class="pre">not</span> <span class="pre">extract</span> <span class="pre">instrument</span> <span class="pre">info</span></code> or parsing failures</a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#performance-and-resource-issues">5. Performance and Resource Issues</a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#issue-high-memory-usage-or-slow-processing">Issue: High memory usage or slow processing</a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#issue-oserror-errno-24-too-many-open-files">Issue: <code class="docutils literal notranslate"><span class="pre">OSError:</span> <span class="pre">[Errno</span> <span class="pre">24]</span> <span class="pre">Too</span> <span class="pre">many</span> <span class="pre">open</span> <span class="pre">files</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#logging-and-output-issues">6. Logging and Output Issues</a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#issue-no-log-output-or-missing-log-files">Issue: No log output or missing log files</a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#issue-verbose-output-not-showing">Issue: Verbose output not showing</a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#signal-handling-and-process-management">7. Signal Handling and Process Management</a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#issue-process-doesn-t-stop-gracefully-with-ctrl-c">Issue: Process doesn’t stop gracefully with Ctrl+C</a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#issue-background-process-monitoring">Issue: Background process monitoring</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#advanced-troubleshooting">Advanced Troubleshooting</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#debug-mode-activation">Debug Mode Activation</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#network-debugging">Network Debugging</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#file-system-monitoring-debug">File System Monitoring Debug</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#database-connectivity-issues">Database Connectivity Issues</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#environment-specific-issues">Environment-Specific Issues</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#windows-specific">Windows Specific</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#linux-unix-specific">Linux/Unix Specific</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#container-docker-environments">Container/Docker Environments</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#getting-additional-help">Getting Additional Help</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#collecting-diagnostic-information">Collecting Diagnostic Information</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#log-analysis">Log Analysis</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#reporting-issues">Reporting Issues</a></li>
+</ul>
+</li>
+</ul>
+  </nav></div>
+
+  <div class="sidebar-secondary-item">
+
+  
+  <div class="tocsection editthispage">
+    <a href="https://github.com/DiamondLightSource/smartem-decisions/edit/main/docs/how-to/troubleshoot-cli.md">
+      <i class="fa-solid fa-pencil"></i>
+      
+      
+        
+          Edit on GitHub
+        
+      
+    </a>
+  </div>
+</div>
+
+  <div class="sidebar-secondary-item">
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/how-to/troubleshoot-cli.md.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div></div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf"></script>
+<script defer src="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.16.1.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>

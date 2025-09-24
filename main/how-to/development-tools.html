@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Development Tools &#8212; smartem-decisions 0.1.dev316+g7c6b40fab.d20250923 documentation</title>
+    <title>Development Tools &#8212; smartem-decisions 0.1.dev331+g9707a53d7.d20250924 documentation</title>
   
   
   
@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../_static/documentation_options.js?v=03473287"></script>
+    <script src="../_static/documentation_options.js?v=144d9203"></script>
     <script src="../_static/doctools.js?v=9bcbadda"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -409,6 +409,7 @@
 <li class="toctree-l1"><a class="reference internal" href="run-agent.html">Run SmartEM Agent (EPU Agent)</a></li>
 <li class="toctree-l1"><a class="reference internal" href="run-backend.html">Run SmartEM Backend</a></li>
 <li class="toctree-l1"><a class="reference internal" href="run-container.html">Run in a container</a></li>
+<li class="toctree-l1"><a class="reference internal" href="troubleshoot-cli.html">SmartEM CLI Troubleshooting Guide</a></li>
 <li class="toctree-l1"><a class="reference internal" href="use-core-http-api-client.html">How to Use the SmartEM API Client</a></li>
 <li class="toctree-l1"><a class="reference internal" href="use-mcp-interface.html">Using SmartEM MCP Interface</a></li>
 </ul>
@@ -554,6 +555,63 @@ watch<span class="w"> </span>-n<span class="w"> </span><span class="m">1</span><
 <p>This tool is particularly useful for monitoring EPU data acquisition progress or debugging processing pipeline performance.</p>
 </section>
 </section>
+<section id="message-testing-and-communication-tools">
+<h2>Message Testing and Communication Tools<a class="headerlink" href="#message-testing-and-communication-tools" title="Link to this heading">#</a></h2>
+<section id="external-message-simulator">
+<h3>External Message Simulator<a class="headerlink" href="#external-message-simulator" title="Link to this heading">#</a></h3>
+<p>Comprehensive CLI tool for simulating external data processing messages that would normally come from ML pipelines and image processing systems:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># List all available message types</span>
+python<span class="w"> </span>tools/external_message_simulator.py<span class="w"> </span>list-messages
+
+<span class="c1"># Individual message simulation examples</span>
+python<span class="w"> </span>tools/external_message_simulator.py<span class="w"> </span>motion-correction<span class="w"> </span>--foilhole-id<span class="w"> </span><span class="s2">&quot;FH_001_001_001&quot;</span><span class="w"> </span>--quality-score<span class="w"> </span><span class="m">0</span>.85
+python<span class="w"> </span>tools/external_message_simulator.py<span class="w"> </span>ctf-complete<span class="w"> </span>--foilhole-id<span class="w"> </span><span class="s2">&quot;FH_001_001_001&quot;</span><span class="w"> </span>--resolution<span class="w"> </span><span class="m">3</span>.2
+python<span class="w"> </span>tools/external_message_simulator.py<span class="w"> </span>gridsquare-prediction<span class="w"> </span>--gridsquare-id<span class="w"> </span><span class="s2">&quot;GS_001_001&quot;</span><span class="w"> </span>--prediction-score<span class="w"> </span><span class="m">0</span>.85
+python<span class="w"> </span>tools/external_message_simulator.py<span class="w"> </span>model-update<span class="w"> </span>--model-name<span class="w"> </span><span class="s2">&quot;ResNet-50&quot;</span>
+
+<span class="c1"># Complete workflow simulation for a single grid square</span>
+python<span class="w"> </span>tools/external_message_simulator.py<span class="w"> </span>workflow-simulation<span class="w"> </span>--gridsquare-id<span class="w"> </span><span class="s2">&quot;DEV_001&quot;</span>
+
+<span class="c1"># Batch simulation with different quality scenarios</span>
+python<span class="w"> </span>tools/external_message_simulator.py<span class="w"> </span>batch-simulation<span class="w"> </span>--gridsquare-count<span class="w"> </span><span class="m">5</span><span class="w"> </span>--scenario<span class="w"> </span>mixed
+python<span class="w"> </span>tools/external_message_simulator.py<span class="w"> </span>batch-simulation<span class="w"> </span>--gridsquare-count<span class="w"> </span><span class="m">3</span><span class="w"> </span>--scenario<span class="w"> </span>good
+python<span class="w"> </span>tools/external_message_simulator.py<span class="w"> </span>batch-simulation<span class="w"> </span>--gridsquare-count<span class="w"> </span><span class="m">2</span><span class="w"> </span>--scenario<span class="w"> </span>poor
+</pre></div>
+</div>
+<p><strong>Available Message Types:</strong></p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">MOTION_CORRECTION_COMPLETE</span></code> - Motion correction processing finished</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">CTF_COMPLETE</span></code> - CTF estimation completed</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">PARTICLE_PICKING_COMPLETE</span></code> - Particle identification finished</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">PARTICLE_SELECTION_COMPLETE</span></code> - Particle quality assessment done</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">GRIDSQUARE_MODEL_PREDICTION</span></code> - ML prediction for grid square quality</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">FOILHOLE_MODEL_PREDICTION</span></code> - ML prediction for foilhole targeting</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">MODEL_PARAMETER_UPDATE</span></code> - ML model parameter updates</p></li>
+</ul>
+</section>
+<section id="sse-client-testing">
+<h3>SSE Client Testing<a class="headerlink" href="#sse-client-testing" title="Link to this heading">#</a></h3>
+<p>Example client for testing agent-backend communication via Server-Sent Events:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Start the SSE client to receive instructions from backend</span>
+python<span class="w"> </span>tools/sse_client_example.py
+
+<span class="c1"># The client will:</span>
+<span class="c1"># 1. Auto-create a new session with the backend</span>
+<span class="c1"># 2. Connect to the SSE stream for real-time instructions</span>
+<span class="c1"># 3. Acknowledge received instructions</span>
+<span class="c1"># 4. Measure processing time for performance testing</span>
+</pre></div>
+</div>
+<p>This tool is particularly useful for:</p>
+<ul class="simple">
+<li><p>Testing the complete agent-backend communication pipeline</p></li>
+<li><p>Validating instruction delivery and acknowledgement mechanisms</p></li>
+<li><p>Performance testing of SSE communication</p></li>
+<li><p>Development of new agent integrations</p></li>
+</ul>
+<p>Both tools work together to simulate the complete external data flow into the SmartEM system, enabling comprehensive testing without requiring actual microscopy equipment or external processing systems.</p>
+</section>
+</section>
 <section id="additional-development-commands">
 <h2>Additional Development Commands<a class="headerlink" href="#additional-development-commands" title="Link to this heading">#</a></h2>
 <section id="pre-commit-workflow">
@@ -647,6 +705,11 @@ ruff<span class="w"> </span>format
 </li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#development-monitoring">Development Monitoring</a><ul class="nav section-nav flex-column">
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#directory-growth-monitoring">Directory Growth Monitoring</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#message-testing-and-communication-tools">Message Testing and Communication Tools</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#external-message-simulator">External Message Simulator</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#sse-client-testing">SSE Client Testing</a></li>
 </ul>
 </li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#additional-development-commands">Additional Development Commands</a><ul class="nav section-nav flex-column">

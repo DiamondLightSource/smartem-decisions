@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>smartem_backend.consumer &#8212; smartem-decisions 0.1.dev316+g7c6b40fab.d20250923 documentation</title>
+    <title>smartem_backend.consumer &#8212; smartem-decisions 0.1.dev331+g9707a53d7.d20250924 documentation</title>
   
   
   
@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../_static/documentation_options.js?v=03473287"></script>
+    <script src="../_static/documentation_options.js?v=144d9203"></script>
     <script src="../_static/doctools.js?v=9bcbadda"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -398,6 +398,8 @@
   <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
   <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
 <li class="toctree-l1 current active has-children"><a class="reference internal" href="smartem_backend.html">API</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="smartem_backend.agent_connection_manager.html"><code class="docutils literal notranslate"><span class="pre">smartem_backend.agent_connection_manager</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="smartem_backend.agent_data_cleanup.html"><code class="docutils literal notranslate"><span class="pre">smartem_backend.agent_data_cleanup</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="smartem_backend.api_client.html"><code class="docutils literal notranslate"><span class="pre">smartem_backend.api_client</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="smartem_backend.api_server.html"><code class="docutils literal notranslate"><span class="pre">smartem_backend.api_server</span></code></a></li>
 <li class="toctree-l2 has-children"><a class="reference internal" href="smartem_backend.cli.html"><code class="docutils literal notranslate"><span class="pre">smartem_backend.cli</span></code></a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
@@ -495,17 +497,29 @@
 <p class="rubric">Members</p>
 <div class="pst-scrollable-table-container"><table class="autosummary longtable table">
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#smartem_backend.consumer.get_event_handlers" title="smartem_backend.consumer.get_event_handlers"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_event_handlers</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#smartem_backend.consumer.get_active_agent_sessions" title="smartem_backend.consumer.get_active_agent_sessions"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_active_agent_sessions</span></code></a></p></td>
+<td><p>Get all currently active agent sessions</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#smartem_backend.consumer.get_event_handlers" title="smartem_backend.consumer.get_event_handlers"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_event_handlers</span></code></a></p></td>
 <td><p>Get a mapping of event types to their handler functions</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#smartem_backend.consumer.handle_acquisition_created" title="smartem_backend.consumer.handle_acquisition_created"><code class="xref py py-obj docutils literal notranslate"><span class="pre">handle_acquisition_created</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#smartem_backend.consumer.handle_acquisition_created" title="smartem_backend.consumer.handle_acquisition_created"><code class="xref py py-obj docutils literal notranslate"><span class="pre">handle_acquisition_created</span></code></a></p></td>
 <td><p>Handle acquisition created event by logging the event payload</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#smartem_backend.consumer.handle_acquisition_deleted" title="smartem_backend.consumer.handle_acquisition_deleted"><code class="xref py py-obj docutils literal notranslate"><span class="pre">handle_acquisition_deleted</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#smartem_backend.consumer.handle_acquisition_deleted" title="smartem_backend.consumer.handle_acquisition_deleted"><code class="xref py py-obj docutils literal notranslate"><span class="pre">handle_acquisition_deleted</span></code></a></p></td>
 <td><p>Handle acquisition deleted event by logging the event payload</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#smartem_backend.consumer.handle_acquisition_updated" title="smartem_backend.consumer.handle_acquisition_updated"><code class="xref py py-obj docutils literal notranslate"><span class="pre">handle_acquisition_updated</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#smartem_backend.consumer.handle_acquisition_updated" title="smartem_backend.consumer.handle_acquisition_updated"><code class="xref py py-obj docutils literal notranslate"><span class="pre">handle_acquisition_updated</span></code></a></p></td>
 <td><p>Handle acquisition updated event by logging the event payload</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#smartem_backend.consumer.handle_agent_instruction_created" title="smartem_backend.consumer.handle_agent_instruction_created"><code class="xref py py-obj docutils literal notranslate"><span class="pre">handle_agent_instruction_created</span></code></a></p></td>
+<td><p>Handle agent instruction created event by persisting the instruction to the database</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#smartem_backend.consumer.handle_agent_instruction_expired" title="smartem_backend.consumer.handle_agent_instruction_expired"><code class="xref py py-obj docutils literal notranslate"><span class="pre">handle_agent_instruction_expired</span></code></a></p></td>
+<td><p>Handle agent instruction expired event by updating retry logic and status</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#smartem_backend.consumer.handle_agent_instruction_updated" title="smartem_backend.consumer.handle_agent_instruction_updated"><code class="xref py py-obj docutils literal notranslate"><span class="pre">handle_agent_instruction_updated</span></code></a></p></td>
+<td><p>Handle agent instruction updated event by updating the instruction status</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#smartem_backend.consumer.handle_atlas_created" title="smartem_backend.consumer.handle_atlas_created"><code class="xref py py-obj docutils literal notranslate"><span class="pre">handle_atlas_created</span></code></a></p></td>
 <td><p>Handle atlas created event by logging the event payload</p></td>
@@ -516,6 +530,12 @@
 <tr class="row-odd"><td><p><a class="reference internal" href="#smartem_backend.consumer.handle_atlas_updated" title="smartem_backend.consumer.handle_atlas_updated"><code class="xref py py-obj docutils literal notranslate"><span class="pre">handle_atlas_updated</span></code></a></p></td>
 <td><p>Handle atlas updated event by logging the event payload</p></td>
 </tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#smartem_backend.consumer.handle_external_foilhole_model_prediction" title="smartem_backend.consumer.handle_external_foilhole_model_prediction"><code class="xref py py-obj docutils literal notranslate"><span class="pre">handle_external_foilhole_model_prediction</span></code></a></p></td>
+<td><p>Handle external foilhole model prediction event by generating agent instructions</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#smartem_backend.consumer.handle_external_gridsquare_model_prediction" title="smartem_backend.consumer.handle_external_gridsquare_model_prediction"><code class="xref py py-obj docutils literal notranslate"><span class="pre">handle_external_gridsquare_model_prediction</span></code></a></p></td>
+<td><p>Handle external grid square model prediction event by generating agent instructions</p></td>
+</tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#smartem_backend.consumer.handle_foilhole_created" title="smartem_backend.consumer.handle_foilhole_created"><code class="xref py py-obj docutils literal notranslate"><span class="pre">handle_foilhole_created</span></code></a></p></td>
 <td><p>Handle foilhole created event by logging the event payload and generating predictions</p></td>
 </tr>
@@ -525,38 +545,44 @@
 <tr class="row-even"><td><p><a class="reference internal" href="#smartem_backend.consumer.handle_foilhole_model_prediction" title="smartem_backend.consumer.handle_foilhole_model_prediction"><code class="xref py py-obj docutils literal notranslate"><span class="pre">handle_foilhole_model_prediction</span></code></a></p></td>
 <td><p>Handle foil hole model prediction event by inserting the result into the database</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#smartem_backend.consumer.handle_foilhole_updated" title="smartem_backend.consumer.handle_foilhole_updated"><code class="xref py py-obj docutils literal notranslate"><span class="pre">handle_foilhole_updated</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#smartem_backend.consumer.handle_foilhole_model_prediction_router" title="smartem_backend.consumer.handle_foilhole_model_prediction_router"><code class="xref py py-obj docutils literal notranslate"><span class="pre">handle_foilhole_model_prediction_router</span></code></a></p></td>
+<td><p>Route foilhole model prediction events based on source</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#smartem_backend.consumer.handle_foilhole_updated" title="smartem_backend.consumer.handle_foilhole_updated"><code class="xref py py-obj docutils literal notranslate"><span class="pre">handle_foilhole_updated</span></code></a></p></td>
 <td><p>Handle foilhole updated event by logging the event payload</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#smartem_backend.consumer.handle_grid_created" title="smartem_backend.consumer.handle_grid_created"><code class="xref py py-obj docutils literal notranslate"><span class="pre">handle_grid_created</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#smartem_backend.consumer.handle_grid_created" title="smartem_backend.consumer.handle_grid_created"><code class="xref py py-obj docutils literal notranslate"><span class="pre">handle_grid_created</span></code></a></p></td>
 <td><p>Handle grid created event by logging the event payload and initialising prediction model weights</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#smartem_backend.consumer.handle_grid_deleted" title="smartem_backend.consumer.handle_grid_deleted"><code class="xref py py-obj docutils literal notranslate"><span class="pre">handle_grid_deleted</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#smartem_backend.consumer.handle_grid_deleted" title="smartem_backend.consumer.handle_grid_deleted"><code class="xref py py-obj docutils literal notranslate"><span class="pre">handle_grid_deleted</span></code></a></p></td>
 <td><p>Handle grid deleted event by logging the event payload</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#smartem_backend.consumer.handle_grid_registered" title="smartem_backend.consumer.handle_grid_registered"><code class="xref py py-obj docutils literal notranslate"><span class="pre">handle_grid_registered</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#smartem_backend.consumer.handle_grid_registered" title="smartem_backend.consumer.handle_grid_registered"><code class="xref py py-obj docutils literal notranslate"><span class="pre">handle_grid_registered</span></code></a></p></td>
 <td><p>Handle grid registered event by logging the event payload</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#smartem_backend.consumer.handle_grid_updated" title="smartem_backend.consumer.handle_grid_updated"><code class="xref py py-obj docutils literal notranslate"><span class="pre">handle_grid_updated</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#smartem_backend.consumer.handle_grid_updated" title="smartem_backend.consumer.handle_grid_updated"><code class="xref py py-obj docutils literal notranslate"><span class="pre">handle_grid_updated</span></code></a></p></td>
 <td><p>Handle grid updated event by logging the event payload</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#smartem_backend.consumer.handle_gridsquare_created" title="smartem_backend.consumer.handle_gridsquare_created"><code class="xref py py-obj docutils literal notranslate"><span class="pre">handle_gridsquare_created</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#smartem_backend.consumer.handle_gridsquare_created" title="smartem_backend.consumer.handle_gridsquare_created"><code class="xref py py-obj docutils literal notranslate"><span class="pre">handle_gridsquare_created</span></code></a></p></td>
 <td><p>Handle gridsquare created event by logging the event payload and generating predictions</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#smartem_backend.consumer.handle_gridsquare_deleted" title="smartem_backend.consumer.handle_gridsquare_deleted"><code class="xref py py-obj docutils literal notranslate"><span class="pre">handle_gridsquare_deleted</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#smartem_backend.consumer.handle_gridsquare_deleted" title="smartem_backend.consumer.handle_gridsquare_deleted"><code class="xref py py-obj docutils literal notranslate"><span class="pre">handle_gridsquare_deleted</span></code></a></p></td>
 <td><p>Handle gridsquare deleted event by logging the event payload</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#smartem_backend.consumer.handle_gridsquare_lowmag_created" title="smartem_backend.consumer.handle_gridsquare_lowmag_created"><code class="xref py py-obj docutils literal notranslate"><span class="pre">handle_gridsquare_lowmag_created</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#smartem_backend.consumer.handle_gridsquare_lowmag_created" title="smartem_backend.consumer.handle_gridsquare_lowmag_created"><code class="xref py py-obj docutils literal notranslate"><span class="pre">handle_gridsquare_lowmag_created</span></code></a></p></td>
 <td><p>Handle low mag gridsquare created event by logging the event payload and generating predictions</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#smartem_backend.consumer.handle_gridsquare_lowmag_deleted" title="smartem_backend.consumer.handle_gridsquare_lowmag_deleted"><code class="xref py py-obj docutils literal notranslate"><span class="pre">handle_gridsquare_lowmag_deleted</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#smartem_backend.consumer.handle_gridsquare_lowmag_deleted" title="smartem_backend.consumer.handle_gridsquare_lowmag_deleted"><code class="xref py py-obj docutils literal notranslate"><span class="pre">handle_gridsquare_lowmag_deleted</span></code></a></p></td>
 <td><p>Handle low mag gridsquare deleted event by logging the event payload</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#smartem_backend.consumer.handle_gridsquare_lowmag_updated" title="smartem_backend.consumer.handle_gridsquare_lowmag_updated"><code class="xref py py-obj docutils literal notranslate"><span class="pre">handle_gridsquare_lowmag_updated</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#smartem_backend.consumer.handle_gridsquare_lowmag_updated" title="smartem_backend.consumer.handle_gridsquare_lowmag_updated"><code class="xref py py-obj docutils literal notranslate"><span class="pre">handle_gridsquare_lowmag_updated</span></code></a></p></td>
 <td><p>Handle gridsquare low mag updated event by logging the event payload</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#smartem_backend.consumer.handle_gridsquare_model_prediction" title="smartem_backend.consumer.handle_gridsquare_model_prediction"><code class="xref py py-obj docutils literal notranslate"><span class="pre">handle_gridsquare_model_prediction</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#smartem_backend.consumer.handle_gridsquare_model_prediction" title="smartem_backend.consumer.handle_gridsquare_model_prediction"><code class="xref py py-obj docutils literal notranslate"><span class="pre">handle_gridsquare_model_prediction</span></code></a></p></td>
 <td><p>Handle grid square model prediction event by inserting the result into the database</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#smartem_backend.consumer.handle_gridsquare_model_prediction_router" title="smartem_backend.consumer.handle_gridsquare_model_prediction_router"><code class="xref py py-obj docutils literal notranslate"><span class="pre">handle_gridsquare_model_prediction_router</span></code></a></p></td>
+<td><p>Route gridsquare model prediction events based on source</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#smartem_backend.consumer.handle_gridsquare_registered" title="smartem_backend.consumer.handle_gridsquare_registered"><code class="xref py py-obj docutils literal notranslate"><span class="pre">handle_gridsquare_registered</span></code></a></p></td>
 <td><p>Handle grid square registered event by logging the event payload</p></td>
@@ -925,6 +951,79 @@
 </dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="smartem_backend.consumer.handle_external_gridsquare_model_prediction">
+<span class="sig-prename descclassname"><span class="pre">smartem_backend.consumer.</span></span><span class="sig-name descname"><span class="pre">handle_external_gridsquare_model_prediction</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">event_data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.13)"><span class="pre">dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.13)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.13)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../_modules/smartem_backend/consumer.html#handle_external_gridsquare_model_prediction"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#smartem_backend.consumer.handle_external_gridsquare_model_prediction" title="Link to this definition">#</a></dt>
+<dd><p>Handle external grid square model prediction event by generating agent instructions</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>event_data</strong> – External event data with payload containing prediction results</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="smartem_backend.consumer.handle_external_foilhole_model_prediction">
+<span class="sig-prename descclassname"><span class="pre">smartem_backend.consumer.</span></span><span class="sig-name descname"><span class="pre">handle_external_foilhole_model_prediction</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">event_data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.13)"><span class="pre">dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.13)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.13)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../_modules/smartem_backend/consumer.html#handle_external_foilhole_model_prediction"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#smartem_backend.consumer.handle_external_foilhole_model_prediction" title="Link to this definition">#</a></dt>
+<dd><p>Handle external foilhole model prediction event by generating agent instructions</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>event_data</strong> – External event data with payload containing prediction results</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="smartem_backend.consumer.get_active_agent_sessions">
+<span class="sig-prename descclassname"><span class="pre">smartem_backend.consumer.</span></span><span class="sig-name descname"><span class="pre">get_active_agent_sessions</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/smartem_backend/consumer.html#get_active_agent_sessions"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#smartem_backend.consumer.get_active_agent_sessions" title="Link to this definition">#</a></dt>
+<dd><p>Get all currently active agent sessions</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="smartem_backend.consumer.handle_gridsquare_model_prediction_router">
+<span class="sig-prename descclassname"><span class="pre">smartem_backend.consumer.</span></span><span class="sig-name descname"><span class="pre">handle_gridsquare_model_prediction_router</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">event_data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.13)"><span class="pre">dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.13)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.13)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../_modules/smartem_backend/consumer.html#handle_gridsquare_model_prediction_router"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#smartem_backend.consumer.handle_gridsquare_model_prediction_router" title="Link to this definition">#</a></dt>
+<dd><p>Route gridsquare model prediction events based on source</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="smartem_backend.consumer.handle_foilhole_model_prediction_router">
+<span class="sig-prename descclassname"><span class="pre">smartem_backend.consumer.</span></span><span class="sig-name descname"><span class="pre">handle_foilhole_model_prediction_router</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">event_data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.13)"><span class="pre">dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.13)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.13)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../_modules/smartem_backend/consumer.html#handle_foilhole_model_prediction_router"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#smartem_backend.consumer.handle_foilhole_model_prediction_router" title="Link to this definition">#</a></dt>
+<dd><p>Route foilhole model prediction events based on source</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="smartem_backend.consumer.handle_agent_instruction_created">
+<span class="sig-prename descclassname"><span class="pre">smartem_backend.consumer.</span></span><span class="sig-name descname"><span class="pre">handle_agent_instruction_created</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">event_data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.13)"><span class="pre">dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.13)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.13)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../_modules/smartem_backend/consumer.html#handle_agent_instruction_created"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#smartem_backend.consumer.handle_agent_instruction_created" title="Link to this definition">#</a></dt>
+<dd><p>Handle agent instruction created event by persisting the instruction to the database</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>event_data</strong> – Event data for agent instruction created</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="smartem_backend.consumer.handle_agent_instruction_updated">
+<span class="sig-prename descclassname"><span class="pre">smartem_backend.consumer.</span></span><span class="sig-name descname"><span class="pre">handle_agent_instruction_updated</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">event_data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.13)"><span class="pre">dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.13)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.13)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../_modules/smartem_backend/consumer.html#handle_agent_instruction_updated"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#smartem_backend.consumer.handle_agent_instruction_updated" title="Link to this definition">#</a></dt>
+<dd><p>Handle agent instruction updated event by updating the instruction status</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>event_data</strong> – Event data for agent instruction updated</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="smartem_backend.consumer.handle_agent_instruction_expired">
+<span class="sig-prename descclassname"><span class="pre">smartem_backend.consumer.</span></span><span class="sig-name descname"><span class="pre">handle_agent_instruction_expired</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">event_data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.13)"><span class="pre">dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.13)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.13)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../_modules/smartem_backend/consumer.html#handle_agent_instruction_expired"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#smartem_backend.consumer.handle_agent_instruction_expired" title="Link to this definition">#</a></dt>
+<dd><p>Handle agent instruction expired event by updating retry logic and status</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>event_data</strong> – Event data for agent instruction expired</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="smartem_backend.consumer.get_event_handlers">
 <span class="sig-prename descclassname"><span class="pre">smartem_backend.consumer.</span></span><span class="sig-name descname"><span class="pre">get_event_handlers</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.13)"><span class="pre">dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Callable" title="(in Python v3.13)"><span class="pre">Callable</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../_modules/smartem_backend/consumer.html#get_event_handlers"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#smartem_backend.consumer.get_event_handlers" title="Link to this definition">#</a></dt>
 <dd><p>Get a mapping of event types to their handler functions</p>
@@ -1041,6 +1140,14 @@
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#smartem_backend.consumer.handle_gridsquare_model_prediction"><code class="docutils literal notranslate"><span class="pre">handle_gridsquare_model_prediction()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#smartem_backend.consumer.handle_foilhole_model_prediction"><code class="docutils literal notranslate"><span class="pre">handle_foilhole_model_prediction()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#smartem_backend.consumer.handle_model_parameter_update"><code class="docutils literal notranslate"><span class="pre">handle_model_parameter_update()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#smartem_backend.consumer.handle_external_gridsquare_model_prediction"><code class="docutils literal notranslate"><span class="pre">handle_external_gridsquare_model_prediction()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#smartem_backend.consumer.handle_external_foilhole_model_prediction"><code class="docutils literal notranslate"><span class="pre">handle_external_foilhole_model_prediction()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#smartem_backend.consumer.get_active_agent_sessions"><code class="docutils literal notranslate"><span class="pre">get_active_agent_sessions()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#smartem_backend.consumer.handle_gridsquare_model_prediction_router"><code class="docutils literal notranslate"><span class="pre">handle_gridsquare_model_prediction_router()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#smartem_backend.consumer.handle_foilhole_model_prediction_router"><code class="docutils literal notranslate"><span class="pre">handle_foilhole_model_prediction_router()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#smartem_backend.consumer.handle_agent_instruction_created"><code class="docutils literal notranslate"><span class="pre">handle_agent_instruction_created()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#smartem_backend.consumer.handle_agent_instruction_updated"><code class="docutils literal notranslate"><span class="pre">handle_agent_instruction_updated()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#smartem_backend.consumer.handle_agent_instruction_expired"><code class="docutils literal notranslate"><span class="pre">handle_agent_instruction_expired()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#smartem_backend.consumer.get_event_handlers"><code class="docutils literal notranslate"><span class="pre">get_event_handlers()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#smartem_backend.consumer.on_message"><code class="docutils literal notranslate"><span class="pre">on_message()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#smartem_backend.consumer.signal_handler"><code class="docutils literal notranslate"><span class="pre">signal_handler()</span></code></a></li>

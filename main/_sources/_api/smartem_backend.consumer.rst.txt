@@ -30,6 +30,14 @@
         
         
         
+        
+        
+        
+        
+        
+        
+        
+        
 
 .. automodule:: smartem_backend.consumer
     :members:
@@ -45,16 +53,23 @@
     .. autosummary::
         :nosignatures:
     
+        get_active_agent_sessions
         get_event_handlers
         handle_acquisition_created
         handle_acquisition_deleted
         handle_acquisition_updated
+        handle_agent_instruction_created
+        handle_agent_instruction_expired
+        handle_agent_instruction_updated
         handle_atlas_created
         handle_atlas_deleted
         handle_atlas_updated
+        handle_external_foilhole_model_prediction
+        handle_external_gridsquare_model_prediction
         handle_foilhole_created
         handle_foilhole_deleted
         handle_foilhole_model_prediction
+        handle_foilhole_model_prediction_router
         handle_foilhole_updated
         handle_grid_created
         handle_grid_deleted
@@ -66,6 +81,7 @@
         handle_gridsquare_lowmag_deleted
         handle_gridsquare_lowmag_updated
         handle_gridsquare_model_prediction
+        handle_gridsquare_model_prediction_router
         handle_gridsquare_registered
         handle_gridsquare_updated
         handle_micrograph_created

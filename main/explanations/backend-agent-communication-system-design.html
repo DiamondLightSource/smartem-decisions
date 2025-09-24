@@ -1,0 +1,1745 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Backend-to-Agent Communication System Design &#8212; smartem-decisions 0.1.dev331+g9707a53d7.d20250924 documentation</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+<link href="../_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=4ae1632d" />
+    <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinx-design.min.css?v=95c83b7e" />
+  
+  <!-- So that users can add custom icons -->
+  <script src="../_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
+<link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
+
+    <script src="../_static/documentation_options.js?v=144d9203"></script>
+    <script src="../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../_static/copybutton.js?v=30646c52"></script>
+    <script src="../_static/design-tabs.js?v=f930bc37"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'explanations/backend-agent-communication-system-design';</script>
+    <script>
+        DOCUMENTATION_OPTIONS.theme_version = '0.16.1';
+        DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://DiamondLightSource.github.io/smartem-decisions/switcher.json';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = 'main';
+        DOCUMENTATION_OPTIONS.show_version_warning_banner =
+            false;
+        </script>
+    <link rel="icon" href="../_static/dls-logo.svg"/>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Architectural Decision Records" href="decisions.html" />
+    <link rel="prev" title="Explanations" href="../explanations.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="main" />
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../_static/dls-logo.svg" class="logo__image only-light" alt=""/>
+    <img src="../_static/dls-logo.svg" class="logo__image only-dark pst-js-only" alt=""/>
+  
+  
+    <p class="title logo__title">smartem-decisions</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../tutorials.html">
+    Tutorials
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../how-to.html">
+    How-to Guides
+  </a>
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="../explanations.html">
+    Explanations
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../reference.html">
+    Reference
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/DiamondLightSource/smartem-decisions" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://pypi.org/project/smartem-decisions" title="PyPI" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fas fa-cube fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">PyPI</span></a>
+        </li>
+</ul></div>
+      
+        <div class="navbar-item">
+<div class="version-switcher__container dropdown pst-js-only">
+  <button id="pst-version-switcher-button-2"
+    type="button"
+    class="version-switcher__button btn btn-sm dropdown-toggle"
+    data-bs-toggle="dropdown"
+    aria-haspopup="listbox"
+    aria-controls="pst-version-switcher-list-2"
+    aria-label="Version switcher list"
+  >
+    Choose version  <!-- this text may get changed later by javascript -->
+    <span class="caret"></span>
+  </button>
+  <div id="pst-version-switcher-list-2"
+    class="version-switcher__menu dropdown-menu list-group-flush py-0"
+    role="listbox" aria-labelledby="pst-version-switcher-button-2">
+    <!-- dropdown will be populated by javascript on page load -->
+  </div>
+</div></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+    <button class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../tutorials.html">
+    Tutorials
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../how-to.html">
+    How-to Guides
+  </a>
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="../explanations.html">
+    Explanations
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../reference.html">
+    Reference
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/DiamondLightSource/smartem-decisions" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://pypi.org/project/smartem-decisions" title="PyPI" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fas fa-cube fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">PyPI</span></a>
+        </li>
+</ul></div>
+        
+          <div class="navbar-item">
+<div class="version-switcher__container dropdown pst-js-only">
+  <button id="pst-version-switcher-button-3"
+    type="button"
+    class="version-switcher__button btn btn-sm dropdown-toggle"
+    data-bs-toggle="dropdown"
+    aria-haspopup="listbox"
+    aria-controls="pst-version-switcher-list-3"
+    aria-label="Version switcher list"
+  >
+    Choose version  <!-- this text may get changed later by javascript -->
+    <span class="caret"></span>
+  </button>
+  <div id="pst-version-switcher-list-3"
+    class="version-switcher__menu dropdown-menu list-group-flush py-0"
+    role="listbox" aria-labelledby="pst-version-switcher-button-3">
+    <!-- dropdown will be populated by javascript on page load -->
+  </div>
+</div></div>
+        
+      </div>
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+<nav class="bd-docs-nav bd-links"
+     aria-label="Section Navigation">
+  <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
+  <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
+<li class="toctree-l1 current active"><a class="current reference internal" href="#">Backend-to-Agent Communication System Design</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="decisions.html">Architectural Decision Records</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="decisions/0001-record-architecture-decisions.html">1. Record architecture decisions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="decisions/0002-switched-to-python-copier-template.html">2. Adopt python-copier-template for project structure</a></li>
+<li class="toctree-l2"><a class="reference internal" href="decisions/0003-message-queue-message-grouping.html">3. Short descriptive title</a></li>
+<li class="toctree-l2"><a class="reference internal" href="decisions/0004-zocalo-dependency-free.html">3. No dependency on python-zocalo</a></li>
+<li class="toctree-l2"><a class="reference internal" href="decisions/0005-detect-secrets-for-secret-scanning.html">5. Use detect-secrets for secret scanning</a></li>
+<li class="toctree-l2"><a class="reference internal" href="decisions/0006-sealed-secrets-kubernetes-secrets-management.html">6. Use Sealed Secrets for Kubernetes secrets management</a></li>
+<li class="toctree-l2"><a class="reference internal" href="decisions/0007-eliminate-smartem-api-circular-dependency.html">7. Eliminate circular dependency between smartem_api and smartem_backend</a></li>
+<li class="toctree-l2"><a class="reference internal" href="decisions/0008-backend-to-agent-communication-architecture.html">8. Backend-to-Agent Communication Protocol Selection</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1"><a class="reference internal" href="epu-data-structures.html">EPU Output Directory Structure</a></li>
+<li class="toctree-l1"><a class="reference internal" href="technical-notes.html">Technical Notes</a></li>
+</ul>
+</div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="../explanations.html" class="nav-link">Explanations</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Backend-to-Agent Communication System Design</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section id="backend-to-agent-communication-system-design">
+<h1>Backend-to-Agent Communication System Design<a class="headerlink" href="#backend-to-agent-communication-system-design" title="Link to this heading">#</a></h1>
+<p>This document provides comprehensive system design documentation for the backend-to-agent communication system
+implementing ADR #8’s hybrid SSE + HTTP architecture. This system enables real-time delivery of microscope control
+instructions from Kubernetes-hosted backend services to Windows workstations controlling
+cryo-electron microscopes.</p>
+<section id="architecture-overview">
+<h2>Architecture Overview<a class="headerlink" href="#architecture-overview" title="Link to this heading">#</a></h2>
+<section id="system-context">
+<h3>System Context<a class="headerlink" href="#system-context" title="Link to this heading">#</a></h3>
+<p>The SmartEM Decisions platform operates in a distributed environment where backend services run in Kubernetes clusters
+whilst agent services execute on Windows workstations directly connected to scientific equipment.
+The communication system bridges this divide whilst meeting high-throughput requirements.</p>
+<p><strong>Implementation Status</strong>: <strong>COMPLETED</strong> - This POC implementation provides a production-ready backend-to-agent
+communication system with full SSE streaming, RabbitMQ integration, database persistence, and comprehensive
+connection management.</p>
+<div class="highlight-mermaid notranslate"><div class="highlight"><pre><span></span>graph TB
+    subgraph k8s[&quot;Kubernetes Cluster - Diamond Light Source&quot;]
+        subgraph packages[&quot;SmartEM Packages&quot;]
+            subgraph backend[&quot;smartem_backend&quot;]
+                api_server[&quot;api_server.py&lt;br/&gt;FastAPI + SSE Endpoints&quot;]
+                consumer[&quot;consumer.py&lt;br/&gt;RabbitMQ Event Processing&quot;]
+                conn_mgr[&quot;agent_connection_manager.py&lt;br/&gt;Connection Health Monitoring&quot;]
+            end
+
+            subgraph common[&quot;smartem_common&quot;]
+                schemas[&quot;schemas.py&lt;br/&gt;Shared Data Models&quot;]
+                utils[&quot;utils.py&lt;br/&gt;Common Utilities&quot;]
+            end
+
+            subgraph athena[&quot;athena_api&quot;]
+                athena_client[&quot;client.py&lt;br/&gt;External API Integration&quot;]
+            end
+
+            subgraph mcp[&quot;smartem_mcp&quot;]
+                mcp_server[&quot;server.py&lt;br/&gt;Model Context Protocol&quot;]
+            end
+        end
+
+        subgraph infra[&quot;Infrastructure Services&quot;]
+            db[(&quot;PostgreSQL&lt;br/&gt;AgentSession, AgentInstruction&lt;br/&gt;AgentConnection, AgentInstructionAcknowledgement&quot;)]
+            mq[(&quot;RabbitMQ&lt;br/&gt;Event Communication&lt;br/&gt;Instruction Lifecycle&quot;)]
+        end
+    end
+
+    subgraph boundary[&quot;Network Boundary - Windows Workstations&quot;]
+        subgraph agents[&quot;Agent Software (Windows)&quot;]
+            subgraph agent_pkg[&quot;smartem_agent&quot;]
+                fs_watcher[&quot;fs_watcher.py&lt;br/&gt;File System Monitoring&quot;]
+                fs_parser[&quot;fs_parser.py&lt;br/&gt;EPU Data Parsing&quot;]
+                sse_client[&quot;SSEAgentClient&lt;br/&gt;Stream Connection&quot;]
+            end
+        end
+
+        subgraph equipment[&quot;Scientific Equipment&quot;]
+            subgraph scope1[&quot;Microscope Workstation 1&quot;]
+                epu1[&quot;EPU Software&lt;br/&gt;(ThermoFisher)&quot;]
+                em1[&quot;Cryo-EM Microscope 1&quot;]
+                gpfs1[&quot;GPFS Storage&lt;br/&gt;Image Data&quot;]
+            end
+
+            subgraph scope2[&quot;Microscope Workstation 2&quot;]
+                epu2[&quot;EPU Software&lt;br/&gt;(ThermoFisher)&quot;]
+                em2[&quot;Cryo-EM Microscope 2&quot;]
+                gpfs2[&quot;GPFS Storage&lt;br/&gt;Image Data&quot;]
+            end
+
+            subgraph scopeN[&quot;Microscope Workstation N&quot;]
+                epuN[&quot;EPU Software&lt;br/&gt;(ThermoFisher)&quot;]
+                emN[&quot;Cryo-EM Microscope N&quot;]
+                gpfsN[&quot;GPFS Storage&lt;br/&gt;Image Data&quot;]
+            end
+        end
+    end
+
+    %% Database and message queue connections
+    api_server --&gt; db
+    api_server --&gt; mq
+    consumer --&gt; db
+    consumer --&gt; mq
+    conn_mgr --&gt; db
+    conn_mgr --&gt; mq
+
+    %% SSE streaming connections
+    api_server -.-&gt;|&quot;SSE: /agent/{id}/session/{sid}/instructions/stream&quot;| sse_client
+
+    %% HTTP acknowledgement connections
+    sse_client -.-&gt;|&quot;HTTP: /agent/{id}/session/{sid}/instructions/{iid}/ack&quot;| api_server
+
+    %% File system monitoring
+    fs_watcher --&gt; fs_parser
+    fs_parser --&gt; sse_client
+
+    %% Equipment integration
+    epu1 --&gt; gpfs1
+    epu2 --&gt; gpfs2
+    epuN --&gt; gpfsN
+
+    fs_watcher -.-&gt;|&quot;Monitor EPU Output&quot;| gpfs1
+    fs_watcher -.-&gt;|&quot;Monitor EPU Output&quot;| gpfs2
+    fs_watcher -.-&gt;|&quot;Monitor EPU Output&quot;| gpfsN
+
+    %% External API integration
+    consumer --&gt; athena_client
+
+    %% Package dependencies
+    backend -.-&gt; common
+    agent_pkg -.-&gt; common
+    fs_parser -.-&gt; schemas
+
+    %% Styling
+    classDef k8s fill:#e1f5fe,stroke:#0277bd,stroke-width:2px
+    classDef boundary fill:#fff3e0,stroke:#ef6c00,stroke-width:2px
+    classDef database fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
+    classDef equipment fill:#e8f5e8,stroke:#2e7d32,stroke-width:2px
+    classDef communication fill:#fff8e1,stroke:#f57f17,stroke-width:2px
+
+    class k8s,packages,backend,common,athena,mcp,infra k8s
+    class boundary,agents,agent_pkg,equipment boundary
+    class db,mq database
+    class scope1,scope2,scopeN,epu1,epu2,epuN,em1,em2,emN,gpfs1,gpfs2,gpfsN equipment
+    class api_server,sse_client,fs_watcher communication
+</pre></div>
+</div>
+</section>
+<section id="service-architecture">
+<h3>Service Architecture<a class="headerlink" href="#service-architecture" title="Link to this heading">#</a></h3>
+<p>The communication system employs a <strong>separate service approach</strong> rather than integrating directly with the main API
+service. This design provides:</p>
+<ul class="simple">
+<li><p><strong>Isolation of concerns</strong>: Communication logic remains separate from core business logic</p></li>
+<li><p><strong>Scalability independence</strong>: Communication service can scale independently based on connection load</p></li>
+<li><p><strong>Operational simplicity</strong>: Monitoring and debugging of persistent connections without affecting main API</p></li>
+<li><p><strong>Resource management</strong>: Dedicated resources for managing long-lived SSE connections</p></li>
+</ul>
+<div class="highlight-mermaid notranslate"><div class="highlight"><pre><span></span>graph LR
+    subgraph services[&quot;Service Layer&quot;]
+        main[&quot;Main API Service&quot;]
+        comm[&quot;Communication Service&quot;]
+    end
+    
+    subgraph data[&quot;Data Layer&quot;]
+        db[(&quot;PostgreSQL&quot;)]
+        mq[(&quot;RabbitMQ&quot;)]
+    end
+    
+    subgraph agents[&quot;Agent Layer&quot;]
+        agent[&quot;Agent Clients&quot;]
+    end
+    
+    main --&gt; db
+    main --&gt; mq
+    comm --&gt; db
+    comm --&gt; mq
+    
+    mq --&gt; comm
+    comm &lt;--&gt; agents
+    
+    main -.-&gt;|Events| mq
+    mq -.-&gt;|Instructions| comm
+</pre></div>
+</div>
+</section>
+</section>
+<section id="technical-stack-integration">
+<h2>Technical Stack Integration<a class="headerlink" href="#technical-stack-integration" title="Link to this heading">#</a></h2>
+<section id="fastapi-integration">
+<h3>FastAPI Integration<a class="headerlink" href="#fastapi-integration" title="Link to this heading">#</a></h3>
+<p>The communication service leverages FastAPI’s native SSE support through <code class="docutils literal notranslate"><span class="pre">StreamingResponse</span></code> and event streaming
+patterns:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Conceptual endpoint structure</span>
+<span class="nd">@app</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;/agent/</span><span class="si">{agent_id}</span><span class="s2">/instructions/stream&quot;</span><span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">stream_instructions</span><span class="p">(</span><span class="n">agent_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;SSE endpoint for streaming instructions to agents&quot;&quot;&quot;</span>
+    
+<span class="nd">@app</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">&quot;/agent/</span><span class="si">{agent_id}</span><span class="s2">/instructions/</span><span class="si">{instruction_id}</span><span class="s2">/ack&quot;</span><span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">acknowledge_instruction</span><span class="p">(</span><span class="n">agent_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">instruction_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;HTTP endpoint for instruction acknowledgements&quot;&quot;&quot;</span>
+</pre></div>
+</div>
+</section>
+<section id="rabbitmq-message-flow">
+<h3>RabbitMQ Message Flow<a class="headerlink" href="#rabbitmq-message-flow" title="Link to this heading">#</a></h3>
+<p>The system integrates with the existing RabbitMQ infrastructure as an event communication backbone between ML components and the communication service:</p>
+<div class="highlight-mermaid notranslate"><div class="highlight"><pre><span></span>sequenceDiagram
+    participant ML as ML Pipeline
+    participant MQ as RabbitMQ
+    participant Comm as Communication Service
+    participant Agent as Agent Client
+    participant DB as PostgreSQL
+    
+    ML-&gt;&gt;MQ: Publish instruction event
+    MQ-&gt;&gt;Comm: Deliver to agent queue
+    Comm-&gt;&gt;DB: Store instruction state
+    Comm-&gt;&gt;Agent: Stream via SSE
+    Agent-&gt;&gt;Comm: HTTP acknowledgement
+    Comm-&gt;&gt;DB: Update delivery status
+    Comm-&gt;&gt;MQ: Publish ACK event
+</pre></div>
+</div>
+</section>
+<section id="postgresql-schema-design">
+<h3>PostgreSQL Schema Design<a class="headerlink" href="#postgresql-schema-design" title="Link to this heading">#</a></h3>
+<p>The communication system extends the existing database schema with instruction tracking tables:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="c1">-- Conceptual schema structure</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">agent_instructions</span><span class="w"> </span><span class="p">(</span>
+<span class="w">    </span><span class="n">id</span><span class="w"> </span><span class="n">UUID</span><span class="w"> </span><span class="k">PRIMARY</span><span class="w"> </span><span class="k">KEY</span><span class="p">,</span>
+<span class="w">    </span><span class="n">agent_id</span><span class="w"> </span><span class="nb">VARCHAR</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
+<span class="w">    </span><span class="n">instruction_type</span><span class="w"> </span><span class="nb">VARCHAR</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
+<span class="w">    </span><span class="n">payload</span><span class="w"> </span><span class="n">JSONB</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
+<span class="w">    </span><span class="n">created_at</span><span class="w"> </span><span class="k">TIMESTAMP</span><span class="w"> </span><span class="k">WITH</span><span class="w"> </span><span class="k">TIME</span><span class="w"> </span><span class="k">ZONE</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
+<span class="w">    </span><span class="n">delivered_at</span><span class="w"> </span><span class="k">TIMESTAMP</span><span class="w"> </span><span class="k">WITH</span><span class="w"> </span><span class="k">TIME</span><span class="w"> </span><span class="k">ZONE</span><span class="p">,</span>
+<span class="w">    </span><span class="n">acknowledged_at</span><span class="w"> </span><span class="k">TIMESTAMP</span><span class="w"> </span><span class="k">WITH</span><span class="w"> </span><span class="k">TIME</span><span class="w"> </span><span class="k">ZONE</span><span class="p">,</span>
+<span class="w">    </span><span class="n">status</span><span class="w"> </span><span class="nb">VARCHAR</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="s1">&#39;pending&#39;</span><span class="p">,</span>
+<span class="w">    </span><span class="n">retry_count</span><span class="w"> </span><span class="nb">INTEGER</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="mi">0</span>
+<span class="p">);</span>
+
+<span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">agent_connections</span><span class="w"> </span><span class="p">(</span>
+<span class="w">    </span><span class="n">agent_id</span><span class="w"> </span><span class="nb">VARCHAR</span><span class="w"> </span><span class="k">PRIMARY</span><span class="w"> </span><span class="k">KEY</span><span class="p">,</span>
+<span class="w">    </span><span class="n">connection_id</span><span class="w"> </span><span class="nb">VARCHAR</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
+<span class="w">    </span><span class="n">connected_at</span><span class="w"> </span><span class="k">TIMESTAMP</span><span class="w"> </span><span class="k">WITH</span><span class="w"> </span><span class="k">TIME</span><span class="w"> </span><span class="k">ZONE</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
+<span class="w">    </span><span class="n">last_heartbeat</span><span class="w"> </span><span class="k">TIMESTAMP</span><span class="w"> </span><span class="k">WITH</span><span class="w"> </span><span class="k">TIME</span><span class="w"> </span><span class="k">ZONE</span><span class="p">,</span>
+<span class="w">    </span><span class="n">connection_type</span><span class="w"> </span><span class="nb">VARCHAR</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="c1">-- &#39;sse&#39;</span>
+<span class="p">);</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="component-interactions-and-data-flows">
+<h2>Component Interactions and Data Flows<a class="headerlink" href="#component-interactions-and-data-flows" title="Link to this heading">#</a></h2>
+<section id="primary-communication-flow-sse">
+<h3>Primary Communication Flow (SSE)<a class="headerlink" href="#primary-communication-flow-sse" title="Link to this heading">#</a></h3>
+<p>The primary communication path uses Server-Sent Events for efficient real-time instruction delivery:</p>
+<div class="highlight-mermaid notranslate"><div class="highlight"><pre><span></span>sequenceDiagram
+    participant Agent as Agent Client
+    participant Comm as Communication Service
+    participant MQ as RabbitMQ
+    participant DB as PostgreSQL
+    
+    Agent-&gt;&gt;Comm: Establish SSE connection
+    Comm-&gt;&gt;DB: Register connection
+    
+    loop Instruction Processing
+        MQ-&gt;&gt;Comm: New instruction event
+        Comm-&gt;&gt;DB: Store instruction
+        Comm-&gt;&gt;Agent: Stream instruction (SSE)
+        Agent-&gt;&gt;Comm: HTTP acknowledgement
+        Comm-&gt;&gt;DB: Update delivery status
+    end
+    
+    Agent-&gt;&gt;Comm: Connection closed
+    Comm-&gt;&gt;DB: Clean up connection state
+</pre></div>
+</div>
+</section>
+<section id="error-handling-and-recovery">
+<h3>Error Handling and Recovery<a class="headerlink" href="#error-handling-and-recovery" title="Link to this heading">#</a></h3>
+<p>The system implements comprehensive error handling across multiple failure scenarios:</p>
+<div class="highlight-mermaid notranslate"><div class="highlight"><pre><span></span>graph TD
+    start([Instruction Generated]) --&gt; sse{SSE Connected?}
+    
+    sse --&gt;|Yes| stream[Stream via SSE]
+    sse --&gt;|No| queue[Queue for Next Connection]
+    
+    stream --&gt; ack{Acknowledgement Received?}
+    ack --&gt;|Yes| complete[Mark Complete]
+    ack --&gt;|No| retry{Retry Count &lt; Max?}
+    
+    retry --&gt;|Yes| delay[Exponential Backoff]
+    retry --&gt;|No| failed[Mark Failed]
+    
+    delay --&gt; reconnect[Reconnect SSE]
+    reconnect --&gt; stream
+    
+    queue --&gt; reconnect
+    failed --&gt; end([End])
+    complete --&gt; end([End])
+</pre></div>
+</div>
+</section>
+</section>
+<section id="scalability-design">
+<h2>Scalability Design<a class="headerlink" href="#scalability-design" title="Link to this heading">#</a></h2>
+<section id="connection-management">
+<h3>Connection Management<a class="headerlink" href="#connection-management" title="Link to this heading">#</a></h3>
+<p>The system is designed to support <strong>one session per agent machine</strong> with a capacity of <strong>20 concurrent SSE
+connections</strong>. This design aligns with the facility’s requirements of up to 20 microscope workstations, where each workstation controls
+a single microscope.</p>
+<div class="highlight-mermaid notranslate"><div class="highlight"><pre><span></span>graph TB
+    subgraph comm[&quot;Communication Service Instance&quot;]
+        pool[&quot;Connection Pool&quot;]
+        mgr[&quot;Connection Manager&quot;]
+        health[&quot;Health Monitor&quot;]
+    end
+    
+    subgraph agents[&quot;Agent Connections&quot;]
+        agent1[&quot;Agent 1 (SSE)&quot;]
+        agent2[&quot;Agent 2 (SSE)&quot;]
+        agent3[&quot;Agent 3 (SSE)&quot;]
+        agentN[&quot;Agent N (SSE)&quot;]
+    end
+    
+    pool --&gt; agent1
+    pool --&gt; agent2
+    pool --&gt; agent3
+    pool --&gt; agentN
+    
+    mgr --&gt; pool
+    health --&gt; pool
+    
+    pool -.-&gt;|Max 20 concurrent| limit[Connection Limit]
+</pre></div>
+</div>
+</section>
+<section id="theoretical-scaling-limits">
+<h3>Theoretical Scaling Limits<a class="headerlink" href="#theoretical-scaling-limits" title="Link to this heading">#</a></h3>
+<p><strong>Current Architecture Bottlenecks:</strong></p>
+<ol class="arabic simple">
+<li><p><strong>Database Write Performance</strong>: High-frequency instruction persistence and state updates may impact database performance</p></li>
+<li><p><strong>Database Connection Pool</strong>: Connection pool limits for concurrent instruction storage and retrieval operations</p></li>
+<li><p><strong>Memory Usage</strong>: Each SSE connection maintains in-memory state (~1-2MB per connection)</p></li>
+<li><p><strong>RabbitMQ Throughput</strong>: Event notification capacity for real-time updates</p></li>
+</ol>
+<p><strong>Scaling Strategies:</strong></p>
+<ul class="simple">
+<li><p><strong>Horizontal Scaling</strong>: Deploy multiple communication service instances behind load balancer</p></li>
+<li><p><strong>Connection Sharding</strong>: Distribute agents across service instances by agent ID hash</p></li>
+<li><p><strong>Resource Optimization</strong>: Implement connection pooling and memory-efficient streaming</p></li>
+<li><p><strong>Database Optimization</strong>: Use connection pooling and read replicas for instruction queries</p></li>
+</ul>
+</section>
+<section id="performance-characteristics">
+<h3>Performance Characteristics<a class="headerlink" href="#performance-characteristics" title="Link to this heading">#</a></h3>
+<p><strong>Expected Throughput:</strong></p>
+<ul class="simple">
+<li><p><strong>Instruction Frequency</strong>: 1 instruction per 30-120 seconds per agent during active data collection</p></li>
+<li><p><strong>Peak Load</strong>: 20 agents × 2 instructions/minute = 40 instructions/minute system-wide (at maximum frequency)</p></li>
+<li><p><strong>Message Size</strong>: 1-10KB JSON payloads for microscope control instructions</p></li>
+<li><p><strong>Latency Requirements</strong>: Sub-second delivery for real-time workflow efficiency</p></li>
+</ul>
+</section>
+</section>
+<section id="implementation-specifications">
+<h2>Implementation Specifications<a class="headerlink" href="#implementation-specifications" title="Link to this heading">#</a></h2>
+<section id="sse-streaming-service-design">
+<h3>SSE Streaming Service Design<a class="headerlink" href="#sse-streaming-service-design" title="Link to this heading">#</a></h3>
+<p>The SSE streaming service implements persistent connections with automatic reconnection handling:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Conceptual implementation structure</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">SSEInstructionStream</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Manages SSE connections and instruction streaming&quot;&quot;&quot;</span>
+    
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">stream_instructions</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">agent_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AsyncIterator</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Async generator for SSE instruction stream&quot;&quot;&quot;</span>
+        
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">handle_connection_lifecycle</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">agent_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Manages connection establishment, maintenance, and cleanup&quot;&quot;&quot;</span>
+        
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">process_pending_instructions</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">agent_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Retrieves and processes pending instructions from database for SSE delivery&quot;&quot;&quot;</span>
+
+<span class="k">class</span><span class="w"> </span><span class="nc">ConnectionManager</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Manages active SSE connections and health monitoring&quot;&quot;&quot;</span>
+    
+    <span class="k">def</span><span class="w"> </span><span class="nf">register_connection</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">agent_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">connection_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Register new SSE connection&quot;&quot;&quot;</span>
+        
+    <span class="k">def</span><span class="w"> </span><span class="nf">cleanup_connection</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">agent_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Clean up disconnected SSE connection&quot;&quot;&quot;</span>
+        
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">health_check_connections</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Monitor connection health and handle failures&quot;&quot;&quot;</span>
+</pre></div>
+</div>
+</section>
+<section id="http-acknowledgement-endpoints">
+<h3>HTTP Acknowledgement Endpoints<a class="headerlink" href="#http-acknowledgement-endpoints" title="Link to this heading">#</a></h3>
+<p>HTTP acknowledgement endpoints provide reliable delivery confirmation:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Conceptual acknowledgement handling</span>
+<span class="nd">@dataclass</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">InstructionAcknowledgement</span><span class="p">:</span>
+    <span class="n">instruction_id</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">agent_id</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">acknowledged_at</span><span class="p">:</span> <span class="n">datetime</span>
+    <span class="n">status</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;received&quot;</span><span class="p">,</span> <span class="s2">&quot;processed&quot;</span><span class="p">,</span> <span class="s2">&quot;failed&quot;</span><span class="p">]</span>
+    <span class="n">error_message</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+
+<span class="k">class</span><span class="w"> </span><span class="nc">AcknowledgementHandler</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Handles instruction acknowledgements and delivery tracking&quot;&quot;&quot;</span>
+    
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">process_acknowledgement</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> 
+        <span class="n">ack</span><span class="p">:</span> <span class="n">InstructionAcknowledgement</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Process and store instruction acknowledgement&quot;&quot;&quot;</span>
+        
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">handle_declined_instruction</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> 
+        <span class="n">agent_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> 
+        <span class="n">instruction_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> 
+        <span class="n">reason</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Handle agent declining instruction execution&quot;&quot;&quot;</span>
+</pre></div>
+</div>
+</section>
+<section id="sse-retry-implementation">
+<h3>SSE Retry Implementation<a class="headerlink" href="#sse-retry-implementation" title="Link to this heading">#</a></h3>
+<p>The system implements robust SSE reconnection with exponential backoff:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">class</span><span class="w"> </span><span class="nc">SSERetryManager</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Manages SSE connection retry logic with exponential backoff&quot;&quot;&quot;</span>
+    
+    <span class="k">def</span><span class="w"> </span><span class="nf">should_retry</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">agent_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">attempt_count</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Determine if SSE connection should be retried&quot;&quot;&quot;</span>
+        
+    <span class="k">def</span><span class="w"> </span><span class="nf">calculate_backoff_delay</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">attempt_count</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Calculate exponential backoff delay for reconnection&quot;&quot;&quot;</span>
+        
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">reconnect_with_backoff</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">agent_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Attempt SSE reconnection with backoff delay&quot;&quot;&quot;</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="implementation-status-components">
+<h2>Implementation Status &amp; Components<a class="headerlink" href="#implementation-status-components" title="Link to this heading">#</a></h2>
+<p>This POC implementation provides a complete working system with the following implemented components:</p>
+<section id="completed-features">
+<h3>Completed Features<a class="headerlink" href="#completed-features" title="Link to this heading">#</a></h3>
+<section id="database-schema-migration-alembic">
+<h4>1. Database Schema &amp; Migration (Alembic)<a class="headerlink" href="#database-schema-migration-alembic" title="Link to this heading">#</a></h4>
+<ul class="simple">
+<li><p><strong>AgentSession</strong>: Session management for agent connections</p></li>
+<li><p><strong>AgentInstruction</strong>: Instruction storage with metadata and lifecycle tracking</p></li>
+<li><p><strong>AgentConnection</strong>: Real-time connection tracking with heartbeat monitoring</p></li>
+<li><p><strong>AgentInstructionAcknowledgement</strong>: Comprehensive acknowledgement tracking</p></li>
+</ul>
+</section>
+<section id="fastapi-sse-endpoints">
+<h4>2. FastAPI SSE Endpoints<a class="headerlink" href="#fastapi-sse-endpoints" title="Link to this heading">#</a></h4>
+<ul class="simple">
+<li><p><strong><code class="docutils literal notranslate"><span class="pre">/agent/{agent_id}/session/{session_id}/instructions/stream</span></code></strong>: Real-time SSE streaming</p></li>
+<li><p><strong><code class="docutils literal notranslate"><span class="pre">/agent/{agent_id}/session/{session_id}/instructions/{instruction_id}/ack</span></code></strong>: HTTP acknowledgement</p></li>
+<li><p><strong>Debug endpoints</strong>: Connection statistics and session management</p></li>
+</ul>
+</section>
+<section id="rabbitmq-integration">
+<h4>3. RabbitMQ Integration<a class="headerlink" href="#rabbitmq-integration" title="Link to this heading">#</a></h4>
+<ul class="simple">
+<li><p><strong>Event Publishers</strong>: Agent instruction lifecycle events</p></li>
+<li><p><strong>Consumer Handlers</strong>: Process instruction events and database updates</p></li>
+<li><p><strong>Message Types</strong>: <code class="docutils literal notranslate"><span class="pre">agent.instruction.created</span></code>, <code class="docutils literal notranslate"><span class="pre">agent.instruction.updated</span></code>, <code class="docutils literal notranslate"><span class="pre">agent.instruction.expired</span></code></p></li>
+</ul>
+</section>
+<section id="enhanced-agent-client-sseagentclient">
+<h4>4. Enhanced Agent Client (<code class="docutils literal notranslate"><span class="pre">SSEAgentClient</span></code>)<a class="headerlink" href="#enhanced-agent-client-sseagentclient" title="Link to this heading">#</a></h4>
+<ul class="simple">
+<li><p><strong>Exponential backoff retry logic</strong> with jitter</p></li>
+<li><p><strong>Connection statistics and monitoring</strong></p></li>
+<li><p><strong>Comprehensive error handling and recovery</strong></p></li>
+<li><p><strong>Processing time tracking for performance metrics</strong></p></li>
+</ul>
+</section>
+<section id="connection-management-service-agentconnectionmanager">
+<h4>5. Connection Management Service (<code class="docutils literal notranslate"><span class="pre">AgentConnectionManager</span></code>)<a class="headerlink" href="#connection-management-service-agentconnectionmanager" title="Link to this heading">#</a></h4>
+<ul class="simple">
+<li><p><strong>Automatic stale connection cleanup</strong> (2-minute timeout)</p></li>
+<li><p><strong>Instruction expiration handling</strong> with retry logic</p></li>
+<li><p><strong>Session activity monitoring</strong> (1-hour inactivity threshold)</p></li>
+<li><p><strong>Real-time statistics and health monitoring</strong></p></li>
+</ul>
+</section>
+<section id="production-ready-example-client">
+<h4>6. Production-Ready Example Client<a class="headerlink" href="#production-ready-example-client" title="Link to this heading">#</a></h4>
+<ul class="simple">
+<li><p><strong>Complete instruction processing workflow</strong></p></li>
+<li><p><strong>Multiple instruction type support</strong> (stage movement, image acquisition)</p></li>
+<li><p><strong>Processing time measurement and acknowledgement</strong></p></li>
+<li><p><strong>Enhanced error handling and statistics display</strong></p></li>
+</ul>
+</section>
+</section>
+<section id="key-implementation-highlights">
+<h3>🚀 Key Implementation Highlights<a class="headerlink" href="#key-implementation-highlights" title="Link to this heading">#</a></h3>
+<ul class="simple">
+<li><p><strong>Database-backed persistence</strong>: All instruction state persisted with full audit trail</p></li>
+<li><p><strong>Connection resilience</strong>: Automatic reconnection with exponential backoff</p></li>
+<li><p><strong>Health monitoring</strong>: Background tasks for cleanup and monitoring</p></li>
+<li><p><strong>Production logging</strong>: Comprehensive logging at all system levels</p></li>
+<li><p><strong>Type safety</strong>: Full Pydantic model validation throughout</p></li>
+<li><p><strong>Test-friendly design</strong>: Debug endpoints for system verification</p></li>
+</ul>
+</section>
+</section>
+<section id="message-lifecycle-management">
+<h2>Message Lifecycle Management<a class="headerlink" href="#message-lifecycle-management" title="Link to this heading">#</a></h2>
+<section id="sequential-delivery-requirements">
+<h3>Sequential Delivery Requirements<a class="headerlink" href="#sequential-delivery-requirements" title="Link to this heading">#</a></h3>
+<p>The system ensures <strong>sequential message delivery</strong> to maintain microscope control instruction ordering:</p>
+<div class="highlight-mermaid notranslate"><div class="highlight"><pre><span></span>stateDiagram-v2
+    [*] --&gt; Generated: Instruction created
+    Generated --&gt; Queued: Added to agent queue
+    Queued --&gt; Streaming: SSE connection available
+    Queued --&gt; Retry: Connection unavailable
+    
+    Streaming --&gt; Delivered: Agent receives via SSE
+    Retry --&gt; Queued: After backoff delay
+    
+    Delivered --&gt; Acknowledged: Agent confirms receipt
+    Delivered --&gt; Declined: Agent declines execution
+    Delivered --&gt; Timeout: No acknowledgement received
+    
+    Acknowledged --&gt; [*]: Complete
+    Declined --&gt; [*]: Logged and complete
+    Timeout --&gt; Retry: Attempt redelivery
+    
+    Retry --&gt; Queued: Requeue instruction
+    Retry --&gt; Failed: Max retries exceeded
+    
+    Failed --&gt; [*]: Mark as failed
+</pre></div>
+</div>
+</section>
+<section id="database-persistence-strategy">
+<h3>Database Persistence Strategy<a class="headerlink" href="#database-persistence-strategy" title="Link to this heading">#</a></h3>
+<p>The system uses <strong>PostgreSQL as source of truth</strong> with RabbitMQ as the event communication backbone:</p>
+<div class="highlight-mermaid notranslate"><div class="highlight"><pre><span></span>graph LR
+    subgraph truth[&quot;Source of Truth&quot;]
+        db[(&quot;PostgreSQL&quot;)]
+    end
+    
+    subgraph events[&quot;Event Communication&quot;]
+        mq[(&quot;RabbitMQ&quot;)]
+    end
+    
+    subgraph ops[&quot;Operational Queries&quot;]
+        queries[&quot;Instruction State&lt;br/&gt;Connection Health&lt;br/&gt;Performance Metrics&lt;br/&gt;Audit Trails&quot;]
+    end
+    
+    db --&gt; mq
+    db --&gt; queries
+    
+    db -.-&gt;|Primary| primary[Instruction Persistence&lt;br/&gt;State Management&lt;br/&gt;Audit Logging]
+    mq -.-&gt;|Secondary| secondary[Event Notification&lt;br/&gt;Component Communication&lt;br/&gt;Real-time Updates]
+</pre></div>
+</div>
+</section>
+<section id="agent-restart-message-replay-todo">
+<h3>Agent Restart Message Replay (TODO)<a class="headerlink" href="#agent-restart-message-replay-todo" title="Link to this heading">#</a></h3>
+<p><strong>Current Status</strong>: Not implemented - marked as future requirement</p>
+<p><strong>Design Considerations</strong>:</p>
+<ul class="simple">
+<li><p>Determine replay window (e.g., last 24 hours of unacknowledged instructions)</p></li>
+<li><p>Handle duplicate instruction detection and prevention</p></li>
+<li><p>Manage instruction sequence numbering across agent restarts</p></li>
+<li><p>Implement replay request mechanism from agent on startup</p></li>
+</ul>
+</section>
+</section>
+<section id="external-message-types-and-transformation-pipeline">
+<h2>External Message Types and Transformation Pipeline<a class="headerlink" href="#external-message-types-and-transformation-pipeline" title="Link to this heading">#</a></h2>
+<section id="external-message-types">
+<h3>External Message Types<a class="headerlink" href="#external-message-types" title="Link to this heading">#</a></h3>
+<p>The system processes external RabbitMQ messages from data processing pipelines and machine learning components
+to trigger real-time decision-making and microscope control instructions. These external messages represent
+completion events from various stages of the cryo-EM data processing workflow:</p>
+<p><strong>Primary External Message Types:</strong></p>
+<ul class="simple">
+<li><p><strong>MOTION_CORRECTION_COMPLETE</strong>: Indicates completion of motion correction processing for collected images</p></li>
+<li><p><strong>CTF_COMPLETE</strong>: Signals completion of contrast transfer function (CTF) estimation for image quality assessment</p></li>
+<li><p><strong>PARTICLE_PICKING_COMPLETE</strong>: Notifies completion of automated particle identification in micrographs</p></li>
+<li><p><strong>PARTICLE_SELECTION_COMPLETE</strong>: Indicates completion of particle quality assessment and selection</p></li>
+<li><p><strong>GRIDSQUARE_MODEL_PREDICTION</strong>: Provides machine learning predictions for gridsquare quality and suitability</p></li>
+<li><p><strong>FOILHOLE_MODEL_PREDICTION</strong>: Delivers ML predictions for individual foilhole targeting recommendations</p></li>
+<li><p><strong>MODEL_PARAMETER_UPDATE</strong>: Communicates updates to ML model parameters affecting decision thresholds</p></li>
+</ul>
+<p>These external messages contain scientific data processing results, quality metrics, and ML predictions that drive
+the backend’s decision logic for microscope control instructions.</p>
+</section>
+<section id="message-transformation-pipeline">
+<h3>Message Transformation Pipeline<a class="headerlink" href="#message-transformation-pipeline" title="Link to this heading">#</a></h3>
+<p>The transformation pipeline converts external data processing events into actionable SSE instructions for agents.
+This pipeline operates within the <code class="docutils literal notranslate"><span class="pre">consumer.py</span></code> component and implements the core business logic for scientific
+decision-making:</p>
+<div class="highlight-mermaid notranslate"><div class="highlight"><pre><span></span>graph TB
+    subgraph external[&quot;External Systems&quot;]
+        ml_pipeline[&quot;ML Pipeline&quot;]
+        image_proc[&quot;Image Processing&quot;]
+        ctf_est[&quot;CTF Estimation&quot;]
+        particle_pick[&quot;Particle Picking&quot;]
+    end
+
+    subgraph rabbitmq[&quot;Message Queue&quot;]
+        ext_queue[&quot;External Event Queue&quot;]
+    end
+
+    subgraph backend[&quot;Backend Processing&quot;]
+        consumer[&quot;consumer.py&quot;]
+        decision_logic[&quot;Decision Logic Engine&quot;]
+        threshold_eval[&quot;Threshold Evaluation&quot;]
+        instruction_gen[&quot;Instruction Generator&quot;]
+    end
+
+    subgraph communication[&quot;Communication System&quot;]
+        sse_stream[&quot;SSE Instruction Stream&quot;]
+        agent_client[&quot;Agent Clients&quot;]
+    end
+
+    subgraph microscope[&quot;Microscope Control&quot;]
+        athena_api[&quot;Athena API&quot;]
+        epu_control[&quot;EPU Software&quot;]
+    end
+
+    ml_pipeline --&gt; ext_queue
+    image_proc --&gt; ext_queue
+    ctf_est --&gt; ext_queue
+    particle_pick --&gt; ext_queue
+
+    ext_queue --&gt; consumer
+    consumer --&gt; decision_logic
+    decision_logic --&gt; threshold_eval
+    threshold_eval --&gt; instruction_gen
+
+    instruction_gen --&gt; sse_stream
+    sse_stream --&gt; agent_client
+    agent_client --&gt; athena_api
+    athena_api --&gt; epu_control
+</pre></div>
+</div>
+<p><strong>Transformation Process:</strong></p>
+<ol class="arabic simple">
+<li><p><strong>Message Reception</strong>: External messages arrive via dedicated RabbitMQ queues with processing results</p></li>
+<li><p><strong>Data Extraction</strong>: Consumer extracts quality metrics, coordinates, and prediction values from message payloads</p></li>
+<li><p><strong>Decision Logic Application</strong>: Business rules evaluate data against configurable quality thresholds</p></li>
+<li><p><strong>Instruction Generation</strong>: Decision outcomes generate specific microscope control instructions</p></li>
+<li><p><strong>Traceability Injection</strong>: Instructions include metadata linking back to originating external messages</p></li>
+<li><p><strong>SSE Delivery</strong>: Generated instructions are queued for real-time delivery to appropriate agents</p></li>
+</ol>
+<p><strong>Quality Threshold Examples:</strong></p>
+<div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;gridsquare_quality_threshold&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.7</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;foilhole_ice_thickness_max&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">150.0</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;ctf_resolution_minimum&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">4.0</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;motion_correction_drift_max&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">2.0</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</section>
+<section id="athena-api-control-instructions">
+<h3>Athena API Control Instructions<a class="headerlink" href="#athena-api-control-instructions" title="Link to this heading">#</a></h3>
+<p>The system generates specific instruction types that correspond to Athena API control capabilities for microscope
+workflow management. These instructions represent the actionable outputs of the decision-making process:</p>
+<p><strong>Primary Control Instruction Types:</strong></p>
+<section id="athena-control-reorder-foilholes">
+<h4>athena.control.reorder_foilholes<a class="headerlink" href="#athena-control-reorder-foilholes" title="Link to this heading">#</a></h4>
+<p>Reorders foilhole acquisition sequence based on ML predictions and quality assessments:</p>
+<div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;instruction_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;uuid-v4&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;instruction_type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;athena.control.reorder_foilholes&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;version&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;1.0&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;timestamp&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2025-09-23T10:30:00Z&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;payload&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;gridsquare_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;GS_001_002&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;foilhole_order&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">      </span><span class="p">{</span><span class="nt">&quot;foilhole_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;FH_001&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;priority_score&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.95</span><span class="p">},</span>
+<span class="w">      </span><span class="p">{</span><span class="nt">&quot;foilhole_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;FH_003&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;priority_score&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.87</span><span class="p">},</span>
+<span class="w">      </span><span class="p">{</span><span class="nt">&quot;foilhole_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;FH_002&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;priority_score&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.72</span><span class="p">}</span>
+<span class="w">    </span><span class="p">],</span>
+<span class="w">    </span><span class="nt">&quot;reorder_reason&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;ml_prediction_update&quot;</span>
+<span class="w">  </span><span class="p">},</span>
+<span class="w">  </span><span class="nt">&quot;metadata&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;session_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;session-uuid&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;originating_message_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;external-msg-uuid&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;decision_timestamp&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2025-09-23T10:29:45Z&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;quality_threshold&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.7</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</section>
+<section id="athena-control-reorder-gridsquares">
+<h4>athena.control.reorder_gridsquares<a class="headerlink" href="#athena-control-reorder-gridsquares" title="Link to this heading">#</a></h4>
+<p>Reorders gridsquare acquisition sequence based on overall quality assessments:</p>
+<div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;instruction_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;uuid-v4&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;instruction_type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;athena.control.reorder_gridsquares&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;version&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;1.0&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;timestamp&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2025-09-23T10:35:00Z&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;payload&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;gridsquare_order&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">      </span><span class="p">{</span><span class="nt">&quot;gridsquare_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;GS_001_003&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;quality_score&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.92</span><span class="p">},</span>
+<span class="w">      </span><span class="p">{</span><span class="nt">&quot;gridsquare_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;GS_001_001&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;quality_score&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.88</span><span class="p">},</span>
+<span class="w">      </span><span class="p">{</span><span class="nt">&quot;gridsquare_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;GS_001_002&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;quality_score&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.74</span><span class="p">}</span>
+<span class="w">    </span><span class="p">],</span>
+<span class="w">    </span><span class="nt">&quot;reorder_strategy&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;quality_optimised&quot;</span>
+<span class="w">  </span><span class="p">},</span>
+<span class="w">  </span><span class="nt">&quot;metadata&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;session_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;session-uuid&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;originating_message_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;gridsquare-prediction-uuid&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;model_version&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;v2.1.0&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;prediction_confidence&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.89</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</section>
+<section id="athena-control-skip-gridsquares">
+<h4>athena.control.skip_gridsquares<a class="headerlink" href="#athena-control-skip-gridsquares" title="Link to this heading">#</a></h4>
+<p>Skips gridsquares that fail to meet quality thresholds:</p>
+<div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;instruction_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;uuid-v4&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;instruction_type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;athena.control.skip_gridsquares&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;version&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;1.0&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;timestamp&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2025-09-23T10:40:00Z&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;payload&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;gridsquares_to_skip&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">      </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;gridsquare_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;GS_001_005&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;skip_reason&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;quality_below_threshold&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;quality_score&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.45</span>
+<span class="w">      </span><span class="p">},</span>
+<span class="w">      </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;gridsquare_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;GS_001_007&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;skip_reason&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;ice_contamination_detected&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;contamination_level&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.85</span>
+<span class="w">      </span><span class="p">}</span>
+<span class="w">    </span><span class="p">],</span>
+<span class="w">    </span><span class="nt">&quot;skip_strategy&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;quality_based&quot;</span>
+<span class="w">  </span><span class="p">},</span>
+<span class="w">  </span><span class="nt">&quot;metadata&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;session_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;session-uuid&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;originating_message_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;quality-assessment-uuid&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;threshold_applied&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.6</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;assessment_method&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;ml_classification&quot;</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="complete-message-flow-diagram">
+<h3>Complete Message Flow Diagram<a class="headerlink" href="#complete-message-flow-diagram" title="Link to this heading">#</a></h3>
+<p>The following diagram illustrates the complete message flow from external systems through to microscope control:</p>
+<div class="highlight-mermaid notranslate"><div class="highlight"><pre><span></span>sequenceDiagram
+    participant ExtSys as External Systems&lt;br/&gt;(ML Pipeline, Image Processing)
+    participant MQ as RabbitMQ&lt;br/&gt;(External Events)
+    participant Consumer as Backend Consumer&lt;br/&gt;(consumer.py)
+    participant DB as PostgreSQL&lt;br/&gt;(Instruction Storage)
+    participant SSE as SSE Stream&lt;br/&gt;(Real-time Delivery)
+    participant Agent as Agent Client&lt;br/&gt;(Windows Workstation)
+    participant Athena as Athena API&lt;br/&gt;(Microscope Control)
+    participant EPU as EPU Software&lt;br/&gt;(ThermoFisher)
+
+    Note over ExtSys: Data processing completes
+    ExtSys-&gt;&gt;MQ: MOTION_CORRECTION_COMPLETE&lt;br/&gt;CTF_COMPLETE&lt;br/&gt;PARTICLE_PICKING_COMPLETE&lt;br/&gt;ML_PREDICTION
+
+    MQ-&gt;&gt;Consumer: External event delivery
+
+    Note over Consumer: Message transformation pipeline
+    Consumer-&gt;&gt;Consumer: Extract quality metrics&lt;br/&gt;Apply decision thresholds&lt;br/&gt;Generate control instructions
+
+    Consumer-&gt;&gt;DB: Store instruction with traceability&lt;br/&gt;(originating_message_id)
+    Consumer-&gt;&gt;MQ: Publish instruction event
+
+    MQ-&gt;&gt;SSE: Instruction ready for delivery
+    SSE-&gt;&gt;Agent: Stream instruction via SSE&lt;br/&gt;(athena.control.*)
+
+    Agent-&gt;&gt;SSE: HTTP acknowledgement
+    SSE-&gt;&gt;DB: Update delivery status
+
+    Note over Agent: Process microscope control instruction
+    Agent-&gt;&gt;Athena: Execute control command&lt;br/&gt;(reorder_foilholes, skip_gridsquares)
+
+    Athena-&gt;&gt;EPU: Apply workflow changes
+    EPU-&gt;&gt;Agent: Execution confirmation
+
+    Agent-&gt;&gt;SSE: Final execution status
+    SSE-&gt;&gt;DB: Update instruction completion
+
+    Note over DB: Complete audit trail&lt;br/&gt;External message → Decision → Execution
+</pre></div>
+</div>
+<p><strong>Key Message Flow Characteristics:</strong></p>
+<ol class="arabic simple">
+<li><p><strong>Scientific Traceability</strong>: Every instruction maintains linkage to originating external messages for reproducibility</p></li>
+<li><p><strong>Real-time Processing</strong>: Sub-second transformation from external events to microscope control instructions</p></li>
+<li><p><strong>Quality-driven Decisions</strong>: Business logic applies configurable thresholds to scientific data</p></li>
+<li><p><strong>Comprehensive Audit Trail</strong>: Full tracking from data processing results through to microscope actions</p></li>
+<li><p><strong>Failure Recovery</strong>: Instruction replay capability maintains workflow continuity during system interruptions</p></li>
+</ol>
+<p><strong>Message Transformation Examples:</strong></p>
+<ul class="simple">
+<li><p><strong>CTF_COMPLETE</strong> with resolution &lt; 4.0Å → <strong>athena.control.skip_gridsquares</strong> (poor quality)</p></li>
+<li><p><strong>GRIDSQUARE_MODEL_PREDICTION</strong> with score &gt; 0.8 → <strong>athena.control.reorder_gridsquares</strong> (prioritise high-quality)</p></li>
+<li><p><strong>FOILHOLE_MODEL_PREDICTION</strong> with updated rankings → <strong>athena.control.reorder_foilholes</strong> (optimise sequence)</p></li>
+</ul>
+<p>This transformation pipeline ensures that scientific data processing results directly drive microscope control decisions
+with full traceability and audit capabilities for research reproducibility.</p>
+</section>
+</section>
+<section id="extensibility-design">
+<h2>Extensibility Design<a class="headerlink" href="#extensibility-design" title="Link to this heading">#</a></h2>
+<section id="json-message-vocabulary">
+<h3>JSON Message Vocabulary<a class="headerlink" href="#json-message-vocabulary" title="Link to this heading">#</a></h3>
+<p>The system implements <strong>comprehensive JSON message vocabulary</strong> for microscope control instructions:</p>
+<p><strong>Core Message Structure:</strong></p>
+<div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;instruction_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;uuid-v4&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;instruction_type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;athena.control.*&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;version&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;1.0&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;timestamp&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2025-09-23T10:30:00Z&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;payload&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="c1">// Instruction-specific data</span>
+<span class="w">  </span><span class="p">},</span>
+<span class="w">  </span><span class="nt">&quot;metadata&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;session_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;session-uuid&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;originating_message_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;external-msg-uuid&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;decision_timestamp&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2025-09-23T10:29:45Z&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;quality_threshold&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.7</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p><strong>Implemented Instruction Types:</strong></p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">athena.control.reorder_foilholes</span></code>: Reorder foilhole acquisition sequence based on ML predictions</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">athena.control.reorder_gridsquares</span></code>: Reorder gridsquare acquisition sequence based on quality assessment</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">athena.control.skip_gridsquares</span></code>: Skip gridsquares that fail quality thresholds</p></li>
+</ul>
+<p><strong>Enhanced Metadata for Scientific Traceability:</strong></p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">originating_message_id</span></code>: Links instruction back to external processing event</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">decision_timestamp</span></code>: Records when decision logic was applied</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">quality_threshold</span></code>: Documents threshold values used in decision-making</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">model_version</span></code>: Tracks ML model version for reproducibility</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">prediction_confidence</span></code>: Records confidence level of ML predictions</p></li>
+</ul>
+<p><strong>Extensibility Features</strong>:</p>
+<ul class="simple">
+<li><p>Version field for message schema evolution across instruction types</p></li>
+<li><p>Flexible payload structure accommodating diverse microscope control requirements</p></li>
+<li><p>Enhanced metadata section supporting scientific traceability and reproducibility</p></li>
+<li><p>Type-safe instruction validation using Pydantic models for data integrity</p></li>
+<li><p>Originating message linkage for complete audit trails from data processing to execution</p></li>
+<li><p>Configurable quality thresholds enabling adaptive decision-making</p></li>
+</ul>
+</section>
+<section id="implemented-ml-integration">
+<h3>Implemented ML Integration<a class="headerlink" href="#implemented-ml-integration" title="Link to this heading">#</a></h3>
+<p>The architecture provides <strong>production machine learning and data processing integration</strong>:</p>
+<div class="highlight-mermaid notranslate"><div class="highlight"><pre><span></span>graph TB
+    subgraph ml[&quot;ML Pipeline Integration (Implemented)&quot;]
+        model[&quot;Prediction Models&lt;br/&gt;(Gridsquare/Foilhole)&quot;]
+        pipeline[&quot;Processing Pipeline&lt;br/&gt;(Motion/CTF/Particles)&quot;]
+        feedback[&quot;Execution Feedback&lt;br/&gt;(Future Enhancement)&quot;]
+    end
+
+    subgraph comm[&quot;Communication System&quot;]
+        consumer[&quot;Message Consumer&lt;br/&gt;(consumer.py)&quot;]
+        decision[&quot;Decision Logic Engine&quot;]
+        instructions[&quot;Instruction Generation&quot;]
+        service[&quot;SSE Communication Service&quot;]
+    end
+
+    subgraph agents[&quot;Agent Layer&quot;]
+        agent[&quot;Agent Execution&quot;]
+        athena[&quot;Athena API Integration&quot;]
+        results[&quot;Execution Results&quot;]
+    end
+
+    model --&gt; pipeline
+    pipeline --&gt; consumer
+    consumer --&gt; decision
+    decision --&gt; instructions
+    instructions --&gt; service
+    service --&gt; agent
+    agent --&gt; athena
+    athena --&gt; results
+    results -.-&gt;|Future| feedback
+    feedback -.-&gt;|Future| model
+
+    classDef implemented fill:#d4edda,stroke:#155724,stroke-width:2px
+    classDef future fill:#fff3cd,stroke:#856404,stroke-width:2px
+
+    class model,pipeline,consumer,decision,instructions,service,agent,athena,results implemented
+    class feedback future
+</pre></div>
+</div>
+<p><strong>Current ML Integration Features:</strong></p>
+<ul class="simple">
+<li><p><strong>Real-time Processing Results</strong>: Integration with motion correction, CTF estimation, and particle picking pipelines</p></li>
+<li><p><strong>ML Model Predictions</strong>: Gridsquare and foilhole quality prediction integration</p></li>
+<li><p><strong>Quality-driven Decisions</strong>: Automated decision-making based on configurable quality thresholds</p></li>
+<li><p><strong>Scientific Traceability</strong>: Full audit trail from ML predictions to microscope actions</p></li>
+</ul>
+<p><strong>Future Enhancement Areas:</strong></p>
+<ul class="simple">
+<li><p><strong>Execution Feedback Loop</strong>: Collection of execution results to improve ML model predictions</p></li>
+<li><p><strong>Adaptive Thresholds</strong>: Dynamic threshold adjustment based on session performance</p></li>
+<li><p><strong>Predictive Analytics</strong>: Advanced analytics for experiment outcome prediction</p></li>
+</ul>
+</section>
+</section>
+<section id="traceability-and-monitoring">
+<h2>Traceability and Monitoring<a class="headerlink" href="#traceability-and-monitoring" title="Link to this heading">#</a></h2>
+<section id="message-tracking-system">
+<h3>Message Tracking System<a class="headerlink" href="#message-tracking-system" title="Link to this heading">#</a></h3>
+<p>The system provides <strong>full message tracking</strong> with comprehensive identification:</p>
+<div class="highlight-mermaid notranslate"><div class="highlight"><pre><span></span>graph LR
+    subgraph tracking[&quot;Message Tracking&quot;]
+        id[&quot;Instruction ID (UUID)&quot;]
+        origin[&quot;Origin Timestamp&quot;]
+        causation[&quot;Causation Chain&quot;]
+        status[&quot;Delivery Status&quot;]
+    end
+    
+    subgraph audit[&quot;Audit Trail&quot;]
+        created[&quot;Creation Event&quot;]
+        queued[&quot;Queue Event&quot;]
+        delivered[&quot;Delivery Event&quot;]
+        acked[&quot;Acknowledgement Event&quot;]
+    end
+    
+    tracking --&gt; audit
+    
+    subgraph queries[&quot;Operational Queries&quot;]
+        pending[&quot;Pending Instructions&quot;]
+        failed[&quot;Failed Deliveries&quot;]
+        performance[&quot;Performance Metrics&quot;]
+    end
+    
+    audit --&gt; queries
+</pre></div>
+</div>
+</section>
+<section id="monitoring-architecture">
+<h3>Monitoring Architecture<a class="headerlink" href="#monitoring-architecture" title="Link to this heading">#</a></h3>
+<div class="highlight-mermaid notranslate"><div class="highlight"><pre><span></span>graph TB
+    subgraph metrics[&quot;Metrics Collection&quot;]
+        conn[&quot;Connection Metrics&quot;]
+        delivery[&quot;Delivery Metrics&quot;]
+        performance[&quot;Performance Metrics&quot;]
+        errors[&quot;Error Rates&quot;]
+    end
+    
+    subgraph monitoring[&quot;Monitoring Stack&quot;]
+        prometheus[&quot;Prometheus&quot;]
+        grafana[&quot;Grafana Dashboards&quot;]
+        alerts[&quot;Alert Manager&quot;]
+    end
+    
+    subgraph logs[&quot;Logging&quot;]
+        structured[&quot;Structured Logs&quot;]
+        correlation[&quot;Correlation IDs&quot;]
+        levels[&quot;Log Levels&quot;]
+    end
+    
+    metrics --&gt; monitoring
+    logs --&gt; monitoring
+</pre></div>
+</div>
+</section>
+</section>
+<section id="operational-considerations">
+<h2>Operational Considerations<a class="headerlink" href="#operational-considerations" title="Link to this heading">#</a></h2>
+<section id="sse-connection-health-monitoring">
+<h3>SSE Connection Health Monitoring<a class="headerlink" href="#sse-connection-health-monitoring" title="Link to this heading">#</a></h3>
+<p><strong>Health Check Mechanisms</strong>:</p>
+<ul class="simple">
+<li><p>Periodic heartbeat messages via SSE stream</p></li>
+<li><p>Connection timeout detection and cleanup</p></li>
+<li><p>Automatic reconnection attempts with exponential backoff</p></li>
+<li><p>Connection state synchronisation with database</p></li>
+</ul>
+<p><strong>Monitoring Metrics</strong>:</p>
+<ul class="simple">
+<li><p>Active connection count per agent</p></li>
+<li><p>Connection duration and stability</p></li>
+<li><p>Reconnection frequency and success rates</p></li>
+<li><p>Memory usage per connection</p></li>
+</ul>
+</section>
+<section id="debugging-message-delivery-issues">
+<h3>Debugging Message Delivery Issues<a class="headerlink" href="#debugging-message-delivery-issues" title="Link to this heading">#</a></h3>
+<p><strong>Debugging Capabilities</strong>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Conceptual debugging interface</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">DeliveryDebugger</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Tools for debugging message delivery issues&quot;&quot;&quot;</span>
+    
+    <span class="k">def</span><span class="w"> </span><span class="nf">trace_instruction_lifecycle</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">instruction_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DeliveryTrace</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Trace complete instruction delivery lifecycle&quot;&quot;&quot;</span>
+        
+    <span class="k">def</span><span class="w"> </span><span class="nf">diagnose_connection_issues</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">agent_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ConnectionDiagnosis</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Diagnose SSE connection problems&quot;&quot;&quot;</span>
+        
+    <span class="k">def</span><span class="w"> </span><span class="nf">analyse_delivery_patterns</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">agent_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">timeframe</span><span class="p">:</span> <span class="n">timedelta</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Analysis</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Analyse delivery success patterns for optimization&quot;&quot;&quot;</span>
+</pre></div>
+</div>
+<p><strong>Troubleshooting Features</strong>:</p>
+<ul class="simple">
+<li><p>Real-time delivery status dashboard</p></li>
+<li><p>Instruction replay capability for testing</p></li>
+<li><p>Connection diagnostics with detailed error reporting</p></li>
+<li><p>Performance profiling for bottleneck identification</p></li>
+</ul>
+</section>
+<section id="resource-management">
+<h3>Resource Management<a class="headerlink" href="#resource-management" title="Link to this heading">#</a></h3>
+<p><strong>Connection Resource Management</strong>:</p>
+<ul class="simple">
+<li><p>Concurrent connection capacity (20 connections for facility requirements)</p></li>
+<li><p>Connection memory usage monitoring and alerting</p></li>
+<li><p>Automatic connection cleanup on agent disconnect</p></li>
+<li><p>Resource pool management for database connections</p></li>
+</ul>
+<p><strong>Performance Optimization</strong>:</p>
+<ul class="simple">
+<li><p>Connection keep-alive optimization for long-lived SSE streams</p></li>
+<li><p>Message batching for high-frequency instruction bursts</p></li>
+<li><p>Database query optimization for instruction retrieval</p></li>
+<li><p>Memory-efficient JSON streaming for large instruction payloads</p></li>
+</ul>
+</section>
+</section>
+<section id="critical-analysis-and-risk-assessment">
+<h2>Critical Analysis and Risk Assessment<a class="headerlink" href="#critical-analysis-and-risk-assessment" title="Link to this heading">#</a></h2>
+<section id="potential-bottlenecks">
+<h3>Potential Bottlenecks<a class="headerlink" href="#potential-bottlenecks" title="Link to this heading">#</a></h3>
+<p><strong>Identified Bottlenecks</strong>:</p>
+<ol class="arabic simple">
+<li><p><strong>Database Write Performance</strong>: High-frequency instruction persistence and state updates may impact database performance under load</p></li>
+<li><p><strong>Database Connection Contention</strong>: Concurrent access from multiple service instances may strain database connection pools</p></li>
+<li><p><strong>Memory Usage Growth</strong>: Long-lived SSE connections accumulate memory usage over time</p></li>
+<li><p><strong>Single Point of Failure</strong>: Communication service represents single point of failure for all agents</p></li>
+</ol>
+<p><strong>Mitigation Strategies</strong>:</p>
+<ul class="simple">
+<li><p>Implement horizontal scaling with load balancing for connection distribution</p></li>
+<li><p>Use database connection pooling and async operations for performance</p></li>
+<li><p>Implement memory leak detection and connection lifecycle management</p></li>
+<li><p>Deploy redundant service instances with automatic failover capabilities</p></li>
+</ul>
+</section>
+<section id="integration-complexities">
+<h3>Integration Complexities<a class="headerlink" href="#integration-complexities" title="Link to this heading">#</a></h3>
+<p><strong>Architectural Challenges</strong>:</p>
+<ol class="arabic simple">
+<li><p><strong>RabbitMQ-SSE Bridge</strong>: Complex event bridging between message queues and SSE streams</p></li>
+<li><p><strong>State Synchronisation</strong>: Maintaining consistency between RabbitMQ, PostgreSQL, and SSE connection state</p></li>
+<li><p><strong>Error Propagation</strong>: Ensuring error conditions propagate correctly across system boundaries</p></li>
+<li><p><strong>Testing Complexity</strong>: Integration testing across multiple protocols and failure scenarios</p></li>
+</ol>
+<p><strong>Recommended Approaches</strong>:</p>
+<ul class="simple">
+<li><p>Implement comprehensive integration testing with realistic failure simulation</p></li>
+<li><p>Use event sourcing patterns for consistent state management</p></li>
+<li><p>Deploy canary deployments for safe production rollouts</p></li>
+<li><p>Establish clear error handling contracts between components</p></li>
+</ul>
+</section>
+<section id="monitoring-and-operational-gaps">
+<h3>Monitoring and Operational Gaps<a class="headerlink" href="#monitoring-and-operational-gaps" title="Link to this heading">#</a></h3>
+<p><strong>Identified Gaps</strong>:</p>
+<ol class="arabic simple">
+<li><p><strong>End-to-End Tracing</strong>: Limited visibility into complete instruction delivery lifecycle</p></li>
+<li><p><strong>Capacity Planning</strong>: Insufficient metrics for predicting scaling requirements</p></li>
+<li><p><strong>Agent Health Correlation</strong>: Limited correlation between agent health and delivery success</p></li>
+</ol>
+<p><strong>Required Improvements</strong>:</p>
+<ul class="simple">
+<li><p>Implement distributed tracing with correlation IDs across all components</p></li>
+<li><p>Develop capacity planning dashboards with predictive analytics</p></li>
+<li><p>Create agent health correlation dashboards for operational insights</p></li>
+</ul>
+<p>This system design provides a robust foundation for real-time backend-to-agent communication whilst maintaining the
+flexibility for future enhancements and scaling requirements in the SmartEM Decisions scientific computing platform.</p>
+</section>
+</section>
+</section>
+
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="../explanations.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">Explanations</p>
+      </div>
+    </a>
+    <a class="right-next"
+       href="decisions.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">Architectural Decision Records</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#architecture-overview">Architecture Overview</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#system-context">System Context</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#service-architecture">Service Architecture</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#technical-stack-integration">Technical Stack Integration</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#fastapi-integration">FastAPI Integration</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#rabbitmq-message-flow">RabbitMQ Message Flow</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#postgresql-schema-design">PostgreSQL Schema Design</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#component-interactions-and-data-flows">Component Interactions and Data Flows</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#primary-communication-flow-sse">Primary Communication Flow (SSE)</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#error-handling-and-recovery">Error Handling and Recovery</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#scalability-design">Scalability Design</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#connection-management">Connection Management</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#theoretical-scaling-limits">Theoretical Scaling Limits</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#performance-characteristics">Performance Characteristics</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#implementation-specifications">Implementation Specifications</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#sse-streaming-service-design">SSE Streaming Service Design</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#http-acknowledgement-endpoints">HTTP Acknowledgement Endpoints</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#sse-retry-implementation">SSE Retry Implementation</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#implementation-status-components">Implementation Status &amp; Components</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#completed-features">Completed Features</a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#database-schema-migration-alembic">1. Database Schema &amp; Migration (Alembic)</a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#fastapi-sse-endpoints">2. FastAPI SSE Endpoints</a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#rabbitmq-integration">3. RabbitMQ Integration</a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#enhanced-agent-client-sseagentclient">4. Enhanced Agent Client (<code class="docutils literal notranslate"><span class="pre">SSEAgentClient</span></code>)</a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#connection-management-service-agentconnectionmanager">5. Connection Management Service (<code class="docutils literal notranslate"><span class="pre">AgentConnectionManager</span></code>)</a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#production-ready-example-client">6. Production-Ready Example Client</a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#key-implementation-highlights">🚀 Key Implementation Highlights</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#message-lifecycle-management">Message Lifecycle Management</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#sequential-delivery-requirements">Sequential Delivery Requirements</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#database-persistence-strategy">Database Persistence Strategy</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#agent-restart-message-replay-todo">Agent Restart Message Replay (TODO)</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#external-message-types-and-transformation-pipeline">External Message Types and Transformation Pipeline</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#external-message-types">External Message Types</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#message-transformation-pipeline">Message Transformation Pipeline</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#athena-api-control-instructions">Athena API Control Instructions</a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#athena-control-reorder-foilholes">athena.control.reorder_foilholes</a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#athena-control-reorder-gridsquares">athena.control.reorder_gridsquares</a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#athena-control-skip-gridsquares">athena.control.skip_gridsquares</a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#complete-message-flow-diagram">Complete Message Flow Diagram</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#extensibility-design">Extensibility Design</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#json-message-vocabulary">JSON Message Vocabulary</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#implemented-ml-integration">Implemented ML Integration</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#traceability-and-monitoring">Traceability and Monitoring</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#message-tracking-system">Message Tracking System</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#monitoring-architecture">Monitoring Architecture</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#operational-considerations">Operational Considerations</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#sse-connection-health-monitoring">SSE Connection Health Monitoring</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#debugging-message-delivery-issues">Debugging Message Delivery Issues</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#resource-management">Resource Management</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#critical-analysis-and-risk-assessment">Critical Analysis and Risk Assessment</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#potential-bottlenecks">Potential Bottlenecks</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#integration-complexities">Integration Complexities</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#monitoring-and-operational-gaps">Monitoring and Operational Gaps</a></li>
+</ul>
+</li>
+</ul>
+  </nav></div>
+
+  <div class="sidebar-secondary-item">
+
+  
+  <div class="tocsection editthispage">
+    <a href="https://github.com/DiamondLightSource/smartem-decisions/edit/main/docs/explanations/backend-agent-communication-system-design.md">
+      <i class="fa-solid fa-pencil"></i>
+      
+      
+        
+          Edit on GitHub
+        
+      
+    </a>
+  </div>
+</div>
+
+  <div class="sidebar-secondary-item">
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/explanations/backend-agent-communication-system-design.md.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div></div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf"></script>
+<script defer src="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.16.1.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>

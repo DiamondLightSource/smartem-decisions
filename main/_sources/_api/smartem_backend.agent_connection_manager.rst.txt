@@ -1,0 +1,27 @@
+``smartem_backend.agent_connection_manager``
+============================================
+        
+        
+        
+        
+
+.. automodule:: smartem_backend.agent_connection_manager
+    :members:
+
+    
+    
+    
+
+    
+    
+    .. rubric:: Members
+
+    .. autosummary::
+        :nosignatures:
+    
+        AgentConnectionManager
+        get_connection_manager
+        start_connection_manager
+        stop_connection_manager
+    
+    

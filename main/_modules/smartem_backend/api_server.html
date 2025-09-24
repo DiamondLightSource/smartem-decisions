@@ -7,7 +7,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>smartem_backend.api_server &#8212; smartem-decisions 0.1.dev316+g7c6b40fab.d20250923 documentation</title>
+    <title>smartem_backend.api_server &#8212; smartem-decisions 0.1.dev331+g9707a53d7.d20250924 documentation</title>
   
   
   
@@ -40,7 +40,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../../_static/documentation_options.js?v=03473287"></script>
+    <script src="../../_static/documentation_options.js?v=144d9203"></script>
     <script src="../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -442,18 +442,27 @@
                 <article class="bd-article">
                   
   <h1>Source code for smartem_backend.api_server</h1><div class="highlight"><pre>
-<span></span><span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
+<span></span><span class="kn">import</span><span class="w"> </span><span class="nn">asyncio</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">datetime</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">uuid</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">contextlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">asynccontextmanager</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">datetime</span><span class="p">,</span> <span class="n">timedelta</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">Depends</span><span class="p">,</span> <span class="n">FastAPI</span><span class="p">,</span> <span class="n">HTTPException</span><span class="p">,</span> <span class="n">Request</span><span class="p">,</span> <span class="n">status</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">sqlalchemy</span><span class="w"> </span><span class="kn">import</span> <span class="n">text</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sqlalchemy</span><span class="w"> </span><span class="kn">import</span> <span class="n">and_</span><span class="p">,</span> <span class="n">desc</span><span class="p">,</span> <span class="n">or_</span><span class="p">,</span> <span class="n">text</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">sqlalchemy.orm</span><span class="w"> </span><span class="kn">import</span> <span class="n">Session</span> <span class="k">as</span> <span class="n">SqlAlchemySession</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">sqlalchemy.orm</span><span class="w"> </span><span class="kn">import</span> <span class="n">sessionmaker</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sse_starlette.sse</span><span class="w"> </span><span class="kn">import</span> <span class="n">EventSourceResponse</span>
 
+<span class="kn">from</span><span class="w"> </span><span class="nn">smartem_backend.agent_connection_manager</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_connection_manager</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">smartem_backend.model.database</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">Acquisition</span><span class="p">,</span>
+    <span class="n">AgentConnection</span><span class="p">,</span>
+    <span class="n">AgentInstruction</span><span class="p">,</span>
+    <span class="n">AgentInstructionAcknowledgement</span><span class="p">,</span>
+    <span class="n">AgentSession</span><span class="p">,</span>
     <span class="n">Atlas</span><span class="p">,</span>
     <span class="n">AtlasTile</span><span class="p">,</span>
     <span class="n">AtlasTileGridSquarePosition</span><span class="p">,</span>
@@ -486,8 +495,12 @@
     <span class="n">MicrographCreateRequest</span><span class="p">,</span>
     <span class="n">MicrographUpdateRequest</span><span class="p">,</span>
 <span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">smartem_backend.model.http_request</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">AgentInstructionAcknowledgement</span> <span class="k">as</span> <span class="n">AgentInstructionAcknowledgementRequest</span><span class="p">,</span>
+<span class="p">)</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">smartem_backend.model.http_response</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">AcquisitionResponse</span><span class="p">,</span>
+    <span class="n">AgentInstructionAcknowledgementResponse</span><span class="p">,</span>
     <span class="n">AtlasResponse</span><span class="p">,</span>
     <span class="n">AtlasTileGridSquarePositionResponse</span><span class="p">,</span>
     <span class="n">AtlasTileResponse</span><span class="p">,</span>
@@ -563,13 +576,43 @@
 <span class="c1"># Create a dependency object at module level to avoid B008 linting errors</span>
 <span class="n">DB_DEPENDENCY</span> <span class="o">=</span> <span class="n">Depends</span><span class="p">(</span><span class="n">get_db</span><span class="p">)</span>
 
+<span class="c1"># Get connection manager instance</span>
+<span class="n">connection_manager</span> <span class="o">=</span> <span class="n">get_connection_manager</span><span class="p">()</span>
+
+
+<div class="viewcode-block" id="lifespan">
+<a class="viewcode-back" href="../../_api/smartem_backend.api_server.html#smartem_backend.api_server.lifespan">[docs]</a>
+<span class="nd">@asynccontextmanager</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">lifespan</span><span class="p">(</span><span class="n">app</span><span class="p">:</span> <span class="n">FastAPI</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Manage application lifespan events.&quot;&quot;&quot;</span>
+    <span class="c1"># Startup</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Starting SmartEM Backend services...&quot;</span><span class="p">)</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">await</span> <span class="n">connection_manager</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Connection manager started successfully&quot;</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Failed to start connection manager: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+    <span class="k">yield</span>
+
+    <span class="c1"># Shutdown</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Stopping SmartEM Backend services...&quot;</span><span class="p">)</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">await</span> <span class="n">connection_manager</span><span class="o">.</span><span class="n">stop</span><span class="p">()</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Connection manager stopped successfully&quot;</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Failed to stop connection manager: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span></div>
+
+
 
 <span class="n">app</span> <span class="o">=</span> <span class="n">FastAPI</span><span class="p">(</span>
     <span class="n">title</span><span class="o">=</span><span class="s2">&quot;SmartEM Decisions Backend API&quot;</span><span class="p">,</span>
     <span class="n">description</span><span class="o">=</span><span class="s2">&quot;API for accessing and managing electron microscopy data&quot;</span><span class="p">,</span>
     <span class="n">version</span><span class="o">=</span><span class="n">__version__</span><span class="p">,</span>
     <span class="n">redoc_url</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">lifespan</span><span class="o">=</span><span class="n">lifespan</span><span class="p">,</span>
 <span class="p">)</span>
+
 
 <span class="c1"># Configure logging based on environment variable</span>
 <span class="c1"># SMARTEM_LOG_LEVEL can be: ERROR (default), INFO, DEBUG</span>
@@ -1730,6 +1773,630 @@
 
     <span class="k">return</span> <span class="n">MicrographResponse</span><span class="p">(</span><span class="o">**</span><span class="n">response_data</span><span class="p">)</span></div>
 
+
+
+<span class="c1"># ============ Agent Communication Endpoints ============</span>
+
+
+<div class="viewcode-block" id="stream_instructions">
+<a class="viewcode-back" href="../../_api/smartem_backend.api_server.html#smartem_backend.api_server.stream_instructions">[docs]</a>
+<span class="nd">@app</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;/agent/</span><span class="si">{agent_id}</span><span class="s2">/session/</span><span class="si">{session_id}</span><span class="s2">/instructions/stream&quot;</span><span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">stream_instructions</span><span class="p">(</span>
+    <span class="n">agent_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">session_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">db</span><span class="p">:</span> <span class="n">SqlAlchemySession</span> <span class="o">=</span> <span class="n">DB_DEPENDENCY</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">EventSourceResponse</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;SSE endpoint for streaming instructions to agents for a specific session&quot;&quot;&quot;</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">event_generator</span><span class="p">():</span>
+        <span class="n">connection_id</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">uuid</span><span class="o">.</span><span class="n">uuid4</span><span class="p">())</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="c1"># Validate session exists and belongs to agent</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">session</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">AgentSession</span><span class="p">)</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">AgentSession</span><span class="o">.</span><span class="n">session_id</span> <span class="o">==</span> <span class="n">session_id</span><span class="p">)</span><span class="o">.</span><span class="n">first</span><span class="p">()</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">session</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Session </span><span class="si">{</span><span class="n">session_id</span><span class="si">}</span><span class="s2"> not found&quot;</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">session</span><span class="o">.</span><span class="n">agent_id</span> <span class="o">!=</span> <span class="n">agent_id</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Session </span><span class="si">{</span><span class="n">session_id</span><span class="si">}</span><span class="s2"> does not belong to agent </span><span class="si">{</span><span class="n">agent_id</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">session</span><span class="o">.</span><span class="n">status</span> <span class="o">!=</span> <span class="s2">&quot;active&quot;</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Session </span><span class="si">{</span><span class="n">session_id</span><span class="si">}</span><span class="s2"> is not active (status: </span><span class="si">{</span><span class="n">session</span><span class="o">.</span><span class="n">status</span><span class="si">}</span><span class="s2">)&quot;</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">ValueError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Session validation failed for agent </span><span class="si">{</span><span class="n">agent_id</span><span class="si">}</span><span class="s2">, session </span><span class="si">{</span><span class="n">session_id</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="k">yield</span> <span class="p">{</span>
+                    <span class="s2">&quot;event&quot;</span><span class="p">:</span> <span class="s2">&quot;error&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;data&quot;</span><span class="p">:</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">({</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;error&quot;</span><span class="p">,</span> <span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="s2">&quot;session_validation_failed&quot;</span><span class="p">,</span> <span class="s2">&quot;message&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)}),</span>
+                <span class="p">}</span>
+                <span class="k">return</span>
+
+            <span class="c1"># Create database connection record</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">connection</span> <span class="o">=</span> <span class="n">AgentConnection</span><span class="p">(</span>
+                    <span class="n">connection_id</span><span class="o">=</span><span class="n">connection_id</span><span class="p">,</span>
+                    <span class="n">session_id</span><span class="o">=</span><span class="n">session_id</span><span class="p">,</span>
+                    <span class="n">agent_id</span><span class="o">=</span><span class="n">agent_id</span><span class="p">,</span>
+                    <span class="n">connection_type</span><span class="o">=</span><span class="s2">&quot;sse&quot;</span><span class="p">,</span>
+                    <span class="n">client_info</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;connected_at&quot;</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span><span class="o">.</span><span class="n">isoformat</span><span class="p">()},</span>
+                    <span class="n">status</span><span class="o">=</span><span class="s2">&quot;active&quot;</span><span class="p">,</span>
+                    <span class="n">created_at</span><span class="o">=</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">(),</span>
+                    <span class="n">last_heartbeat_at</span><span class="o">=</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">(),</span>
+                <span class="p">)</span>
+                <span class="n">db</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">connection</span><span class="p">)</span>
+                <span class="n">db</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span>
+                <span class="n">db</span><span class="o">.</span><span class="n">refresh</span><span class="p">(</span><span class="n">connection</span><span class="p">)</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Created connection </span><span class="si">{</span><span class="n">connection_id</span><span class="si">}</span><span class="s2"> for agent </span><span class="si">{</span><span class="n">agent_id</span><span class="si">}</span><span class="s2"> in session </span><span class="si">{</span><span class="n">session_id</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Failed to create connection record: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="k">yield</span> <span class="p">{</span>
+                    <span class="s2">&quot;event&quot;</span><span class="p">:</span> <span class="s2">&quot;error&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;data&quot;</span><span class="p">:</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span>
+                        <span class="p">{</span>
+                            <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;error&quot;</span><span class="p">,</span>
+                            <span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="s2">&quot;connection_creation_failed&quot;</span><span class="p">,</span>
+                            <span class="s2">&quot;message&quot;</span><span class="p">:</span> <span class="s2">&quot;Failed to register connection&quot;</span><span class="p">,</span>
+                        <span class="p">}</span>
+                    <span class="p">),</span>
+                <span class="p">}</span>
+                <span class="k">return</span>
+
+            <span class="c1"># Send initial connection acknowledgment</span>
+            <span class="k">yield</span> <span class="p">{</span>
+                <span class="s2">&quot;event&quot;</span><span class="p">:</span> <span class="s2">&quot;connection&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;data&quot;</span><span class="p">:</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span>
+                    <span class="p">{</span>
+                        <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;connection&quot;</span><span class="p">,</span>
+                        <span class="s2">&quot;agent_id&quot;</span><span class="p">:</span> <span class="n">agent_id</span><span class="p">,</span>
+                        <span class="s2">&quot;session_id&quot;</span><span class="p">:</span> <span class="n">session_id</span><span class="p">,</span>
+                        <span class="s2">&quot;connection_id&quot;</span><span class="p">:</span> <span class="n">connection_id</span><span class="p">,</span>
+                        <span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="s2">&quot;connected&quot;</span><span class="p">,</span>
+                    <span class="p">}</span>
+                <span class="p">),</span>
+            <span class="p">}</span>
+
+            <span class="n">heartbeat_counter</span> <span class="o">=</span> <span class="mi">0</span>
+
+            <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+                <span class="c1"># Send heartbeat every 30 seconds</span>
+                <span class="k">if</span> <span class="n">heartbeat_counter</span> <span class="o">%</span> <span class="mi">6</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>  <span class="c1"># Every 6th iteration (30 seconds)</span>
+                    <span class="c1"># Update connection heartbeat</span>
+                    <span class="n">connection_obj</span> <span class="o">=</span> <span class="p">(</span>
+                        <span class="n">db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">AgentConnection</span><span class="p">)</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">AgentConnection</span><span class="o">.</span><span class="n">connection_id</span> <span class="o">==</span> <span class="n">connection_id</span><span class="p">)</span><span class="o">.</span><span class="n">first</span><span class="p">()</span>
+                    <span class="p">)</span>
+                    <span class="k">if</span> <span class="n">connection_obj</span> <span class="ow">and</span> <span class="n">connection_obj</span><span class="o">.</span><span class="n">status</span> <span class="o">==</span> <span class="s2">&quot;active&quot;</span><span class="p">:</span>
+                        <span class="n">connection_obj</span><span class="o">.</span><span class="n">last_heartbeat_at</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span>
+                        <span class="n">db</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span>
+                    <span class="k">yield</span> <span class="p">{</span>
+                        <span class="s2">&quot;event&quot;</span><span class="p">:</span> <span class="s2">&quot;heartbeat&quot;</span><span class="p">,</span>
+                        <span class="s2">&quot;data&quot;</span><span class="p">:</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span>
+                            <span class="p">{</span>
+                                <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;heartbeat&quot;</span><span class="p">,</span>
+                                <span class="s2">&quot;timestamp&quot;</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span><span class="o">.</span><span class="n">isoformat</span><span class="p">(),</span>
+                                <span class="s2">&quot;connection_id&quot;</span><span class="p">:</span> <span class="n">connection_id</span><span class="p">,</span>
+                            <span class="p">}</span>
+                        <span class="p">),</span>
+                    <span class="p">}</span>
+
+                <span class="c1"># Check for pending instructions</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">pending_instructions</span> <span class="o">=</span> <span class="p">(</span>
+                        <span class="n">db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">AgentInstruction</span><span class="p">)</span>
+                        <span class="o">.</span><span class="n">filter</span><span class="p">(</span>
+                            <span class="n">and_</span><span class="p">(</span>
+                                <span class="n">AgentInstruction</span><span class="o">.</span><span class="n">session_id</span> <span class="o">==</span> <span class="n">session_id</span><span class="p">,</span>
+                                <span class="n">AgentInstruction</span><span class="o">.</span><span class="n">status</span> <span class="o">==</span> <span class="s2">&quot;pending&quot;</span><span class="p">,</span>
+                                <span class="n">or_</span><span class="p">(</span>
+                                    <span class="n">AgentInstruction</span><span class="o">.</span><span class="n">expires_at</span><span class="o">.</span><span class="n">is_</span><span class="p">(</span><span class="kc">None</span><span class="p">),</span> <span class="n">AgentInstruction</span><span class="o">.</span><span class="n">expires_at</span> <span class="o">&gt;</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span>
+                                <span class="p">),</span>
+                            <span class="p">)</span>
+                        <span class="p">)</span>
+                        <span class="o">.</span><span class="n">order_by</span><span class="p">(</span>
+                            <span class="n">AgentInstruction</span><span class="o">.</span><span class="n">priority</span><span class="o">.</span><span class="n">desc</span><span class="p">(),</span>  <span class="c1"># High priority first</span>
+                            <span class="n">AgentInstruction</span><span class="o">.</span><span class="n">sequence_number</span><span class="o">.</span><span class="n">asc</span><span class="p">(),</span>  <span class="c1"># Lower sequence numbers first</span>
+                            <span class="n">AgentInstruction</span><span class="o">.</span><span class="n">created_at</span><span class="o">.</span><span class="n">asc</span><span class="p">(),</span>  <span class="c1"># Older instructions first</span>
+                        <span class="p">)</span>
+                        <span class="o">.</span><span class="n">all</span><span class="p">()</span>
+                    <span class="p">)</span>
+
+                    <span class="k">for</span> <span class="n">instruction</span> <span class="ow">in</span> <span class="n">pending_instructions</span><span class="p">:</span>
+                        <span class="c1"># Mark as sent</span>
+                        <span class="k">if</span> <span class="n">instruction</span><span class="o">.</span><span class="n">status</span> <span class="o">==</span> <span class="s2">&quot;pending&quot;</span><span class="p">:</span>
+                            <span class="n">instruction</span><span class="o">.</span><span class="n">status</span> <span class="o">=</span> <span class="s2">&quot;sent&quot;</span>
+                            <span class="n">instruction</span><span class="o">.</span><span class="n">sent_at</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span>
+                            <span class="n">db</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span>
+                            <span class="n">db</span><span class="o">.</span><span class="n">refresh</span><span class="p">(</span><span class="n">instruction</span><span class="p">)</span>
+
+                        <span class="c1"># Send instruction to agent</span>
+                        <span class="n">instruction_data</span> <span class="o">=</span> <span class="p">{</span>
+                            <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;instruction&quot;</span><span class="p">,</span>
+                            <span class="s2">&quot;instruction_id&quot;</span><span class="p">:</span> <span class="n">instruction</span><span class="o">.</span><span class="n">instruction_id</span><span class="p">,</span>
+                            <span class="s2">&quot;agent_id&quot;</span><span class="p">:</span> <span class="n">agent_id</span><span class="p">,</span>
+                            <span class="s2">&quot;session_id&quot;</span><span class="p">:</span> <span class="n">session_id</span><span class="p">,</span>
+                            <span class="s2">&quot;instruction_type&quot;</span><span class="p">:</span> <span class="n">instruction</span><span class="o">.</span><span class="n">instruction_type</span><span class="p">,</span>
+                            <span class="s2">&quot;payload&quot;</span><span class="p">:</span> <span class="n">instruction</span><span class="o">.</span><span class="n">payload</span><span class="p">,</span>
+                            <span class="s2">&quot;sequence_number&quot;</span><span class="p">:</span> <span class="n">instruction</span><span class="o">.</span><span class="n">sequence_number</span><span class="p">,</span>
+                            <span class="s2">&quot;priority&quot;</span><span class="p">:</span> <span class="n">instruction</span><span class="o">.</span><span class="n">priority</span><span class="p">,</span>
+                            <span class="s2">&quot;created_at&quot;</span><span class="p">:</span> <span class="n">instruction</span><span class="o">.</span><span class="n">created_at</span><span class="o">.</span><span class="n">isoformat</span><span class="p">(),</span>
+                            <span class="s2">&quot;expires_at&quot;</span><span class="p">:</span> <span class="n">instruction</span><span class="o">.</span><span class="n">expires_at</span><span class="o">.</span><span class="n">isoformat</span><span class="p">()</span> <span class="k">if</span> <span class="n">instruction</span><span class="o">.</span><span class="n">expires_at</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+                            <span class="s2">&quot;metadata&quot;</span><span class="p">:</span> <span class="n">instruction</span><span class="o">.</span><span class="n">instruction_metadata</span><span class="p">,</span>
+                        <span class="p">}</span>
+
+                        <span class="k">yield</span> <span class="p">{</span><span class="s2">&quot;event&quot;</span><span class="p">:</span> <span class="s2">&quot;instruction&quot;</span><span class="p">,</span> <span class="s2">&quot;data&quot;</span><span class="p">:</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">instruction_data</span><span class="p">)}</span>
+
+                        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Sent instruction </span><span class="si">{</span><span class="n">instruction</span><span class="o">.</span><span class="n">instruction_id</span><span class="si">}</span><span class="s2"> to agent </span><span class="si">{</span><span class="n">agent_id</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+                <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error processing instructions for session </span><span class="si">{</span><span class="n">session_id</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+                <span class="c1"># Update session activity</span>
+                <span class="n">session</span><span class="o">.</span><span class="n">last_activity_at</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span>
+                <span class="n">db</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span>
+
+                <span class="c1"># Wait 5 seconds before next poll</span>
+                <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span>
+                <span class="n">heartbeat_counter</span> <span class="o">+=</span> <span class="mi">1</span>
+
+        <span class="k">except</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">CancelledError</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;SSE connection closed for agent </span><span class="si">{</span><span class="n">agent_id</span><span class="si">}</span><span class="s2">, session </span><span class="si">{</span><span class="n">session_id</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="c1"># Connection closed by client</span>
+            <span class="n">connection_obj</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">AgentConnection</span><span class="p">)</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">AgentConnection</span><span class="o">.</span><span class="n">connection_id</span> <span class="o">==</span> <span class="n">connection_id</span><span class="p">)</span><span class="o">.</span><span class="n">first</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">connection_obj</span><span class="p">:</span>
+                <span class="n">connection_obj</span><span class="o">.</span><span class="n">status</span> <span class="o">=</span> <span class="s2">&quot;closed&quot;</span>
+                <span class="n">connection_obj</span><span class="o">.</span><span class="n">closed_at</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span>
+                <span class="n">connection_obj</span><span class="o">.</span><span class="n">close_reason</span> <span class="o">=</span> <span class="s2">&quot;client_disconnect&quot;</span>
+                <span class="n">db</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Closed connection </span><span class="si">{</span><span class="n">connection_id</span><span class="si">}</span><span class="s2"> with reason: client_disconnect&quot;</span><span class="p">)</span>
+            <span class="k">raise</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;SSE stream error for agent </span><span class="si">{</span><span class="n">agent_id</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="c1"># Unexpected error</span>
+            <span class="n">connection_obj</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">AgentConnection</span><span class="p">)</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">AgentConnection</span><span class="o">.</span><span class="n">connection_id</span> <span class="o">==</span> <span class="n">connection_id</span><span class="p">)</span><span class="o">.</span><span class="n">first</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">connection_obj</span><span class="p">:</span>
+                <span class="n">connection_obj</span><span class="o">.</span><span class="n">status</span> <span class="o">=</span> <span class="s2">&quot;closed&quot;</span>
+                <span class="n">connection_obj</span><span class="o">.</span><span class="n">closed_at</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span>
+                <span class="n">connection_obj</span><span class="o">.</span><span class="n">close_reason</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;error: </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="n">db</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Closed connection </span><span class="si">{</span><span class="n">connection_id</span><span class="si">}</span><span class="s2"> with reason: error: </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">raise</span>
+
+    <span class="k">return</span> <span class="n">EventSourceResponse</span><span class="p">(</span><span class="n">event_generator</span><span class="p">())</span></div>
+
+
+
+<div class="viewcode-block" id="acknowledge_instruction">
+<a class="viewcode-back" href="../../_api/smartem_backend.api_server.html#smartem_backend.api_server.acknowledge_instruction">[docs]</a>
+<span class="nd">@app</span><span class="o">.</span><span class="n">post</span><span class="p">(</span>
+    <span class="s2">&quot;/agent/</span><span class="si">{agent_id}</span><span class="s2">/session/</span><span class="si">{session_id}</span><span class="s2">/instructions/</span><span class="si">{instruction_id}</span><span class="s2">/ack&quot;</span><span class="p">,</span>
+    <span class="n">response_model</span><span class="o">=</span><span class="n">AgentInstructionAcknowledgementResponse</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">acknowledge_instruction</span><span class="p">(</span>
+    <span class="n">agent_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">session_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">instruction_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">acknowledgement</span><span class="p">:</span> <span class="n">AgentInstructionAcknowledgementRequest</span><span class="p">,</span>
+    <span class="n">db</span><span class="p">:</span> <span class="n">SqlAlchemySession</span> <span class="o">=</span> <span class="n">DB_DEPENDENCY</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AgentInstructionAcknowledgementResponse</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;HTTP endpoint for instruction acknowledgements with database persistence&quot;&quot;&quot;</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="c1"># Validate session exists and belongs to agent</span>
+        <span class="n">session</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">AgentSession</span><span class="p">)</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">AgentSession</span><span class="o">.</span><span class="n">session_id</span> <span class="o">==</span> <span class="n">session_id</span><span class="p">)</span><span class="o">.</span><span class="n">first</span><span class="p">()</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">session</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="n">status_code</span><span class="o">=</span><span class="mi">404</span><span class="p">,</span> <span class="n">detail</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;Session </span><span class="si">{</span><span class="n">session_id</span><span class="si">}</span><span class="s2"> not found&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">session</span><span class="o">.</span><span class="n">agent_id</span> <span class="o">!=</span> <span class="n">agent_id</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="n">status_code</span><span class="o">=</span><span class="mi">403</span><span class="p">,</span> <span class="n">detail</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;Session </span><span class="si">{</span><span class="n">session_id</span><span class="si">}</span><span class="s2"> does not belong to agent </span><span class="si">{</span><span class="n">agent_id</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">session</span><span class="o">.</span><span class="n">status</span> <span class="o">!=</span> <span class="s2">&quot;active&quot;</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="n">status_code</span><span class="o">=</span><span class="mi">400</span><span class="p">,</span> <span class="n">detail</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;Session </span><span class="si">{</span><span class="n">session_id</span><span class="si">}</span><span class="s2"> is not active&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Validate agent has an active connection</span>
+        <span class="n">active_connections</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">AgentConnection</span><span class="p">)</span>
+            <span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">and_</span><span class="p">(</span><span class="n">AgentConnection</span><span class="o">.</span><span class="n">agent_id</span> <span class="o">==</span> <span class="n">agent_id</span><span class="p">,</span> <span class="n">AgentConnection</span><span class="o">.</span><span class="n">status</span> <span class="o">==</span> <span class="s2">&quot;active&quot;</span><span class="p">))</span>
+            <span class="o">.</span><span class="n">order_by</span><span class="p">(</span><span class="n">desc</span><span class="p">(</span><span class="n">AgentConnection</span><span class="o">.</span><span class="n">last_heartbeat_at</span><span class="p">))</span>
+            <span class="o">.</span><span class="n">all</span><span class="p">()</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">active_connections</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="n">status_code</span><span class="o">=</span><span class="mi">404</span><span class="p">,</span> <span class="n">detail</span><span class="o">=</span><span class="s2">&quot;Agent not connected&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Find matching connection for this session</span>
+        <span class="n">session_connection</span> <span class="o">=</span> <span class="nb">next</span><span class="p">((</span><span class="n">conn</span> <span class="k">for</span> <span class="n">conn</span> <span class="ow">in</span> <span class="n">active_connections</span> <span class="k">if</span> <span class="n">conn</span><span class="o">.</span><span class="n">session_id</span> <span class="o">==</span> <span class="n">session_id</span><span class="p">),</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">session_connection</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="n">status_code</span><span class="o">=</span><span class="mi">400</span><span class="p">,</span> <span class="n">detail</span><span class="o">=</span><span class="s2">&quot;No active connection for this session&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Get and validate instruction</span>
+        <span class="n">instruction</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">AgentInstruction</span><span class="p">)</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">AgentInstruction</span><span class="o">.</span><span class="n">instruction_id</span> <span class="o">==</span> <span class="n">instruction_id</span><span class="p">)</span><span class="o">.</span><span class="n">first</span><span class="p">()</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">instruction</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="n">status_code</span><span class="o">=</span><span class="mi">404</span><span class="p">,</span> <span class="n">detail</span><span class="o">=</span><span class="s2">&quot;Instruction not found&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">instruction</span><span class="o">.</span><span class="n">session_id</span> <span class="o">!=</span> <span class="n">session_id</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="n">status_code</span><span class="o">=</span><span class="mi">400</span><span class="p">,</span> <span class="n">detail</span><span class="o">=</span><span class="s2">&quot;Instruction does not belong to this session&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">instruction</span><span class="o">.</span><span class="n">agent_id</span> <span class="o">!=</span> <span class="n">agent_id</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="n">status_code</span><span class="o">=</span><span class="mi">400</span><span class="p">,</span> <span class="n">detail</span><span class="o">=</span><span class="s2">&quot;Instruction does not belong to this agent&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Mark instruction as acknowledged in the database</span>
+        <span class="k">if</span> <span class="n">instruction</span><span class="o">.</span><span class="n">status</span> <span class="o">==</span> <span class="s2">&quot;sent&quot;</span><span class="p">:</span>
+            <span class="n">instruction</span><span class="o">.</span><span class="n">status</span> <span class="o">=</span> <span class="s2">&quot;acknowledged&quot;</span>
+            <span class="n">instruction</span><span class="o">.</span><span class="n">acknowledged_at</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span>
+            <span class="n">db</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span>
+            <span class="n">db</span><span class="o">.</span><span class="n">refresh</span><span class="p">(</span><span class="n">instruction</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="n">status_code</span><span class="o">=</span><span class="mi">400</span><span class="p">,</span> <span class="n">detail</span><span class="o">=</span><span class="s2">&quot;Instruction cannot be acknowledged (invalid status)&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Create acknowledgement record for audit trail</span>
+        <span class="n">ack_record</span> <span class="o">=</span> <span class="n">AgentInstructionAcknowledgement</span><span class="p">(</span>
+            <span class="n">instruction_id</span><span class="o">=</span><span class="n">instruction_id</span><span class="p">,</span>
+            <span class="n">agent_id</span><span class="o">=</span><span class="n">agent_id</span><span class="p">,</span>
+            <span class="n">session_id</span><span class="o">=</span><span class="n">session_id</span><span class="p">,</span>
+            <span class="n">status</span><span class="o">=</span><span class="n">acknowledgement</span><span class="o">.</span><span class="n">status</span><span class="p">,</span>
+            <span class="n">result</span><span class="o">=</span><span class="n">acknowledgement</span><span class="o">.</span><span class="n">result</span><span class="p">,</span>
+            <span class="n">error_message</span><span class="o">=</span><span class="n">acknowledgement</span><span class="o">.</span><span class="n">error_message</span><span class="p">,</span>
+            <span class="n">acknowledgement_metadata</span><span class="o">=</span><span class="nb">getattr</span><span class="p">(</span><span class="n">acknowledgement</span><span class="p">,</span> <span class="s2">&quot;metadata&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">or</span> <span class="p">{},</span>
+            <span class="n">created_at</span><span class="o">=</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">(),</span>
+            <span class="n">processed_at</span><span class="o">=</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span> <span class="k">if</span> <span class="n">acknowledgement</span><span class="o">.</span><span class="n">status</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;processed&quot;</span><span class="p">,</span> <span class="s2">&quot;failed&quot;</span><span class="p">]</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">db</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">ack_record</span><span class="p">)</span>
+        <span class="n">db</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span>
+        <span class="n">db</span><span class="o">.</span><span class="n">refresh</span><span class="p">(</span><span class="n">ack_record</span><span class="p">)</span>
+
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Created acknowledgement for instruction </span><span class="si">{</span><span class="n">instruction_id</span><span class="si">}</span><span class="s2"> with status </span><span class="si">{</span><span class="n">acknowledgement</span><span class="o">.</span><span class="n">status</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Update session activity</span>
+        <span class="n">session</span><span class="o">.</span><span class="n">last_activity_at</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span>
+        <span class="n">db</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span>
+
+        <span class="c1"># Update connection heartbeat</span>
+        <span class="n">session_connection</span><span class="o">.</span><span class="n">last_heartbeat_at</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span>
+        <span class="n">db</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span>
+
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;Instruction </span><span class="si">{</span><span class="n">instruction_id</span><span class="si">}</span><span class="s2"> acknowledged by agent </span><span class="si">{</span><span class="n">agent_id</span><span class="si">}</span><span class="s2"> with status: </span><span class="si">{</span><span class="n">acknowledgement</span><span class="o">.</span><span class="n">status</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">AgentInstructionAcknowledgementResponse</span><span class="p">(</span>
+            <span class="n">status</span><span class="o">=</span><span class="s2">&quot;success&quot;</span><span class="p">,</span>
+            <span class="n">instruction_id</span><span class="o">=</span><span class="n">instruction_id</span><span class="p">,</span>
+            <span class="n">acknowledged_at</span><span class="o">=</span><span class="n">ack_record</span><span class="o">.</span><span class="n">created_at</span><span class="o">.</span><span class="n">isoformat</span><span class="p">(),</span>
+            <span class="n">agent_id</span><span class="o">=</span><span class="n">agent_id</span><span class="p">,</span>
+            <span class="n">session_id</span><span class="o">=</span><span class="n">session_id</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="k">except</span> <span class="ne">ValueError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Acknowledgement validation error: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="n">status_code</span><span class="o">=</span><span class="mi">400</span><span class="p">,</span> <span class="n">detail</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">))</span> <span class="kn">from</span><span class="w"> </span><span class="kc">None</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Acknowledgement processing error: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="n">status_code</span><span class="o">=</span><span class="mi">500</span><span class="p">,</span> <span class="n">detail</span><span class="o">=</span><span class="s2">&quot;Internal server error&quot;</span><span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="kc">None</span></div>
+
+
+
+<div class="viewcode-block" id="agent_heartbeat">
+<a class="viewcode-back" href="../../_api/smartem_backend.api_server.html#smartem_backend.api_server.agent_heartbeat">[docs]</a>
+<span class="nd">@app</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">&quot;/agent/</span><span class="si">{agent_id}</span><span class="s2">/session/</span><span class="si">{session_id}</span><span class="s2">/heartbeat&quot;</span><span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">agent_heartbeat</span><span class="p">(</span><span class="n">agent_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">session_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">db</span><span class="p">:</span> <span class="n">SqlAlchemySession</span> <span class="o">=</span> <span class="n">DB_DEPENDENCY</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Agent heartbeat endpoint to update connection health status.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        agent_id: The agent identifier</span>
+<span class="sd">        session_id: The session identifier</span>
+<span class="sd">        db: Database session</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Heartbeat response with status and timestamp</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="c1"># Find active connection for this agent and session</span>
+        <span class="n">connection</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">AgentConnection</span><span class="p">)</span>
+            <span class="o">.</span><span class="n">filter</span><span class="p">(</span>
+                <span class="n">and_</span><span class="p">(</span>
+                    <span class="n">AgentConnection</span><span class="o">.</span><span class="n">agent_id</span> <span class="o">==</span> <span class="n">agent_id</span><span class="p">,</span>
+                    <span class="n">AgentConnection</span><span class="o">.</span><span class="n">session_id</span> <span class="o">==</span> <span class="n">session_id</span><span class="p">,</span>
+                    <span class="n">AgentConnection</span><span class="o">.</span><span class="n">status</span> <span class="o">==</span> <span class="s2">&quot;active&quot;</span><span class="p">,</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
+            <span class="o">.</span><span class="n">first</span><span class="p">()</span>
+        <span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">connection</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="n">status_code</span><span class="o">=</span><span class="mi">404</span><span class="p">,</span> <span class="n">detail</span><span class="o">=</span><span class="s2">&quot;No active connection found for agent and session&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Update heartbeat timestamp</span>
+        <span class="n">now</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span>
+        <span class="n">connection</span><span class="o">.</span><span class="n">last_heartbeat_at</span> <span class="o">=</span> <span class="n">now</span>
+        <span class="n">db</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span>
+
+        <span class="c1"># Also update session activity</span>
+        <span class="n">session</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">AgentSession</span><span class="p">)</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">AgentSession</span><span class="o">.</span><span class="n">session_id</span> <span class="o">==</span> <span class="n">session_id</span><span class="p">)</span><span class="o">.</span><span class="n">first</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">session</span><span class="p">:</span>
+            <span class="n">session</span><span class="o">.</span><span class="n">last_activity_at</span> <span class="o">=</span> <span class="n">now</span>
+            <span class="n">db</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span>
+
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Heartbeat received from agent </span><span class="si">{</span><span class="n">agent_id</span><span class="si">}</span><span class="s2"> session </span><span class="si">{</span><span class="n">session_id</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="s2">&quot;success&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;agent_id&quot;</span><span class="p">:</span> <span class="n">agent_id</span><span class="p">,</span>
+            <span class="s2">&quot;session_id&quot;</span><span class="p">:</span> <span class="n">session_id</span><span class="p">,</span>
+            <span class="s2">&quot;heartbeat_timestamp&quot;</span><span class="p">:</span> <span class="n">now</span><span class="o">.</span><span class="n">isoformat</span><span class="p">(),</span>
+            <span class="s2">&quot;connection_id&quot;</span><span class="p">:</span> <span class="n">connection</span><span class="o">.</span><span class="n">connection_id</span><span class="p">,</span>
+        <span class="p">}</span>
+
+    <span class="k">except</span> <span class="n">HTTPException</span><span class="p">:</span>
+        <span class="k">raise</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Heartbeat processing error for agent </span><span class="si">{</span><span class="n">agent_id</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="n">status_code</span><span class="o">=</span><span class="mi">500</span><span class="p">,</span> <span class="n">detail</span><span class="o">=</span><span class="s2">&quot;Internal server error&quot;</span><span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="kc">None</span></div>
+
+
+
+<span class="c1"># Debug endpoints for development</span>
+<div class="viewcode-block" id="get_active_connections">
+<a class="viewcode-back" href="../../_api/smartem_backend.api_server.html#smartem_backend.api_server.get_active_connections">[docs]</a>
+<span class="nd">@app</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;/debug/agent-connections&quot;</span><span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_active_connections</span><span class="p">(</span><span class="n">db</span><span class="p">:</span> <span class="n">SqlAlchemySession</span> <span class="o">=</span> <span class="n">DB_DEPENDENCY</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Debug endpoint to view active agent connections&quot;&quot;&quot;</span>
+    <span class="c1"># Get all active connections</span>
+    <span class="n">all_connections</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">AgentConnection</span><span class="p">)</span>
+        <span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">AgentConnection</span><span class="o">.</span><span class="n">status</span> <span class="o">==</span> <span class="s2">&quot;active&quot;</span><span class="p">)</span>
+        <span class="o">.</span><span class="n">order_by</span><span class="p">(</span><span class="n">AgentConnection</span><span class="o">.</span><span class="n">last_heartbeat_at</span><span class="o">.</span><span class="n">desc</span><span class="p">())</span>
+        <span class="o">.</span><span class="n">all</span><span class="p">()</span>
+    <span class="p">)</span>
+
+    <span class="n">connections_data</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">conn</span> <span class="ow">in</span> <span class="n">all_connections</span><span class="p">:</span>
+        <span class="n">connections_data</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;connection_id&quot;</span><span class="p">:</span> <span class="n">conn</span><span class="o">.</span><span class="n">connection_id</span><span class="p">,</span>
+                <span class="s2">&quot;agent_id&quot;</span><span class="p">:</span> <span class="n">conn</span><span class="o">.</span><span class="n">agent_id</span><span class="p">,</span>
+                <span class="s2">&quot;session_id&quot;</span><span class="p">:</span> <span class="n">conn</span><span class="o">.</span><span class="n">session_id</span><span class="p">,</span>
+                <span class="s2">&quot;connection_type&quot;</span><span class="p">:</span> <span class="n">conn</span><span class="o">.</span><span class="n">connection_type</span><span class="p">,</span>
+                <span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="n">conn</span><span class="o">.</span><span class="n">status</span><span class="p">,</span>
+                <span class="s2">&quot;created_at&quot;</span><span class="p">:</span> <span class="n">conn</span><span class="o">.</span><span class="n">created_at</span><span class="o">.</span><span class="n">isoformat</span><span class="p">(),</span>
+                <span class="s2">&quot;last_heartbeat_at&quot;</span><span class="p">:</span> <span class="n">conn</span><span class="o">.</span><span class="n">last_heartbeat_at</span><span class="o">.</span><span class="n">isoformat</span><span class="p">(),</span>
+                <span class="s2">&quot;client_info&quot;</span><span class="p">:</span> <span class="n">conn</span><span class="o">.</span><span class="n">client_info</span><span class="p">,</span>
+            <span class="p">}</span>
+        <span class="p">)</span>
+
+    <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;active_connections&quot;</span><span class="p">:</span> <span class="n">connections_data</span><span class="p">,</span> <span class="s2">&quot;total_count&quot;</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">connections_data</span><span class="p">)}</span></div>
+
+
+
+<div class="viewcode-block" id="get_session_instructions">
+<a class="viewcode-back" href="../../_api/smartem_backend.api_server.html#smartem_backend.api_server.get_session_instructions">[docs]</a>
+<span class="nd">@app</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;/debug/session/</span><span class="si">{session_id}</span><span class="s2">/instructions&quot;</span><span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_session_instructions</span><span class="p">(</span><span class="n">session_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">db</span><span class="p">:</span> <span class="n">SqlAlchemySession</span> <span class="o">=</span> <span class="n">DB_DEPENDENCY</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Debug endpoint to view instructions for a session&quot;&quot;&quot;</span>
+    <span class="c1"># Get all instructions for the session</span>
+    <span class="n">instructions</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">AgentInstruction</span><span class="p">)</span>
+        <span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">AgentInstruction</span><span class="o">.</span><span class="n">session_id</span> <span class="o">==</span> <span class="n">session_id</span><span class="p">)</span>
+        <span class="o">.</span><span class="n">order_by</span><span class="p">(</span><span class="n">AgentInstruction</span><span class="o">.</span><span class="n">created_at</span><span class="o">.</span><span class="n">desc</span><span class="p">())</span>
+        <span class="o">.</span><span class="n">all</span><span class="p">()</span>
+    <span class="p">)</span>
+
+    <span class="n">instructions_data</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">instr</span> <span class="ow">in</span> <span class="n">instructions</span><span class="p">:</span>
+        <span class="c1"># Get acknowledgements for this instruction</span>
+        <span class="n">acknowledgements</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">AgentInstructionAcknowledgement</span><span class="p">)</span>
+            <span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">AgentInstructionAcknowledgement</span><span class="o">.</span><span class="n">instruction_id</span> <span class="o">==</span> <span class="n">instr</span><span class="o">.</span><span class="n">instruction_id</span><span class="p">)</span>
+            <span class="o">.</span><span class="n">order_by</span><span class="p">(</span><span class="n">desc</span><span class="p">(</span><span class="n">AgentInstructionAcknowledgement</span><span class="o">.</span><span class="n">created_at</span><span class="p">))</span>
+            <span class="o">.</span><span class="n">all</span><span class="p">()</span>
+        <span class="p">)</span>
+
+        <span class="n">instructions_data</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;instruction_id&quot;</span><span class="p">:</span> <span class="n">instr</span><span class="o">.</span><span class="n">instruction_id</span><span class="p">,</span>
+                <span class="s2">&quot;agent_id&quot;</span><span class="p">:</span> <span class="n">instr</span><span class="o">.</span><span class="n">agent_id</span><span class="p">,</span>
+                <span class="s2">&quot;instruction_type&quot;</span><span class="p">:</span> <span class="n">instr</span><span class="o">.</span><span class="n">instruction_type</span><span class="p">,</span>
+                <span class="s2">&quot;payload&quot;</span><span class="p">:</span> <span class="n">instr</span><span class="o">.</span><span class="n">payload</span><span class="p">,</span>
+                <span class="s2">&quot;sequence_number&quot;</span><span class="p">:</span> <span class="n">instr</span><span class="o">.</span><span class="n">sequence_number</span><span class="p">,</span>
+                <span class="s2">&quot;priority&quot;</span><span class="p">:</span> <span class="n">instr</span><span class="o">.</span><span class="n">priority</span><span class="p">,</span>
+                <span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="n">instr</span><span class="o">.</span><span class="n">status</span><span class="p">,</span>
+                <span class="s2">&quot;created_at&quot;</span><span class="p">:</span> <span class="n">instr</span><span class="o">.</span><span class="n">created_at</span><span class="o">.</span><span class="n">isoformat</span><span class="p">(),</span>
+                <span class="s2">&quot;sent_at&quot;</span><span class="p">:</span> <span class="n">instr</span><span class="o">.</span><span class="n">sent_at</span><span class="o">.</span><span class="n">isoformat</span><span class="p">()</span> <span class="k">if</span> <span class="n">instr</span><span class="o">.</span><span class="n">sent_at</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+                <span class="s2">&quot;acknowledged_at&quot;</span><span class="p">:</span> <span class="n">instr</span><span class="o">.</span><span class="n">acknowledged_at</span><span class="o">.</span><span class="n">isoformat</span><span class="p">()</span> <span class="k">if</span> <span class="n">instr</span><span class="o">.</span><span class="n">acknowledged_at</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+                <span class="s2">&quot;expires_at&quot;</span><span class="p">:</span> <span class="n">instr</span><span class="o">.</span><span class="n">expires_at</span><span class="o">.</span><span class="n">isoformat</span><span class="p">()</span> <span class="k">if</span> <span class="n">instr</span><span class="o">.</span><span class="n">expires_at</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+                <span class="s2">&quot;metadata&quot;</span><span class="p">:</span> <span class="n">instr</span><span class="o">.</span><span class="n">metadata</span><span class="p">,</span>
+                <span class="s2">&quot;acknowledgements_count&quot;</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">acknowledgements</span><span class="p">),</span>
+            <span class="p">}</span>
+        <span class="p">)</span>
+
+    <span class="c1"># Get acknowledgement statistics</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">sqlalchemy</span><span class="w"> </span><span class="kn">import</span> <span class="n">func</span>
+
+    <span class="n">ack_stats_query</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">AgentInstructionAcknowledgement</span><span class="o">.</span><span class="n">status</span><span class="p">,</span> <span class="n">func</span><span class="o">.</span><span class="n">count</span><span class="p">()</span><span class="o">.</span><span class="n">label</span><span class="p">(</span><span class="s2">&quot;count&quot;</span><span class="p">))</span>
+        <span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">AgentInstructionAcknowledgement</span><span class="o">.</span><span class="n">session_id</span> <span class="o">==</span> <span class="n">session_id</span><span class="p">)</span>
+        <span class="o">.</span><span class="n">group_by</span><span class="p">(</span><span class="n">AgentInstructionAcknowledgement</span><span class="o">.</span><span class="n">status</span><span class="p">)</span>
+        <span class="o">.</span><span class="n">all</span><span class="p">()</span>
+    <span class="p">)</span>
+    <span class="n">ack_stats</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">ack_stats_query</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="p">{</span>
+        <span class="s2">&quot;session_id&quot;</span><span class="p">:</span> <span class="n">session_id</span><span class="p">,</span>
+        <span class="s2">&quot;instructions&quot;</span><span class="p">:</span> <span class="n">instructions_data</span><span class="p">,</span>
+        <span class="s2">&quot;total_instructions&quot;</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">instructions_data</span><span class="p">),</span>
+        <span class="s2">&quot;acknowledgement_statistics&quot;</span><span class="p">:</span> <span class="n">ack_stats</span><span class="p">,</span>
+    <span class="p">}</span></div>
+
+
+
+<span class="c1"># Additional debug endpoints for session and connection management</span>
+<div class="viewcode-block" id="get_active_sessions">
+<a class="viewcode-back" href="../../_api/smartem_backend.api_server.html#smartem_backend.api_server.get_active_sessions">[docs]</a>
+<span class="nd">@app</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;/debug/sessions&quot;</span><span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_active_sessions</span><span class="p">(</span><span class="n">db</span><span class="p">:</span> <span class="n">SqlAlchemySession</span> <span class="o">=</span> <span class="n">DB_DEPENDENCY</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Debug endpoint to view all active sessions&quot;&quot;&quot;</span>
+    <span class="n">sessions</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">AgentSession</span><span class="p">)</span>
+        <span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">AgentSession</span><span class="o">.</span><span class="n">status</span> <span class="o">==</span> <span class="s2">&quot;active&quot;</span><span class="p">)</span>
+        <span class="o">.</span><span class="n">order_by</span><span class="p">(</span><span class="n">AgentSession</span><span class="o">.</span><span class="n">last_activity_at</span><span class="o">.</span><span class="n">desc</span><span class="p">())</span>
+        <span class="o">.</span><span class="n">all</span><span class="p">()</span>
+    <span class="p">)</span>
+
+    <span class="n">sessions_data</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">session</span> <span class="ow">in</span> <span class="n">sessions</span><span class="p">:</span>
+        <span class="n">sessions_data</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;session_id&quot;</span><span class="p">:</span> <span class="n">session</span><span class="o">.</span><span class="n">session_id</span><span class="p">,</span>
+                <span class="s2">&quot;agent_id&quot;</span><span class="p">:</span> <span class="n">session</span><span class="o">.</span><span class="n">agent_id</span><span class="p">,</span>
+                <span class="s2">&quot;acquisition_uuid&quot;</span><span class="p">:</span> <span class="n">session</span><span class="o">.</span><span class="n">acquisition_uuid</span><span class="p">,</span>
+                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="n">session</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+                <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="n">session</span><span class="o">.</span><span class="n">description</span><span class="p">,</span>
+                <span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="n">session</span><span class="o">.</span><span class="n">status</span><span class="p">,</span>
+                <span class="s2">&quot;created_at&quot;</span><span class="p">:</span> <span class="n">session</span><span class="o">.</span><span class="n">created_at</span><span class="o">.</span><span class="n">isoformat</span><span class="p">(),</span>
+                <span class="s2">&quot;started_at&quot;</span><span class="p">:</span> <span class="n">session</span><span class="o">.</span><span class="n">started_at</span><span class="o">.</span><span class="n">isoformat</span><span class="p">()</span> <span class="k">if</span> <span class="n">session</span><span class="o">.</span><span class="n">started_at</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+                <span class="s2">&quot;last_activity_at&quot;</span><span class="p">:</span> <span class="n">session</span><span class="o">.</span><span class="n">last_activity_at</span><span class="o">.</span><span class="n">isoformat</span><span class="p">(),</span>
+                <span class="s2">&quot;experimental_parameters&quot;</span><span class="p">:</span> <span class="n">session</span><span class="o">.</span><span class="n">experimental_parameters</span><span class="p">,</span>
+            <span class="p">}</span>
+        <span class="p">)</span>
+
+    <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;active_sessions&quot;</span><span class="p">:</span> <span class="n">sessions_data</span><span class="p">,</span> <span class="s2">&quot;total_count&quot;</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">sessions_data</span><span class="p">)}</span></div>
+
+
+
+<div class="viewcode-block" id="get_connection_stats">
+<a class="viewcode-back" href="../../_api/smartem_backend.api_server.html#smartem_backend.api_server.get_connection_stats">[docs]</a>
+<span class="nd">@app</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;/debug/connection-stats&quot;</span><span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_connection_stats</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get real-time connection and session statistics&quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">connection_manager</span><span class="o">.</span><span class="n">get_connection_stats</span><span class="p">()</span></div>
+
+
+
+<div class="viewcode-block" id="create_managed_session">
+<a class="viewcode-back" href="../../_api/smartem_backend.api_server.html#smartem_backend.api_server.create_managed_session">[docs]</a>
+<span class="nd">@app</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">&quot;/debug/sessions/create-managed&quot;</span><span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">create_managed_session</span><span class="p">(</span><span class="n">session_data</span><span class="p">:</span> <span class="nb">dict</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Create a session using the connection manager&quot;&quot;&quot;</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">session_id</span> <span class="o">=</span> <span class="n">connection_manager</span><span class="o">.</span><span class="n">create_session</span><span class="p">(</span>
+            <span class="n">agent_id</span><span class="o">=</span><span class="n">session_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;agent_id&quot;</span><span class="p">,</span> <span class="s2">&quot;test-agent&quot;</span><span class="p">),</span>
+            <span class="n">acquisition_uuid</span><span class="o">=</span><span class="n">session_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;acquisition_uuid&quot;</span><span class="p">),</span>
+            <span class="n">name</span><span class="o">=</span><span class="n">session_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;name&quot;</span><span class="p">),</span>
+            <span class="n">description</span><span class="o">=</span><span class="n">session_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;description&quot;</span><span class="p">),</span>
+            <span class="n">experimental_parameters</span><span class="o">=</span><span class="n">session_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;experimental_parameters&quot;</span><span class="p">,</span> <span class="p">{}),</span>
+        <span class="p">)</span>
+
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">&quot;session_id&quot;</span><span class="p">:</span> <span class="n">session_id</span><span class="p">,</span>
+            <span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="s2">&quot;created&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;created_via&quot;</span><span class="p">:</span> <span class="s2">&quot;connection_manager&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;timestamp&quot;</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span><span class="o">.</span><span class="n">isoformat</span><span class="p">(),</span>
+        <span class="p">}</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="n">status_code</span><span class="o">=</span><span class="mi">500</span><span class="p">,</span> <span class="n">detail</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;Failed to create session: </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span></div>
+
+
+
+<div class="viewcode-block" id="close_managed_session">
+<a class="viewcode-back" href="../../_api/smartem_backend.api_server.html#smartem_backend.api_server.close_managed_session">[docs]</a>
+<span class="nd">@app</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="s2">&quot;/debug/sessions/</span><span class="si">{session_id}</span><span class="s2">/close&quot;</span><span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">close_managed_session</span><span class="p">(</span><span class="n">session_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Close a session using the connection manager&quot;&quot;&quot;</span>
+    <span class="n">success</span> <span class="o">=</span> <span class="n">connection_manager</span><span class="o">.</span><span class="n">close_session</span><span class="p">(</span><span class="n">session_id</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">success</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">&quot;session_id&quot;</span><span class="p">:</span> <span class="n">session_id</span><span class="p">,</span>
+            <span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="s2">&quot;closed&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;closed_via&quot;</span><span class="p">:</span> <span class="s2">&quot;connection_manager&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;timestamp&quot;</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span><span class="o">.</span><span class="n">isoformat</span><span class="p">(),</span>
+        <span class="p">}</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="n">status_code</span><span class="o">=</span><span class="mi">500</span><span class="p">,</span> <span class="n">detail</span><span class="o">=</span><span class="s2">&quot;Failed to close session&quot;</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="create_test_instruction">
+<a class="viewcode-back" href="../../_api/smartem_backend.api_server.html#smartem_backend.api_server.create_test_instruction">[docs]</a>
+<span class="nd">@app</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">&quot;/debug/session/</span><span class="si">{session_id}</span><span class="s2">/create-instruction&quot;</span><span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">create_test_instruction</span><span class="p">(</span><span class="n">session_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">instruction_data</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">db</span><span class="p">:</span> <span class="n">SqlAlchemySession</span> <span class="o">=</span> <span class="n">DB_DEPENDENCY</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Debug endpoint to create test instructions&quot;&quot;&quot;</span>
+    <span class="c1"># Validate session exists</span>
+    <span class="n">session</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">AgentSession</span><span class="p">)</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">AgentSession</span><span class="o">.</span><span class="n">session_id</span> <span class="o">==</span> <span class="n">session_id</span><span class="p">)</span><span class="o">.</span><span class="n">first</span><span class="p">()</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">session</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="n">status_code</span><span class="o">=</span><span class="mi">404</span><span class="p">,</span> <span class="n">detail</span><span class="o">=</span><span class="s2">&quot;Session not found&quot;</span><span class="p">)</span>
+
+    <span class="c1"># Create instruction with provided data</span>
+    <span class="n">expires_at</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">expires_in_minutes</span> <span class="o">=</span> <span class="n">instruction_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;expires_in_minutes&quot;</span><span class="p">,</span> <span class="mi">60</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">expires_in_minutes</span><span class="p">:</span>
+        <span class="n">expires_at</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span> <span class="o">+</span> <span class="n">timedelta</span><span class="p">(</span><span class="n">minutes</span><span class="o">=</span><span class="n">expires_in_minutes</span><span class="p">)</span>
+
+    <span class="n">instruction</span> <span class="o">=</span> <span class="n">AgentInstruction</span><span class="p">(</span>
+        <span class="n">instruction_id</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">uuid</span><span class="o">.</span><span class="n">uuid4</span><span class="p">()),</span>
+        <span class="n">session_id</span><span class="o">=</span><span class="n">session_id</span><span class="p">,</span>
+        <span class="n">agent_id</span><span class="o">=</span><span class="n">session</span><span class="o">.</span><span class="n">agent_id</span><span class="p">,</span>
+        <span class="n">instruction_type</span><span class="o">=</span><span class="n">instruction_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;instruction_type&quot;</span><span class="p">,</span> <span class="s2">&quot;test.instruction&quot;</span><span class="p">),</span>
+        <span class="n">payload</span><span class="o">=</span><span class="n">instruction_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;payload&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;test&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">}),</span>
+        <span class="n">sequence_number</span><span class="o">=</span><span class="n">instruction_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;sequence_number&quot;</span><span class="p">),</span>
+        <span class="n">priority</span><span class="o">=</span><span class="n">instruction_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;priority&quot;</span><span class="p">,</span> <span class="s2">&quot;normal&quot;</span><span class="p">),</span>
+        <span class="n">status</span><span class="o">=</span><span class="s2">&quot;pending&quot;</span><span class="p">,</span>
+        <span class="n">created_at</span><span class="o">=</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">(),</span>
+        <span class="n">expires_at</span><span class="o">=</span><span class="n">expires_at</span><span class="p">,</span>
+        <span class="n">instruction_metadata</span><span class="o">=</span><span class="n">instruction_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;metadata&quot;</span><span class="p">,</span> <span class="p">{}),</span>
+    <span class="p">)</span>
+    <span class="n">db</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">instruction</span><span class="p">)</span>
+    <span class="n">db</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span>
+    <span class="n">db</span><span class="o">.</span><span class="n">refresh</span><span class="p">(</span><span class="n">instruction</span><span class="p">)</span>
+
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Created instruction </span><span class="si">{</span><span class="n">instruction</span><span class="o">.</span><span class="n">instruction_id</span><span class="si">}</span><span class="s2"> for session </span><span class="si">{</span><span class="n">session_id</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="p">{</span>
+        <span class="s2">&quot;instruction_id&quot;</span><span class="p">:</span> <span class="n">instruction</span><span class="o">.</span><span class="n">instruction_id</span><span class="p">,</span>
+        <span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="s2">&quot;created&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;created_at&quot;</span><span class="p">:</span> <span class="n">instruction</span><span class="o">.</span><span class="n">created_at</span><span class="o">.</span><span class="n">isoformat</span><span class="p">(),</span>
+    <span class="p">}</span></div>
+
+
+
+<div class="viewcode-block" id="create_test_session">
+<a class="viewcode-back" href="../../_api/smartem_backend.api_server.html#smartem_backend.api_server.create_test_session">[docs]</a>
+<span class="nd">@app</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">&quot;/debug/sessions/create&quot;</span><span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">create_test_session</span><span class="p">(</span><span class="n">session_data</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">db</span><span class="p">:</span> <span class="n">SqlAlchemySession</span> <span class="o">=</span> <span class="n">DB_DEPENDENCY</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Debug endpoint to create test sessions&quot;&quot;&quot;</span>
+    <span class="c1"># Validate acquisition exists if provided</span>
+    <span class="n">acquisition_uuid</span> <span class="o">=</span> <span class="n">session_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;acquisition_uuid&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">acquisition_uuid</span><span class="p">:</span>
+        <span class="n">acquisition</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">Acquisition</span><span class="p">)</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">Acquisition</span><span class="o">.</span><span class="n">uuid</span> <span class="o">==</span> <span class="n">acquisition_uuid</span><span class="p">)</span><span class="o">.</span><span class="n">first</span><span class="p">()</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">acquisition</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="n">status_code</span><span class="o">=</span><span class="mi">404</span><span class="p">,</span> <span class="n">detail</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;Acquisition </span><span class="si">{</span><span class="n">acquisition_uuid</span><span class="si">}</span><span class="s2"> not found&quot;</span><span class="p">)</span>
+
+    <span class="c1"># Create session with provided data</span>
+    <span class="n">session</span> <span class="o">=</span> <span class="n">AgentSession</span><span class="p">(</span>
+        <span class="n">session_id</span><span class="o">=</span><span class="n">session_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;session_id&quot;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">uuid</span><span class="o">.</span><span class="n">uuid4</span><span class="p">())),</span>
+        <span class="n">agent_id</span><span class="o">=</span><span class="n">session_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;agent_id&quot;</span><span class="p">,</span> <span class="s2">&quot;test-agent&quot;</span><span class="p">),</span>
+        <span class="n">acquisition_uuid</span><span class="o">=</span><span class="n">acquisition_uuid</span><span class="p">,</span>
+        <span class="n">name</span><span class="o">=</span><span class="n">session_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;name&quot;</span><span class="p">,</span> <span class="s2">&quot;Test Session&quot;</span><span class="p">),</span>
+        <span class="n">description</span><span class="o">=</span><span class="n">session_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;description&quot;</span><span class="p">,</span> <span class="s2">&quot;Debug session for testing&quot;</span><span class="p">),</span>
+        <span class="n">experimental_parameters</span><span class="o">=</span><span class="n">session_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;experimental_parameters&quot;</span><span class="p">,</span> <span class="p">{}),</span>
+        <span class="n">status</span><span class="o">=</span><span class="s2">&quot;active&quot;</span><span class="p">,</span>
+        <span class="n">created_at</span><span class="o">=</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">(),</span>
+        <span class="n">last_activity_at</span><span class="o">=</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">(),</span>
+    <span class="p">)</span>
+    <span class="n">db</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">session</span><span class="p">)</span>
+    <span class="n">db</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span>
+    <span class="n">db</span><span class="o">.</span><span class="n">refresh</span><span class="p">(</span><span class="n">session</span><span class="p">)</span>
+
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Created agent session </span><span class="si">{</span><span class="n">session</span><span class="o">.</span><span class="n">session_id</span><span class="si">}</span><span class="s2"> for agent </span><span class="si">{</span><span class="n">session</span><span class="o">.</span><span class="n">agent_id</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="p">{</span>
+        <span class="s2">&quot;session_id&quot;</span><span class="p">:</span> <span class="n">session</span><span class="o">.</span><span class="n">session_id</span><span class="p">,</span>
+        <span class="s2">&quot;agent_id&quot;</span><span class="p">:</span> <span class="n">session</span><span class="o">.</span><span class="n">agent_id</span><span class="p">,</span>
+        <span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="s2">&quot;created&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;created_at&quot;</span><span class="p">:</span> <span class="n">session</span><span class="o">.</span><span class="n">created_at</span><span class="o">.</span><span class="n">isoformat</span><span class="p">(),</span>
+    <span class="p">}</span></div>
+
+
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">uvicorn</span>
+
+    <span class="n">port</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;HTTP_API_PORT&quot;</span><span class="p">,</span> <span class="s2">&quot;8000&quot;</span><span class="p">))</span>
+    <span class="n">host</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;HTTP_API_HOST&quot;</span><span class="p">,</span> <span class="s2">&quot;127.0.0.1&quot;</span><span class="p">)</span>
+
+    <span class="n">uvicorn</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="s2">&quot;smartem_backend.api_server:app&quot;</span><span class="p">,</span> <span class="n">host</span><span class="o">=</span><span class="n">host</span><span class="p">,</span> <span class="n">port</span><span class="o">=</span><span class="n">port</span><span class="p">,</span> <span class="n">reload</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">log_level</span><span class="o">=</span><span class="s2">&quot;info&quot;</span><span class="p">)</span>
 </pre></div>
 
                 </article>
