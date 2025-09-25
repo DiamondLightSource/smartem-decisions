@@ -475,6 +475,11 @@ class RateLimitedFilesystemEventHandler(FileSystemEventHandler):
             assert self.datastore.get_grid_by_path(event.src_path) is None  # guaranteed because is a new file
             grid = GridData(data_dir=Path(event.src_path).parent.resolve())
             grid.acquisition_data = EpuParser.parse_epu_session_manifest(event.src_path)
+
+            # Fix UUID mismatch: use the actual acquisition UUID from the datastore
+            # This ensures grid references the correct acquisition that exists in the database
+            grid.acquisition_data.uuid = self.datastore.acquisition.uuid
+
             self.datastore.create_grid(grid, path_mapper=self.path_mapper)
 
         # try to work out which grid the touched file relates to
