@@ -1066,6 +1066,7 @@ class EpuParser:
             gridsquare = datastore.find_gridsquare_by_natural_id(gridsquare_id)
 
             if gridsquare:
+                # Update existing gridsquare with manifest data
                 gridsquare.manifest = gridsquare_manifest
                 datastore.update_gridsquare(gridsquare)
                 logging.debug(f"Updated gridsquare manifest: ID: {gridsquare_id} (UUID: {gridsquare.uuid})")
@@ -1088,7 +1089,38 @@ class EpuParser:
                             except Exception as e:
                                 logging.error(f"Failed to update acquisition via API: {e}")
                         instrument_extracted = True
+            else:
+                # Create new gridsquare for Images-Disc data without matching Metadata
+                gridsquare = GridSquareData(
+                    gridsquare_id=gridsquare_id,
+                    metadata=None,
+                    manifest=gridsquare_manifest,
+                    grid_uuid=grid.uuid,
+                )
+                datastore.create_gridsquare(gridsquare)
+                logging.debug(f"Created new gridsquare from Images-Disc: ID: {gridsquare_id} (UUID: {gridsquare.uuid})")
 
+                # Extract instrument information if not already found
+                if not instrument_extracted:
+                    instrument = EpuParser.parse_microscope_from_image_metadata(str(gridsquare_manifest_path))
+                    if instrument:
+                        grid.acquisition_data.instrument = instrument
+                        logging.info(
+                            f"Extracted instrument info: Model={instrument.instrument_model}, "
+                            f"ID={instrument.instrument_id}"
+                        )
+                        if hasattr(datastore, "api_client"):
+                            try:
+                                datastore.api_client.update_acquisition(grid.acquisition_data)
+                                logging.info(
+                                    f"Updated acquisition {grid.acquisition_data.id} with instrument information"
+                                )
+                            except Exception as e:
+                                logging.error(f"Failed to update acquisition via API: {e}")
+                        instrument_extracted = True
+
+            # Process foilholes and micrographs for this gridsquare (whether existing or newly created)
+            if gridsquare:
                 # 3.1 Parse foilholes for this gridsquare
                 foilhole_manifest_paths = sorted(
                     grid.data_dir.glob(f"Images-Disc*/GridSquare_{gridsquare_id}/FoilHoles/FoilHole_*_*_*.xml"),
@@ -1182,8 +1214,6 @@ class EpuParser:
                     if not success:
                         logging.warning(f"Failed to upsert micrograph {micrograph.id}")
                     logging.debug(f"Added micrograph: {micrograph_manifest.unique_id} (uuid: {micrograph.uuid})")
-            else:
-                logging.warning(f"Found gridsquare manifest for {gridsquare_id} but no matching gridsquare metadata")
 
         return grid.uuid
 
