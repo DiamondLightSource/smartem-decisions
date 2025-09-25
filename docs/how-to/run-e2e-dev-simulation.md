@@ -78,6 +78,31 @@ python ./tools/fsrecorder/fsrecorder.py replay ../smartem-decisions-test-recordi
 - SmartEM agent detecting file changes and sending data to API
 - Database records being created (visible via API endpoints)
 
+## Step 5: Run external message simulator (complete feedback loop)
+
+Start the external message simulator to send processing results that trigger agent instructions:
+
+```bash
+python tools/external_message_simulator.py workflow-simulation --delay 3.0
+```
+
+**Alternative simulation options**:
+```bash
+# Send specific message types
+python tools/external_message_simulator.py gridsquare-prediction --count 3
+python tools/external_message_simulator.py foilhole-prediction --count 2
+
+# Batch simulation with different quality scenarios
+python tools/external_message_simulator.py batch-simulation --gridsquare-count 5 --scenario mixed
+```
+
+**Expected behaviour**:
+- External simulator publishes messages to RabbitMQ
+- Backend consumer processes messages and transforms them
+- Agent receives instructions via SSE (Server-Sent Events)
+- Agent logs show received instructions and decision-making
+- Complete feedback loop: files → processing → ML results → agent instructions
+
 ## Monitoring the simulation
 
 1. **Check API status and data**:
@@ -124,6 +149,10 @@ A successful end-to-end simulation should show:
 3. ✅ Recording playback creating files (check `../epu-test-dir` contents)
 4. ✅ API receiving data (check `curl http://localhost:30080/acquisitions`)
 5. ✅ Files being processed and stored in database
+6. ✅ External simulator publishing messages to RabbitMQ
+7. ✅ Consumer processing external messages and transforming them
+8. ✅ Agent receiving instructions via SSE (check agent logs for instruction reception)
+9. ✅ Complete feedback loop: file detection → processing → ML results → agent instructions
 
 ## Cleanup
 
@@ -137,6 +166,7 @@ To stop all services:
 pkill -f smartem_agent
 pkill -f smartem_backend.consumer
 pkill -f fsrecorder
+pkill -f external_message_simulator
 
 # Clean up test data (optional)
 rm -rf ../epu-test-dir
