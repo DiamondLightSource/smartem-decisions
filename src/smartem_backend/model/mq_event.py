@@ -59,8 +59,10 @@ class MessageQueueEventType(str, Enum):
     MICROGRAPHS_DETECTED = "micrographs.detected"  # TODO is this redundant?
     # MOTION_CORRECTION_START = "motion_correction.started"
     MOTION_CORRECTION_COMPLETE = "motion_correction.completed"
+    MOTION_CORRECTION_REGISTERED = "motion_correction.registered"
     # CTF_START = "ctf.started"
     CTF_COMPLETE = "ctf.completed"
+    CTF_REGISTERED = "ctf.registered"
     # PARTICLE_PICKING_START = "particle_picking.started"
     PARTICLE_PICKING_COMPLETE = "particle_picking.completed"
     # PARTICLE_SELECTION_START = "particle_selection.started"
@@ -68,13 +70,15 @@ class MessageQueueEventType(str, Enum):
 
     GRIDSQUARE_MODEL_PREDICTION = "gridsquare.model_prediction"
     FOILHOLE_MODEL_PREDICTION = "foilhole.model_prediction"
+    MULTI_FOILHOLE_MODEL_PREDICTION = "foilhole.model_multi_prediction"
     MODEL_PARAMETER_UPDATE = "gridsquare.model_parameter_update"
+
+    REFRESH_PREDICTIONS = "refresh.predictions"
 
     # Agent communication events
     AGENT_INSTRUCTION_CREATED = "agent.instruction.created"
     AGENT_INSTRUCTION_UPDATED = "agent.instruction.updated"
     AGENT_INSTRUCTION_EXPIRED = "agent.instruction.expired"
-
 
 class GenericEventMessageBody(BaseModel):
     event_type: MessageQueueEventType
@@ -322,7 +326,6 @@ class MotionCorrectionCompleteBody(GenericEventMessageBody):
     micrograph_uuid: str
     total_motion: float
     average_motion: float
-    ctf_max_resolution_estimate: float
 
     @model_validator(mode="after")
     def check_model(self):
@@ -330,9 +333,13 @@ class MotionCorrectionCompleteBody(GenericEventMessageBody):
             raise ValueError("Total Motion should be a non-negative float")
         if self.average_motion < 0:
             raise ValueError("Average Motion should be a non-negative float")
-        if self.ctf_max_resolution_estimate < 0:
-            raise ValueError("CTF Max Resolution should be a non-negative float")
         return self
+
+
+class MotionCorrectionRegisteredBody(GenericEventMessageBody):
+    micrograph_uuid: str
+    quality: bool
+    metric_name: str | None = "motioncorrection"
 
 
 class CtfStartBody(GenericEventMessageBody):
@@ -341,19 +348,19 @@ class CtfStartBody(GenericEventMessageBody):
 
 class CtfCompleteBody(BaseModel):
     micrograph_uuid: str
-    total_motion: float
-    average_motion: float
     ctf_max_resolution_estimate: float
 
     @model_validator(mode="after")
     def check_model(self):
-        if self.total_motion < 0:
-            raise ValueError("Total Motion should be a non-negative float")
-        if self.average_motion < 0:
-            raise ValueError("Average Motion should be a non-negative float")
         if self.ctf_max_resolution_estimate < 0:
             raise ValueError("CTF Max Resolution should be a non-negative float")
         return self
+
+
+class CtfRegisteredBody(BaseModel):
+    micrograph_uuid: str
+    quality: bool
+    metric_name: str | None = "ctfmaxresolution"
 
 
 class ParticlePickingStartBody(GenericEventMessageBody):
@@ -411,12 +418,21 @@ class GridSquareModelPredictionEvent(GenericEventMessageBody):
     gridsquare_uuid: str
     prediction_model_name: str
     prediction_value: float
+    metric: str | None = None
 
 
 class FoilHoleModelPredictionEvent(GenericEventMessageBody):
     foilhole_uuid: str
     prediction_model_name: str
     prediction_value: float
+    metric: str | None = None
+
+
+class MultiFoilHoleModelPredictionEvent(GenericEventMessageBody):
+    foilhole_uuids: list[str]
+    prediction_model_name: str
+    prediction_value: float
+    metric: str | None = None
 
 
 class ModelParameterUpdateEvent(GenericEventMessageBody):
@@ -424,6 +440,11 @@ class ModelParameterUpdateEvent(GenericEventMessageBody):
     prediction_model_name: str
     key: str
     value: float
+    metric: str | None = None
+
+
+class RefreshPredictionsEvent(GenericEventMessageBody):
+    grid_uuid: str
     group: str = ""
 
 
