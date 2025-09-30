@@ -39,3 +39,8 @@ class MicrographStatus(str, Enum):
     PARTICLE_PICKING_COMPLETED = "particle picking completed"
     PARTICLE_SELECTION_STARTED = "particle selection started"
     PARTICLE_SELECTION_COMPLETED = "particle selection completed"
+
+
+class ModelLevel(str, Enum):
+    GRIDSQUARE = "gridsquare"
+    FOILHOLE = "foilhole"
