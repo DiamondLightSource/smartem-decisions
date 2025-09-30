@@ -7,6 +7,7 @@ from smartem_common.entity_status import (
     GridSquareStatus,
     GridStatus,
     MicrographStatus,
+    ModelLevel,
 )
 
 
@@ -53,3 +54,12 @@ class MicrographStatusType(TypeDecorator):
     def __init__(self):
         super().__init__()
         self.impl = SQLAlchemyEnum(MicrographStatus, name="micrographstatus")
+
+
+class ModelLevelType(TypeDecorator):
+    impl = VARCHAR
+    cache_ok = True
+
+    def __init__(self):
+        super().__init__()
+        self.impl = SQLAlchemyEnum(ModelLevel, name="modellevel")
