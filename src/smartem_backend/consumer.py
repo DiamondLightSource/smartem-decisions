@@ -11,10 +11,12 @@ from collections.abc import Callable
 from datetime import datetime
 from typing import Any
 
+import numpy as np
 import pika
+import scipy.stats
 from dotenv import load_dotenv
 from pydantic import ValidationError
-from sqlmodel import Session
+from sqlmodel import Session, select
 
 from smartem_backend.cli.initialise_prediction_model_weights import initialise_all_models_for_grid
 from smartem_backend.cli.random_model_predictions import (
@@ -26,6 +28,11 @@ from smartem_backend.log_manager import LogConfig, LogManager
 from smartem_backend.model.database import (
     AgentInstruction,
     AgentSession,
+    CurrentQualityPrediction,
+    FoilHole,
+    GridSquare,
+    Micrograph,
+    QualityMetricStatistics,
     QualityPrediction,
     QualityPredictionModelParameter,
 )
@@ -39,6 +46,7 @@ from smartem_backend.model.mq_event import (
     AtlasCreatedEvent,
     AtlasDeletedEvent,
     AtlasUpdatedEvent,
+    CtfCompleteBody,
     FoilHoleCreatedEvent,
     FoilHoleDeletedEvent,
     FoilHoleModelPredictionEvent,
@@ -57,8 +65,12 @@ from smartem_backend.model.mq_event import (
     MicrographDeletedEvent,
     MicrographUpdatedEvent,
     ModelParameterUpdateEvent,
+    MotionCorrectionCompleteBody,
+    MultiFoilHoleModelPredictionEvent,
+    RefreshPredictionsEvent,
 )
-from smartem_backend.mq_publisher import publish_agent_instruction_created
+from smartem_backend.mq_publisher import publish_agent_instruction_created, publish_ctf_estimation_registered, publish_motion_correction_registered
+from smartem_backend.predictions.update import overall_predictions_update, prior_update
 from smartem_backend.utils import get_db_engine, load_conf, rmq_consumer, setup_logger
 
 load_dotenv(override=False)  # Don't override existing env vars as these might be coming from k8s
@@ -552,6 +564,140 @@ def handle_micrograph_deleted(event_data: dict[str, Any]) -> None:
         logger.error(f"Error processing micrograph deleted event: {e}")
 
 
+def _check_against_statistics(
+    metric_name: str,
+    micrograph_uuid: str,
+    comparison_value: float,
+    larger_better: bool = False,
+) -> float:
+    with Session(db_engine) as session:
+        grid_uuid = (
+            session.exec(
+                select(GridSquare, FoilHole, Micrograph)
+                .where(GridSquare.uuid == FoilHole.gridsquare_uuid)
+                .where(FoilHole.uuid == Micrograph.foilhole_uuid)
+                .where(Micrograph.uuid == micrograph_uuid)
+            )
+            .one()[0]
+            .grid_uuid
+        )
+        metric_stats = session.exec(
+            select(QualityMetricStatistics)
+            .where(QualityMetricStatistics.grid_uuid == grid_uuid)
+            .where(QualityMetricStatistics.name == metric_name)
+        ).all()
+    if not metric_stats:
+        return 1
+    elif metric_stats[0].count < 2:
+        if comparison_value == metric_stats[0].value_sum / metric_stats[0].count:
+            return 0.5
+        elif comparison_value > metric_stats[0].value_sum / metric_stats[0].count:
+            return 1 if larger_better else 0
+        else:
+            return 0 if larger_better else 1
+    else:
+        metric_mean = metric_stats[0].value_sum / metric_stats[0].count
+        metric_var = metric_stats[0].squared_value_sum / (metric_stats[0].count - 1)
+        cdf_value = scipy.stats.norm(metric_mean, np.sqrt(metric_var)).cdf(comparison_value)
+        return cdf_value if larger_better else 1 - cdf_value
+
+
+def handle_motion_correction_complete(event_data: dict[str, Any]) -> None:
+    try:
+        event = MotionCorrectionCompleteBody(**event_data)
+        quality = _check_against_statistics("motioncorrection", event.micrograph_uuid, event.total_motion)
+        with Session(db_engine) as session:
+            grid_uuid = (
+                session.exec(
+                    select(GridSquare, FoilHole, Micrograph)
+                    .where(GridSquare.uuid == FoilHole.gridsquare_uuid)
+                    .where(FoilHole.uuid == Micrograph.foilhole_uuid)
+                    .where(Micrograph.uuid == event.micrograph_uuid)
+                )
+                .one()[0]
+                .grid_uuid
+            )
+            metric_stats = session.exec(
+                select(QualityMetricStatistics)
+                .where(QualityMetricStatistics.grid_uuid == grid_uuid)
+                .where(QualityMetricStatistics.name == "motioncorrection")
+            ).all()
+            if not metric_stats:
+                updated_metric_stats = QualityMetricStatistics(
+                    grid_uuid=grid_uuid,
+                    name="motioncorrection",
+                    count=1,
+                    value_sum=event.total_motion,
+                    squared_value_sum=0,
+                )
+            else:
+                updated_metric_stats = metric_stats[0]
+                old_diff = event.total_motion - (updated_metric_stats.value_sum / updated_metric_stats.count)
+                updated_metric_stats.count += 1
+                updated_metric_stats.value_sum += event.total_motion
+                updated_metric_stats.squared_value_sum += old_diff * (
+                    event.total_motion - (updated_metric_stats.value_sum / updated_metric_stats.count)
+                )
+            session.add(updated_metric_stats)
+            session.commit()
+            prior_update(quality, event.micrograph_uuid, "motioncorrection", session)
+        publish_motion_correction_registered(event.micrograph_uuid, quality >= 0.5, metric_name="motioncorrection")
+    except ValidationError as e:
+        logger.error(f"Validation error processing motion correction event: {e}")
+    except Exception as e:
+        logger.error(f"Error processing motion correction event: {e}")
+    return None
+
+
+def handle_ctf_estimation_complete(event_data: dict[str, Any]) -> None:
+    try:
+        event = CtfCompleteBody(**event_data)
+        quality = _check_against_statistics(
+            "ctfmaxresolution", event.micrograph_uuid, event.ctf_max_resolution_estimate
+        )
+        with Session(db_engine) as session:
+            grid_uuid = (
+                session.exec(
+                    select(GridSquare, FoilHole, Micrograph)
+                    .where(GridSquare.uuid == FoilHole.gridsquare_uuid)
+                    .where(FoilHole.uuid == Micrograph.foilhole_uuid)
+                    .where(Micrograph.uuid == event.micrograph_uuid)
+                )
+                .one()[0]
+                .grid_uuid
+            )
+            metric_stats = session.exec(
+                select(QualityMetricStatistics)
+                .where(QualityMetricStatistics.grid_uuid == grid_uuid)
+                .where(QualityMetricStatistics.name == "ctfmaxresolution")
+            ).all()
+            if not metric_stats:
+                updated_metric_stats = QualityMetricStatistics(
+                    grid_uuid=grid_uuid,
+                    name="ctfmaxresolution",
+                    count=1,
+                    value_sum=event.ctf_max_resolution_estimate,
+                    squared_value_sum=0,
+                )
+            else:
+                updated_metric_stats = metric_stats[0]
+                old_diff = event.total_motion - (updated_metric_stats.value_sum / updated_metric_stats.count)
+                updated_metric_stats.count += 1
+                updated_metric_stats.value_sum += event.ctf_max_resolution_estimate
+                updated_metric_stats.squared_value_sum += old_diff * (
+                    event.ctf_max_resolution_estimate - (updated_metric_stats.value_sum / updated_metric_stats.count)
+                )
+            session.add(updated_metric_stats)
+            session.commit()
+            prior_update(quality, event.micrograph_uuid, "ctfmaxresolution", session)
+        publish_ctf_estimation_registered(event.micrograph_uuid, quality >= 0.5, metric_name="ctfmaxresolution")
+    except ValidationError as e:
+        logger.error(f"Validation error processing ctf event: {e}")
+    except Exception as e:
+        logger.error(f"Error processing ctf event: {e}")
+    return None
+
+
 def handle_gridsquare_model_prediction(event_data: dict[str, Any]) -> None:
     """
     Handle grid square model prediction event by inserting the result into the database
@@ -565,9 +711,30 @@ def handle_gridsquare_model_prediction(event_data: dict[str, Any]) -> None:
             gridsquare_uuid=event.gridsquare_uuid,
             prediction_model_name=event.prediction_model_name,
             value=event.prediction_value,
+            metric_name=event.metric,
         )
         with Session(db_engine) as session:
             session.add(quality_prediction)
+            current_quality_prediction = session.exec(
+                select(CurrentQualityPrediction)
+                .where(CurrentQualityPrediction.gridsquare_uuid == event.gridsquare_uuid)
+                .where(CurrentQualityPrediction.prediction_model_name == event.prediction_model_name)
+                .where(CurrentQualityPrediction.metric_name == event.metric)
+            ).first()
+            if current_quality_prediction is None:
+                grid_uuid = (
+                    session.exec(select(GridSquare).where(GridSquare.uuid == event.gridsquare_uuid)).one().grid_uuid
+                )
+                current_quality_prediction = CurrentQualityPrediction(
+                    grid_uuid=grid_uuid,
+                    gridsquare_uuid=event.gridsquare_uuid,
+                    prediction_model_name=event.prediction_model_name,
+                    value=event.prediction_value,
+                    metric_name=event.metric,
+                )
+            else:
+                current_quality_prediction = event.prediction_value
+            session.add(current_quality_prediction)
             session.commit()
 
     except ValidationError as e:
@@ -589,15 +756,113 @@ def handle_foilhole_model_prediction(event_data: dict[str, Any]) -> None:
             foilhole_uuid=event.foilhole_uuid,
             prediction_model_name=event.prediction_model_name,
             value=event.prediction_value,
+            metric_name=event.metric,
         )
         with Session(db_engine) as session:
             session.add(quality_prediction)
+            current_quality_prediction = session.exec(
+                select(CurrentQualityPrediction)
+                .where(CurrentQualityPrediction.foilhole_uuid == event.foilhole_uuid)
+                .where(CurrentQualityPrediction.prediction_model_name == event.prediction_model_name)
+                .where(CurrentQualityPrediction.metric_name == event.metric)
+            ).first()
+            if current_quality_prediction is None:
+                square = session.exec(
+                    select(GridSquare, FoilHole)
+                    .where(GridSquare.uuid == FoilHole.gridsquare_uuid)
+                    .where(FoilHole.uuid == event.foilhole_uuid)
+                ).one()[0]
+                current_quality_prediction = CurrentQualityPrediction(
+                    grid_uuid=square.grid_uuid,
+                    gridsquare_uuid=square.uuid,
+                    foilhole_uuid=event.foilhole_uuid,
+                    prediction_model_name=event.prediction_model_name,
+                    value=event.prediction_value,
+                    metric_name=event.metric,
+                )
+            else:
+                current_quality_prediction = event.prediction_value
+            session.add(current_quality_prediction)
             session.commit()
 
     except ValidationError as e:
-        logger.error(f"Validation error processing grid square model prediction event: {e}")
+        logger.error(f"Validation error processing foil hole model prediction event: {e}")
     except Exception as e:
-        logger.error(f"Error processing grid square model prediction event: {e}")
+        logger.error(f"Error processing foil hole model prediction event: {e}")
+
+
+def handle_multi_foilhole_model_prediction(event_data: dict[str, Any]) -> None:
+    """
+    Handle multiple foil hole model predictions event by inserting the result into the database
+
+    Args:
+        event_data: Event data for foil hole model predictions
+    """
+    try:
+        event = MultiFoilHoleModelPredictionEvent(**event_data)
+        quality_predictions = [
+            QualityPrediction(
+                foilhole_uuid=fhuuid,
+                prediction_model_name=event.prediction_model_name,
+                value=event.prediction_value,
+                metric_name=event.metric,
+            )
+            for fhuuid in event.foilhole_uuids
+        ]
+        with Session(db_engine) as session:
+            session.add(quality_predictions)
+            current_quality_predictions = session.exec(
+                select(CurrentQualityPrediction)
+                .where(CurrentQualityPrediction.foilhole_uuid.in_(event.foilhole_uuids))
+                .where(CurrentQualityPrediction.prediction_model_name == event.prediction_model_name)
+                .where(CurrentQualityPrediction.metric_name == event.metric)
+            ).all()
+            if not current_quality_predictions:
+                square = session.exec(
+                    select(GridSquare, FoilHole)
+                    .where(GridSquare.uuid == FoilHole.gridsquare_uuid)
+                    .where(FoilHole.uuid == event.foilhole_uuids[0])
+                ).one()[0]
+                current_quality_predictions = [
+                    CurrentQualityPrediction(
+                        grid_uuid=square.grid_uuid,
+                        gridsquare_uuid=square.uuid,
+                        foilhole_uuid=fhuuid,
+                        prediction_model_name=event.prediction_model_name,
+                        value=event.prediction_value,
+                        metric_name=event.metric,
+                    )
+                    for fhuuid in event.foilhole_uuids
+                ]
+            else:
+                for pred in current_quality_predictions:
+                    pred.value = event.prediction_value
+            session.add_all(current_quality_predictions)
+            session.commit()
+
+    except ValidationError as e:
+        logger.error(f"Validation error processing multiple foil hole model prediction event: {e}")
+    except Exception as e:
+        logger.error(f"Error processing multiple foil hole model prediction event: {e}")
+
+
+def handle_refresh_predictions(event_data: dict[str, Any]) -> None:
+    """
+    Handle refresh predictions event by calculating the updated values
+
+    Args:
+        event_data: Event data for refresh predictions event
+
+    """
+    try:
+        event = RefreshPredictionsEvent(**event_data)
+        with Session(db_engine) as session:
+            overall_predictions_update(event.grid_uuid, session)
+
+    except ValidationError as e:
+        logger.error(f"Validation error processing refresh predictions event: {e}")
+    except Exception as e:
+        logger.error(f"Error processing refresh predictions event: {e}")
 
 
 def handle_model_parameter_update(event_data: dict[str, Any]) -> None:
@@ -614,6 +879,7 @@ def handle_model_parameter_update(event_data: dict[str, Any]) -> None:
             prediction_model_name=event.prediction_model_name,
             key=event.key,
             value=event.value,
+            metric_name=event.metric,
             group=event.group,
         )
         with Session(db_engine) as session:
@@ -908,12 +1174,17 @@ def get_event_handlers() -> dict[str, Callable]:
         MessageQueueEventType.MICROGRAPH_CREATED.value: handle_micrograph_created,
         MessageQueueEventType.MICROGRAPH_UPDATED.value: handle_micrograph_updated,
         MessageQueueEventType.MICROGRAPH_DELETED.value: handle_micrograph_deleted,
-        MessageQueueEventType.GRIDSQUARE_MODEL_PREDICTION.value: handle_gridsquare_model_prediction_router,
-        MessageQueueEventType.FOILHOLE_MODEL_PREDICTION.value: handle_foilhole_model_prediction_router,
-        MessageQueueEventType.MODEL_PARAMETER_UPDATE.value: handle_model_parameter_update,
         MessageQueueEventType.AGENT_INSTRUCTION_CREATED.value: handle_agent_instruction_created,
         MessageQueueEventType.AGENT_INSTRUCTION_UPDATED.value: handle_agent_instruction_updated,
         MessageQueueEventType.AGENT_INSTRUCTION_EXPIRED.value: handle_agent_instruction_expired,
+        MessageQueueEventType.MOTION_CORRECTION_COMPLETE.value: handle_motion_correction_complete,
+        MessageQueueEventType.CTF_COMPLETE.value: handle_ctf_estimation_complete,
+        MessageQueueEventType.GRIDSQUARE_MODEL_PREDICTION.value: handle_gridsquare_model_prediction,
+        MessageQueueEventType.FOILHOLE_MODEL_PREDICTION.value: handle_foilhole_model_prediction,
+        MessageQueueEventType.MULTI_FOILHOLE_MODEL_PREDICTION.value: handle_multi_foilhole_model_prediction,
+        MessageQueueEventType.MODEL_PARAMETER_UPDATE.value: handle_model_parameter_update,
+        MessageQueueEventType.REFRESH_PREDICTIONS.value: handle_refresh_predictions,
+        # TODO: Add handlers for all other event types as needed
     }
 
 

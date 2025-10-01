@@ -11,6 +11,8 @@ from smartem_backend.model.mq_event import (
     AtlasTileDeletedEvent,
     AtlasTileUpdatedEvent,
     AtlasUpdatedEvent,
+    CtfCompleteBody,
+    CtfRegisteredBody,
     FoilHoleCreatedEvent,
     FoilHoleDeletedEvent,
     FoilHoleModelPredictionEvent,
@@ -29,6 +31,10 @@ from smartem_backend.model.mq_event import (
     MicrographDeletedEvent,
     MicrographUpdatedEvent,
     ModelParameterUpdateEvent,
+    MotionCorrectionCompleteBody,
+    MotionCorrectionRegisteredBody,
+    MultiFoilHoleModelPredictionEvent,
+    RefreshPredictionsEvent,
 )
 from smartem_backend.utils import rmq_publisher
 
@@ -249,29 +255,51 @@ def publish_micrograph_deleted(uuid):
     return rmq_publisher.publish_event(MessageQueueEventType.MICROGRAPH_DELETED, event)
 
 
-def publish_gridsquare_model_prediction(gridsquare_uuid: str, model_name: str, prediction_value: float):
+def publish_gridsquare_model_prediction(
+    gridsquare_uuid: str, model_name: str, prediction_value: float, metric: str | None = None
+):
     """Publish model prediction event for a grid square to RabbitMQ"""
     event = GridSquareModelPredictionEvent(
         event_type=MessageQueueEventType.GRIDSQUARE_MODEL_PREDICTION,
         gridsquare_uuid=gridsquare_uuid,
         prediction_model_name=model_name,
         prediction_value=prediction_value,
+        metric=metric,
     )
     return rmq_publisher.publish_event(MessageQueueEventType.GRIDSQUARE_MODEL_PREDICTION, event)
 
 
-def publish_foilhole_model_prediction(foilhole_uuid: str, model_name: str, prediction_value: float):
+def publish_foilhole_model_prediction(
+    foilhole_uuid: str, model_name: str, prediction_value: float, metric: str | None = None
+):
     """Publish model prediction event for a foil hole to RabbitMQ"""
     event = FoilHoleModelPredictionEvent(
         event_type=MessageQueueEventType.FOILHOLE_MODEL_PREDICTION,
         foilhole_uuid=foilhole_uuid,
         prediction_model_name=model_name,
         prediction_value=prediction_value,
+        metric=metric,
     )
     return rmq_publisher.publish_event(MessageQueueEventType.FOILHOLE_MODEL_PREDICTION, event)
 
 
-def publish_model_parameter_update(grid_uuid: str, model_name: str, key: str, value: float, group: str = ""):
+def publish_multi_foilhole_model_prediction(
+    foilhole_uuids: list[str], model_name: str, prediction_value: float, metric: str | None = None
+):
+    """Publish model prediction event for a list of foil holes to RabbitMQ"""
+    event = MultiFoilHoleModelPredictionEvent(
+        event_type=MessageQueueEventType.MULTI_FOILHOLE_MODEL_PREDICTION,
+        foilhole_uuids=foilhole_uuids,
+        prediction_model_name=model_name,
+        prediction_value=prediction_value,
+        metric=metric,
+    )
+    return rmq_publisher.publish_event(MessageQueueEventType.MULTI_FOILHOLE_MODEL_PREDICTION, event)
+
+
+def publish_model_parameter_update(
+    grid_uuid: str, model_name: str, key: str, value: float, metric: str | None = None, group: str = ""
+):
     """Publish model parameter update event to RabbitMQ"""
     event = ModelParameterUpdateEvent(
         event_type=MessageQueueEventType.MODEL_PARAMETER_UPDATE,
@@ -279,9 +307,56 @@ def publish_model_parameter_update(grid_uuid: str, model_name: str, key: str, va
         prediction_model_name=model_name,
         key=key,
         value=value,
+        metric=metric,
         group=group,
     )
     return rmq_publisher.publish_event(MessageQueueEventType.MODEL_PARAMETER_UPDATE, event)
+
+def publish_motion_correction_completed(micrograph_uuid: str, total_motion: float, average_motion: float):
+    """Publish motion correction completed event to RabbitMQ"""
+    event = MotionCorrectionCompleteBody(
+        event_type=MessageQueueEventType.MOTION_CORRECTION_COMPLETE,
+        micrograph_uuid=micrograph_uuid,
+        total_motion=total_motion,
+        average_motion=average_motion,
+    )
+    return rmq_publisher.publish_event(MessageQueueEventType.MOTION_CORRECTION_COMPLETE, event)
+
+
+def publish_motion_correction_registered(micrograph_uuid: str, quality: bool, metric_name: str | None = None):
+    """Publish motion correction registered (after motion correction completed) event to RabbitMQ"""
+    event = MotionCorrectionRegisteredBody(
+        event_type=MessageQueueEventType.MOTION_CORRECTION_REGISTERED,
+        micrograph_uuid=micrograph_uuid,
+        quality=quality,
+        metric_name=metric_name,
+    )
+    return rmq_publisher.publish_event(MessageQueueEventType.MOTION_CORRECTION_REGISTERED, event)
+
+
+def publish_ctf_estimation_completed(micrograph_uuid: str, ctf_max_res: float):
+    """Publish CTF estimation completed event to RabbitMQ"""
+    event = CtfCompleteBody(
+        event_type=MessageQueueEventType.CTF_COMPLETE, micrograph_uuid=micrograph_uuid, ctf_max_res=ctf_max_res
+    )
+    return rmq_publisher.publish_event(MessageQueueEventType.CTF_COMPLETE, event)
+
+
+def publish_ctf_estimation_registered(micrograph_uuid: str, quality: bool, metric_name: str | None = None):
+    """Publish CTF estimation registered (after motion correction completed) event to RabbitMQ"""
+    event = CtfRegisteredBody(
+        event_type=MessageQueueEventType.CTF_REGISTERED,
+        micrograph_uuid=micrograph_uuid,
+        quality=quality,
+        metric_name=metric_name,
+    )
+    return rmq_publisher.publish_event(MessageQueueEventType.CTF_REGISTERED, event)
+
+
+def publish_refresh_predictions(grid_uuid: str):
+    """Publish event to trigger overall prediction recalculation"""
+    event = RefreshPredictionsEvent(event_type=MessageQueueEventType.REFRESH_PREDICTIONS, grid_uuid=grid_uuid)
+    return rmq_publisher.publish_event(MessageQueueEventType.REFRESH_PREDICTIONS, event)
 
 
 # ========== Agent Communication Events ==========
