@@ -88,7 +88,7 @@ def prior_update(
             QualityPredictionModelWeight(
                 grid_uuid=pred[1].grid_uuid,
                 micrograph_uuid=micrograph_uuid,
-                micrograph_quality=quality,
+                micrograph_quality=quality >= 0.5,
                 metric_name=metric,
                 prediction_model_name=pred[1].prediction_model_name,
                 weight=updated_value,
