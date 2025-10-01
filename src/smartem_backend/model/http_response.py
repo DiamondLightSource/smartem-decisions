@@ -2,9 +2,13 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict
 
-from smartem_common.entity_status import (AcquisitionStatus, FoilHoleStatus,
-                                          GridSquareStatus, GridStatus,
-                                          MicrographStatus)
+from smartem_common.entity_status import (
+    AcquisitionStatus,
+    FoilHoleStatus,
+    GridSquareStatus,
+    GridStatus,
+    MicrographStatus,
+)
 
 
 class AtlasTileResponse(BaseModel):
@@ -163,6 +167,7 @@ class MicrographResponse(BaseModel):
         from_attributes=True, use_enum_values=True, json_encoders={datetime: lambda v: v.isoformat() if v else None}
     )
 
+
 class QualityPredictionModelResponse(BaseModel):
     name: str
     description: str
@@ -183,7 +188,6 @@ class LatentRepresentationResponse(BaseModel):
     index: int | None
     gridsquare_uuid: str = ""
     foilhole_uuid: str = ""
-
 
 
 # ============ Agent Communication Response Models ============
