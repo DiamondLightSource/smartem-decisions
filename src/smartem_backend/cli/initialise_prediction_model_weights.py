@@ -2,7 +2,7 @@ import typer
 from sqlalchemy.engine import Engine
 from sqlmodel import Session, select
 
-from smartem_backend.model.database import Grid, QualityPredictionModel, QualityPredictionModelWeight
+from smartem_backend.model.database import Grid, QualityMetric, QualityPredictionModel, QualityPredictionModelWeight
 from smartem_backend.utils import get_db_engine, logger
 
 
@@ -20,6 +20,9 @@ def initialise_all_models_for_grid(grid_uuid: str, engine: Engine = None) -> Non
     with Session(engine) as sess:
         # Get all available prediction models
         models = sess.exec(select(QualityPredictionModel)).all()
+        # get all metrics
+        # each weight will be initialised against each metric so that they can be adjusted independently
+        metrics = sess.exec(select(QualityMetric)).all()
 
         if not models:
             logger.warning(f"No prediction models found to initialise for grid {grid_uuid}")
@@ -27,23 +30,28 @@ def initialise_all_models_for_grid(grid_uuid: str, engine: Engine = None) -> Non
 
         # Initialise weights for each model
         default_weight = 1 / len(models)
-        for model in models:
-            # Check if weight already exists for this grid-model combination
-            existing_weight = sess.exec(
-                select(QualityPredictionModelWeight).where(
-                    QualityPredictionModelWeight.grid_uuid == grid_uuid,
-                    QualityPredictionModelWeight.prediction_model_name == model.name,
-                )
-            ).first()
+        for metric in metrics:
+            for model in models:
+                # Check if weight already exists for this grid-model combination
+                existing_weight = sess.exec(
+                    select(QualityPredictionModelWeight).where(
+                        QualityPredictionModelWeight.grid_uuid == grid_uuid,
+                        QualityPredictionModelWeight.prediction_model_name == model.name,
+                        QualityPredictionModelWeight.metric_name == metric.name,
+                    )
+                ).first()
 
-            if existing_weight is None:
-                weight_entry = QualityPredictionModelWeight(
-                    grid_uuid=grid_uuid, prediction_model_name=model.name, weight=default_weight
-                )
-                sess.add(weight_entry)
-                logger.info(f"Initialised weight {default_weight} for model '{model.name}' on grid {grid_uuid}")
-            else:
-                logger.debug(f"Weight already exists for model '{model.name}' on grid {grid_uuid}")
+                if existing_weight is None:
+                    weight_entry = QualityPredictionModelWeight(
+                        grid_uuid=grid_uuid,
+                        prediction_model_name=model.name,
+                        weight=default_weight,
+                        metric_name=metric.name,
+                    )
+                    sess.add(weight_entry)
+                    logger.info(f"Initialised weight {default_weight} for model '{model.name}' on grid {grid_uuid}")
+                else:
+                    logger.debug(f"Weight already exists for model '{model.name}' on grid {grid_uuid}")
 
         sess.commit()
 
