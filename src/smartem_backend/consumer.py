@@ -602,7 +602,7 @@ def _check_against_statistics(
     else:
         metric_mean = metric_stats[0].value_sum / metric_stats[0].count
         metric_var = metric_stats[0].squared_value_sum / (metric_stats[0].count - 1)
-        cdf_value = scipy.stats.norm(metric_mean, np.sqrt(metric_var)).cdf(comparison_value)
+        cdf_value = float(scipy.stats.norm(metric_mean, np.sqrt(metric_var)).cdf(comparison_value))
         return cdf_value if larger_better else 1 - cdf_value
 
 
