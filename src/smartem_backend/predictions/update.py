@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 import numpy as np
 from sqlalchemy import func
 from sqlalchemy.orm import aliased
-from sqlmodel import Session, or_, select
+from sqlmodel import Session, and_, or_, select
 
 from smartem_backend.model.database import (
     CurrentQualityPrediction,
@@ -52,8 +52,14 @@ def prior_update(
             select(CurrentQualityPrediction, CurrentQualityPredictionModelWeight)
             .where(
                 or_(
-                    CurrentQualityPrediction.foilhole_uuid == hole_uuid,
-                    CurrentQualityPrediction.gridsquare_uuid == square_uuid,
+                    and_(
+                        CurrentQualityPrediction.foilhole_uuid == hole_uuid,
+                        CurrentQualityPrediction.gridsquare_uuid == square_uuid,
+                    ),
+                    and_(
+                        CurrentQualityPrediction.foilhole_uuid == None,  # noqa: E711
+                        CurrentQualityPrediction.gridsquare_uuid == square_uuid,
+                    ),
                 )
             )
             .where(CurrentQualityPredictionModelWeight.grid_uuid == grid_uuid)
