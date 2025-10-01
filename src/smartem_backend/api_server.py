@@ -30,10 +30,13 @@ from smartem_backend.model.database import (
     Atlas,
     AtlasTile,
     AtlasTileGridSquarePosition,
+    CurrentQualityPrediction,
     FoilHole,
     Grid,
     GridSquare,
     Micrograph,
+    OverallQualityPrediction,
+    QualityMetric,
     QualityPrediction,
     QualityPredictionModel,
     QualityPredictionModelParameter,
@@ -858,6 +861,10 @@ def update_gridsquare(gridsquare_uuid: str, gridsquare: GridSquareUpdateRequest,
 
     update_data = gridsquare.model_dump(exclude_unset=True)
 
+    # avoid overwriting a status with NONE
+    if update_data["status"] == GridSquareStatus.NONE:
+        update_data["status"] = db_gridsquare.status
+
     for key, value in update_data.items():
         if hasattr(db_gridsquare, key):
             setattr(db_gridsquare, key, value)
@@ -1097,8 +1104,6 @@ def create_gridsquare_foilhole(
         added_holes.append(FoilHole(**foilhole_data))
     db.commit()
     for foilhole in added_holes:
-        db.refresh(foilhole)
-
         success = publish_foilhole_created(
             uuid=foilhole.uuid,
             foilhole_id=foilhole.foilhole_id,
@@ -1856,6 +1861,12 @@ def get_prediction_models(db: SqlAlchemySession = DB_DEPENDENCY):
     return db.query(QualityPredictionModel).all()
 
 
+@api_app.get("/quality_metrics", response_model=list[QualityMetric])
+def get_quality_metrics(db: SqlAlchemySession = DB_DEPENDENCY):
+    metrics = db.query(QualityMetric).all()
+    return metrics
+
+
 @api_app.get("/grid/{grid_uuid}/model_weights", response_model=dict[str, list[QualityPredictionModelWeight]])
 def get_model_weights_for_grid(grid_uuid: str, db: SqlAlchemySession = DB_DEPENDENCY):
     """Get time series of model weights for grid"""
@@ -1894,6 +1905,32 @@ def get_foilhole_quality_prediction_time_series_for_gridsquare(
         db.query(QualityPrediction, FoilHole)
         .filter(QualityPrediction.foilhole_uuid == FoilHole.uuid)
         .filter(FoilHole.gridsquare_uuid == gridsquare_uuid)
+        .filter(QualityPrediction.metric_name == None)  # noqa: E711
+        .order_by(QualityPrediction.timestamp)
+        .all()
+    )
+    predictions = sorted(predictions, key=lambda x: x[1].foilhole_id)
+    predictions = sorted(predictions, key=lambda x: x[0].prediction_model_name)
+    grouped_predictions = {
+        k: {fh: [elem[0] for elem in v2] for fh, v2 in itertools.groupby(list(v), lambda x: x[1].foilhole_id)}
+        for k, v in itertools.groupby(predictions, lambda x: x[0].prediction_model_name)
+    }
+    return grouped_predictions
+
+
+@api_app.get(
+    "/quality_metric/{metric_name}/gridsquares/{gridsquare_uuid}/foilhole_quality_predictions",
+    response_model=dict[str, dict[str, list[QualityPrediction]]],
+)
+def get_foilhole_quality_prediction_time_series_for_gridsquare_for_metric(
+    metric_name: str, gridsquare_uuid: str, db: SqlAlchemySession = DB_DEPENDENCY
+):
+    """Get time ordered predictions for all models that provide them for this square"""
+    predictions = (
+        db.query(QualityPrediction, FoilHole)
+        .filter(QualityPrediction.foilhole_uuid == FoilHole.uuid)
+        .filter(FoilHole.gridsquare_uuid == gridsquare_uuid)
+        .filter(QualityPrediction.metric_name == metric_name)
         .order_by(QualityPrediction.timestamp)
         .all()
     )
@@ -1921,6 +1958,23 @@ def get_prediction_for_grid(prediction_model_name: str, grid_uuid: str, db: SqlA
         for gs in squares
     ]
     predictions = [p[0] for p in predictions if p]
+    if not predictions:
+        holes = (
+            db.query(GridSquare, FoilHole)
+            .filter(GridSquare.grid_uuid == grid_uuid)
+            .filter(FoilHole.gridsquare_uuid == GridSquare.uuid)
+            .all()
+        )
+        predictions = [
+            db.query(QualityPrediction)
+            .filter(QualityPrediction.foilhole_uuid == fh[1].uuid)
+            .filter(QualityPrediction.prediction_model_name == prediction_model_name)
+            .order_by(QualityPrediction.timestamp.desc())
+            .first()
+            for fh in holes
+        ]
+        for i in range(len(predictions)):
+            predictions[i].gridsquare_uuid = holes[i][0].uuid
     return predictions
 
 
@@ -1945,15 +1999,77 @@ def get_prediction_for_gridsquare(
 
 
 @api_app.get(
+    "/gridsquare/{gridsquare_uuid}/overall_prediction",
+    response_model=list[OverallQualityPrediction],
+)
+def get_overall_prediction_for_gridsquare(gridsquare_uuid: str, db: SqlAlchemySession = DB_DEPENDENCY):
+    holes = db.query(FoilHole).filter(FoilHole.gridsquare_uuid == gridsquare_uuid).all()
+    predictions = (
+        db.query(OverallQualityPrediction)
+        .filter(OverallQualityPrediction.foilhole_uuid.in_([h.uuid for h in holes]))
+        .all()
+    )
+    return predictions
+
+
+@api_app.get(
+    "/grid/{grid_uuid}/prediction_model/{prediction_model_name}/latent_rep/{latent_rep_model_name}/suggested_squares",
+    response_model=list[GridSquare],
+)
+def get_suggested_square_collections(
+    grid_uuid: str, prediction_model_name: str, latent_rep_model_name: str, db: SqlAlchemySession = DB_DEPENDENCY
+):
+    scores = (
+        db.query(GridSquare, CurrentQualityPrediction)
+        .filter(CurrentQualityPrediction.gridsquare_uuid == GridSquare.uuid)
+        .filter(GridSquare.grid_uuid == grid_uuid)
+        .filter(CurrentQualityPrediction.prediction_model_name == prediction_model_name)
+        .all()
+    )
+    cluster_indices = {
+        p.key: p.value
+        for p in db.query(QualityPredictionModelParameter)
+        .filter(QualityPredictionModelParameter.grid_uuid == grid_uuid)
+        .filter(QualityPredictionModelParameter.prediction_model_name == latent_rep_model_name)
+        .filter(QualityPredictionModelParameter.group == "cluster_indices")
+        .all()
+    }
+    score_ordered_squares = [
+        p[0]
+        for p in sorted(
+            scores, key=lambda x: x[1].value * (x[0].size_width ** 2) * (0 if x[0].size_width < 60 else 1), reverse=True
+        )
+    ]
+    cluster_counts = {v: 0 for v in set(cluster_indices.values())}
+    suggested = []
+    for i in range(len(score_ordered_squares) // 2):
+        square = score_ordered_squares[i]
+        if cluster_counts[cluster_indices[square.uuid]] < 2:
+            suggested.append(square)
+            cluster_counts[cluster_indices[square.uuid]] += 1
+    return suggested
+
+
+@api_app.get(
     "/prediction_model/{prediction_model_name}/grid/{grid_uuid}/latent_representation",
     response_model=list[LatentRepresentationResponse],
 )
 def get_latent_rep(prediction_model_name: str, grid_uuid: str, db: SqlAlchemySession = DB_DEPENDENCY):
-    model_parameters = (
+    xs = (
         db.query(QualityPredictionModelParameter)
         .filter(QualityPredictionModelParameter.prediction_model_name == prediction_model_name)
         .filter(QualityPredictionModelParameter.grid_uuid == grid_uuid)
         .filter(QualityPredictionModelParameter.group.like("coordinates:%"))
+        .filter(QualityPredictionModelParameter.key == "x")
+        .order_by(QualityPredictionModelParameter.timestamp.desc())
+        .all()
+    )
+    ys = (
+        db.query(QualityPredictionModelParameter)
+        .filter(QualityPredictionModelParameter.prediction_model_name == prediction_model_name)
+        .filter(QualityPredictionModelParameter.grid_uuid == grid_uuid)
+        .filter(QualityPredictionModelParameter.group.like("coordinates:%"))
+        .filter(QualityPredictionModelParameter.key == "y")
         .order_by(QualityPredictionModelParameter.timestamp.desc())
         .all()
     )
@@ -1975,21 +2091,20 @@ def get_latent_rep(prediction_model_name: str, grid_uuid: str, db: SqlAlchemySes
             return all(a is not None for a in (self.x, self.y, self.index))
 
     rep = {p.uuid: LatentRep() for p in db.query(GridSquare).filter(GridSquare.grid_uuid == grid_uuid).all()}
-    for p in cluster_indices + model_parameters:
-        if p.group == "cluster_indices":
-            square_uuid = p.key
-            if rep[square_uuid].index is None:
-                rep[square_uuid].index = p.value
-            continue
-        else:
-            square_uuid = p.group.replace("coordinates:", "")
-        if rep.get(square_uuid, LatentRep()).complete():
-            break
-        if p.key == "x":
-            rep[square_uuid].x = p.value
-        else:
-            rep[square_uuid].y = p.value
-    return [LatentRepresentationResponse(gridsquare_uuid=k, x=v.x, y=v.y, index=v.index) for k, v in rep.items() if v]
+    if not set(rep.keys()).intersection({ci.key for ci in cluster_indices}):
+        rep = {
+            p[1].uuid: LatentRep()
+            for p in db.query(GridSquare, FoilHole)
+            .filter(GridSquare.grid_uuid == grid_uuid)
+            .filter(FoilHole.gridsquare_uuid == GridSquare.uuid)
+            .all()
+        }
+    indices = {ci.key: ci.value for ci in cluster_indices}
+    res = []
+    for x, y in zip(xs, ys, strict=True):
+        uuid = x.group.replace("coordinates:", "")
+        res.append(LatentRepresentationResponse(gridsquare_uuid=uuid, x=x.value, y=y.value, index=indices[uuid]))
+    return res
 
 
 @api_app.get(
