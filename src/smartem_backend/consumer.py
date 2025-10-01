@@ -69,7 +69,11 @@ from smartem_backend.model.mq_event import (
     MultiFoilHoleModelPredictionEvent,
     RefreshPredictionsEvent,
 )
-from smartem_backend.mq_publisher import publish_agent_instruction_created, publish_ctf_estimation_registered, publish_motion_correction_registered
+from smartem_backend.mq_publisher import (
+    publish_agent_instruction_created,
+    publish_ctf_estimation_registered,
+    publish_motion_correction_registered,
+)
 from smartem_backend.predictions.update import overall_predictions_update, prior_update
 from smartem_backend.utils import get_db_engine, load_conf, rmq_consumer, setup_logger
 
