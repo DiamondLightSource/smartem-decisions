@@ -4,6 +4,8 @@ metadata:
   name: smartem-config
   namespace: smartem-decisions-staging
 data:
+  # These are fallback values used if ./tools/dev-k8s.sh is not used
+  # The script will dynamically override these with values from .env.staging
   POSTGRES_HOST: "postgres-service"
   POSTGRES_PORT: "5432"
   POSTGRES_DB: "smartem_db"
@@ -11,3 +13,4 @@ data:
   RABBITMQ_PORT: "5672"
   HTTP_API_PORT: "8000"
   ADMINER_PORT: "8080"
+  CORS_ALLOWED_ORIGINS: "https://staging.example.com"
