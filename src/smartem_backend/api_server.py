@@ -66,6 +66,9 @@ from smartem_backend.model.http_request import (
     GridUpdateRequest,
     MicrographCreateRequest,
     MicrographUpdateRequest,
+    QualityPredictionCreateRequest,
+    QualityPredictionModelCreateRequest,
+    QualityPredictionModelUpdateRequest,
 )
 from smartem_backend.model.http_request import AgentInstructionAcknowledgement as AgentInstructionAcknowledgementRequest
 from smartem_backend.model.http_response import (
@@ -79,8 +82,11 @@ from smartem_backend.model.http_response import (
     GridSquareResponse,
     LatentRepresentationResponse,
     MicrographResponse,
+    QualityMetricsResponse,
+    QualityPredictionModelParameterResponse,
     QualityPredictionModelResponse,
     QualityPredictionResponse,
+    QualityPredictionModelWeightResponse,
 )
 from smartem_backend.mq_publisher import (
     publish_acquisition_created,
@@ -1272,6 +1278,199 @@ def create_foilhole_micrograph(
         response_data["status"] = MicrographStatus.NONE
 
     return MicrographResponse(**response_data)
+
+
+# ============ Quality Prediction Model Endpoints ============
+
+
+@app.get("/prediction_models", response_model=list[QualityPredictionModelResponse])
+def get_prediction_models(db: SqlAlchemySession = DB_DEPENDENCY):
+    models = db.query(QualityPredictionModel).all()
+    return [QualityPredictionModelResponse.model_validate(model) for model in models]
+
+
+@app.get("/prediction_models/{name}", response_model=QualityPredictionModelResponse)
+def get_prediction_model(name: str, db: SqlAlchemySession = DB_DEPENDENCY):
+    model = db.query(QualityPredictionModel).filter(QualityPredictionModel.name == name).first()
+    if not model:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Prediction model {name} not found")
+    return QualityPredictionModelResponse.model_validate(model)
+
+
+@app.post("/prediction_models", response_model=QualityPredictionModelResponse, status_code=status.HTTP_201_CREATED)
+def create_prediction_model(request: QualityPredictionModelCreateRequest, db: SqlAlchemySession = DB_DEPENDENCY):
+    existing = db.query(QualityPredictionModel).filter(QualityPredictionModel.name == request.name).first()
+    if existing:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail=f"Prediction model {request.name} already exists"
+        )
+
+    model = QualityPredictionModel(**request.model_dump())
+    db.add(model)
+    db.commit()
+    db.refresh(model)
+    return QualityPredictionModelResponse.model_validate(model)
+
+
+@app.put("/prediction_models/{name}", response_model=QualityPredictionModelResponse)
+def update_prediction_model(
+    name: str, request: QualityPredictionModelUpdateRequest, db: SqlAlchemySession = DB_DEPENDENCY
+):
+    model = db.query(QualityPredictionModel).filter(QualityPredictionModel.name == name).first()
+    if not model:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Prediction model {name} not found")
+
+    update_data = request.model_dump(exclude_unset=True)
+    for key, value in update_data.items():
+        setattr(model, key, value)
+
+    db.commit()
+    db.refresh(model)
+    return QualityPredictionModelResponse.model_validate(model)
+
+
+@app.delete("/prediction_models/{name}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_prediction_model(name: str, db: SqlAlchemySession = DB_DEPENDENCY):
+    model = db.query(QualityPredictionModel).filter(QualityPredictionModel.name == name).first()
+    if not model:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Prediction model {name} not found")
+
+    db.delete(model)
+    db.commit()
+
+
+# ============ Quality Prediction Endpoints ============
+
+
+@app.get("/gridsquares/{gridsquare_uuid}/quality_predictions", response_model=list[QualityPredictionResponse])
+def get_gridsquare_quality_predictions(gridsquare_uuid: str, db: SqlAlchemySession = DB_DEPENDENCY):
+    gridsquare = db.query(GridSquare).filter(GridSquare.uuid == gridsquare_uuid).first()
+    if not gridsquare:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"GridSquare {gridsquare_uuid} not found")
+
+    predictions = db.query(QualityPrediction).filter(QualityPrediction.gridsquare_uuid == gridsquare_uuid).all()
+    return [QualityPredictionResponse.model_validate(pred) for pred in predictions]
+
+
+@app.get("/gridsquares/{gridsquare_uuid}/foilhole_quality_predictions", response_model=list[QualityPredictionResponse])
+def get_gridsquare_foilhole_quality_predictions(gridsquare_uuid: str, db: SqlAlchemySession = DB_DEPENDENCY):
+    gridsquare = db.query(GridSquare).filter(GridSquare.uuid == gridsquare_uuid).first()
+    if not gridsquare:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"GridSquare {gridsquare_uuid} not found")
+
+    foilhole_uuids = [fh.uuid for fh in gridsquare.foilholes]
+    predictions = db.query(QualityPrediction).filter(QualityPrediction.foilhole_uuid.in_(foilhole_uuids)).all()
+
+    return [QualityPredictionResponse.model_validate(pred) for pred in predictions]
+
+
+@app.post("/quality_predictions", response_model=QualityPredictionResponse, status_code=status.HTTP_201_CREATED)
+def create_quality_prediction(request: QualityPredictionCreateRequest, db: SqlAlchemySession = DB_DEPENDENCY):
+    if request.foilhole_uuid:
+        foilhole = db.query(FoilHole).filter(FoilHole.uuid == request.foilhole_uuid).first()
+        if not foilhole:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail=f"FoilHole {request.foilhole_uuid} not found"
+            )
+
+    if request.gridsquare_uuid:
+        gridsquare = db.query(GridSquare).filter(GridSquare.uuid == request.gridsquare_uuid).first()
+        if not gridsquare:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail=f"GridSquare {request.gridsquare_uuid} not found"
+            )
+
+    model = (
+        db.query(QualityPredictionModel).filter(QualityPredictionModel.name == request.prediction_model_name).first()
+    )
+    if not model:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail=f"Prediction model {request.prediction_model_name} not found"
+        )
+
+    prediction = QualityPrediction(**request.model_dump())
+    db.add(prediction)
+    db.commit()
+    db.refresh(prediction)
+    return QualityPredictionResponse.model_validate(prediction)
+
+
+@app.get("/quality_metrics", response_model=QualityMetricsResponse)
+def get_quality_metrics(db: SqlAlchemySession = DB_DEPENDENCY):
+    from sqlalchemy import func
+
+    total_predictions = db.query(func.count(QualityPrediction.id)).scalar() or 0
+    avg_quality = db.query(func.avg(QualityPrediction.value)).scalar()
+    min_quality = db.query(func.min(QualityPrediction.value)).scalar()
+    max_quality = db.query(func.max(QualityPrediction.value)).scalar()
+    models_count = db.query(func.count(QualityPredictionModel.name)).scalar() or 0
+
+    return QualityMetricsResponse(
+        total_predictions=total_predictions,
+        average_quality=float(avg_quality) if avg_quality is not None else None,
+        min_quality=float(min_quality) if min_quality is not None else None,
+        max_quality=float(max_quality) if max_quality is not None else None,
+        models_count=models_count,
+    )
+
+
+@app.get(
+    "/prediction_model/{prediction_model_name}/grid/{grid_uuid}/prediction",
+    response_model=list[QualityPredictionResponse],
+)
+def get_grid_predictions(prediction_model_name: str, grid_uuid: str, db: SqlAlchemySession = DB_DEPENDENCY):
+    grid = db.query(Grid).filter(Grid.uuid == grid_uuid).first()
+    if not grid:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Grid {grid_uuid} not found")
+
+    model = db.query(QualityPredictionModel).filter(QualityPredictionModel.name == prediction_model_name).first()
+    if not model:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail=f"Prediction model {prediction_model_name} not found"
+        )
+
+    gridsquare_uuids = [gs.uuid for gs in grid.gridsquares]
+    predictions = (
+        db.query(QualityPrediction)
+        .filter(
+            and_(
+                QualityPrediction.prediction_model_name == prediction_model_name,
+                QualityPrediction.gridsquare_uuid.in_(gridsquare_uuids),
+            )
+        )
+        .all()
+    )
+
+    return [QualityPredictionResponse.model_validate(pred) for pred in predictions]
+
+
+@app.get(
+    "/prediction_model/{prediction_model_name}/grid/{grid_uuid}/latent_representation",
+    response_model=list[QualityPredictionModelParameterResponse],
+)
+def get_grid_latent_representation(prediction_model_name: str, grid_uuid: str, db: SqlAlchemySession = DB_DEPENDENCY):
+    grid = db.query(Grid).filter(Grid.uuid == grid_uuid).first()
+    if not grid:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Grid {grid_uuid} not found")
+
+    model = db.query(QualityPredictionModel).filter(QualityPredictionModel.name == prediction_model_name).first()
+    if not model:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail=f"Prediction model {prediction_model_name} not found"
+        )
+
+    parameters = (
+        db.query(QualityPredictionModelParameter)
+        .filter(
+            and_(
+                QualityPredictionModelParameter.grid_uuid == grid_uuid,
+                QualityPredictionModelParameter.prediction_model_name == prediction_model_name,
+            )
+        )
+        .all()
+    )
+
+    return [QualityPredictionModelParameterResponse.model_validate(param) for param in parameters]
 
 
 # ============ Agent Communication Endpoints ============
