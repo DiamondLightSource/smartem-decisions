@@ -7,6 +7,7 @@ from contextlib import asynccontextmanager
 from datetime import datetime, timedelta
 
 from fastapi import Depends, FastAPI, HTTPException, Request, status
+from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import and_, desc, or_, text
 from sqlalchemy.orm import Session as SqlAlchemySession
 from sqlalchemy.orm import sessionmaker
@@ -164,6 +165,18 @@ app = FastAPI(
     version=__version__,
     redoc_url=None,
     lifespan=lifespan,
+)
+
+# Configure CORS
+cors_allowed_origins = os.getenv("CORS_ALLOWED_ORIGINS", "*")
+origins = [origin.strip() for origin in cors_allowed_origins.split(",") if origin.strip()]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 
