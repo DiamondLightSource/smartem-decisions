@@ -168,6 +168,60 @@ class MicrographResponse(BaseModel):
     )
 
 
+# ============ Quality Prediction Response Models ============
+
+
+class QualityPredictionModelResponse(BaseModel):
+    name: str
+    description: str
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class QualityPredictionResponse(BaseModel):
+    id: int
+    timestamp: datetime
+    value: float
+    prediction_model_name: str
+    foilhole_uuid: str | None
+    gridsquare_uuid: str | None
+
+    model_config = ConfigDict(from_attributes=True, json_encoders={datetime: lambda v: v.isoformat() if v else None})
+
+
+class QualityPredictionModelParameterResponse(BaseModel):
+    id: int
+    grid_uuid: str
+    timestamp: datetime
+    prediction_model_name: str
+    key: str
+    value: float
+    group: str
+
+    model_config = ConfigDict(from_attributes=True, json_encoders={datetime: lambda v: v.isoformat() if v else None})
+
+
+class QualityPredictionModelWeightResponse(BaseModel):
+    id: int
+    grid_uuid: str
+    micrograph_uuid: str | None
+    micrograph_quality: bool | None
+    timestamp: datetime
+    origin: str | None
+    prediction_model_name: str
+    weight: float
+
+    model_config = ConfigDict(from_attributes=True, json_encoders={datetime: lambda v: v.isoformat() if v else None})
+
+
+class QualityMetricsResponse(BaseModel):
+    total_predictions: int
+    average_quality: float | None
+    min_quality: float | None
+    max_quality: float | None
+    models_count: int
+
+
 # ============ Agent Communication Response Models ============
 
 

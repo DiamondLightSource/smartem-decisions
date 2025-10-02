@@ -289,6 +289,68 @@ ensure_app_secrets() {
     log_success "Application secrets created successfully"
 }
 
+# Ensure application configmap exists with dynamic values
+ensure_app_configmap() {
+    log_info "Ensuring application configmap exists with values from .env..."
+
+    # Priority: shell env → environment-specific .env file → skip override (use YAML defaults)
+    local postgres_host="${POSTGRES_HOST:-}"
+    local postgres_port="${POSTGRES_PORT:-}"
+    local postgres_db="${POSTGRES_DB:-}"
+    local rabbitmq_host="${RABBITMQ_HOST:-}"
+    local rabbitmq_port="${RABBITMQ_PORT:-}"
+    local http_api_port="${HTTP_API_PORT:-}"
+    local adminer_port="${ADMINER_PORT:-}"
+    local cors_allowed_origins="${CORS_ALLOWED_ORIGINS:-}"
+
+    # Check if any env vars are set
+    local has_env_overrides=false
+    if [[ -n "$postgres_host" ]] || [[ -n "$postgres_port" ]] || [[ -n "$postgres_db" ]] || \
+       [[ -n "$rabbitmq_host" ]] || [[ -n "$rabbitmq_port" ]] || \
+       [[ -n "$http_api_port" ]] || [[ -n "$adminer_port" ]] || [[ -n "$cors_allowed_origins" ]]; then
+        has_env_overrides=true
+    fi
+
+    if [[ "$has_env_overrides" == false ]]; then
+        log_info "No ConfigMap env vars found in .env file, using hardcoded values from YAML"
+        return 0
+    fi
+
+    # If ConfigMap exists and we have env overrides, recreate it with env values
+    if kubectl get configmap smartem-config -n "$NAMESPACE" &> /dev/null; then
+        log_info "ConfigMap exists and .env has overrides, recreating with current values..."
+        kubectl delete configmap smartem-config -n "$NAMESPACE"
+    fi
+
+    # Set defaults for any unset values
+    postgres_host="${postgres_host:-postgres-service}"
+    postgres_port="${postgres_port:-5432}"
+    postgres_db="${postgres_db:-smartem_db}"
+    rabbitmq_host="${rabbitmq_host:-rabbitmq-service}"
+    rabbitmq_port="${rabbitmq_port:-5672}"
+    http_api_port="${http_api_port:-8000}"
+    adminer_port="${adminer_port:-8080}"
+    cors_allowed_origins="${cors_allowed_origins:-*}"
+
+    log_info "Creating application ConfigMap for environment: $DEPLOY_ENV"
+    log_info "POSTGRES_HOST=$postgres_host, POSTGRES_PORT=$postgres_port, POSTGRES_DB=$postgres_db"
+    log_info "RABBITMQ_HOST=$rabbitmq_host, RABBITMQ_PORT=$rabbitmq_port"
+    log_info "HTTP_API_PORT=$http_api_port, CORS_ALLOWED_ORIGINS=$cors_allowed_origins"
+
+    kubectl create configmap smartem-config \
+        --from-literal=POSTGRES_HOST="$postgres_host" \
+        --from-literal=POSTGRES_PORT="$postgres_port" \
+        --from-literal=POSTGRES_DB="$postgres_db" \
+        --from-literal=RABBITMQ_HOST="$rabbitmq_host" \
+        --from-literal=RABBITMQ_PORT="$rabbitmq_port" \
+        --from-literal=HTTP_API_PORT="$http_api_port" \
+        --from-literal=ADMINER_PORT="$adminer_port" \
+        --from-literal=CORS_ALLOWED_ORIGINS="$cors_allowed_origins" \
+        --namespace="$NAMESPACE"
+
+    log_success "Application ConfigMap created with .env overrides"
+}
+
 # Build and import local image for development
 ensure_local_image() {
     log_info "Ensuring local SmartEM image is available..."
@@ -330,17 +392,20 @@ ensure_local_image() {
 # Deploy the environment
 deploy_environment() {
     log_info "Deploying development environment..."
-    
+
     cd "$PROJECT_ROOT"
-    
+
     # Apply the kustomization first to create namespace
     kubectl apply -k "$K8S_ENV_PATH"
-    
+
     # Ensure GHCR secret exists after namespace is created
     ensure_ghcr_secret
 
     # Ensure application secrets exist after namespace is created
     ensure_app_secrets
+
+    # Ensure application configmap exists with dynamic values from .env
+    ensure_app_configmap
 
     # Ensure local image is built and available for development
     ensure_local_image
