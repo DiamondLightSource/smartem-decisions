@@ -12,6 +12,7 @@ from pathlib import Path
 import mrcfile
 import tifffile
 from fastapi import Depends, FastAPI, HTTPException, Request, status
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
 from PIL import Image
 from pydantic import BaseModel
@@ -181,6 +182,19 @@ app = FastAPI(
     redoc_url=None,
     lifespan=lifespan,
 )
+
+# Configure CORS
+cors_allowed_origins = os.getenv("CORS_ALLOWED_ORIGINS", "*")
+origins = [origin.strip() for origin in cors_allowed_origins.split(",") if origin.strip()]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 
 # Configure logging based on environment variable
 # SMARTEM_LOG_LEVEL can be: ERROR (default), INFO, DEBUG
