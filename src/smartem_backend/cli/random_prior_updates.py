@@ -20,7 +20,7 @@ DEFAULT_PARTICLE_SELECTION_DELAY = (2.0, 6.0)
 def perform_random_updates(
     grid_uuid: str | None = None,
     random_range: tuple[float, float] = (0, 1),
-    origin: str = "motion_correction",
+    metric: str = "motioncorrection",
     engine: Engine = None,
 ) -> None:
     if engine is None:
@@ -37,7 +37,7 @@ def perform_random_updates(
             .where(GridSquare.grid_uuid == grid_uuid)
         ).all()
         for m in mics:
-            prior_update(random.uniform(random_range[0], random_range[1]) < 0.5, m[0].uuid, sess, origin=origin)
+            prior_update(random.uniform(random_range[0], random_range[1]) < 0.5, m[0].uuid, sess, metric=metric)
     return None
 
 
@@ -74,7 +74,7 @@ def simulate_processing_pipeline(micrograph_uuid: str, engine: Engine = None) ->
             with Session(engine) as sess:
                 # Generate random quality result (True/False)
                 quality_result = random.choice([True, False])
-                prior_update(quality=quality_result, micrograph_uuid=micrograph_uuid, session=sess, origin=step_name)
+                prior_update(quality=quality_result, micrograph_uuid=micrograph_uuid, session=sess, metric=step_name)
                 logger.info(f"Completed {step_name} for micrograph {micrograph_uuid}, quality: {quality_result}")
         except Exception as e:
             logger.error(f"Error in {step_name} for micrograph {micrograph_uuid}: {e}")

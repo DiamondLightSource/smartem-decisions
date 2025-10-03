@@ -128,6 +128,7 @@ class GridSquareData(BaseModel):
     center_y: int | None = None
     size_width: int | None = None
     size_height: int | None = None
+    registered: bool = False
     uuid: str = Field(default_factory=generate_uuid)
 
     model_config = ConfigDict(json_encoders={Path: lambda v: str(v) if v else None}, from_attributes=True)
