@@ -18,7 +18,12 @@ target_metadata = SQLModel.metadata
 
 
 def get_url():
-    """Get database URL from existing connection setup"""
+    """Get database URL from alembic config or existing connection setup"""
+    # First try to get URL from alembic config (used by schema drift check)
+    url = config.get_main_option("sqlalchemy.url")
+    if url and url != "driver://user:pass@localhost/dbname":  # pragma: allowlist secret
+        return url
+    # Fall back to environment-based connection setup
     engine = setup_postgres_connection()
     return str(engine.url)
 
@@ -63,8 +68,12 @@ def run_migrations_offline() -> None:
 
 def run_migrations_online() -> None:
     """Run migrations in 'online' mode."""
-    # Use existing connection setup
-    connectable = setup_postgres_connection()
+    # Get URL from alembic config if available, otherwise use environment setup
+    url = get_url()
+
+    # Create engine from URL
+    from sqlalchemy import create_engine
+    connectable = create_engine(url)
 
     with connectable.connect() as connection:
         context.configure(connection=connection, target_metadata=target_metadata, compare_type=compare_type)
