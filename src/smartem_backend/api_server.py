@@ -37,7 +37,6 @@ from smartem_backend.model.database import (
     GridSquare,
     Micrograph,
     OverallQualityPrediction,
-    QualityMetric,
     QualityPrediction,
     QualityPredictionModel,
     QualityPredictionModelParameter,
@@ -86,7 +85,6 @@ from smartem_backend.model.http_response import (
     QualityPredictionModelParameterResponse,
     QualityPredictionModelResponse,
     QualityPredictionResponse,
-    QualityPredictionModelWeightResponse,
 )
 from smartem_backend.mq_publisher import (
     publish_acquisition_created,
@@ -2065,18 +2063,6 @@ if __name__ == "__main__":
 # ============ Quality Prediction Model CRUD Operations ============
 
 
-@app.get("/prediction_models", response_model=list[QualityPredictionModelResponse])
-def get_prediction_models(db: SqlAlchemySession = DB_DEPENDENCY):
-    """Get all prediction model"""
-    return db.query(QualityPredictionModel).all()
-
-
-@app.get("/quality_metrics", response_model=list[QualityMetric])
-def get_quality_metrics(db: SqlAlchemySession = DB_DEPENDENCY):
-    metrics = db.query(QualityMetric).all()
-    return metrics
-
-
 @app.get("/grid/{grid_uuid}/model_weights", response_model=dict[str, list[QualityPredictionModelWeight]])
 def get_model_weights_for_grid(grid_uuid: str, db: SqlAlchemySession = DB_DEPENDENCY):
     """Get time series of model weights for grid"""
@@ -2250,7 +2236,7 @@ def get_suggested_square_collections(
             scores, key=lambda x: x[1].value * (x[0].size_width ** 2) * (0 if x[0].size_width < 60 else 1), reverse=True
         )
     ]
-    cluster_counts = {v: 0 for v in set(cluster_indices.values())}
+    cluster_counts = dict.fromkeys(set(cluster_indices.values()), 0)
     suggested = []
     for i in range(len(score_ordered_squares) // 2):
         square = score_ordered_squares[i]

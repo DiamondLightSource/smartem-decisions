@@ -312,6 +312,7 @@ def publish_model_parameter_update(
     )
     return rmq_publisher.publish_event(MessageQueueEventType.MODEL_PARAMETER_UPDATE, event)
 
+
 def publish_motion_correction_completed(micrograph_uuid: str, total_motion: float, average_motion: float):
     """Publish motion correction completed event to RabbitMQ"""
     event = MotionCorrectionCompleteBody(
