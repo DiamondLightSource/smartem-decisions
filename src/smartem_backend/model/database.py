@@ -292,7 +292,7 @@ class QualityPredictionModelWeight(SQLModel, table=True):
     micrograph_quality: bool | None = Field(default=None)
     timestamp: datetime = Field(default_factory=datetime.now)
     prediction_model_name: str = Field(foreign_key="qualitypredictionmodel.name")
-    metric_name: QualityMetric | None = Field(foreign_key="qualitymetric.name", default=None)
+    metric_name: str | None = Field(foreign_key="qualitymetric.name", default=None)
     weight: float
     model: QualityPredictionModel | None = Relationship(back_populates="weights")
     metric: QualityMetric | None = Relationship(back_populates="weights")
@@ -305,7 +305,7 @@ class CurrentQualityPredictionModelWeight(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
     grid_uuid: str = Field(foreign_key="grid.uuid")
     prediction_model_name: str = Field(foreign_key="qualitypredictionmodel.name")
-    metric_name: QualityMetric | None = Field(foreign_key="qualitymetric.name", default=None)
+    metric_name: str | None = Field(foreign_key="qualitymetric.name", default=None)
     weight: float
     model: QualityPredictionModel | None = Relationship(back_populates="current_weights")
     metric: QualityMetric | None = Relationship(back_populates="current_weights")
@@ -348,8 +348,8 @@ class OverallQualityPrediction(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
     value: float
     foilhole_uuid: str = Field(foreign_key="foilhole.uuid")
-    grid_uuid: str = Relationship(foreign_key="grid.uuid")
-    gridsquare_uuid: str = Relationship(foreign_key="gridsquare.uuid")
+    grid_uuid: str = Field(foreign_key="grid.uuid")
+    gridsquare_uuid: str = Field(foreign_key="gridsquare.uuid")
     foilhole: FoilHole | None = Relationship(back_populates="overall_prediction")
     gridsquare: GridSquare | None = Relationship(back_populates="overall_prediction")
     grid: Grid | None = Relationship(back_populates="overall_predictions")
