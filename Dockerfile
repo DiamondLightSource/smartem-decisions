@@ -33,7 +33,10 @@ ARG groupname=root
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libpq5 \
     && rm -rf /var/lib/apt/lists/*
-RUN groupadd -r -g "${groupid}" "${groupname}" && useradd -r -M "${groupname}" -u "${userid}" -g "${groupname}"
+RUN if [ "${groupid}" != "0" ]; then \
+        groupadd -r -g "${groupid}" "${groupname}" && \
+        useradd -r -M "${groupname}" -u "${userid}" -g "${groupname}"; \
+    fi
 COPY --from=build --chown="${userid}:${groupname}" /venv/ /venv/
 COPY --from=build --chown="${userid}:${groupname}" /app/ /app/
 ENV PATH=/venv/bin:$PATH
