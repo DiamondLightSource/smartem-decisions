@@ -168,6 +168,28 @@ class MicrographResponse(BaseModel):
     )
 
 
+class QualityPredictionModelResponse(BaseModel):
+    name: str
+    description: str
+
+
+class QualityPredictionResponse(BaseModel):
+    id: int
+    prediction_model_name: str
+    value: float
+    timestamp: datetime
+    gridsquare_uuid: str | None = None
+    foilhole_uuid: str | None = None
+
+
+class LatentRepresentationResponse(BaseModel):
+    x: float | None
+    y: float | None
+    index: int | None
+    gridsquare_uuid: str = ""
+    foilhole_uuid: str = ""
+
+
 # ============ Agent Communication Response Models ============
 
 

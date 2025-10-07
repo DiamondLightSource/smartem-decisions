@@ -12,6 +12,7 @@ from smartem_backend.model.entity_status import (
     GridSquareStatusType,
     GridStatusType,
     MicrographStatusType,
+    ModelLevelType,
 )
 from smartem_backend.utils import logger, setup_postgres_connection
 from smartem_common.entity_status import (
@@ -20,6 +21,7 @@ from smartem_common.entity_status import (
     GridSquareStatus,
     GridStatus,
     MicrographStatus,
+    ModelLevel,
 )
 
 
@@ -70,6 +72,7 @@ class Grid(SQLModel, table=True, table_name="grid"):
     atlas_dir: str | None = Field(default=None)
     scan_start_time: datetime | None = Field(default=None)
     scan_end_time: datetime | None = Field(default=None)
+    prediction_updated_time: datetime = Field(default_factory=datetime.now)
     acquisition: Acquisition = Relationship(sa_relationship_kwargs={"back_populates": "grids"})
     gridsquares: list["GridSquare"] = Relationship(
         sa_relationship_kwargs={"back_populates": "grid"}, cascade_delete=True
@@ -81,6 +84,16 @@ class Grid(SQLModel, table=True, table_name="grid"):
     quality_model_weights: list["QualityPredictionModelWeight"] = Relationship(
         back_populates="grid", cascade_delete=True
     )
+    current_quality_predictions: list["CurrentQualityPrediction"] = Relationship(
+        back_populates="grid", cascade_delete=True
+    )
+    current_quality_model_weights: list["CurrentQualityPredictionModelWeight"] = Relationship(
+        back_populates="grid", cascade_delete=True
+    )
+    current_metric_statistics: list["QualityMetricStatistics"] = Relationship(
+        back_populates="grid", cascade_delete=True
+    )
+    overall_predictions: list["OverallQualityPrediction"] = Relationship(back_populates="grid", cascade_delete=True)
 
 
 class AtlasTile(SQLModel, table=True, table_name="atlastile"):
@@ -148,6 +161,12 @@ class GridSquare(SQLModel, table=True, table_name="gridsquare"):
         sa_relationship_kwargs={"back_populates": "gridsquare"}, cascade_delete=True
     )
     prediction: list["QualityPrediction"] = Relationship(back_populates="gridsquare", cascade_delete=True)
+    current_prediction: list["CurrentQualityPrediction"] = Relationship(
+        back_populates="gridsquare", cascade_delete=True
+    )
+    overall_prediction: list["OverallQualityPrediction"] = Relationship(
+        back_populates="gridsquare", cascade_delete=True
+    )
 
 
 class FoilHole(SQLModel, table=True, table_name="foilhole"):
@@ -174,6 +193,8 @@ class FoilHole(SQLModel, table=True, table_name="foilhole"):
         sa_relationship_kwargs={"back_populates": "foilhole"}, cascade_delete=True
     )
     prediction: list["QualityPrediction"] = Relationship(back_populates="foilhole", cascade_delete=True)
+    current_prediction: list["CurrentQualityPrediction"] = Relationship(back_populates="foilhole", cascade_delete=True)
+    overall_prediction: list["OverallQualityPrediction"] = Relationship(back_populates="foilhole", cascade_delete=True)
 
 
 class Micrograph(SQLModel, table=True, table_name="micrograph"):
@@ -213,9 +234,39 @@ class QualityPredictionModel(SQLModel, table=True):
     __table_args__ = {"extend_existing": True}
     name: str = Field(primary_key=True)
     description: str = ""
+    level: ModelLevel = Field(default=ModelLevel.GRIDSQUARE, sa_column=Column(ModelLevelType))
     parameters: list["QualityPredictionModelParameter"] = Relationship(back_populates="model", cascade_delete=True)
     weights: list["QualityPredictionModelWeight"] = Relationship(back_populates="model", cascade_delete=True)
     predictions: list["QualityPrediction"] = Relationship(back_populates="model", cascade_delete=True)
+    current_weights: list["CurrentQualityPredictionModelWeight"] = Relationship(
+        back_populates="model", cascade_delete=True
+    )
+    current_predictions: list["CurrentQualityPrediction"] = Relationship(back_populates="model", cascade_delete=True)
+
+
+class QualityMetric(SQLModel, table=True):
+    __table_args__ = {"extend_existing": True}
+    name: str = Field(primary_key=True)
+    description: str = ""
+    parameters: list["QualityPredictionModelParameter"] = Relationship(back_populates="metric", cascade_delete=True)
+    weights: list["QualityPredictionModelWeight"] = Relationship(back_populates="metric", cascade_delete=True)
+    current_weights: list["CurrentQualityPredictionModelWeight"] = Relationship(
+        back_populates="metric", cascade_delete=True
+    )
+    predictions: list["QualityPrediction"] = Relationship(back_populates="metric", cascade_delete=True)
+    current_predictions: list["CurrentQualityPrediction"] = Relationship(back_populates="metric", cascade_delete=True)
+    statistics: list["QualityMetricStatistics"] = Relationship(back_populates="metric", cascade_delete=True)
+
+
+class QualityMetricStatistics(SQLModel, table=True):
+    __table_args__ = {"extend_existing": True}
+    name: str = Field(foreign_key="qualitymetric.name", primary_key=True)
+    grid_uuid: str = Field(foreign_key="grid.uuid", primary_key=True)
+    count: int
+    value_sum: float
+    squared_value_sum: float
+    metric: QualityMetric | None = Relationship(back_populates="statistics")
+    grid: Grid | None = Relationship(back_populates="quality_metric_statistics")
 
 
 class QualityPredictionModelParameter(SQLModel, table=True):
@@ -227,7 +278,9 @@ class QualityPredictionModelParameter(SQLModel, table=True):
     key: str
     value: float
     group: str = ""
+    metric_name: str | None = Field(foreign_key="qualitymetric.name", default=None)
     model: QualityPredictionModel | None = Relationship(back_populates="parameters")
+    metric: QualityMetric | None = Relationship(back_populates="parameters")
     grid: Grid | None = Relationship(back_populates="quality_model_parameters")
 
 
@@ -238,12 +291,25 @@ class QualityPredictionModelWeight(SQLModel, table=True):
     micrograph_uuid: str | None = Field(default=None, foreign_key="micrograph.uuid")
     micrograph_quality: bool | None = Field(default=None)
     timestamp: datetime = Field(default_factory=datetime.now)
-    origin: str | None = Field(default=None)
     prediction_model_name: str = Field(foreign_key="qualitypredictionmodel.name")
+    metric_name: QualityMetric | None = Field(foreign_key="qualitymetric.name", default=None)
     weight: float
     model: QualityPredictionModel | None = Relationship(back_populates="weights")
+    metric: QualityMetric | None = Relationship(back_populates="weights")
     grid: Grid | None = Relationship(back_populates="quality_model_weights")
     micrograph: Micrograph | None = Relationship(back_populates="quality_model_weights")
+
+
+class CurrentQualityPredictionModelWeight(SQLModel, table=True):
+    __table_args__ = {"extend_existing": True}
+    id: int | None = Field(default=None, primary_key=True)
+    grid_uuid: str = Field(foreign_key="grid.uuid")
+    prediction_model_name: str = Field(foreign_key="qualitypredictionmodel.name")
+    metric_name: QualityMetric | None = Field(foreign_key="qualitymetric.name", default=None)
+    weight: float
+    model: QualityPredictionModel | None = Relationship(back_populates="current_weights")
+    metric: QualityMetric | None = Relationship(back_populates="current_weights")
+    grid: Grid | None = Relationship(back_populates="current_quality_model_weights")
 
 
 class QualityPrediction(SQLModel, table=True):
@@ -252,11 +318,41 @@ class QualityPrediction(SQLModel, table=True):
     timestamp: datetime = Field(default_factory=datetime.now)
     value: float
     prediction_model_name: str = Field(foreign_key="qualitypredictionmodel.name")
+    metric_name: str | None = Field(foreign_key="qualitymetric.name", default=None)
     foilhole_uuid: str | None = Field(default=None, foreign_key="foilhole.uuid")
     gridsquare_uuid: str | None = Field(default=None, foreign_key="gridsquare.uuid")
     foilhole: FoilHole | None = Relationship(back_populates="prediction")
     gridsquare: GridSquare | None = Relationship(back_populates="prediction")
     model: QualityPredictionModel | None = Relationship(back_populates="predictions")
+    metric: QualityMetric | None = Relationship(back_populates="predictions")
+
+
+class CurrentQualityPrediction(SQLModel, table=True):
+    __table_args__ = {"extend_existing": True}
+    id: int | None = Field(default=None, primary_key=True)
+    grid_uuid: str = Field(foreign_key="grid.uuid")
+    value: float
+    prediction_model_name: str = Field(foreign_key="qualitypredictionmodel.name")
+    metric_name: str | None = Field(foreign_key="qualitymetric.name", default=None)
+    foilhole_uuid: str | None = Field(default=None, foreign_key="foilhole.uuid")
+    gridsquare_uuid: str | None = Field(default=None, foreign_key="gridsquare.uuid")
+    foilhole: FoilHole | None = Relationship(back_populates="prediction")
+    gridsquare: GridSquare | None = Relationship(back_populates="prediction")
+    model: QualityPredictionModel | None = Relationship(back_populates="predictions")
+    metric: QualityMetric | None = Relationship(back_populates="current_predictions")
+    grid: Grid | None = Relationship(back_populates="current_quality_predictions")
+
+
+class OverallQualityPrediction(SQLModel, table=True):
+    __table_args__ = {"extend_existing": True}
+    id: int | None = Field(default=None, primary_key=True)
+    value: float
+    foilhole_uuid: str = Field(foreign_key="foilhole.uuid")
+    grid_uuid: str = Relationship(foreign_key="grid.uuid")
+    gridsquare_uuid: str = Relationship(foreign_key="gridsquare.uuid")
+    foilhole: FoilHole | None = Relationship(back_populates="overall_prediction")
+    gridsquare: GridSquare | None = Relationship(back_populates="overall_prediction")
+    grid: Grid | None = Relationship(back_populates="overall_predictions")
 
 
 # ============ Agent Communication Tables ============
@@ -461,6 +557,12 @@ def _create_db_and_tables(engine):
             )
             sess.execute(
                 text(
+                    "CREATE INDEX IF NOT EXISTS idx_quality_model_param_metric "
+                    "ON qualitypredictionmodelparameter (metric_name);"
+                )
+            )
+            sess.execute(
+                text(
                     "CREATE INDEX IF NOT EXISTS idx_quality_model_param_composite "
                     "ON qualitypredictionmodelparameter (grid_uuid, prediction_model_name);"
                 )
@@ -492,6 +594,12 @@ def _create_db_and_tables(engine):
                 text(
                     "CREATE INDEX IF NOT EXISTS idx_quality_model_weight_model_name "
                     "ON qualitypredictionmodelweight (prediction_model_name);"
+                )
+            )
+            sess.execute(
+                text(
+                    "CREATE INDEX IF NOT EXISTS idx_quality_model_weight_metric "
+                    "ON qualitypredictionmodelparameter (metric_name);"
                 )
             )
             sess.execute(
@@ -530,6 +638,12 @@ def _create_db_and_tables(engine):
                 text(
                     "CREATE INDEX IF NOT EXISTS idx_quality_prediction_model_name "
                     "ON qualityprediction (prediction_model_name);"
+                )
+            )
+            sess.execute(
+                text(
+                    "CREATE INDEX IF NOT EXISTS idx_quality_prediction_metric "
+                    "ON qualitypredictionmodelparameter (metric_name);"
                 )
             )
             sess.execute(

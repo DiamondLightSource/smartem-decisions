@@ -212,6 +212,7 @@ class EntityConverter:
             center_y=entity.position[1],
             size_width=entity.size[0],
             size_height=entity.size[1],
+            gridsquare_uuid=entity.gridsquare_uuid,
         )
 
 
@@ -267,7 +268,7 @@ class SmartEMAPIClient:
         self,
         method: str,
         endpoint: str,
-        request_model: BaseModel | None = None,
+        request_model: BaseModel | dict | list[BaseModel] | None = None,
         response_cls=None,
     ):
         """
@@ -295,6 +296,8 @@ class SmartEMAPIClient:
             if hasattr(request_model, "model_dump"):
                 # It's a Pydantic model
                 json_data = request_model.model_dump(mode="json", exclude_none=True)
+            elif isinstance(request_model, list):
+                json_data = [m.model_dump(mode="json", exclude_none=True) for m in request_model]
             else:
                 # It's already a dict, but might contain datetime objects
                 json_data = {k: v.isoformat() if isinstance(v, datetime) else v for k, v in request_model.items()}
@@ -494,6 +497,23 @@ class SmartEMAPIClient:
         )
         return response
 
+    def link_atlas_tile_and_gridsquares(
+        self, gridsquare_positions: list[AtlasTileGridSquarePositionData]
+    ) -> list[AtlasTileGridSquarePositionResponse]:
+        """Link multiple grid squares to a tile"""
+        if not gridsquare_positions:
+            return []
+        assert len({pos.tile_uuid for pos in gridsquare_positions}) == 1
+        tile_uuid = gridsquare_positions[0].tile_uuid
+        gridsquare_positions = [EntityConverter.gridsquare_position_to_request(pos) for pos in gridsquare_positions]
+        response = self._request(
+            "post",
+            f"atlas-tiles/{tile_uuid}/gridsquares",
+            gridsquare_positions,
+            AtlasTileGridSquarePositionResponse,
+        )
+        return response
+
     # GridSquares
     def get_gridsquares(self) -> list[GridSquareResponse]:
         """Get all grid squares"""
@@ -523,8 +543,10 @@ class SmartEMAPIClient:
         response = self._request("post", f"grids/{gridsquare.grid_uuid}/gridsquares", gridsquare, GridSquareResponse)
         return response
 
-    def gridsquare_registered(self, gridsquare_uuid: str) -> bool:
-        return self._request("post", f"gridsquares/{gridsquare_uuid}/registered")
+    def gridsquare_registered(self, gridsquare_uuid: str, count: int | None = None) -> bool:
+        if count is None:
+            return self._request("post", f"gridsquares/{gridsquare_uuid}/registered")
+        return self._request("post", f"gridsquares/{gridsquare_uuid}/registered?count={count}")
 
     # FoilHoles
     def get_foilholes(self) -> list[FoilHoleResponse]:
@@ -548,12 +570,17 @@ class SmartEMAPIClient:
         """Get all foil holes for a specific grid square"""
         return self._request("get", f"gridsquares/{gridsquare_uuid}/foilholes", response_cls=FoilHoleResponse)
 
-    def create_gridsquare_foilhole(self, foilhole: FoilHoleData) -> FoilHoleResponse:
+    def create_gridsquare_foilholes(
+        self, gridsquare_uuid: str, foilholes: list[FoilHoleData], allow_on_grid_bar: bool = False
+    ) -> list[FoilHoleResponse]:
         """Create a new foil hole for a specific grid square"""
-        foilhole = EntityConverter.foilhole_to_request(foilhole)
-        response = self._request(
-            "post", f"gridsquares/{foilhole.gridsquare_uuid}/foilholes", foilhole, FoilHoleResponse
-        )
+        foilholes = [
+            EntityConverter.foilhole_to_request(fh)
+            for fh in foilholes
+            if (not fh.is_near_grid_bar or allow_on_grid_bar)
+        ]
+        # this currently assumes all foil holes are on the same square
+        response = self._request("post", f"gridsquares/{gridsquare_uuid}/foilholes", foilholes, FoilHoleResponse)
         return response
 
     # Micrographs
