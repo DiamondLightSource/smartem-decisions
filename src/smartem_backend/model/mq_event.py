@@ -80,6 +80,7 @@ class MessageQueueEventType(str, Enum):
     AGENT_INSTRUCTION_UPDATED = "agent.instruction.updated"
     AGENT_INSTRUCTION_EXPIRED = "agent.instruction.expired"
 
+
 class GenericEventMessageBody(BaseModel):
     event_type: MessageQueueEventType
 

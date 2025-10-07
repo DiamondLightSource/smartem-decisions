@@ -519,7 +519,7 @@ class PersistentDataStore(InMemoryDataStore):
                 f"to grid squares: {e}"
             )
         except Exception as e:
-            logger.error(f"Error linking atlas tile {gridsquare_positions[0].tile_uuid} to " f"grid squares: {e}")
+            logger.error(f"Error linking atlas tile {gridsquare_positions[0].tile_uuid} to grid squares: {e}")
 
     def create_gridsquare(self, gridsquare: GridSquareData, lowmag: bool = False):
         try:
