@@ -68,12 +68,16 @@ def run_migrations_offline() -> None:
 
 def run_migrations_online() -> None:
     """Run migrations in 'online' mode."""
-    # Get URL from alembic config if available, otherwise use environment setup
-    url = get_url()
+    # Check if alembic config has a real URL (used by schema drift check)
+    config_url = config.get_main_option("sqlalchemy.url")
+    if config_url and config_url != "driver://user:pass@localhost/dbname":  # pragma: allowlist secret
+        # Schema drift check provides URL via alembic.ini
+        from sqlalchemy import create_engine
 
-    # Create engine from URL
-    from sqlalchemy import create_engine
-    connectable = create_engine(url)
+        connectable = create_engine(config_url)
+    else:
+        # Normal operation - use existing connection setup with environment variables
+        connectable = setup_postgres_connection()
 
     with connectable.connect() as connection:
         context.configure(connection=connection, target_metadata=target_metadata, compare_type=compare_type)
