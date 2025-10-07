@@ -60,10 +60,13 @@ def setup_test_database() -> str:
 
     try:
         # Connect to PostgreSQL server to create test database
-        with psycopg2.connect(admin_url) as conn:
-            conn.autocommit = True
+        conn = psycopg2.connect(admin_url)
+        conn.autocommit = True
+        try:
             with conn.cursor() as cursor:
                 cursor.execute(f'CREATE DATABASE "{temp_db_name}"')
+        finally:
+            conn.close()
 
         # Return URL for the temporary database
         return (
@@ -88,12 +91,15 @@ def cleanup_test_database(db_url: str) -> None:
     admin_url = "/".join(db_url.split("/")[:-1]) + "/postgres"
 
     try:
-        with psycopg2.connect(admin_url) as conn:
-            conn.autocommit = True
+        conn = psycopg2.connect(admin_url)
+        conn.autocommit = True
+        try:
             with conn.cursor() as cursor:
                 # Terminate connections to the test database
                 cursor.execute(f"SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = '{db_name}'")
                 cursor.execute(f'DROP DATABASE IF EXISTS "{db_name}"')
+        finally:
+            conn.close()
 
     except psycopg2.Error as e:
         print(f"Warning: Could not clean up temporary database {db_name}: {e}", file=sys.stderr)
