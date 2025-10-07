@@ -282,6 +282,47 @@ class MicrographUpdateRequest(MicrographBaseFields):
     pass
 
 
+# ============ Quality Prediction Request Models ============
+
+
+class QualityPredictionModelBaseFields(BaseModel):
+    name: str | None = None
+    description: str | None = None
+
+
+class QualityPredictionModelCreateRequest(BaseModel):
+    name: str
+    description: str = ""
+
+
+class QualityPredictionModelUpdateRequest(BaseModel):
+    description: str | None = None
+
+
+class QualityPredictionCreateRequest(BaseModel):
+    value: float
+    prediction_model_name: str
+    foilhole_uuid: str | None = None
+    gridsquare_uuid: str | None = None
+
+
+class QualityPredictionModelParameterCreateRequest(BaseModel):
+    grid_uuid: str
+    prediction_model_name: str
+    key: str
+    value: float
+    group: str = ""
+
+
+class QualityPredictionModelWeightCreateRequest(BaseModel):
+    grid_uuid: str
+    micrograph_uuid: str | None = None
+    micrograph_quality: bool | None = None
+    origin: str | None = None
+    prediction_model_name: str
+    weight: float
+
+
 # ============ Agent Communication Models ============
 
 

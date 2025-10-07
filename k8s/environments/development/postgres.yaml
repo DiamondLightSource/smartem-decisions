@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
       - name: postgres
-        image: postgres:latest
+        image: postgres:16-alpine
         env:
         - name: POSTGRES_USER
           valueFrom:
@@ -29,8 +29,6 @@ spec:
               key: POSTGRES_PASSWORD
         - name: POSTGRES_DB
           value: smartem_db
-        - name: PGDATA
-          value: /var/lib/postgresql/data/pgdata
         ports:
         - containerPort: 5432
         volumeMounts:
