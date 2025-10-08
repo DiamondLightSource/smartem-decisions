@@ -7,7 +7,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>smartem_backend.mq_publisher &#8212; smartem-decisions 0.1.dev334+gd573f69a5.d20251007 documentation</title>
+    <title>smartem_backend.mq_publisher &#8212; smartem-decisions 0.1.dev372+g0f036fa24.d20251008 documentation</title>
   
   
   
@@ -40,7 +40,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../../_static/documentation_options.js?v=afc44027"></script>
+    <script src="../../_static/documentation_options.js?v=e306b88a"></script>
     <script src="../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -455,6 +455,8 @@
     <span class="n">AtlasTileDeletedEvent</span><span class="p">,</span>
     <span class="n">AtlasTileUpdatedEvent</span><span class="p">,</span>
     <span class="n">AtlasUpdatedEvent</span><span class="p">,</span>
+    <span class="n">CtfCompleteBody</span><span class="p">,</span>
+    <span class="n">CtfRegisteredBody</span><span class="p">,</span>
     <span class="n">FoilHoleCreatedEvent</span><span class="p">,</span>
     <span class="n">FoilHoleDeletedEvent</span><span class="p">,</span>
     <span class="n">FoilHoleModelPredictionEvent</span><span class="p">,</span>
@@ -473,6 +475,10 @@
     <span class="n">MicrographDeletedEvent</span><span class="p">,</span>
     <span class="n">MicrographUpdatedEvent</span><span class="p">,</span>
     <span class="n">ModelParameterUpdateEvent</span><span class="p">,</span>
+    <span class="n">MotionCorrectionCompleteBody</span><span class="p">,</span>
+    <span class="n">MotionCorrectionRegisteredBody</span><span class="p">,</span>
+    <span class="n">MultiFoilHoleModelPredictionEvent</span><span class="p">,</span>
+    <span class="n">RefreshPredictionsEvent</span><span class="p">,</span>
 <span class="p">)</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">smartem_backend.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">rmq_publisher</span>
 
@@ -643,11 +649,12 @@
 
 <div class="viewcode-block" id="publish_gridsquare_registered">
 <a class="viewcode-back" href="../../_api/smartem_backend.mq_publisher.html#smartem_backend.mq_publisher.publish_gridsquare_registered">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">publish_gridsquare_registered</span><span class="p">(</span><span class="n">uuid</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">publish_gridsquare_registered</span><span class="p">(</span><span class="n">uuid</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">count</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Publish grid square updated event to RabbitMQ&quot;&quot;&quot;</span>
     <span class="n">event</span> <span class="o">=</span> <span class="n">GridSquareRegisteredEvent</span><span class="p">(</span>
         <span class="n">event_type</span><span class="o">=</span><span class="n">MessageQueueEventType</span><span class="o">.</span><span class="n">GRIDSQUARE_REGISTERED</span><span class="p">,</span>
         <span class="n">uuid</span><span class="o">=</span><span class="n">uuid</span><span class="p">,</span>
+        <span class="n">count</span><span class="o">=</span><span class="n">count</span><span class="p">,</span>
     <span class="p">)</span>
     <span class="k">return</span> <span class="n">rmq_publisher</span><span class="o">.</span><span class="n">publish_event</span><span class="p">(</span><span class="n">MessageQueueEventType</span><span class="o">.</span><span class="n">GRIDSQUARE_REGISTERED</span><span class="p">,</span> <span class="n">event</span><span class="p">)</span></div>
 
@@ -772,13 +779,16 @@
 
 <div class="viewcode-block" id="publish_gridsquare_model_prediction">
 <a class="viewcode-back" href="../../_api/smartem_backend.mq_publisher.html#smartem_backend.mq_publisher.publish_gridsquare_model_prediction">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">publish_gridsquare_model_prediction</span><span class="p">(</span><span class="n">gridsquare_uuid</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">model_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">prediction_value</span><span class="p">:</span> <span class="nb">float</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">publish_gridsquare_model_prediction</span><span class="p">(</span>
+    <span class="n">gridsquare_uuid</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">model_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">prediction_value</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">metric</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+<span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Publish model prediction event for a grid square to RabbitMQ&quot;&quot;&quot;</span>
     <span class="n">event</span> <span class="o">=</span> <span class="n">GridSquareModelPredictionEvent</span><span class="p">(</span>
         <span class="n">event_type</span><span class="o">=</span><span class="n">MessageQueueEventType</span><span class="o">.</span><span class="n">GRIDSQUARE_MODEL_PREDICTION</span><span class="p">,</span>
         <span class="n">gridsquare_uuid</span><span class="o">=</span><span class="n">gridsquare_uuid</span><span class="p">,</span>
         <span class="n">prediction_model_name</span><span class="o">=</span><span class="n">model_name</span><span class="p">,</span>
         <span class="n">prediction_value</span><span class="o">=</span><span class="n">prediction_value</span><span class="p">,</span>
+        <span class="n">metric</span><span class="o">=</span><span class="n">metric</span><span class="p">,</span>
     <span class="p">)</span>
     <span class="k">return</span> <span class="n">rmq_publisher</span><span class="o">.</span><span class="n">publish_event</span><span class="p">(</span><span class="n">MessageQueueEventType</span><span class="o">.</span><span class="n">GRIDSQUARE_MODEL_PREDICTION</span><span class="p">,</span> <span class="n">event</span><span class="p">)</span></div>
 
@@ -786,21 +796,43 @@
 
 <div class="viewcode-block" id="publish_foilhole_model_prediction">
 <a class="viewcode-back" href="../../_api/smartem_backend.mq_publisher.html#smartem_backend.mq_publisher.publish_foilhole_model_prediction">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">publish_foilhole_model_prediction</span><span class="p">(</span><span class="n">foilhole_uuid</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">model_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">prediction_value</span><span class="p">:</span> <span class="nb">float</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">publish_foilhole_model_prediction</span><span class="p">(</span>
+    <span class="n">foilhole_uuid</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">model_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">prediction_value</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">metric</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+<span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Publish model prediction event for a foil hole to RabbitMQ&quot;&quot;&quot;</span>
     <span class="n">event</span> <span class="o">=</span> <span class="n">FoilHoleModelPredictionEvent</span><span class="p">(</span>
         <span class="n">event_type</span><span class="o">=</span><span class="n">MessageQueueEventType</span><span class="o">.</span><span class="n">FOILHOLE_MODEL_PREDICTION</span><span class="p">,</span>
         <span class="n">foilhole_uuid</span><span class="o">=</span><span class="n">foilhole_uuid</span><span class="p">,</span>
         <span class="n">prediction_model_name</span><span class="o">=</span><span class="n">model_name</span><span class="p">,</span>
         <span class="n">prediction_value</span><span class="o">=</span><span class="n">prediction_value</span><span class="p">,</span>
+        <span class="n">metric</span><span class="o">=</span><span class="n">metric</span><span class="p">,</span>
     <span class="p">)</span>
     <span class="k">return</span> <span class="n">rmq_publisher</span><span class="o">.</span><span class="n">publish_event</span><span class="p">(</span><span class="n">MessageQueueEventType</span><span class="o">.</span><span class="n">FOILHOLE_MODEL_PREDICTION</span><span class="p">,</span> <span class="n">event</span><span class="p">)</span></div>
 
 
 
+<div class="viewcode-block" id="publish_multi_foilhole_model_prediction">
+<a class="viewcode-back" href="../../_api/smartem_backend.mq_publisher.html#smartem_backend.mq_publisher.publish_multi_foilhole_model_prediction">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">publish_multi_foilhole_model_prediction</span><span class="p">(</span>
+    <span class="n">foilhole_uuids</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">model_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">prediction_value</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">metric</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+<span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Publish model prediction event for a list of foil holes to RabbitMQ&quot;&quot;&quot;</span>
+    <span class="n">event</span> <span class="o">=</span> <span class="n">MultiFoilHoleModelPredictionEvent</span><span class="p">(</span>
+        <span class="n">event_type</span><span class="o">=</span><span class="n">MessageQueueEventType</span><span class="o">.</span><span class="n">MULTI_FOILHOLE_MODEL_PREDICTION</span><span class="p">,</span>
+        <span class="n">foilhole_uuids</span><span class="o">=</span><span class="n">foilhole_uuids</span><span class="p">,</span>
+        <span class="n">prediction_model_name</span><span class="o">=</span><span class="n">model_name</span><span class="p">,</span>
+        <span class="n">prediction_value</span><span class="o">=</span><span class="n">prediction_value</span><span class="p">,</span>
+        <span class="n">metric</span><span class="o">=</span><span class="n">metric</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="n">rmq_publisher</span><span class="o">.</span><span class="n">publish_event</span><span class="p">(</span><span class="n">MessageQueueEventType</span><span class="o">.</span><span class="n">MULTI_FOILHOLE_MODEL_PREDICTION</span><span class="p">,</span> <span class="n">event</span><span class="p">)</span></div>
+
+
+
 <div class="viewcode-block" id="publish_model_parameter_update">
 <a class="viewcode-back" href="../../_api/smartem_backend.mq_publisher.html#smartem_backend.mq_publisher.publish_model_parameter_update">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">publish_model_parameter_update</span><span class="p">(</span><span class="n">grid_uuid</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">model_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">group</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">publish_model_parameter_update</span><span class="p">(</span>
+    <span class="n">grid_uuid</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">model_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">metric</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">group</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+<span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Publish model parameter update event to RabbitMQ&quot;&quot;&quot;</span>
     <span class="n">event</span> <span class="o">=</span> <span class="n">ModelParameterUpdateEvent</span><span class="p">(</span>
         <span class="n">event_type</span><span class="o">=</span><span class="n">MessageQueueEventType</span><span class="o">.</span><span class="n">MODEL_PARAMETER_UPDATE</span><span class="p">,</span>
@@ -808,9 +840,72 @@
         <span class="n">prediction_model_name</span><span class="o">=</span><span class="n">model_name</span><span class="p">,</span>
         <span class="n">key</span><span class="o">=</span><span class="n">key</span><span class="p">,</span>
         <span class="n">value</span><span class="o">=</span><span class="n">value</span><span class="p">,</span>
+        <span class="n">metric</span><span class="o">=</span><span class="n">metric</span><span class="p">,</span>
         <span class="n">group</span><span class="o">=</span><span class="n">group</span><span class="p">,</span>
     <span class="p">)</span>
     <span class="k">return</span> <span class="n">rmq_publisher</span><span class="o">.</span><span class="n">publish_event</span><span class="p">(</span><span class="n">MessageQueueEventType</span><span class="o">.</span><span class="n">MODEL_PARAMETER_UPDATE</span><span class="p">,</span> <span class="n">event</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="publish_motion_correction_completed">
+<a class="viewcode-back" href="../../_api/smartem_backend.mq_publisher.html#smartem_backend.mq_publisher.publish_motion_correction_completed">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">publish_motion_correction_completed</span><span class="p">(</span><span class="n">micrograph_uuid</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">total_motion</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">average_motion</span><span class="p">:</span> <span class="nb">float</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Publish motion correction completed event to RabbitMQ&quot;&quot;&quot;</span>
+    <span class="n">event</span> <span class="o">=</span> <span class="n">MotionCorrectionCompleteBody</span><span class="p">(</span>
+        <span class="n">event_type</span><span class="o">=</span><span class="n">MessageQueueEventType</span><span class="o">.</span><span class="n">MOTION_CORRECTION_COMPLETE</span><span class="p">,</span>
+        <span class="n">micrograph_uuid</span><span class="o">=</span><span class="n">micrograph_uuid</span><span class="p">,</span>
+        <span class="n">total_motion</span><span class="o">=</span><span class="n">total_motion</span><span class="p">,</span>
+        <span class="n">average_motion</span><span class="o">=</span><span class="n">average_motion</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="n">rmq_publisher</span><span class="o">.</span><span class="n">publish_event</span><span class="p">(</span><span class="n">MessageQueueEventType</span><span class="o">.</span><span class="n">MOTION_CORRECTION_COMPLETE</span><span class="p">,</span> <span class="n">event</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="publish_motion_correction_registered">
+<a class="viewcode-back" href="../../_api/smartem_backend.mq_publisher.html#smartem_backend.mq_publisher.publish_motion_correction_registered">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">publish_motion_correction_registered</span><span class="p">(</span><span class="n">micrograph_uuid</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">quality</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span> <span class="n">metric_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Publish motion correction registered (after motion correction completed) event to RabbitMQ&quot;&quot;&quot;</span>
+    <span class="n">event</span> <span class="o">=</span> <span class="n">MotionCorrectionRegisteredBody</span><span class="p">(</span>
+        <span class="n">event_type</span><span class="o">=</span><span class="n">MessageQueueEventType</span><span class="o">.</span><span class="n">MOTION_CORRECTION_REGISTERED</span><span class="p">,</span>
+        <span class="n">micrograph_uuid</span><span class="o">=</span><span class="n">micrograph_uuid</span><span class="p">,</span>
+        <span class="n">quality</span><span class="o">=</span><span class="n">quality</span><span class="p">,</span>
+        <span class="n">metric_name</span><span class="o">=</span><span class="n">metric_name</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="n">rmq_publisher</span><span class="o">.</span><span class="n">publish_event</span><span class="p">(</span><span class="n">MessageQueueEventType</span><span class="o">.</span><span class="n">MOTION_CORRECTION_REGISTERED</span><span class="p">,</span> <span class="n">event</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="publish_ctf_estimation_completed">
+<a class="viewcode-back" href="../../_api/smartem_backend.mq_publisher.html#smartem_backend.mq_publisher.publish_ctf_estimation_completed">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">publish_ctf_estimation_completed</span><span class="p">(</span><span class="n">micrograph_uuid</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">ctf_max_res</span><span class="p">:</span> <span class="nb">float</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Publish CTF estimation completed event to RabbitMQ&quot;&quot;&quot;</span>
+    <span class="n">event</span> <span class="o">=</span> <span class="n">CtfCompleteBody</span><span class="p">(</span>
+        <span class="n">event_type</span><span class="o">=</span><span class="n">MessageQueueEventType</span><span class="o">.</span><span class="n">CTF_COMPLETE</span><span class="p">,</span> <span class="n">micrograph_uuid</span><span class="o">=</span><span class="n">micrograph_uuid</span><span class="p">,</span> <span class="n">ctf_max_res</span><span class="o">=</span><span class="n">ctf_max_res</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="n">rmq_publisher</span><span class="o">.</span><span class="n">publish_event</span><span class="p">(</span><span class="n">MessageQueueEventType</span><span class="o">.</span><span class="n">CTF_COMPLETE</span><span class="p">,</span> <span class="n">event</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="publish_ctf_estimation_registered">
+<a class="viewcode-back" href="../../_api/smartem_backend.mq_publisher.html#smartem_backend.mq_publisher.publish_ctf_estimation_registered">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">publish_ctf_estimation_registered</span><span class="p">(</span><span class="n">micrograph_uuid</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">quality</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span> <span class="n">metric_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Publish CTF estimation registered (after motion correction completed) event to RabbitMQ&quot;&quot;&quot;</span>
+    <span class="n">event</span> <span class="o">=</span> <span class="n">CtfRegisteredBody</span><span class="p">(</span>
+        <span class="n">event_type</span><span class="o">=</span><span class="n">MessageQueueEventType</span><span class="o">.</span><span class="n">CTF_REGISTERED</span><span class="p">,</span>
+        <span class="n">micrograph_uuid</span><span class="o">=</span><span class="n">micrograph_uuid</span><span class="p">,</span>
+        <span class="n">quality</span><span class="o">=</span><span class="n">quality</span><span class="p">,</span>
+        <span class="n">metric_name</span><span class="o">=</span><span class="n">metric_name</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="n">rmq_publisher</span><span class="o">.</span><span class="n">publish_event</span><span class="p">(</span><span class="n">MessageQueueEventType</span><span class="o">.</span><span class="n">CTF_REGISTERED</span><span class="p">,</span> <span class="n">event</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="publish_refresh_predictions">
+<a class="viewcode-back" href="../../_api/smartem_backend.mq_publisher.html#smartem_backend.mq_publisher.publish_refresh_predictions">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">publish_refresh_predictions</span><span class="p">(</span><span class="n">grid_uuid</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Publish event to trigger overall prediction recalculation&quot;&quot;&quot;</span>
+    <span class="n">event</span> <span class="o">=</span> <span class="n">RefreshPredictionsEvent</span><span class="p">(</span><span class="n">event_type</span><span class="o">=</span><span class="n">MessageQueueEventType</span><span class="o">.</span><span class="n">REFRESH_PREDICTIONS</span><span class="p">,</span> <span class="n">grid_uuid</span><span class="o">=</span><span class="n">grid_uuid</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">rmq_publisher</span><span class="o">.</span><span class="n">publish_event</span><span class="p">(</span><span class="n">MessageQueueEventType</span><span class="o">.</span><span class="n">REFRESH_PREDICTIONS</span><span class="p">,</span> <span class="n">event</span><span class="p">)</span></div>
 
 
 

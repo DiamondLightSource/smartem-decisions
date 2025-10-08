@@ -17,6 +17,11 @@
         
         
         
+        
+        
+        
+        
+        
 
 .. automodule:: smartem_backend.model.database
     :members:
@@ -40,10 +45,15 @@
         Atlas
         AtlasTile
         AtlasTileGridSquarePosition
+        CurrentQualityPrediction
+        CurrentQualityPredictionModelWeight
         FoilHole
         Grid
         GridSquare
         Micrograph
+        OverallQualityPrediction
+        QualityMetric
+        QualityMetricStatistics
         QualityPrediction
         QualityPredictionModel
         QualityPredictionModelParameter

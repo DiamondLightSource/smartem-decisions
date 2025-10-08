@@ -5,6 +5,7 @@
         
         
         
+        
 
 .. automodule:: smartem_backend.model.entity_status
     :members:
@@ -25,5 +26,6 @@
         GridSquareStatusType
         GridStatusType
         MicrographStatusType
+        ModelLevelType
     
     

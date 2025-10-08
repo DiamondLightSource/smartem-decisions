@@ -62,6 +62,30 @@
         
         
         
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
 
 .. automodule:: smartem_backend.api_server
     :members:
@@ -90,6 +114,8 @@
         create_grid_gridsquare
         create_gridsquare_foilhole
         create_managed_session
+        create_prediction_model
+        create_quality_prediction
         create_test_instruction
         create_test_session
         delete_acquisition
@@ -99,6 +125,7 @@
         delete_grid
         delete_gridsquare
         delete_micrograph
+        delete_prediction_model
         get_acquisition
         get_acquisition_grids
         get_acquisitions
@@ -113,23 +140,43 @@
         get_db
         get_foilhole
         get_foilhole_micrographs
+        get_foilhole_quality_prediction_time_series_for_gridsquare
+        get_foilhole_quality_prediction_time_series_for_gridsquare_for_metric
         get_foilholes
         get_grid
         get_grid_atlas
+        get_grid_atlas_image
         get_grid_gridsquares
+        get_grid_latent_representation
+        get_grid_predictions
         get_grids
         get_gridsquare
+        get_gridsquare_foilhole_quality_predictions
         get_gridsquare_foilholes
+        get_gridsquare_image
+        get_gridsquare_quality_prediction_time_series
+        get_gridsquare_quality_predictions
         get_gridsquares
         get_health
+        get_latent_rep
         get_micrograph
         get_micrographs
+        get_model_weights_for_grid
+        get_overall_prediction_for_gridsquare
+        get_prediction_for_grid
+        get_prediction_for_gridsquare
+        get_prediction_model
+        get_prediction_models
+        get_quality_metrics
         get_session_instructions
+        get_square_latent_rep
         get_status
+        get_suggested_square_collections
         grid_registered
         gridsquare_registered
         lifespan
         link_atlas_tile_to_gridsquare
+        link_atlas_tile_to_gridsquares
         log_requests
         stream_instructions
         update_acquisition
@@ -139,5 +186,6 @@
         update_grid
         update_gridsquare
         update_micrograph
+        update_prediction_model
     
     

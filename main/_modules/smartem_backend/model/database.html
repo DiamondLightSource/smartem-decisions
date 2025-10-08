@@ -7,7 +7,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>smartem_backend.model.database &#8212; smartem-decisions 0.1.dev334+gd573f69a5.d20251007 documentation</title>
+    <title>smartem_backend.model.database &#8212; smartem-decisions 0.1.dev372+g0f036fa24.d20251008 documentation</title>
   
   
   
@@ -40,7 +40,7 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../../../_static/documentation_options.js?v=afc44027"></script>
+    <script src="../../../_static/documentation_options.js?v=e306b88a"></script>
     <script src="../../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -456,6 +456,7 @@
     <span class="n">GridSquareStatusType</span><span class="p">,</span>
     <span class="n">GridStatusType</span><span class="p">,</span>
     <span class="n">MicrographStatusType</span><span class="p">,</span>
+    <span class="n">ModelLevelType</span><span class="p">,</span>
 <span class="p">)</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">smartem_backend.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">logger</span><span class="p">,</span> <span class="n">setup_postgres_connection</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">smartem_common.entity_status</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
@@ -464,6 +465,7 @@
     <span class="n">GridSquareStatus</span><span class="p">,</span>
     <span class="n">GridStatus</span><span class="p">,</span>
     <span class="n">MicrographStatus</span><span class="p">,</span>
+    <span class="n">ModelLevel</span><span class="p">,</span>
 <span class="p">)</span>
 
 
@@ -514,6 +516,7 @@
     <span class="n">atlas_dir</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
     <span class="n">scan_start_time</span><span class="p">:</span> <span class="n">datetime</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
     <span class="n">scan_end_time</span><span class="p">:</span> <span class="n">datetime</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+    <span class="n">prediction_updated_time</span><span class="p">:</span> <span class="n">datetime</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">)</span>
     <span class="n">acquisition</span><span class="p">:</span> <span class="n">Acquisition</span> <span class="o">=</span> <span class="n">Relationship</span><span class="p">(</span><span class="n">sa_relationship_kwargs</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;back_populates&quot;</span><span class="p">:</span> <span class="s2">&quot;grids&quot;</span><span class="p">})</span>
     <span class="n">gridsquares</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="s2">&quot;GridSquare&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Relationship</span><span class="p">(</span>
         <span class="n">sa_relationship_kwargs</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;back_populates&quot;</span><span class="p">:</span> <span class="s2">&quot;grid&quot;</span><span class="p">},</span> <span class="n">cascade_delete</span><span class="o">=</span><span class="kc">True</span>
@@ -525,6 +528,16 @@
     <span class="n">quality_model_weights</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="s2">&quot;QualityPredictionModelWeight&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Relationship</span><span class="p">(</span>
         <span class="n">back_populates</span><span class="o">=</span><span class="s2">&quot;grid&quot;</span><span class="p">,</span> <span class="n">cascade_delete</span><span class="o">=</span><span class="kc">True</span>
     <span class="p">)</span>
+    <span class="n">current_quality_predictions</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="s2">&quot;CurrentQualityPrediction&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Relationship</span><span class="p">(</span>
+        <span class="n">back_populates</span><span class="o">=</span><span class="s2">&quot;grid&quot;</span><span class="p">,</span> <span class="n">cascade_delete</span><span class="o">=</span><span class="kc">True</span>
+    <span class="p">)</span>
+    <span class="n">current_quality_model_weights</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="s2">&quot;CurrentQualityPredictionModelWeight&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Relationship</span><span class="p">(</span>
+        <span class="n">back_populates</span><span class="o">=</span><span class="s2">&quot;grid&quot;</span><span class="p">,</span> <span class="n">cascade_delete</span><span class="o">=</span><span class="kc">True</span>
+    <span class="p">)</span>
+    <span class="n">current_metric_statistics</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="s2">&quot;QualityMetricStatistics&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Relationship</span><span class="p">(</span>
+        <span class="n">back_populates</span><span class="o">=</span><span class="s2">&quot;grid&quot;</span><span class="p">,</span> <span class="n">cascade_delete</span><span class="o">=</span><span class="kc">True</span>
+    <span class="p">)</span>
+    <span class="n">overall_predictions</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="s2">&quot;OverallQualityPrediction&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Relationship</span><span class="p">(</span><span class="n">back_populates</span><span class="o">=</span><span class="s2">&quot;grid&quot;</span><span class="p">,</span> <span class="n">cascade_delete</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
 
 <span class="k">class</span><span class="w"> </span><span class="nc">AtlasTile</span><span class="p">(</span><span class="n">SQLModel</span><span class="p">,</span> <span class="n">table</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">table_name</span><span class="o">=</span><span class="s2">&quot;atlastile&quot;</span><span class="p">):</span>
@@ -592,6 +605,12 @@
         <span class="n">sa_relationship_kwargs</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;back_populates&quot;</span><span class="p">:</span> <span class="s2">&quot;gridsquare&quot;</span><span class="p">},</span> <span class="n">cascade_delete</span><span class="o">=</span><span class="kc">True</span>
     <span class="p">)</span>
     <span class="n">prediction</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="s2">&quot;QualityPrediction&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Relationship</span><span class="p">(</span><span class="n">back_populates</span><span class="o">=</span><span class="s2">&quot;gridsquare&quot;</span><span class="p">,</span> <span class="n">cascade_delete</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">current_prediction</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="s2">&quot;CurrentQualityPrediction&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Relationship</span><span class="p">(</span>
+        <span class="n">back_populates</span><span class="o">=</span><span class="s2">&quot;gridsquare&quot;</span><span class="p">,</span> <span class="n">cascade_delete</span><span class="o">=</span><span class="kc">True</span>
+    <span class="p">)</span>
+    <span class="n">overall_prediction</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="s2">&quot;OverallQualityPrediction&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Relationship</span><span class="p">(</span>
+        <span class="n">back_populates</span><span class="o">=</span><span class="s2">&quot;gridsquare&quot;</span><span class="p">,</span> <span class="n">cascade_delete</span><span class="o">=</span><span class="kc">True</span>
+    <span class="p">)</span>
 
 
 <span class="k">class</span><span class="w"> </span><span class="nc">FoilHole</span><span class="p">(</span><span class="n">SQLModel</span><span class="p">,</span> <span class="n">table</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">table_name</span><span class="o">=</span><span class="s2">&quot;foilhole&quot;</span><span class="p">):</span>
@@ -618,6 +637,8 @@
         <span class="n">sa_relationship_kwargs</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;back_populates&quot;</span><span class="p">:</span> <span class="s2">&quot;foilhole&quot;</span><span class="p">},</span> <span class="n">cascade_delete</span><span class="o">=</span><span class="kc">True</span>
     <span class="p">)</span>
     <span class="n">prediction</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="s2">&quot;QualityPrediction&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Relationship</span><span class="p">(</span><span class="n">back_populates</span><span class="o">=</span><span class="s2">&quot;foilhole&quot;</span><span class="p">,</span> <span class="n">cascade_delete</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">current_prediction</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="s2">&quot;CurrentQualityPrediction&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Relationship</span><span class="p">(</span><span class="n">back_populates</span><span class="o">=</span><span class="s2">&quot;foilhole&quot;</span><span class="p">,</span> <span class="n">cascade_delete</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">overall_prediction</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="s2">&quot;OverallQualityPrediction&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Relationship</span><span class="p">(</span><span class="n">back_populates</span><span class="o">=</span><span class="s2">&quot;foilhole&quot;</span><span class="p">,</span> <span class="n">cascade_delete</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
 
 <span class="k">class</span><span class="w"> </span><span class="nc">Micrograph</span><span class="p">(</span><span class="n">SQLModel</span><span class="p">,</span> <span class="n">table</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">table_name</span><span class="o">=</span><span class="s2">&quot;micrograph&quot;</span><span class="p">):</span>
@@ -657,9 +678,39 @@
     <span class="n">__table_args__</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;extend_existing&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">}</span>
     <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">primary_key</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
     <span class="n">description</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+    <span class="n">level</span><span class="p">:</span> <span class="n">ModelLevel</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="n">ModelLevel</span><span class="o">.</span><span class="n">GRIDSQUARE</span><span class="p">,</span> <span class="n">sa_column</span><span class="o">=</span><span class="n">Column</span><span class="p">(</span><span class="n">ModelLevelType</span><span class="p">))</span>
     <span class="n">parameters</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="s2">&quot;QualityPredictionModelParameter&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Relationship</span><span class="p">(</span><span class="n">back_populates</span><span class="o">=</span><span class="s2">&quot;model&quot;</span><span class="p">,</span> <span class="n">cascade_delete</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
     <span class="n">weights</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="s2">&quot;QualityPredictionModelWeight&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Relationship</span><span class="p">(</span><span class="n">back_populates</span><span class="o">=</span><span class="s2">&quot;model&quot;</span><span class="p">,</span> <span class="n">cascade_delete</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
     <span class="n">predictions</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="s2">&quot;QualityPrediction&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Relationship</span><span class="p">(</span><span class="n">back_populates</span><span class="o">=</span><span class="s2">&quot;model&quot;</span><span class="p">,</span> <span class="n">cascade_delete</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">current_weights</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="s2">&quot;CurrentQualityPredictionModelWeight&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Relationship</span><span class="p">(</span>
+        <span class="n">back_populates</span><span class="o">=</span><span class="s2">&quot;model&quot;</span><span class="p">,</span> <span class="n">cascade_delete</span><span class="o">=</span><span class="kc">True</span>
+    <span class="p">)</span>
+    <span class="n">current_predictions</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="s2">&quot;CurrentQualityPrediction&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Relationship</span><span class="p">(</span><span class="n">back_populates</span><span class="o">=</span><span class="s2">&quot;model&quot;</span><span class="p">,</span> <span class="n">cascade_delete</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">QualityMetric</span><span class="p">(</span><span class="n">SQLModel</span><span class="p">,</span> <span class="n">table</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+    <span class="n">__table_args__</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;extend_existing&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">}</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">primary_key</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">description</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+    <span class="n">parameters</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="s2">&quot;QualityPredictionModelParameter&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Relationship</span><span class="p">(</span><span class="n">back_populates</span><span class="o">=</span><span class="s2">&quot;metric&quot;</span><span class="p">,</span> <span class="n">cascade_delete</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">weights</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="s2">&quot;QualityPredictionModelWeight&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Relationship</span><span class="p">(</span><span class="n">back_populates</span><span class="o">=</span><span class="s2">&quot;metric&quot;</span><span class="p">,</span> <span class="n">cascade_delete</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">current_weights</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="s2">&quot;CurrentQualityPredictionModelWeight&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Relationship</span><span class="p">(</span>
+        <span class="n">back_populates</span><span class="o">=</span><span class="s2">&quot;metric&quot;</span><span class="p">,</span> <span class="n">cascade_delete</span><span class="o">=</span><span class="kc">True</span>
+    <span class="p">)</span>
+    <span class="n">predictions</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="s2">&quot;QualityPrediction&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Relationship</span><span class="p">(</span><span class="n">back_populates</span><span class="o">=</span><span class="s2">&quot;metric&quot;</span><span class="p">,</span> <span class="n">cascade_delete</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">current_predictions</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="s2">&quot;CurrentQualityPrediction&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Relationship</span><span class="p">(</span><span class="n">back_populates</span><span class="o">=</span><span class="s2">&quot;metric&quot;</span><span class="p">,</span> <span class="n">cascade_delete</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">statistics</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="s2">&quot;QualityMetricStatistics&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Relationship</span><span class="p">(</span><span class="n">back_populates</span><span class="o">=</span><span class="s2">&quot;metric&quot;</span><span class="p">,</span> <span class="n">cascade_delete</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">QualityMetricStatistics</span><span class="p">(</span><span class="n">SQLModel</span><span class="p">,</span> <span class="n">table</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+    <span class="n">__table_args__</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;extend_existing&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">}</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">foreign_key</span><span class="o">=</span><span class="s2">&quot;qualitymetric.name&quot;</span><span class="p">,</span> <span class="n">primary_key</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">grid_uuid</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">foreign_key</span><span class="o">=</span><span class="s2">&quot;grid.uuid&quot;</span><span class="p">,</span> <span class="n">primary_key</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">count</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">value_sum</span><span class="p">:</span> <span class="nb">float</span>
+    <span class="n">squared_value_sum</span><span class="p">:</span> <span class="nb">float</span>
+    <span class="n">metric</span><span class="p">:</span> <span class="n">QualityMetric</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n">Relationship</span><span class="p">(</span><span class="n">back_populates</span><span class="o">=</span><span class="s2">&quot;statistics&quot;</span><span class="p">)</span>
+    <span class="n">grid</span><span class="p">:</span> <span class="n">Grid</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n">Relationship</span><span class="p">(</span><span class="n">back_populates</span><span class="o">=</span><span class="s2">&quot;quality_metric_statistics&quot;</span><span class="p">)</span>
 
 
 <span class="k">class</span><span class="w"> </span><span class="nc">QualityPredictionModelParameter</span><span class="p">(</span><span class="n">SQLModel</span><span class="p">,</span> <span class="n">table</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
@@ -671,7 +722,9 @@
     <span class="n">key</span><span class="p">:</span> <span class="nb">str</span>
     <span class="n">value</span><span class="p">:</span> <span class="nb">float</span>
     <span class="n">group</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+    <span class="n">metric_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">foreign_key</span><span class="o">=</span><span class="s2">&quot;qualitymetric.name&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
     <span class="n">model</span><span class="p">:</span> <span class="n">QualityPredictionModel</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n">Relationship</span><span class="p">(</span><span class="n">back_populates</span><span class="o">=</span><span class="s2">&quot;parameters&quot;</span><span class="p">)</span>
+    <span class="n">metric</span><span class="p">:</span> <span class="n">QualityMetric</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n">Relationship</span><span class="p">(</span><span class="n">back_populates</span><span class="o">=</span><span class="s2">&quot;parameters&quot;</span><span class="p">)</span>
     <span class="n">grid</span><span class="p">:</span> <span class="n">Grid</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n">Relationship</span><span class="p">(</span><span class="n">back_populates</span><span class="o">=</span><span class="s2">&quot;quality_model_parameters&quot;</span><span class="p">)</span>
 
 
@@ -682,12 +735,25 @@
     <span class="n">micrograph_uuid</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">foreign_key</span><span class="o">=</span><span class="s2">&quot;micrograph.uuid&quot;</span><span class="p">)</span>
     <span class="n">micrograph_quality</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
     <span class="n">timestamp</span><span class="p">:</span> <span class="n">datetime</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">)</span>
-    <span class="n">origin</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
     <span class="n">prediction_model_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">foreign_key</span><span class="o">=</span><span class="s2">&quot;qualitypredictionmodel.name&quot;</span><span class="p">)</span>
+    <span class="n">metric_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">foreign_key</span><span class="o">=</span><span class="s2">&quot;qualitymetric.name&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
     <span class="n">weight</span><span class="p">:</span> <span class="nb">float</span>
     <span class="n">model</span><span class="p">:</span> <span class="n">QualityPredictionModel</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n">Relationship</span><span class="p">(</span><span class="n">back_populates</span><span class="o">=</span><span class="s2">&quot;weights&quot;</span><span class="p">)</span>
+    <span class="n">metric</span><span class="p">:</span> <span class="n">QualityMetric</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n">Relationship</span><span class="p">(</span><span class="n">back_populates</span><span class="o">=</span><span class="s2">&quot;weights&quot;</span><span class="p">)</span>
     <span class="n">grid</span><span class="p">:</span> <span class="n">Grid</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n">Relationship</span><span class="p">(</span><span class="n">back_populates</span><span class="o">=</span><span class="s2">&quot;quality_model_weights&quot;</span><span class="p">)</span>
     <span class="n">micrograph</span><span class="p">:</span> <span class="n">Micrograph</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n">Relationship</span><span class="p">(</span><span class="n">back_populates</span><span class="o">=</span><span class="s2">&quot;quality_model_weights&quot;</span><span class="p">)</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">CurrentQualityPredictionModelWeight</span><span class="p">(</span><span class="n">SQLModel</span><span class="p">,</span> <span class="n">table</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+    <span class="n">__table_args__</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;extend_existing&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">}</span>
+    <span class="nb">id</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">primary_key</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">grid_uuid</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">foreign_key</span><span class="o">=</span><span class="s2">&quot;grid.uuid&quot;</span><span class="p">)</span>
+    <span class="n">prediction_model_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">foreign_key</span><span class="o">=</span><span class="s2">&quot;qualitypredictionmodel.name&quot;</span><span class="p">)</span>
+    <span class="n">metric_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">foreign_key</span><span class="o">=</span><span class="s2">&quot;qualitymetric.name&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+    <span class="n">weight</span><span class="p">:</span> <span class="nb">float</span>
+    <span class="n">model</span><span class="p">:</span> <span class="n">QualityPredictionModel</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n">Relationship</span><span class="p">(</span><span class="n">back_populates</span><span class="o">=</span><span class="s2">&quot;current_weights&quot;</span><span class="p">)</span>
+    <span class="n">metric</span><span class="p">:</span> <span class="n">QualityMetric</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n">Relationship</span><span class="p">(</span><span class="n">back_populates</span><span class="o">=</span><span class="s2">&quot;current_weights&quot;</span><span class="p">)</span>
+    <span class="n">grid</span><span class="p">:</span> <span class="n">Grid</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n">Relationship</span><span class="p">(</span><span class="n">back_populates</span><span class="o">=</span><span class="s2">&quot;current_quality_model_weights&quot;</span><span class="p">)</span>
 
 
 <span class="k">class</span><span class="w"> </span><span class="nc">QualityPrediction</span><span class="p">(</span><span class="n">SQLModel</span><span class="p">,</span> <span class="n">table</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
@@ -696,11 +762,41 @@
     <span class="n">timestamp</span><span class="p">:</span> <span class="n">datetime</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">)</span>
     <span class="n">value</span><span class="p">:</span> <span class="nb">float</span>
     <span class="n">prediction_model_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">foreign_key</span><span class="o">=</span><span class="s2">&quot;qualitypredictionmodel.name&quot;</span><span class="p">)</span>
+    <span class="n">metric_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">foreign_key</span><span class="o">=</span><span class="s2">&quot;qualitymetric.name&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
     <span class="n">foilhole_uuid</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">foreign_key</span><span class="o">=</span><span class="s2">&quot;foilhole.uuid&quot;</span><span class="p">)</span>
     <span class="n">gridsquare_uuid</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">foreign_key</span><span class="o">=</span><span class="s2">&quot;gridsquare.uuid&quot;</span><span class="p">)</span>
     <span class="n">foilhole</span><span class="p">:</span> <span class="n">FoilHole</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n">Relationship</span><span class="p">(</span><span class="n">back_populates</span><span class="o">=</span><span class="s2">&quot;prediction&quot;</span><span class="p">)</span>
     <span class="n">gridsquare</span><span class="p">:</span> <span class="n">GridSquare</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n">Relationship</span><span class="p">(</span><span class="n">back_populates</span><span class="o">=</span><span class="s2">&quot;prediction&quot;</span><span class="p">)</span>
     <span class="n">model</span><span class="p">:</span> <span class="n">QualityPredictionModel</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n">Relationship</span><span class="p">(</span><span class="n">back_populates</span><span class="o">=</span><span class="s2">&quot;predictions&quot;</span><span class="p">)</span>
+    <span class="n">metric</span><span class="p">:</span> <span class="n">QualityMetric</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n">Relationship</span><span class="p">(</span><span class="n">back_populates</span><span class="o">=</span><span class="s2">&quot;predictions&quot;</span><span class="p">)</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">CurrentQualityPrediction</span><span class="p">(</span><span class="n">SQLModel</span><span class="p">,</span> <span class="n">table</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+    <span class="n">__table_args__</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;extend_existing&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">}</span>
+    <span class="nb">id</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">primary_key</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">grid_uuid</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">foreign_key</span><span class="o">=</span><span class="s2">&quot;grid.uuid&quot;</span><span class="p">)</span>
+    <span class="n">value</span><span class="p">:</span> <span class="nb">float</span>
+    <span class="n">prediction_model_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">foreign_key</span><span class="o">=</span><span class="s2">&quot;qualitypredictionmodel.name&quot;</span><span class="p">)</span>
+    <span class="n">metric_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">foreign_key</span><span class="o">=</span><span class="s2">&quot;qualitymetric.name&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+    <span class="n">foilhole_uuid</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">foreign_key</span><span class="o">=</span><span class="s2">&quot;foilhole.uuid&quot;</span><span class="p">)</span>
+    <span class="n">gridsquare_uuid</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">foreign_key</span><span class="o">=</span><span class="s2">&quot;gridsquare.uuid&quot;</span><span class="p">)</span>
+    <span class="n">foilhole</span><span class="p">:</span> <span class="n">FoilHole</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n">Relationship</span><span class="p">(</span><span class="n">back_populates</span><span class="o">=</span><span class="s2">&quot;prediction&quot;</span><span class="p">)</span>
+    <span class="n">gridsquare</span><span class="p">:</span> <span class="n">GridSquare</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n">Relationship</span><span class="p">(</span><span class="n">back_populates</span><span class="o">=</span><span class="s2">&quot;prediction&quot;</span><span class="p">)</span>
+    <span class="n">model</span><span class="p">:</span> <span class="n">QualityPredictionModel</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n">Relationship</span><span class="p">(</span><span class="n">back_populates</span><span class="o">=</span><span class="s2">&quot;predictions&quot;</span><span class="p">)</span>
+    <span class="n">metric</span><span class="p">:</span> <span class="n">QualityMetric</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n">Relationship</span><span class="p">(</span><span class="n">back_populates</span><span class="o">=</span><span class="s2">&quot;current_predictions&quot;</span><span class="p">)</span>
+    <span class="n">grid</span><span class="p">:</span> <span class="n">Grid</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n">Relationship</span><span class="p">(</span><span class="n">back_populates</span><span class="o">=</span><span class="s2">&quot;current_quality_predictions&quot;</span><span class="p">)</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">OverallQualityPrediction</span><span class="p">(</span><span class="n">SQLModel</span><span class="p">,</span> <span class="n">table</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+    <span class="n">__table_args__</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;extend_existing&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">}</span>
+    <span class="nb">id</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">primary_key</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">value</span><span class="p">:</span> <span class="nb">float</span>
+    <span class="n">foilhole_uuid</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">foreign_key</span><span class="o">=</span><span class="s2">&quot;foilhole.uuid&quot;</span><span class="p">)</span>
+    <span class="n">grid_uuid</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">foreign_key</span><span class="o">=</span><span class="s2">&quot;grid.uuid&quot;</span><span class="p">)</span>
+    <span class="n">gridsquare_uuid</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">foreign_key</span><span class="o">=</span><span class="s2">&quot;gridsquare.uuid&quot;</span><span class="p">)</span>
+    <span class="n">foilhole</span><span class="p">:</span> <span class="n">FoilHole</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n">Relationship</span><span class="p">(</span><span class="n">back_populates</span><span class="o">=</span><span class="s2">&quot;overall_prediction&quot;</span><span class="p">)</span>
+    <span class="n">gridsquare</span><span class="p">:</span> <span class="n">GridSquare</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n">Relationship</span><span class="p">(</span><span class="n">back_populates</span><span class="o">=</span><span class="s2">&quot;overall_prediction&quot;</span><span class="p">)</span>
+    <span class="n">grid</span><span class="p">:</span> <span class="n">Grid</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n">Relationship</span><span class="p">(</span><span class="n">back_populates</span><span class="o">=</span><span class="s2">&quot;overall_predictions&quot;</span><span class="p">)</span>
 
 
 <span class="c1"># ============ Agent Communication Tables ============</span>
@@ -917,6 +1013,12 @@
             <span class="p">)</span>
             <span class="n">sess</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span>
                 <span class="n">text</span><span class="p">(</span>
+                    <span class="s2">&quot;CREATE INDEX IF NOT EXISTS idx_quality_model_param_metric &quot;</span>
+                    <span class="s2">&quot;ON qualitypredictionmodelparameter (metric_name);&quot;</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
+            <span class="n">sess</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span>
+                <span class="n">text</span><span class="p">(</span>
                     <span class="s2">&quot;CREATE INDEX IF NOT EXISTS idx_quality_model_param_composite &quot;</span>
                     <span class="s2">&quot;ON qualitypredictionmodelparameter (grid_uuid, prediction_model_name);&quot;</span>
                 <span class="p">)</span>
@@ -948,6 +1050,12 @@
                 <span class="n">text</span><span class="p">(</span>
                     <span class="s2">&quot;CREATE INDEX IF NOT EXISTS idx_quality_model_weight_model_name &quot;</span>
                     <span class="s2">&quot;ON qualitypredictionmodelweight (prediction_model_name);&quot;</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
+            <span class="n">sess</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span>
+                <span class="n">text</span><span class="p">(</span>
+                    <span class="s2">&quot;CREATE INDEX IF NOT EXISTS idx_quality_model_weight_metric &quot;</span>
+                    <span class="s2">&quot;ON qualitypredictionmodelparameter (metric_name);&quot;</span>
                 <span class="p">)</span>
             <span class="p">)</span>
             <span class="n">sess</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span>
@@ -986,6 +1094,12 @@
                 <span class="n">text</span><span class="p">(</span>
                     <span class="s2">&quot;CREATE INDEX IF NOT EXISTS idx_quality_prediction_model_name &quot;</span>
                     <span class="s2">&quot;ON qualityprediction (prediction_model_name);&quot;</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
+            <span class="n">sess</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span>
+                <span class="n">text</span><span class="p">(</span>
+                    <span class="s2">&quot;CREATE INDEX IF NOT EXISTS idx_quality_prediction_metric &quot;</span>
+                    <span class="s2">&quot;ON qualitypredictionmodelparameter (metric_name);&quot;</span>
                 <span class="p">)</span>
             <span class="p">)</span>
             <span class="n">sess</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span>

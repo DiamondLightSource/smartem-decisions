@@ -30,6 +30,12 @@
         
         
         
+        
+        
+        
+        
+        
+        
 
 .. automodule:: smartem_backend.model.http_request
     :members:
@@ -75,5 +81,11 @@
         MicrographBaseRequest
         MicrographCreateRequest
         MicrographUpdateRequest
+        QualityPredictionCreateRequest
+        QualityPredictionModelBaseFields
+        QualityPredictionModelCreateRequest
+        QualityPredictionModelParameterCreateRequest
+        QualityPredictionModelUpdateRequest
+        QualityPredictionModelWeightCreateRequest
     
     

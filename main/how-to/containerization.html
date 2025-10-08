@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Containerization &#8212; smartem-decisions 0.1.dev334+gd573f69a5.d20251007 documentation</title>
+    <title>Containerization &#8212; smartem-decisions 0.1.dev372+g0f036fa24.d20251008 documentation</title>
   
   
   
@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../_static/documentation_options.js?v=afc44027"></script>
+    <script src="../_static/documentation_options.js?v=e306b88a"></script>
     <script src="../_static/doctools.js?v=9bcbadda"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -59,7 +59,7 @@
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="Contribute to the project" href="contribute.html" />
-    <link rel="prev" title="Configure Logging and Verbosity" href="configure-logging.html" />
+    <link rel="prev" title="Container User Configuration" href="container-user-configuration.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
   <meta name="docsearch:version" content="main" />
@@ -399,6 +399,7 @@
   <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
 <li class="toctree-l1"><a class="reference internal" href="use-api-documentation.html">Using the API Documentation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="configure-logging.html">Configure Logging and Verbosity</a></li>
+<li class="toctree-l1"><a class="reference internal" href="container-user-configuration.html">Container User Configuration</a></li>
 <li class="toctree-l1 current active"><a class="current reference internal" href="#">Containerization</a></li>
 <li class="toctree-l1"><a class="reference internal" href="contribute.html">Contribute to the project</a></li>
 <li class="toctree-l1"><a class="reference internal" href="database-migrations.html">Database Migrations</a></li>
@@ -409,6 +410,7 @@
 <li class="toctree-l1"><a class="reference internal" href="run-agent.html">Run SmartEM Agent (EPU Agent)</a></li>
 <li class="toctree-l1"><a class="reference internal" href="run-backend.html">Run SmartEM Backend</a></li>
 <li class="toctree-l1"><a class="reference internal" href="run-container.html">Run in a container</a></li>
+<li class="toctree-l1"><a class="reference internal" href="run-e2e-dev-simulation.html">Run an end-to-end simulation in development</a></li>
 <li class="toctree-l1"><a class="reference internal" href="troubleshoot-cli.html">SmartEM CLI Troubleshooting Guide</a></li>
 <li class="toctree-l1"><a class="reference internal" href="use-core-http-api-client.html">How to Use the SmartEM API Client</a></li>
 <li class="toctree-l1"><a class="reference internal" href="use-mcp-interface.html">Using SmartEM MCP Interface</a></li>
@@ -474,22 +476,152 @@
                   
   <section id="containerization">
 <h1>Containerization<a class="headerlink" href="#containerization" title="Link to this heading">#</a></h1>
-<section id="podman-operations">
-<h2>Podman Operations<a class="headerlink" href="#podman-operations" title="Link to this heading">#</a></h2>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># podman image/container operations:</span>
-podman<span class="w"> </span>build<span class="w"> </span>--format<span class="w"> </span>docker<span class="w"> </span>.<span class="w"> </span>-t<span class="w"> </span>smartem_backend<span class="w"> </span><span class="c1"># build image</span>
-podman<span class="w"> </span>run<span class="w"> </span>-p<span class="w"> </span><span class="m">8000</span>:8000<span class="w"> </span>localhost/smartem_backend<span class="w"> </span><span class="c1"># run container (TODO debug Postgres connection)</span>
-podman<span class="w"> </span>image<span class="w"> </span>rm<span class="w"> </span>localhost/smartem_backend<span class="w"> </span>-f<span class="w"> </span><span class="c1"># clean up before rebuild</span>
+<p>This guide covers building and managing SmartEM Decisions container images.</p>
+<section id="docker-podman-operations">
+<h2>Docker/Podman Operations<a class="headerlink" href="#docker-podman-operations" title="Link to this heading">#</a></h2>
+<section id="basic-build-default-configuration">
+<h3>Basic Build (Default Configuration)<a class="headerlink" href="#basic-build-default-configuration" title="Link to this heading">#</a></h3>
+<p>Build the container with default settings (runs as root):</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Docker</span>
+docker<span class="w"> </span>build<span class="w"> </span>-t<span class="w"> </span>smartem-decisions<span class="w"> </span>.
 
-<span class="c1"># TODO but we should push to Github not Gitlab</span>
-<span class="c1"># Once built, tagging and pushing is done like so:</span>
-<span class="c1"># Refs:</span>
-<span class="c1">#  - https://confluence.diamond.ac.uk/display/CLOUD/Container+Registry</span>
-<span class="c1">#  - https://dev-portal.diamond.ac.uk/guide/kubernetes/tutorials/containers/</span>
-podman<span class="w"> </span>tag<span class="w"> </span>55646974a136<span class="w"> </span>gcr.io/diamond-pubreg/smartem_backend/smartem_backend:latest
-podman<span class="w"> </span>push<span class="w"> </span>gcr.io/diamond-pubreg/smartem_backend/smartem_backend:latest
+<span class="c1"># Podman</span>
+podman<span class="w"> </span>build<span class="w"> </span>--format<span class="w"> </span>docker<span class="w"> </span>-t<span class="w"> </span>smartem-decisions<span class="w"> </span>.
 </pre></div>
 </div>
+</section>
+<section id="build-with-custom-user-dls-deployment">
+<h3>Build with Custom User (DLS Deployment)<a class="headerlink" href="#build-with-custom-user-dls-deployment" title="Link to this heading">#</a></h3>
+<p>For production deployment at Diamond Light Source, build with custom UID/GID to enable <code class="docutils literal notranslate"><span class="pre">/dls</span></code> filesystem access:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Docker</span>
+docker<span class="w"> </span>build<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--build-arg<span class="w"> </span><span class="nv">groupid</span><span class="o">=</span><span class="m">1000</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--build-arg<span class="w"> </span><span class="nv">userid</span><span class="o">=</span><span class="m">1000</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--build-arg<span class="w"> </span><span class="nv">groupname</span><span class="o">=</span>smartem<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-t<span class="w"> </span>smartem-decisions:dls<span class="w"> </span>.
+
+<span class="c1"># Podman</span>
+podman<span class="w"> </span>build<span class="w"> </span>--format<span class="w"> </span>docker<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--build-arg<span class="w"> </span><span class="nv">groupid</span><span class="o">=</span><span class="m">1000</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--build-arg<span class="w"> </span><span class="nv">userid</span><span class="o">=</span><span class="m">1000</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--build-arg<span class="w"> </span><span class="nv">groupname</span><span class="o">=</span>smartem<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-t<span class="w"> </span>smartem-decisions:dls<span class="w"> </span>.
+</pre></div>
+</div>
+<p>See <a class="reference internal" href="container-user-configuration.html"><span class="std std-doc">Container User Configuration</span></a> for detailed information about build arguments and deployment scenarios.</p>
+</section>
+<section id="running-containers">
+<h3>Running Containers<a class="headerlink" href="#running-containers" title="Link to this heading">#</a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Docker - run API service</span>
+docker<span class="w"> </span>run<span class="w"> </span>-p<span class="w"> </span><span class="m">8000</span>:8000<span class="w"> </span>-e<span class="w"> </span><span class="nv">ROLE</span><span class="o">=</span>api<span class="w"> </span>smartem-decisions
+
+<span class="c1"># Podman - run API service</span>
+podman<span class="w"> </span>run<span class="w"> </span>-p<span class="w"> </span><span class="m">8000</span>:8000<span class="w"> </span>-e<span class="w"> </span><span class="nv">ROLE</span><span class="o">=</span>api<span class="w"> </span>localhost/smartem-decisions
+</pre></div>
+</div>
+</section>
+<section id="cleanup">
+<h3>Cleanup<a class="headerlink" href="#cleanup" title="Link to this heading">#</a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Docker</span>
+docker<span class="w"> </span>image<span class="w"> </span>rm<span class="w"> </span>smartem-decisions<span class="w"> </span>-f
+
+<span class="c1"># Podman</span>
+podman<span class="w"> </span>image<span class="w"> </span>rm<span class="w"> </span>localhost/smartem-decisions<span class="w"> </span>-f
+</pre></div>
+</div>
+</section>
+</section>
+<section id="tagging-and-pushing-images">
+<h2>Tagging and Pushing Images<a class="headerlink" href="#tagging-and-pushing-images" title="Link to this heading">#</a></h2>
+<section id="github-container-registry-current">
+<h3>GitHub Container Registry (Current)<a class="headerlink" href="#github-container-registry-current" title="Link to this heading">#</a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Tag the image</span>
+docker<span class="w"> </span>tag<span class="w"> </span>smartem-decisions<span class="w"> </span>ghcr.io/diamondlightsource/smartem-decisions:latest
+
+<span class="c1"># Login to GitHub Container Registry</span>
+<span class="nb">echo</span><span class="w"> </span><span class="nv">$GITHUB_TOKEN</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>docker<span class="w"> </span>login<span class="w"> </span>ghcr.io<span class="w"> </span>-u<span class="w"> </span>USERNAME<span class="w"> </span>--password-stdin
+
+<span class="c1"># Push the image</span>
+docker<span class="w"> </span>push<span class="w"> </span>ghcr.io/diamondlightsource/smartem-decisions:latest
+</pre></div>
+</div>
+</section>
+<section id="tagging-strategies">
+<h3>Tagging Strategies<a class="headerlink" href="#tagging-strategies" title="Link to this heading">#</a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Development/staging build</span>
+docker<span class="w"> </span>tag<span class="w"> </span>smartem-decisions<span class="w"> </span>ghcr.io/diamondlightsource/smartem-decisions:dev
+docker<span class="w"> </span>tag<span class="w"> </span>smartem-decisions<span class="w"> </span>ghcr.io/diamondlightsource/smartem-decisions:staging
+
+<span class="c1"># Production build with version</span>
+docker<span class="w"> </span>tag<span class="w"> </span>smartem-decisions<span class="w"> </span>ghcr.io/diamondlightsource/smartem-decisions:1.0.0
+docker<span class="w"> </span>tag<span class="w"> </span>smartem-decisions<span class="w"> </span>ghcr.io/diamondlightsource/smartem-decisions:latest
+
+<span class="c1"># Production build with custom user</span>
+docker<span class="w"> </span>tag<span class="w"> </span>smartem-decisions:dls<span class="w"> </span>ghcr.io/diamondlightsource/smartem-decisions:production
+</pre></div>
+</div>
+</section>
+</section>
+<section id="multi-stage-build-architecture">
+<h2>Multi-Stage Build Architecture<a class="headerlink" href="#multi-stage-build-architecture" title="Link to this heading">#</a></h2>
+<p>The Dockerfile uses a multi-stage build process:</p>
+<ol class="arabic simple">
+<li><p><strong>developer</strong> stage: Base Python image with system dependencies</p></li>
+<li><p><strong>build</strong> stage: Installs Python packages and application code</p></li>
+<li><p><strong>runtime</strong> stage: Slim image with only runtime dependencies and built application</p></li>
+</ol>
+<p>This approach:</p>
+<ul class="simple">
+<li><p>Minimizes final image size</p></li>
+<li><p>Separates build tools from runtime environment</p></li>
+<li><p>Enables efficient layer caching</p></li>
+</ul>
+</section>
+<section id="build-arguments-reference">
+<h2>Build Arguments Reference<a class="headerlink" href="#build-arguments-reference" title="Link to this heading">#</a></h2>
+<div class="pst-scrollable-table-container"><table class="table">
+<thead>
+<tr class="row-odd"><th class="head"><p>Argument</p></th>
+<th class="head"><p>Default</p></th>
+<th class="head"><p>Purpose</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">PYTHON_VERSION</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">3.12</span></code></p></td>
+<td><p>Python version for base images</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">groupid</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">0</span></code></p></td>
+<td><p>Group ID for container user (0 = root)</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">userid</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">0</span></code></p></td>
+<td><p>User ID for container user (0 = root)</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">groupname</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">root</span></code></p></td>
+<td><p>Name for group and user</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="related-documentation">
+<h2>Related Documentation<a class="headerlink" href="#related-documentation" title="Link to this heading">#</a></h2>
+<ul class="simple">
+<li><p><a class="reference internal" href="container-user-configuration.html"><span class="std std-doc">Container User Configuration</span></a> - Detailed guide on UID/GID configuration</p></li>
+<li><p><a class="reference internal" href="run-container.html"><span class="std std-doc">Run in a Container</span></a> - Using pre-built containers</p></li>
+<li><p><a class="reference internal" href="deploy-kubernetes.html"><span class="std std-doc">Kubernetes Deployment</span></a> - Deploying to Kubernetes</p></li>
+</ul>
+</section>
+<section id="references">
+<h2>References<a class="headerlink" href="#references" title="Link to this heading">#</a></h2>
+<ul class="simple">
+<li><p><a class="reference external" href="https://ghcr.io/diamondlightsource/smartem-decisions">GitHub Container Registry</a></p></li>
+<li><p><a class="reference external" href="https://docs.docker.com/build/building/multi-stage/">Docker Multi-stage Builds</a></p></li>
+<li><p><a class="reference external" href="https://docs.podman.io/">Podman Documentation</a></p></li>
+</ul>
 </section>
 </section>
 
@@ -504,12 +636,12 @@ podman<span class="w"> </span>push<span class="w"> </span>gcr.io/diamond-pubreg/
                   
 <div class="prev-next-area">
     <a class="left-prev"
-       href="configure-logging.html"
+       href="container-user-configuration.html"
        title="previous page">
       <i class="fa-solid fa-angle-left"></i>
       <div class="prev-next-info">
         <p class="prev-next-subtitle">previous</p>
-        <p class="prev-next-title">Configure Logging and Verbosity</p>
+        <p class="prev-next-title">Container User Configuration</p>
       </div>
     </a>
     <a class="right-next"
@@ -540,7 +672,22 @@ podman<span class="w"> </span>push<span class="w"> </span>gcr.io/diamond-pubreg/
   </div>
   <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
     <ul class="visible nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#podman-operations">Podman Operations</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#docker-podman-operations">Docker/Podman Operations</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#basic-build-default-configuration">Basic Build (Default Configuration)</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#build-with-custom-user-dls-deployment">Build with Custom User (DLS Deployment)</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#running-containers">Running Containers</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#cleanup">Cleanup</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#tagging-and-pushing-images">Tagging and Pushing Images</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#github-container-registry-current">GitHub Container Registry (Current)</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#tagging-strategies">Tagging Strategies</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#multi-stage-build-architecture">Multi-Stage Build Architecture</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#build-arguments-reference">Build Arguments Reference</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#related-documentation">Related Documentation</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#references">References</a></li>
 </ul>
   </nav></div>
 

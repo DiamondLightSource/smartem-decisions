@@ -7,7 +7,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>smartem_backend.consumer &#8212; smartem-decisions 0.1.dev334+gd573f69a5.d20251007 documentation</title>
+    <title>smartem_backend.consumer &#8212; smartem-decisions 0.1.dev372+g0f036fa24.d20251008 documentation</title>
   
   
   
@@ -40,7 +40,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../../_static/documentation_options.js?v=afc44027"></script>
+    <script src="../../_static/documentation_options.js?v=e306b88a"></script>
     <script src="../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -455,10 +455,12 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">datetime</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span>
 
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">pika</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">scipy.stats</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">dotenv</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_dotenv</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">pydantic</span><span class="w"> </span><span class="kn">import</span> <span class="n">ValidationError</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">sqlmodel</span><span class="w"> </span><span class="kn">import</span> <span class="n">Session</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sqlmodel</span><span class="w"> </span><span class="kn">import</span> <span class="n">Session</span><span class="p">,</span> <span class="n">select</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">smartem_backend.cli.initialise_prediction_model_weights</span><span class="w"> </span><span class="kn">import</span> <span class="n">initialise_all_models_for_grid</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">smartem_backend.cli.random_model_predictions</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
@@ -470,6 +472,11 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">smartem_backend.model.database</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">AgentInstruction</span><span class="p">,</span>
     <span class="n">AgentSession</span><span class="p">,</span>
+    <span class="n">CurrentQualityPrediction</span><span class="p">,</span>
+    <span class="n">FoilHole</span><span class="p">,</span>
+    <span class="n">GridSquare</span><span class="p">,</span>
+    <span class="n">Micrograph</span><span class="p">,</span>
+    <span class="n">QualityMetricStatistics</span><span class="p">,</span>
     <span class="n">QualityPrediction</span><span class="p">,</span>
     <span class="n">QualityPredictionModelParameter</span><span class="p">,</span>
 <span class="p">)</span>
@@ -483,6 +490,7 @@
     <span class="n">AtlasCreatedEvent</span><span class="p">,</span>
     <span class="n">AtlasDeletedEvent</span><span class="p">,</span>
     <span class="n">AtlasUpdatedEvent</span><span class="p">,</span>
+    <span class="n">CtfCompleteBody</span><span class="p">,</span>
     <span class="n">FoilHoleCreatedEvent</span><span class="p">,</span>
     <span class="n">FoilHoleDeletedEvent</span><span class="p">,</span>
     <span class="n">FoilHoleModelPredictionEvent</span><span class="p">,</span>
@@ -501,8 +509,16 @@
     <span class="n">MicrographDeletedEvent</span><span class="p">,</span>
     <span class="n">MicrographUpdatedEvent</span><span class="p">,</span>
     <span class="n">ModelParameterUpdateEvent</span><span class="p">,</span>
+    <span class="n">MotionCorrectionCompleteBody</span><span class="p">,</span>
+    <span class="n">MultiFoilHoleModelPredictionEvent</span><span class="p">,</span>
+    <span class="n">RefreshPredictionsEvent</span><span class="p">,</span>
 <span class="p">)</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">smartem_backend.mq_publisher</span><span class="w"> </span><span class="kn">import</span> <span class="n">publish_agent_instruction_created</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">smartem_backend.mq_publisher</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">publish_agent_instruction_created</span><span class="p">,</span>
+    <span class="n">publish_ctf_estimation_registered</span><span class="p">,</span>
+    <span class="n">publish_motion_correction_registered</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">smartem_backend.predictions.update</span><span class="w"> </span><span class="kn">import</span> <span class="n">overall_predictions_update</span><span class="p">,</span> <span class="n">prior_update</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">smartem_backend.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_db_engine</span><span class="p">,</span> <span class="n">load_conf</span><span class="p">,</span> <span class="n">rmq_consumer</span><span class="p">,</span> <span class="n">setup_logger</span>
 
 <span class="n">load_dotenv</span><span class="p">(</span><span class="n">override</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>  <span class="c1"># Don&#39;t override existing env vars as these might be coming from k8s</span>
@@ -1065,6 +1081,140 @@
 
 
 
+<span class="k">def</span><span class="w"> </span><span class="nf">_check_against_statistics</span><span class="p">(</span>
+    <span class="n">metric_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">micrograph_uuid</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">comparison_value</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">larger_better</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+    <span class="k">with</span> <span class="n">Session</span><span class="p">(</span><span class="n">db_engine</span><span class="p">)</span> <span class="k">as</span> <span class="n">session</span><span class="p">:</span>
+        <span class="n">grid_uuid</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">session</span><span class="o">.</span><span class="n">exec</span><span class="p">(</span>
+                <span class="n">select</span><span class="p">(</span><span class="n">GridSquare</span><span class="p">,</span> <span class="n">FoilHole</span><span class="p">,</span> <span class="n">Micrograph</span><span class="p">)</span>
+                <span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">GridSquare</span><span class="o">.</span><span class="n">uuid</span> <span class="o">==</span> <span class="n">FoilHole</span><span class="o">.</span><span class="n">gridsquare_uuid</span><span class="p">)</span>
+                <span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">FoilHole</span><span class="o">.</span><span class="n">uuid</span> <span class="o">==</span> <span class="n">Micrograph</span><span class="o">.</span><span class="n">foilhole_uuid</span><span class="p">)</span>
+                <span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">Micrograph</span><span class="o">.</span><span class="n">uuid</span> <span class="o">==</span> <span class="n">micrograph_uuid</span><span class="p">)</span>
+            <span class="p">)</span>
+            <span class="o">.</span><span class="n">one</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="o">.</span><span class="n">grid_uuid</span>
+        <span class="p">)</span>
+        <span class="n">metric_stats</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">exec</span><span class="p">(</span>
+            <span class="n">select</span><span class="p">(</span><span class="n">QualityMetricStatistics</span><span class="p">)</span>
+            <span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">QualityMetricStatistics</span><span class="o">.</span><span class="n">grid_uuid</span> <span class="o">==</span> <span class="n">grid_uuid</span><span class="p">)</span>
+            <span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">QualityMetricStatistics</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="n">metric_name</span><span class="p">)</span>
+        <span class="p">)</span><span class="o">.</span><span class="n">all</span><span class="p">()</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">metric_stats</span><span class="p">:</span>
+        <span class="k">return</span> <span class="mi">1</span>
+    <span class="k">elif</span> <span class="n">metric_stats</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">count</span> <span class="o">&lt;</span> <span class="mi">2</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">comparison_value</span> <span class="o">==</span> <span class="n">metric_stats</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">value_sum</span> <span class="o">/</span> <span class="n">metric_stats</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">count</span><span class="p">:</span>
+            <span class="k">return</span> <span class="mf">0.5</span>
+        <span class="k">elif</span> <span class="n">comparison_value</span> <span class="o">&gt;</span> <span class="n">metric_stats</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">value_sum</span> <span class="o">/</span> <span class="n">metric_stats</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">count</span><span class="p">:</span>
+            <span class="k">return</span> <span class="mi">1</span> <span class="k">if</span> <span class="n">larger_better</span> <span class="k">else</span> <span class="mi">0</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="mi">0</span> <span class="k">if</span> <span class="n">larger_better</span> <span class="k">else</span> <span class="mi">1</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">metric_mean</span> <span class="o">=</span> <span class="n">metric_stats</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">value_sum</span> <span class="o">/</span> <span class="n">metric_stats</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">count</span>
+        <span class="n">metric_var</span> <span class="o">=</span> <span class="n">metric_stats</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">squared_value_sum</span> <span class="o">/</span> <span class="p">(</span><span class="n">metric_stats</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">count</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="n">cdf_value</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">scipy</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">metric_mean</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">metric_var</span><span class="p">))</span><span class="o">.</span><span class="n">cdf</span><span class="p">(</span><span class="n">comparison_value</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">cdf_value</span> <span class="k">if</span> <span class="n">larger_better</span> <span class="k">else</span> <span class="mi">1</span> <span class="o">-</span> <span class="n">cdf_value</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">handle_motion_correction_complete</span><span class="p">(</span><span class="n">event_data</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">event</span> <span class="o">=</span> <span class="n">MotionCorrectionCompleteBody</span><span class="p">(</span><span class="o">**</span><span class="n">event_data</span><span class="p">)</span>
+        <span class="n">quality</span> <span class="o">=</span> <span class="n">_check_against_statistics</span><span class="p">(</span><span class="s2">&quot;motioncorrection&quot;</span><span class="p">,</span> <span class="n">event</span><span class="o">.</span><span class="n">micrograph_uuid</span><span class="p">,</span> <span class="n">event</span><span class="o">.</span><span class="n">total_motion</span><span class="p">)</span>
+        <span class="k">with</span> <span class="n">Session</span><span class="p">(</span><span class="n">db_engine</span><span class="p">)</span> <span class="k">as</span> <span class="n">session</span><span class="p">:</span>
+            <span class="n">grid_uuid</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="n">session</span><span class="o">.</span><span class="n">exec</span><span class="p">(</span>
+                    <span class="n">select</span><span class="p">(</span><span class="n">GridSquare</span><span class="p">,</span> <span class="n">FoilHole</span><span class="p">,</span> <span class="n">Micrograph</span><span class="p">)</span>
+                    <span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">GridSquare</span><span class="o">.</span><span class="n">uuid</span> <span class="o">==</span> <span class="n">FoilHole</span><span class="o">.</span><span class="n">gridsquare_uuid</span><span class="p">)</span>
+                    <span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">FoilHole</span><span class="o">.</span><span class="n">uuid</span> <span class="o">==</span> <span class="n">Micrograph</span><span class="o">.</span><span class="n">foilhole_uuid</span><span class="p">)</span>
+                    <span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">Micrograph</span><span class="o">.</span><span class="n">uuid</span> <span class="o">==</span> <span class="n">event</span><span class="o">.</span><span class="n">micrograph_uuid</span><span class="p">)</span>
+                <span class="p">)</span>
+                <span class="o">.</span><span class="n">one</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span>
+                <span class="o">.</span><span class="n">grid_uuid</span>
+            <span class="p">)</span>
+            <span class="n">metric_stats</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">exec</span><span class="p">(</span>
+                <span class="n">select</span><span class="p">(</span><span class="n">QualityMetricStatistics</span><span class="p">)</span>
+                <span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">QualityMetricStatistics</span><span class="o">.</span><span class="n">grid_uuid</span> <span class="o">==</span> <span class="n">grid_uuid</span><span class="p">)</span>
+                <span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">QualityMetricStatistics</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="s2">&quot;motioncorrection&quot;</span><span class="p">)</span>
+            <span class="p">)</span><span class="o">.</span><span class="n">all</span><span class="p">()</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">metric_stats</span><span class="p">:</span>
+                <span class="n">updated_metric_stats</span> <span class="o">=</span> <span class="n">QualityMetricStatistics</span><span class="p">(</span>
+                    <span class="n">grid_uuid</span><span class="o">=</span><span class="n">grid_uuid</span><span class="p">,</span>
+                    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;motioncorrection&quot;</span><span class="p">,</span>
+                    <span class="n">count</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+                    <span class="n">value_sum</span><span class="o">=</span><span class="n">event</span><span class="o">.</span><span class="n">total_motion</span><span class="p">,</span>
+                    <span class="n">squared_value_sum</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+                <span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">updated_metric_stats</span> <span class="o">=</span> <span class="n">metric_stats</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+                <span class="n">old_diff</span> <span class="o">=</span> <span class="n">event</span><span class="o">.</span><span class="n">total_motion</span> <span class="o">-</span> <span class="p">(</span><span class="n">updated_metric_stats</span><span class="o">.</span><span class="n">value_sum</span> <span class="o">/</span> <span class="n">updated_metric_stats</span><span class="o">.</span><span class="n">count</span><span class="p">)</span>
+                <span class="n">updated_metric_stats</span><span class="o">.</span><span class="n">count</span> <span class="o">+=</span> <span class="mi">1</span>
+                <span class="n">updated_metric_stats</span><span class="o">.</span><span class="n">value_sum</span> <span class="o">+=</span> <span class="n">event</span><span class="o">.</span><span class="n">total_motion</span>
+                <span class="n">updated_metric_stats</span><span class="o">.</span><span class="n">squared_value_sum</span> <span class="o">+=</span> <span class="n">old_diff</span> <span class="o">*</span> <span class="p">(</span>
+                    <span class="n">event</span><span class="o">.</span><span class="n">total_motion</span> <span class="o">-</span> <span class="p">(</span><span class="n">updated_metric_stats</span><span class="o">.</span><span class="n">value_sum</span> <span class="o">/</span> <span class="n">updated_metric_stats</span><span class="o">.</span><span class="n">count</span><span class="p">)</span>
+                <span class="p">)</span>
+            <span class="n">session</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">updated_metric_stats</span><span class="p">)</span>
+            <span class="n">session</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span>
+            <span class="n">prior_update</span><span class="p">(</span><span class="n">quality</span><span class="p">,</span> <span class="n">event</span><span class="o">.</span><span class="n">micrograph_uuid</span><span class="p">,</span> <span class="s2">&quot;motioncorrection&quot;</span><span class="p">,</span> <span class="n">session</span><span class="p">)</span>
+        <span class="n">publish_motion_correction_registered</span><span class="p">(</span><span class="n">event</span><span class="o">.</span><span class="n">micrograph_uuid</span><span class="p">,</span> <span class="n">quality</span> <span class="o">&gt;=</span> <span class="mf">0.5</span><span class="p">,</span> <span class="n">metric_name</span><span class="o">=</span><span class="s2">&quot;motioncorrection&quot;</span><span class="p">)</span>
+    <span class="k">except</span> <span class="n">ValidationError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Validation error processing motion correction event: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error processing motion correction event: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="kc">None</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">handle_ctf_estimation_complete</span><span class="p">(</span><span class="n">event_data</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">event</span> <span class="o">=</span> <span class="n">CtfCompleteBody</span><span class="p">(</span><span class="o">**</span><span class="n">event_data</span><span class="p">)</span>
+        <span class="n">quality</span> <span class="o">=</span> <span class="n">_check_against_statistics</span><span class="p">(</span>
+            <span class="s2">&quot;ctfmaxresolution&quot;</span><span class="p">,</span> <span class="n">event</span><span class="o">.</span><span class="n">micrograph_uuid</span><span class="p">,</span> <span class="n">event</span><span class="o">.</span><span class="n">ctf_max_resolution_estimate</span>
+        <span class="p">)</span>
+        <span class="k">with</span> <span class="n">Session</span><span class="p">(</span><span class="n">db_engine</span><span class="p">)</span> <span class="k">as</span> <span class="n">session</span><span class="p">:</span>
+            <span class="n">grid_uuid</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="n">session</span><span class="o">.</span><span class="n">exec</span><span class="p">(</span>
+                    <span class="n">select</span><span class="p">(</span><span class="n">GridSquare</span><span class="p">,</span> <span class="n">FoilHole</span><span class="p">,</span> <span class="n">Micrograph</span><span class="p">)</span>
+                    <span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">GridSquare</span><span class="o">.</span><span class="n">uuid</span> <span class="o">==</span> <span class="n">FoilHole</span><span class="o">.</span><span class="n">gridsquare_uuid</span><span class="p">)</span>
+                    <span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">FoilHole</span><span class="o">.</span><span class="n">uuid</span> <span class="o">==</span> <span class="n">Micrograph</span><span class="o">.</span><span class="n">foilhole_uuid</span><span class="p">)</span>
+                    <span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">Micrograph</span><span class="o">.</span><span class="n">uuid</span> <span class="o">==</span> <span class="n">event</span><span class="o">.</span><span class="n">micrograph_uuid</span><span class="p">)</span>
+                <span class="p">)</span>
+                <span class="o">.</span><span class="n">one</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span>
+                <span class="o">.</span><span class="n">grid_uuid</span>
+            <span class="p">)</span>
+            <span class="n">metric_stats</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">exec</span><span class="p">(</span>
+                <span class="n">select</span><span class="p">(</span><span class="n">QualityMetricStatistics</span><span class="p">)</span>
+                <span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">QualityMetricStatistics</span><span class="o">.</span><span class="n">grid_uuid</span> <span class="o">==</span> <span class="n">grid_uuid</span><span class="p">)</span>
+                <span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">QualityMetricStatistics</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="s2">&quot;ctfmaxresolution&quot;</span><span class="p">)</span>
+            <span class="p">)</span><span class="o">.</span><span class="n">all</span><span class="p">()</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">metric_stats</span><span class="p">:</span>
+                <span class="n">updated_metric_stats</span> <span class="o">=</span> <span class="n">QualityMetricStatistics</span><span class="p">(</span>
+                    <span class="n">grid_uuid</span><span class="o">=</span><span class="n">grid_uuid</span><span class="p">,</span>
+                    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;ctfmaxresolution&quot;</span><span class="p">,</span>
+                    <span class="n">count</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+                    <span class="n">value_sum</span><span class="o">=</span><span class="n">event</span><span class="o">.</span><span class="n">ctf_max_resolution_estimate</span><span class="p">,</span>
+                    <span class="n">squared_value_sum</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+                <span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">updated_metric_stats</span> <span class="o">=</span> <span class="n">metric_stats</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+                <span class="n">old_diff</span> <span class="o">=</span> <span class="n">event</span><span class="o">.</span><span class="n">total_motion</span> <span class="o">-</span> <span class="p">(</span><span class="n">updated_metric_stats</span><span class="o">.</span><span class="n">value_sum</span> <span class="o">/</span> <span class="n">updated_metric_stats</span><span class="o">.</span><span class="n">count</span><span class="p">)</span>
+                <span class="n">updated_metric_stats</span><span class="o">.</span><span class="n">count</span> <span class="o">+=</span> <span class="mi">1</span>
+                <span class="n">updated_metric_stats</span><span class="o">.</span><span class="n">value_sum</span> <span class="o">+=</span> <span class="n">event</span><span class="o">.</span><span class="n">ctf_max_resolution_estimate</span>
+                <span class="n">updated_metric_stats</span><span class="o">.</span><span class="n">squared_value_sum</span> <span class="o">+=</span> <span class="n">old_diff</span> <span class="o">*</span> <span class="p">(</span>
+                    <span class="n">event</span><span class="o">.</span><span class="n">ctf_max_resolution_estimate</span> <span class="o">-</span> <span class="p">(</span><span class="n">updated_metric_stats</span><span class="o">.</span><span class="n">value_sum</span> <span class="o">/</span> <span class="n">updated_metric_stats</span><span class="o">.</span><span class="n">count</span><span class="p">)</span>
+                <span class="p">)</span>
+            <span class="n">session</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">updated_metric_stats</span><span class="p">)</span>
+            <span class="n">session</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span>
+            <span class="n">prior_update</span><span class="p">(</span><span class="n">quality</span><span class="p">,</span> <span class="n">event</span><span class="o">.</span><span class="n">micrograph_uuid</span><span class="p">,</span> <span class="s2">&quot;ctfmaxresolution&quot;</span><span class="p">,</span> <span class="n">session</span><span class="p">)</span>
+        <span class="n">publish_ctf_estimation_registered</span><span class="p">(</span><span class="n">event</span><span class="o">.</span><span class="n">micrograph_uuid</span><span class="p">,</span> <span class="n">quality</span> <span class="o">&gt;=</span> <span class="mf">0.5</span><span class="p">,</span> <span class="n">metric_name</span><span class="o">=</span><span class="s2">&quot;ctfmaxresolution&quot;</span><span class="p">)</span>
+    <span class="k">except</span> <span class="n">ValidationError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Validation error processing ctf event: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error processing ctf event: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="kc">None</span>
+
+
 <div class="viewcode-block" id="handle_gridsquare_model_prediction">
 <a class="viewcode-back" href="../../_api/smartem_backend.consumer.html#smartem_backend.consumer.handle_gridsquare_model_prediction">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">handle_gridsquare_model_prediction</span><span class="p">(</span><span class="n">event_data</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
@@ -1080,9 +1230,30 @@
             <span class="n">gridsquare_uuid</span><span class="o">=</span><span class="n">event</span><span class="o">.</span><span class="n">gridsquare_uuid</span><span class="p">,</span>
             <span class="n">prediction_model_name</span><span class="o">=</span><span class="n">event</span><span class="o">.</span><span class="n">prediction_model_name</span><span class="p">,</span>
             <span class="n">value</span><span class="o">=</span><span class="n">event</span><span class="o">.</span><span class="n">prediction_value</span><span class="p">,</span>
+            <span class="n">metric_name</span><span class="o">=</span><span class="n">event</span><span class="o">.</span><span class="n">metric</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="k">with</span> <span class="n">Session</span><span class="p">(</span><span class="n">db_engine</span><span class="p">)</span> <span class="k">as</span> <span class="n">session</span><span class="p">:</span>
             <span class="n">session</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">quality_prediction</span><span class="p">)</span>
+            <span class="n">current_quality_prediction</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">exec</span><span class="p">(</span>
+                <span class="n">select</span><span class="p">(</span><span class="n">CurrentQualityPrediction</span><span class="p">)</span>
+                <span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">CurrentQualityPrediction</span><span class="o">.</span><span class="n">gridsquare_uuid</span> <span class="o">==</span> <span class="n">event</span><span class="o">.</span><span class="n">gridsquare_uuid</span><span class="p">)</span>
+                <span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">CurrentQualityPrediction</span><span class="o">.</span><span class="n">prediction_model_name</span> <span class="o">==</span> <span class="n">event</span><span class="o">.</span><span class="n">prediction_model_name</span><span class="p">)</span>
+                <span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">CurrentQualityPrediction</span><span class="o">.</span><span class="n">metric_name</span> <span class="o">==</span> <span class="n">event</span><span class="o">.</span><span class="n">metric</span><span class="p">)</span>
+            <span class="p">)</span><span class="o">.</span><span class="n">first</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">current_quality_prediction</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">grid_uuid</span> <span class="o">=</span> <span class="p">(</span>
+                    <span class="n">session</span><span class="o">.</span><span class="n">exec</span><span class="p">(</span><span class="n">select</span><span class="p">(</span><span class="n">GridSquare</span><span class="p">)</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">GridSquare</span><span class="o">.</span><span class="n">uuid</span> <span class="o">==</span> <span class="n">event</span><span class="o">.</span><span class="n">gridsquare_uuid</span><span class="p">))</span><span class="o">.</span><span class="n">one</span><span class="p">()</span><span class="o">.</span><span class="n">grid_uuid</span>
+                <span class="p">)</span>
+                <span class="n">current_quality_prediction</span> <span class="o">=</span> <span class="n">CurrentQualityPrediction</span><span class="p">(</span>
+                    <span class="n">grid_uuid</span><span class="o">=</span><span class="n">grid_uuid</span><span class="p">,</span>
+                    <span class="n">gridsquare_uuid</span><span class="o">=</span><span class="n">event</span><span class="o">.</span><span class="n">gridsquare_uuid</span><span class="p">,</span>
+                    <span class="n">prediction_model_name</span><span class="o">=</span><span class="n">event</span><span class="o">.</span><span class="n">prediction_model_name</span><span class="p">,</span>
+                    <span class="n">value</span><span class="o">=</span><span class="n">event</span><span class="o">.</span><span class="n">prediction_value</span><span class="p">,</span>
+                    <span class="n">metric_name</span><span class="o">=</span><span class="n">event</span><span class="o">.</span><span class="n">metric</span><span class="p">,</span>
+                <span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">current_quality_prediction</span> <span class="o">=</span> <span class="n">event</span><span class="o">.</span><span class="n">prediction_value</span>
+            <span class="n">session</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">current_quality_prediction</span><span class="p">)</span>
             <span class="n">session</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span>
 
     <span class="k">except</span> <span class="n">ValidationError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
@@ -1107,15 +1278,119 @@
             <span class="n">foilhole_uuid</span><span class="o">=</span><span class="n">event</span><span class="o">.</span><span class="n">foilhole_uuid</span><span class="p">,</span>
             <span class="n">prediction_model_name</span><span class="o">=</span><span class="n">event</span><span class="o">.</span><span class="n">prediction_model_name</span><span class="p">,</span>
             <span class="n">value</span><span class="o">=</span><span class="n">event</span><span class="o">.</span><span class="n">prediction_value</span><span class="p">,</span>
+            <span class="n">metric_name</span><span class="o">=</span><span class="n">event</span><span class="o">.</span><span class="n">metric</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="k">with</span> <span class="n">Session</span><span class="p">(</span><span class="n">db_engine</span><span class="p">)</span> <span class="k">as</span> <span class="n">session</span><span class="p">:</span>
             <span class="n">session</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">quality_prediction</span><span class="p">)</span>
+            <span class="n">current_quality_prediction</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">exec</span><span class="p">(</span>
+                <span class="n">select</span><span class="p">(</span><span class="n">CurrentQualityPrediction</span><span class="p">)</span>
+                <span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">CurrentQualityPrediction</span><span class="o">.</span><span class="n">foilhole_uuid</span> <span class="o">==</span> <span class="n">event</span><span class="o">.</span><span class="n">foilhole_uuid</span><span class="p">)</span>
+                <span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">CurrentQualityPrediction</span><span class="o">.</span><span class="n">prediction_model_name</span> <span class="o">==</span> <span class="n">event</span><span class="o">.</span><span class="n">prediction_model_name</span><span class="p">)</span>
+                <span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">CurrentQualityPrediction</span><span class="o">.</span><span class="n">metric_name</span> <span class="o">==</span> <span class="n">event</span><span class="o">.</span><span class="n">metric</span><span class="p">)</span>
+            <span class="p">)</span><span class="o">.</span><span class="n">first</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">current_quality_prediction</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">square</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">exec</span><span class="p">(</span>
+                    <span class="n">select</span><span class="p">(</span><span class="n">GridSquare</span><span class="p">,</span> <span class="n">FoilHole</span><span class="p">)</span>
+                    <span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">GridSquare</span><span class="o">.</span><span class="n">uuid</span> <span class="o">==</span> <span class="n">FoilHole</span><span class="o">.</span><span class="n">gridsquare_uuid</span><span class="p">)</span>
+                    <span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">FoilHole</span><span class="o">.</span><span class="n">uuid</span> <span class="o">==</span> <span class="n">event</span><span class="o">.</span><span class="n">foilhole_uuid</span><span class="p">)</span>
+                <span class="p">)</span><span class="o">.</span><span class="n">one</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span>
+                <span class="n">current_quality_prediction</span> <span class="o">=</span> <span class="n">CurrentQualityPrediction</span><span class="p">(</span>
+                    <span class="n">grid_uuid</span><span class="o">=</span><span class="n">square</span><span class="o">.</span><span class="n">grid_uuid</span><span class="p">,</span>
+                    <span class="n">gridsquare_uuid</span><span class="o">=</span><span class="n">square</span><span class="o">.</span><span class="n">uuid</span><span class="p">,</span>
+                    <span class="n">foilhole_uuid</span><span class="o">=</span><span class="n">event</span><span class="o">.</span><span class="n">foilhole_uuid</span><span class="p">,</span>
+                    <span class="n">prediction_model_name</span><span class="o">=</span><span class="n">event</span><span class="o">.</span><span class="n">prediction_model_name</span><span class="p">,</span>
+                    <span class="n">value</span><span class="o">=</span><span class="n">event</span><span class="o">.</span><span class="n">prediction_value</span><span class="p">,</span>
+                    <span class="n">metric_name</span><span class="o">=</span><span class="n">event</span><span class="o">.</span><span class="n">metric</span><span class="p">,</span>
+                <span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">current_quality_prediction</span> <span class="o">=</span> <span class="n">event</span><span class="o">.</span><span class="n">prediction_value</span>
+            <span class="n">session</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">current_quality_prediction</span><span class="p">)</span>
             <span class="n">session</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span>
 
     <span class="k">except</span> <span class="n">ValidationError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Validation error processing grid square model prediction event: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Validation error processing foil hole model prediction event: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
     <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error processing grid square model prediction event: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span></div>
+        <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error processing foil hole model prediction event: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="handle_multi_foilhole_model_prediction">
+<a class="viewcode-back" href="../../_api/smartem_backend.consumer.html#smartem_backend.consumer.handle_multi_foilhole_model_prediction">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">handle_multi_foilhole_model_prediction</span><span class="p">(</span><span class="n">event_data</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Handle multiple foil hole model predictions event by inserting the result into the database</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        event_data: Event data for foil hole model predictions</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">event</span> <span class="o">=</span> <span class="n">MultiFoilHoleModelPredictionEvent</span><span class="p">(</span><span class="o">**</span><span class="n">event_data</span><span class="p">)</span>
+        <span class="n">quality_predictions</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">QualityPrediction</span><span class="p">(</span>
+                <span class="n">foilhole_uuid</span><span class="o">=</span><span class="n">fhuuid</span><span class="p">,</span>
+                <span class="n">prediction_model_name</span><span class="o">=</span><span class="n">event</span><span class="o">.</span><span class="n">prediction_model_name</span><span class="p">,</span>
+                <span class="n">value</span><span class="o">=</span><span class="n">event</span><span class="o">.</span><span class="n">prediction_value</span><span class="p">,</span>
+                <span class="n">metric_name</span><span class="o">=</span><span class="n">event</span><span class="o">.</span><span class="n">metric</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="k">for</span> <span class="n">fhuuid</span> <span class="ow">in</span> <span class="n">event</span><span class="o">.</span><span class="n">foilhole_uuids</span>
+        <span class="p">]</span>
+        <span class="k">with</span> <span class="n">Session</span><span class="p">(</span><span class="n">db_engine</span><span class="p">)</span> <span class="k">as</span> <span class="n">session</span><span class="p">:</span>
+            <span class="n">session</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">quality_predictions</span><span class="p">)</span>
+            <span class="n">current_quality_predictions</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">exec</span><span class="p">(</span>
+                <span class="n">select</span><span class="p">(</span><span class="n">CurrentQualityPrediction</span><span class="p">)</span>
+                <span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">CurrentQualityPrediction</span><span class="o">.</span><span class="n">foilhole_uuid</span><span class="o">.</span><span class="n">in_</span><span class="p">(</span><span class="n">event</span><span class="o">.</span><span class="n">foilhole_uuids</span><span class="p">))</span>
+                <span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">CurrentQualityPrediction</span><span class="o">.</span><span class="n">prediction_model_name</span> <span class="o">==</span> <span class="n">event</span><span class="o">.</span><span class="n">prediction_model_name</span><span class="p">)</span>
+                <span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">CurrentQualityPrediction</span><span class="o">.</span><span class="n">metric_name</span> <span class="o">==</span> <span class="n">event</span><span class="o">.</span><span class="n">metric</span><span class="p">)</span>
+            <span class="p">)</span><span class="o">.</span><span class="n">all</span><span class="p">()</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">current_quality_predictions</span><span class="p">:</span>
+                <span class="n">square</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">exec</span><span class="p">(</span>
+                    <span class="n">select</span><span class="p">(</span><span class="n">GridSquare</span><span class="p">,</span> <span class="n">FoilHole</span><span class="p">)</span>
+                    <span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">GridSquare</span><span class="o">.</span><span class="n">uuid</span> <span class="o">==</span> <span class="n">FoilHole</span><span class="o">.</span><span class="n">gridsquare_uuid</span><span class="p">)</span>
+                    <span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">FoilHole</span><span class="o">.</span><span class="n">uuid</span> <span class="o">==</span> <span class="n">event</span><span class="o">.</span><span class="n">foilhole_uuids</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+                <span class="p">)</span><span class="o">.</span><span class="n">one</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span>
+                <span class="n">current_quality_predictions</span> <span class="o">=</span> <span class="p">[</span>
+                    <span class="n">CurrentQualityPrediction</span><span class="p">(</span>
+                        <span class="n">grid_uuid</span><span class="o">=</span><span class="n">square</span><span class="o">.</span><span class="n">grid_uuid</span><span class="p">,</span>
+                        <span class="n">gridsquare_uuid</span><span class="o">=</span><span class="n">square</span><span class="o">.</span><span class="n">uuid</span><span class="p">,</span>
+                        <span class="n">foilhole_uuid</span><span class="o">=</span><span class="n">fhuuid</span><span class="p">,</span>
+                        <span class="n">prediction_model_name</span><span class="o">=</span><span class="n">event</span><span class="o">.</span><span class="n">prediction_model_name</span><span class="p">,</span>
+                        <span class="n">value</span><span class="o">=</span><span class="n">event</span><span class="o">.</span><span class="n">prediction_value</span><span class="p">,</span>
+                        <span class="n">metric_name</span><span class="o">=</span><span class="n">event</span><span class="o">.</span><span class="n">metric</span><span class="p">,</span>
+                    <span class="p">)</span>
+                    <span class="k">for</span> <span class="n">fhuuid</span> <span class="ow">in</span> <span class="n">event</span><span class="o">.</span><span class="n">foilhole_uuids</span>
+                <span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">pred</span> <span class="ow">in</span> <span class="n">current_quality_predictions</span><span class="p">:</span>
+                    <span class="n">pred</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="n">event</span><span class="o">.</span><span class="n">prediction_value</span>
+            <span class="n">session</span><span class="o">.</span><span class="n">add_all</span><span class="p">(</span><span class="n">current_quality_predictions</span><span class="p">)</span>
+            <span class="n">session</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span>
+
+    <span class="k">except</span> <span class="n">ValidationError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Validation error processing multiple foil hole model prediction event: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error processing multiple foil hole model prediction event: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="handle_refresh_predictions">
+<a class="viewcode-back" href="../../_api/smartem_backend.consumer.html#smartem_backend.consumer.handle_refresh_predictions">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">handle_refresh_predictions</span><span class="p">(</span><span class="n">event_data</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Handle refresh predictions event by calculating the updated values</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        event_data: Event data for refresh predictions event</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">event</span> <span class="o">=</span> <span class="n">RefreshPredictionsEvent</span><span class="p">(</span><span class="o">**</span><span class="n">event_data</span><span class="p">)</span>
+        <span class="k">with</span> <span class="n">Session</span><span class="p">(</span><span class="n">db_engine</span><span class="p">)</span> <span class="k">as</span> <span class="n">session</span><span class="p">:</span>
+            <span class="n">overall_predictions_update</span><span class="p">(</span><span class="n">event</span><span class="o">.</span><span class="n">grid_uuid</span><span class="p">,</span> <span class="n">session</span><span class="p">)</span>
+
+    <span class="k">except</span> <span class="n">ValidationError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Validation error processing refresh predictions event: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error processing refresh predictions event: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span></div>
 
 
 
@@ -1135,6 +1410,7 @@
             <span class="n">prediction_model_name</span><span class="o">=</span><span class="n">event</span><span class="o">.</span><span class="n">prediction_model_name</span><span class="p">,</span>
             <span class="n">key</span><span class="o">=</span><span class="n">event</span><span class="o">.</span><span class="n">key</span><span class="p">,</span>
             <span class="n">value</span><span class="o">=</span><span class="n">event</span><span class="o">.</span><span class="n">value</span><span class="p">,</span>
+            <span class="n">metric_name</span><span class="o">=</span><span class="n">event</span><span class="o">.</span><span class="n">metric</span><span class="p">,</span>
             <span class="n">group</span><span class="o">=</span><span class="n">event</span><span class="o">.</span><span class="n">group</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="k">with</span> <span class="n">Session</span><span class="p">(</span><span class="n">db_engine</span><span class="p">)</span> <span class="k">as</span> <span class="n">session</span><span class="p">:</span>
@@ -1456,12 +1732,17 @@
         <span class="n">MessageQueueEventType</span><span class="o">.</span><span class="n">MICROGRAPH_CREATED</span><span class="o">.</span><span class="n">value</span><span class="p">:</span> <span class="n">handle_micrograph_created</span><span class="p">,</span>
         <span class="n">MessageQueueEventType</span><span class="o">.</span><span class="n">MICROGRAPH_UPDATED</span><span class="o">.</span><span class="n">value</span><span class="p">:</span> <span class="n">handle_micrograph_updated</span><span class="p">,</span>
         <span class="n">MessageQueueEventType</span><span class="o">.</span><span class="n">MICROGRAPH_DELETED</span><span class="o">.</span><span class="n">value</span><span class="p">:</span> <span class="n">handle_micrograph_deleted</span><span class="p">,</span>
-        <span class="n">MessageQueueEventType</span><span class="o">.</span><span class="n">GRIDSQUARE_MODEL_PREDICTION</span><span class="o">.</span><span class="n">value</span><span class="p">:</span> <span class="n">handle_gridsquare_model_prediction_router</span><span class="p">,</span>
-        <span class="n">MessageQueueEventType</span><span class="o">.</span><span class="n">FOILHOLE_MODEL_PREDICTION</span><span class="o">.</span><span class="n">value</span><span class="p">:</span> <span class="n">handle_foilhole_model_prediction_router</span><span class="p">,</span>
-        <span class="n">MessageQueueEventType</span><span class="o">.</span><span class="n">MODEL_PARAMETER_UPDATE</span><span class="o">.</span><span class="n">value</span><span class="p">:</span> <span class="n">handle_model_parameter_update</span><span class="p">,</span>
         <span class="n">MessageQueueEventType</span><span class="o">.</span><span class="n">AGENT_INSTRUCTION_CREATED</span><span class="o">.</span><span class="n">value</span><span class="p">:</span> <span class="n">handle_agent_instruction_created</span><span class="p">,</span>
         <span class="n">MessageQueueEventType</span><span class="o">.</span><span class="n">AGENT_INSTRUCTION_UPDATED</span><span class="o">.</span><span class="n">value</span><span class="p">:</span> <span class="n">handle_agent_instruction_updated</span><span class="p">,</span>
         <span class="n">MessageQueueEventType</span><span class="o">.</span><span class="n">AGENT_INSTRUCTION_EXPIRED</span><span class="o">.</span><span class="n">value</span><span class="p">:</span> <span class="n">handle_agent_instruction_expired</span><span class="p">,</span>
+        <span class="n">MessageQueueEventType</span><span class="o">.</span><span class="n">MOTION_CORRECTION_COMPLETE</span><span class="o">.</span><span class="n">value</span><span class="p">:</span> <span class="n">handle_motion_correction_complete</span><span class="p">,</span>
+        <span class="n">MessageQueueEventType</span><span class="o">.</span><span class="n">CTF_COMPLETE</span><span class="o">.</span><span class="n">value</span><span class="p">:</span> <span class="n">handle_ctf_estimation_complete</span><span class="p">,</span>
+        <span class="n">MessageQueueEventType</span><span class="o">.</span><span class="n">GRIDSQUARE_MODEL_PREDICTION</span><span class="o">.</span><span class="n">value</span><span class="p">:</span> <span class="n">handle_gridsquare_model_prediction</span><span class="p">,</span>
+        <span class="n">MessageQueueEventType</span><span class="o">.</span><span class="n">FOILHOLE_MODEL_PREDICTION</span><span class="o">.</span><span class="n">value</span><span class="p">:</span> <span class="n">handle_foilhole_model_prediction</span><span class="p">,</span>
+        <span class="n">MessageQueueEventType</span><span class="o">.</span><span class="n">MULTI_FOILHOLE_MODEL_PREDICTION</span><span class="o">.</span><span class="n">value</span><span class="p">:</span> <span class="n">handle_multi_foilhole_model_prediction</span><span class="p">,</span>
+        <span class="n">MessageQueueEventType</span><span class="o">.</span><span class="n">MODEL_PARAMETER_UPDATE</span><span class="o">.</span><span class="n">value</span><span class="p">:</span> <span class="n">handle_model_parameter_update</span><span class="p">,</span>
+        <span class="n">MessageQueueEventType</span><span class="o">.</span><span class="n">REFRESH_PREDICTIONS</span><span class="o">.</span><span class="n">value</span><span class="p">:</span> <span class="n">handle_refresh_predictions</span><span class="p">,</span>
+        <span class="c1"># TODO: Add handlers for all other event types as needed</span>
     <span class="p">}</span></div>
 
 

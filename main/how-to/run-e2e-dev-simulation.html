@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Run SmartEM Backend &#8212; smartem-decisions 0.1.dev372+g0f036fa24.d20251008 documentation</title>
+    <title>Run an end-to-end simulation in development &#8212; smartem-decisions 0.1.dev372+g0f036fa24.d20251008 documentation</title>
   
   
   
@@ -47,7 +47,7 @@
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
     <script src="../_static/copybutton.js?v=30646c52"></script>
     <script src="../_static/design-tabs.js?v=f930bc37"></script>
-    <script>DOCUMENTATION_OPTIONS.pagename = 'how-to/run-backend';</script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'how-to/run-e2e-dev-simulation';</script>
     <script>
         DOCUMENTATION_OPTIONS.theme_version = '0.16.1';
         DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://DiamondLightSource.github.io/smartem-decisions/switcher.json';
@@ -58,8 +58,8 @@
     <link rel="icon" href="../_static/dls-logo.svg"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="Run in a container" href="run-container.html" />
-    <link rel="prev" title="Run SmartEM Agent (EPU Agent)" href="run-agent.html" />
+    <link rel="next" title="SmartEM CLI Troubleshooting Guide" href="troubleshoot-cli.html" />
+    <link rel="prev" title="Run in a container" href="run-container.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
   <meta name="docsearch:version" content="main" />
@@ -408,9 +408,9 @@
 <li class="toctree-l1"><a class="reference internal" href="generate-docs.html">Generate Documentation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="manage-kubernetes-secrets.html">Managing Kubernetes Secrets</a></li>
 <li class="toctree-l1"><a class="reference internal" href="run-agent.html">Run SmartEM Agent (EPU Agent)</a></li>
-<li class="toctree-l1 current active"><a class="current reference internal" href="#">Run SmartEM Backend</a></li>
+<li class="toctree-l1"><a class="reference internal" href="run-backend.html">Run SmartEM Backend</a></li>
 <li class="toctree-l1"><a class="reference internal" href="run-container.html">Run in a container</a></li>
-<li class="toctree-l1"><a class="reference internal" href="run-e2e-dev-simulation.html">Run an end-to-end simulation in development</a></li>
+<li class="toctree-l1 current active"><a class="current reference internal" href="#">Run an end-to-end simulation in development</a></li>
 <li class="toctree-l1"><a class="reference internal" href="troubleshoot-cli.html">SmartEM CLI Troubleshooting Guide</a></li>
 <li class="toctree-l1"><a class="reference internal" href="use-core-http-api-client.html">How to Use the SmartEM API Client</a></li>
 <li class="toctree-l1"><a class="reference internal" href="use-mcp-interface.html">Using SmartEM MCP Interface</a></li>
@@ -457,7 +457,7 @@
     
     <li class="breadcrumb-item"><a href="../how-to.html" class="nav-link">How-to Guides</a></li>
     
-    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Run SmartEM Backend</span></li>
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Run an end-to-end simulation in development</span></li>
   </ul>
 </nav>
 </div>
@@ -474,42 +474,194 @@
 <div id="searchbox"></div>
                 <article class="bd-article">
                   
-  <section id="run-smartem-backend">
-<h1>Run SmartEM Backend<a class="headerlink" href="#run-smartem-backend" title="Link to this heading">#</a></h1>
-<p>The core backend service providing HTTP API, database operations, and message queue processing for intelligent cryo-EM data collection.</p>
-<section id="backend-operations">
-<h2>Backend Operations<a class="headerlink" href="#backend-operations" title="Link to this heading">#</a></h2>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># create env and launch service stack locally:</span>
-./tools/dev-k8s.sh<span class="w"> </span>up
+  <section id="run-an-end-to-end-simulation-in-development">
+<h1>Run an end-to-end simulation in development<a class="headerlink" href="#run-an-end-to-end-simulation-in-development" title="Link to this heading">#</a></h1>
+<p>To simulate all system components running together in a development environment, follow these steps in order. Each component should be run in a separate terminal tab/window and left running in the background.</p>
+<section id="prerequisites">
+<h2>Prerequisites<a class="headerlink" href="#prerequisites" title="Link to this heading">#</a></h2>
+<ol class="arabic">
+<li><p><strong>Activate virtual environment</strong> in every terminal before proceeding:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">source</span><span class="w"> </span>.venv/bin/activate
+</pre></div>
+</div>
+</li>
+<li><p><strong>Verify test recordings exist</strong>:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>ls<span class="w"> </span>-la<span class="w"> </span>../smartem-decisions-test-recordings/
+</pre></div>
+</div>
+<p>Available recordings:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">bi37600-29_fsrecord.tar.gz</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">bi37708-42_fsrecord.tar.gz</span></code> (recommended for testing)</p></li>
+</ul>
+</li>
+<li><p><strong>Prepare output directory</strong> for playback:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>mkdir<span class="w"> </span>-p<span class="w"> </span>../epu-test-dir
+</pre></div>
+</div>
+</li>
+</ol>
+</section>
+<section id="step-1-launch-backend-infrastructure-services">
+<h2>Step 1: Launch backend infrastructure services<a class="headerlink" href="#step-1-launch-backend-infrastructure-services" title="Link to this heading">#</a></h2>
+<p>Deploy PostgreSQL, RabbitMQ, and containerised API/worker services:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>./tools/dev-k8s.sh<span class="w"> </span>up
+</pre></div>
+</div>
+<p><strong>Expected output</strong>: All pods should show as “Running” with services accessible on:</p>
+<ul class="simple">
+<li><p>SmartEM API: http://localhost:30080/docs</p></li>
+<li><p>RabbitMQ Management: http://localhost:30673</p></li>
+<li><p>Adminer Database UI: http://localhost:30808</p></li>
+</ul>
+<p><strong>Verification</strong>:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>curl<span class="w"> </span>-s<span class="w"> </span>http://localhost:30080/status
+</pre></div>
+</div>
+</section>
+<section id="step-2-launch-local-consumer-optional">
+<h2>Step 2: Launch local consumer (optional)<a class="headerlink" href="#step-2-launch-local-consumer-optional" title="Link to this heading">#</a></h2>
+<p>If you want to run a local consumer instead of the containerised worker:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nv">RABBITMQ_URL</span><span class="o">=</span>amqp://guest:guest@localhost:30672/<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>smartem_backend.consumer<span class="w">  </span><span class="c1"># pragma: allowlist secret</span>
+</pre></div>
+</div>
+<p><strong>Note</strong>: The containerised deployment already includes a worker, so this step is optional.</p>
+</section>
+<section id="step-3-launch-smartem-agent-in-watch-mode">
+<h2>Step 3: Launch SmartEM agent in watch mode<a class="headerlink" href="#step-3-launch-smartem-agent-in-watch-mode" title="Link to this heading">#</a></h2>
+<p>Configure the agent to connect to the containerised API:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>-m<span class="w"> </span>smartem_agent<span class="w"> </span>watch<span class="w"> </span>--api-url<span class="w"> </span>http://localhost:30080<span class="w"> </span>../epu-test-dir
+</pre></div>
+</div>
+<p><strong>Expected output</strong>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">INFO</span> <span class="o">-</span> <span class="n">Initialized</span> <span class="n">SmartEM</span> <span class="n">API</span> <span class="n">client</span> <span class="k">with</span> <span class="n">base</span> <span class="n">URL</span><span class="p">:</span> <span class="n">http</span><span class="p">:</span><span class="o">//</span><span class="n">localhost</span><span class="p">:</span><span class="mi">30080</span>
+<span class="n">INFO</span> <span class="o">-</span> <span class="n">API</span> <span class="ow">is</span> <span class="n">reachable</span> <span class="n">at</span> <span class="n">http</span><span class="p">:</span><span class="o">//</span><span class="n">localhost</span><span class="p">:</span><span class="mi">30080</span> <span class="o">-</span> <span class="n">Status</span><span class="p">:</span> <span class="o">...</span>
+</pre></div>
+</div>
+</section>
+<section id="step-4-start-session-recording-playback">
+<h2>Step 4: Start session recording playback<a class="headerlink" href="#step-4-start-session-recording-playback" title="Link to this heading">#</a></h2>
+<p>Begin the microscopy data simulation:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>./tools/fsrecorder/fsrecorder.py<span class="w"> </span>replay<span class="w"> </span>../smartem-decisions-test-recordings/bi37708-42_fsrecord.tar.gz<span class="w"> </span>../epu-test-dir/<span class="w"> </span><span class="p">|</span><span class="w"> </span>tee<span class="w"> </span>epu-test-dir.log
+</pre></div>
+</div>
+<p><strong>Expected behaviour</strong>:</p>
+<ul class="simple">
+<li><p>Progress updates showing file creation events</p></li>
+<li><p>Files being created in <code class="docutils literal notranslate"><span class="pre">../epu-test-dir/atlas/...</span></code></p></li>
+<li><p>SmartEM agent detecting file changes and sending data to API</p></li>
+<li><p>Database records being created (visible via API endpoints)</p></li>
+</ul>
+</section>
+<section id="step-5-run-external-message-simulator-complete-feedback-loop">
+<h2>Step 5: Run external message simulator (complete feedback loop)<a class="headerlink" href="#step-5-run-external-message-simulator-complete-feedback-loop" title="Link to this heading">#</a></h2>
+<p>Start the external message simulator to send processing results that trigger agent instructions:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>tools/external_message_simulator.py<span class="w"> </span>workflow-simulation<span class="w"> </span>--delay<span class="w"> </span><span class="m">3</span>.0
+</pre></div>
+</div>
+<p><strong>Alternative simulation options</strong>:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Send specific message types</span>
+python<span class="w"> </span>tools/external_message_simulator.py<span class="w"> </span>gridsquare-prediction<span class="w"> </span>--count<span class="w"> </span><span class="m">3</span>
+python<span class="w"> </span>tools/external_message_simulator.py<span class="w"> </span>foilhole-prediction<span class="w"> </span>--count<span class="w"> </span><span class="m">2</span>
 
-<span class="c1"># launch RabbitMQ worker (consumer)</span>
-python<span class="w"> </span>-m<span class="w"> </span>smartem_backend.consumer<span class="w">              </span><span class="c1"># ERROR level (default)</span>
-python<span class="w"> </span>-m<span class="w"> </span>smartem_backend.consumer<span class="w"> </span>-v<span class="w">           </span><span class="c1"># INFO level  </span>
-python<span class="w"> </span>-m<span class="w"> </span>smartem_backend.consumer<span class="w"> </span>-vv<span class="w">          </span><span class="c1"># DEBUG level</span>
+<span class="c1"># Batch simulation with different quality scenarios</span>
+python<span class="w"> </span>tools/external_message_simulator.py<span class="w"> </span>batch-simulation<span class="w"> </span>--gridsquare-count<span class="w"> </span><span class="m">5</span><span class="w"> </span>--scenario<span class="w"> </span>mixed
+</pre></div>
+</div>
+<p><strong>Expected behaviour</strong>:</p>
+<ul class="simple">
+<li><p>External simulator publishes messages to RabbitMQ</p></li>
+<li><p>Backend consumer processes messages and transforms them</p></li>
+<li><p>Agent receives instructions via SSE (Server-Sent Events)</p></li>
+<li><p>Agent logs show received instructions and decision-making</p></li>
+<li><p>Complete feedback loop: files → processing → ML results → agent instructions</p></li>
+</ul>
+</section>
+<section id="monitoring-the-simulation">
+<h2>Monitoring the simulation<a class="headerlink" href="#monitoring-the-simulation" title="Link to this heading">#</a></h2>
+<ol class="arabic">
+<li><p><strong>Check API status and data</strong>:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>curl<span class="w"> </span>-s<span class="w"> </span>http://localhost:30080/status<span class="w"> </span><span class="p">|</span><span class="w"> </span>jq
+curl<span class="w"> </span>-s<span class="w"> </span>http://localhost:30080/acquisitions<span class="w"> </span><span class="p">|</span><span class="w"> </span>jq
+</pre></div>
+</div>
+</li>
+<li><p><strong>Monitor file system activity</strong>:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>watch<span class="w"> </span>-n<span class="w"> </span><span class="m">2</span><span class="w"> </span><span class="s2">&quot;find ../epu-test-dir -type f | wc -l&quot;</span>
+</pre></div>
+</div>
+</li>
+<li><p><strong>View logs</strong>:</p>
+<ul class="simple">
+<li><p>Recording playback: <code class="docutils literal notranslate"><span class="pre">tail</span> <span class="pre">-f</span> <span class="pre">epu-test-dir.log</span></code></p></li>
+<li><p>Kubernetes pods: <code class="docutils literal notranslate"><span class="pre">kubectl</span> <span class="pre">logs</span> <span class="pre">-f</span> <span class="pre">deployment/smartem-http-api</span> <span class="pre">-n</span> <span class="pre">smartem-decisions</span></code></p></li>
+</ul>
+</li>
+</ol>
+</section>
+<section id="troubleshooting">
+<h2>Troubleshooting<a class="headerlink" href="#troubleshooting" title="Link to this heading">#</a></h2>
+<section id="agent-connection-issues">
+<h3>Agent connection issues<a class="headerlink" href="#agent-connection-issues" title="Link to this heading">#</a></h3>
+<ul class="simple">
+<li><p>Ensure agent uses <code class="docutils literal notranslate"><span class="pre">--api-url</span> <span class="pre">http://localhost:30080</span></code> (not the default port 8000)</p></li>
+<li><p>Check API accessibility: <code class="docutils literal notranslate"><span class="pre">curl</span> <span class="pre">http://localhost:30080/status</span></code></p></li>
+</ul>
+</section>
+<section id="backend-services-not-starting">
+<h3>Backend services not starting<a class="headerlink" href="#backend-services-not-starting" title="Link to this heading">#</a></h3>
+<ul class="simple">
+<li><p>Check k3s permissions: ensure you can run <code class="docutils literal notranslate"><span class="pre">kubectl</span> <span class="pre">get</span> <span class="pre">pods</span></code></p></li>
+<li><p>Verify Docker registry access in <code class="docutils literal notranslate"><span class="pre">.dev.env</span></code> configuration</p></li>
+<li><p>Check pod status: <code class="docutils literal notranslate"><span class="pre">kubectl</span> <span class="pre">get</span> <span class="pre">pods</span> <span class="pre">-n</span> <span class="pre">smartem-decisions</span></code></p></li>
+</ul>
+</section>
+<section id="consumer-connection-issues">
+<h3>Consumer connection issues<a class="headerlink" href="#consumer-connection-issues" title="Link to this heading">#</a></h3>
+<ul class="simple">
+<li><p>Use correct RabbitMQ URL: <code class="docutils literal notranslate"><span class="pre">RABBITMQ_URL=amqp://guest:guest&#64;localhost:30672/</span></code> <!-- pragma: allowlist secret --></p></li>
+<li><p>Verify RabbitMQ is accessible: <code class="docutils literal notranslate"><span class="pre">curl</span> <span class="pre">http://localhost:30673</span></code> (management UI)</p></li>
+</ul>
+</section>
+<section id="recording-playback-issues">
+<h3>Recording playback issues<a class="headerlink" href="#recording-playback-issues" title="Link to this heading">#</a></h3>
+<ul class="simple">
+<li><p>Ensure recording file exists and is readable</p></li>
+<li><p>Check target directory permissions: <code class="docutils literal notranslate"><span class="pre">ls</span> <span class="pre">-la</span> <span class="pre">../epu-test-dir</span></code></p></li>
+<li><p>Monitor playback progress in log file</p></li>
+</ul>
+</section>
+</section>
+<section id="success-criteria">
+<h2>Success criteria<a class="headerlink" href="#success-criteria" title="Link to this heading">#</a></h2>
+<p>A successful end-to-end simulation should show:</p>
+<ol class="arabic simple">
+<li><p>✅ All backend services running (check with <code class="docutils literal notranslate"><span class="pre">kubectl</span> <span class="pre">get</span> <span class="pre">pods</span> <span class="pre">-n</span> <span class="pre">smartem-decisions</span></code>)</p></li>
+<li><p>✅ SmartEM agent connected to API (check agent logs)</p></li>
+<li><p>✅ Recording playback creating files (check <code class="docutils literal notranslate"><span class="pre">../epu-test-dir</span></code> contents)</p></li>
+<li><p>✅ API receiving data (check <code class="docutils literal notranslate"><span class="pre">curl</span> <span class="pre">http://localhost:30080/acquisitions</span></code>)</p></li>
+<li><p>✅ Files being processed and stored in database</p></li>
+<li><p>✅ External simulator publishing messages to RabbitMQ</p></li>
+<li><p>✅ Consumer processing external messages and transforming them</p></li>
+<li><p>✅ Agent receiving instructions via SSE (check agent logs for instruction reception)</p></li>
+<li><p>✅ Complete feedback loop: file detection → processing → ML results → agent instructions</p></li>
+</ol>
+</section>
+<section id="cleanup">
+<h2>Cleanup<a class="headerlink" href="#cleanup" title="Link to this heading">#</a></h2>
+<p>To stop all services:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Stop backend services</span>
+./tools/dev-k8s.sh<span class="w"> </span>down
 
-<span class="c1"># simulating an system event: </span>
-python<span class="w"> </span>-m<span class="w"> </span>smartem_backend.simulate_msg<span class="w"> </span>--help<span class="w"> </span><span class="c1"># to see a list of options</span>
-./tools/simulate-messages.sh<span class="w"> </span><span class="c1"># run a simulation, triggering system events in sequence</span>
+<span class="c1"># Kill background processes</span>
+pkill<span class="w"> </span>-f<span class="w"> </span>smartem_agent
+pkill<span class="w"> </span>-f<span class="w"> </span>smartem_backend.consumer
+pkill<span class="w"> </span>-f<span class="w"> </span>fsrecorder
+pkill<span class="w"> </span>-f<span class="w"> </span>external_message_simulator
 
-<span class="c1"># run HTTP API (recommended - uses proper module entry point):</span>
-python<span class="w"> </span>-m<span class="w"> </span>smartem_backend.api_server
-
-<span class="c1"># run HTTP API in development with FastAPI CLI:</span>
-fastapi<span class="w"> </span>dev<span class="w"> </span>src/smartem_backend/api_server.py<span class="w"> </span><span class="c1"># Note: FastAPI CLI gets installed by pip as one of dev dependencies</span>
-
-<span class="c1"># run HTTP API with uvicorn directly:</span>
-<span class="nb">source</span><span class="w"> </span>.env<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>uvicorn<span class="w"> </span>smartem_backend.api_server:app<span class="w"> </span>--host<span class="w"> </span><span class="m">0</span>.0.0.0<span class="w"> </span>--port<span class="w"> </span><span class="nv">$HTTP_API_PORT</span>
-
-<span class="c1"># run HTTP API with environment variable:</span>
-<span class="nv">SMARTEM_LOG_LEVEL</span><span class="o">=</span>ERROR<span class="w"> </span>uvicorn<span class="w"> </span>smartem_backend.api_server:app<span class="w"> </span>--host<span class="w"> </span><span class="m">0</span>.0.0.0<span class="w"> </span>--port<span class="w"> </span><span class="nv">$HTTP_API_PORT</span>
-<span class="c1"># customize HTTP API host/port with environment variables:</span>
-<span class="nv">HTTP_API_PORT</span><span class="o">=</span><span class="m">9000</span><span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>smartem_backend.api_server
-<span class="nv">HTTP_API_HOST</span><span class="o">=</span><span class="m">0</span>.0.0.0<span class="w"> </span><span class="nv">HTTP_API_PORT</span><span class="o">=</span><span class="m">8080</span><span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>smartem_backend.api_server
-
-<span class="c1"># smoke test the API:</span>
-./tests/check_smartem_core_http_api.py<span class="w"> </span>http://localhost:8000<span class="w"> </span>-v
-
-python<span class="w"> </span>-m<span class="w"> </span>smartem_backend<span class="w"> </span>--version
+<span class="c1"># Clean up test data (optional)</span>
+rm<span class="w"> </span>-rf<span class="w"> </span>../epu-test-dir
+rm<span class="w"> </span>-f<span class="w"> </span>epu-test-dir.log
 </pre></div>
 </div>
 </section>
@@ -526,20 +678,20 @@ python<span class="w"> </span>-m<span class="w"> </span>smartem_backend<span cla
                   
 <div class="prev-next-area">
     <a class="left-prev"
-       href="run-agent.html"
+       href="run-container.html"
        title="previous page">
       <i class="fa-solid fa-angle-left"></i>
       <div class="prev-next-info">
         <p class="prev-next-subtitle">previous</p>
-        <p class="prev-next-title">Run SmartEM Agent (EPU Agent)</p>
+        <p class="prev-next-title">Run in a container</p>
       </div>
     </a>
     <a class="right-next"
-       href="run-container.html"
+       href="troubleshoot-cli.html"
        title="next page">
       <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">Run in a container</p>
+        <p class="prev-next-title">SmartEM CLI Troubleshooting Guide</p>
       </div>
       <i class="fa-solid fa-angle-right"></i>
     </a>
@@ -562,7 +714,22 @@ python<span class="w"> </span>-m<span class="w"> </span>smartem_backend<span cla
   </div>
   <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
     <ul class="visible nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#backend-operations">Backend Operations</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#prerequisites">Prerequisites</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#step-1-launch-backend-infrastructure-services">Step 1: Launch backend infrastructure services</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#step-2-launch-local-consumer-optional">Step 2: Launch local consumer (optional)</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#step-3-launch-smartem-agent-in-watch-mode">Step 3: Launch SmartEM agent in watch mode</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#step-4-start-session-recording-playback">Step 4: Start session recording playback</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#step-5-run-external-message-simulator-complete-feedback-loop">Step 5: Run external message simulator (complete feedback loop)</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#monitoring-the-simulation">Monitoring the simulation</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#troubleshooting">Troubleshooting</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#agent-connection-issues">Agent connection issues</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#backend-services-not-starting">Backend services not starting</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#consumer-connection-issues">Consumer connection issues</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#recording-playback-issues">Recording playback issues</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#success-criteria">Success criteria</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#cleanup">Cleanup</a></li>
 </ul>
   </nav></div>
 
@@ -570,7 +737,7 @@ python<span class="w"> </span>-m<span class="w"> </span>smartem_backend<span cla
 
   
   <div class="tocsection editthispage">
-    <a href="https://github.com/DiamondLightSource/smartem-decisions/edit/main/docs/how-to/run-backend.md">
+    <a href="https://github.com/DiamondLightSource/smartem-decisions/edit/main/docs/how-to/run-e2e-dev-simulation.md">
       <i class="fa-solid fa-pencil"></i>
       
       
@@ -586,7 +753,7 @@ python<span class="w"> </span>-m<span class="w"> </span>smartem_backend<span cla
   <div role="note" aria-label="source link">
     <h3>This Page</h3>
     <ul class="this-page-menu">
-      <li><a href="../_sources/how-to/run-backend.md.txt"
+      <li><a href="../_sources/how-to/run-e2e-dev-simulation.md.txt"
             rel="nofollow">Show Source</a></li>
     </ul>
    </div></div>

@@ -1,6 +1,7 @@
 ``smartem_backend.predictions.update``
 ======================================
         
+        
 
 .. automodule:: smartem_backend.predictions.update
     :members:
@@ -16,6 +17,7 @@
     .. autosummary::
         :nosignatures:
     
+        overall_predictions_update
         prior_update
     
     

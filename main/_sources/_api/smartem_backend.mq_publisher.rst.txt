@@ -32,6 +32,12 @@
         
         
         
+        
+        
+        
+        
+        
+        
 
 .. automodule:: smartem_backend.mq_publisher
     :members:
@@ -59,6 +65,8 @@
         publish_atlas_tile_deleted
         publish_atlas_tile_updated
         publish_atlas_updated
+        publish_ctf_estimation_completed
+        publish_ctf_estimation_registered
         publish_foilhole_created
         publish_foilhole_deleted
         publish_foilhole_model_prediction
@@ -79,5 +87,9 @@
         publish_micrograph_deleted
         publish_micrograph_updated
         publish_model_parameter_update
+        publish_motion_correction_completed
+        publish_motion_correction_registered
+        publish_multi_foilhole_model_prediction
+        publish_refresh_predictions
     
     

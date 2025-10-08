@@ -7,7 +7,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>smartem_backend.api_server &#8212; smartem-decisions 0.1.dev334+gd573f69a5.d20251007 documentation</title>
+    <title>smartem_backend.api_server &#8212; smartem-decisions 0.1.dev372+g0f036fa24.d20251008 documentation</title>
   
   
   
@@ -40,7 +40,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../../_static/documentation_options.js?v=afc44027"></script>
+    <script src="../../_static/documentation_options.js?v=e306b88a"></script>
     <script src="../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -443,14 +443,23 @@
                   
   <h1>Source code for smartem_backend.api_server</h1><div class="highlight"><pre>
 <span></span><span class="kn">import</span><span class="w"> </span><span class="nn">asyncio</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">io</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">itertools</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">uuid</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">contextlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">asynccontextmanager</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">datetime</span><span class="p">,</span> <span class="n">timedelta</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
 
+<span class="kn">import</span><span class="w"> </span><span class="nn">mrcfile</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">tifffile</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">Depends</span><span class="p">,</span> <span class="n">FastAPI</span><span class="p">,</span> <span class="n">HTTPException</span><span class="p">,</span> <span class="n">Request</span><span class="p">,</span> <span class="n">status</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fastapi.middleware.cors</span><span class="w"> </span><span class="kn">import</span> <span class="n">CORSMiddleware</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fastapi.responses</span><span class="w"> </span><span class="kn">import</span> <span class="n">Response</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">PIL</span><span class="w"> </span><span class="kn">import</span> <span class="n">Image</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pydantic</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseModel</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">sqlalchemy</span><span class="w"> </span><span class="kn">import</span> <span class="n">and_</span><span class="p">,</span> <span class="n">desc</span><span class="p">,</span> <span class="n">or_</span><span class="p">,</span> <span class="n">text</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">sqlalchemy.orm</span><span class="w"> </span><span class="kn">import</span> <span class="n">Session</span> <span class="k">as</span> <span class="n">SqlAlchemySession</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">sqlalchemy.orm</span><span class="w"> </span><span class="kn">import</span> <span class="n">sessionmaker</span>
@@ -466,10 +475,16 @@
     <span class="n">Atlas</span><span class="p">,</span>
     <span class="n">AtlasTile</span><span class="p">,</span>
     <span class="n">AtlasTileGridSquarePosition</span><span class="p">,</span>
+    <span class="n">CurrentQualityPrediction</span><span class="p">,</span>
     <span class="n">FoilHole</span><span class="p">,</span>
     <span class="n">Grid</span><span class="p">,</span>
     <span class="n">GridSquare</span><span class="p">,</span>
     <span class="n">Micrograph</span><span class="p">,</span>
+    <span class="n">OverallQualityPrediction</span><span class="p">,</span>
+    <span class="n">QualityPrediction</span><span class="p">,</span>
+    <span class="n">QualityPredictionModel</span><span class="p">,</span>
+    <span class="n">QualityPredictionModelParameter</span><span class="p">,</span>
+    <span class="n">QualityPredictionModelWeight</span><span class="p">,</span>
 <span class="p">)</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">smartem_backend.model.entity_status</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">AcquisitionStatus</span><span class="p">,</span>
@@ -494,10 +509,11 @@
     <span class="n">GridUpdateRequest</span><span class="p">,</span>
     <span class="n">MicrographCreateRequest</span><span class="p">,</span>
     <span class="n">MicrographUpdateRequest</span><span class="p">,</span>
+    <span class="n">QualityPredictionCreateRequest</span><span class="p">,</span>
+    <span class="n">QualityPredictionModelCreateRequest</span><span class="p">,</span>
+    <span class="n">QualityPredictionModelUpdateRequest</span><span class="p">,</span>
 <span class="p">)</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">smartem_backend.model.http_request</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
-    <span class="n">AgentInstructionAcknowledgement</span> <span class="k">as</span> <span class="n">AgentInstructionAcknowledgementRequest</span><span class="p">,</span>
-<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">smartem_backend.model.http_request</span><span class="w"> </span><span class="kn">import</span> <span class="n">AgentInstructionAcknowledgement</span> <span class="k">as</span> <span class="n">AgentInstructionAcknowledgementRequest</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">smartem_backend.model.http_response</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">AcquisitionResponse</span><span class="p">,</span>
     <span class="n">AgentInstructionAcknowledgementResponse</span><span class="p">,</span>
@@ -507,7 +523,12 @@
     <span class="n">FoilHoleResponse</span><span class="p">,</span>
     <span class="n">GridResponse</span><span class="p">,</span>
     <span class="n">GridSquareResponse</span><span class="p">,</span>
+    <span class="n">LatentRepresentationResponse</span><span class="p">,</span>
     <span class="n">MicrographResponse</span><span class="p">,</span>
+    <span class="n">QualityMetricsResponse</span><span class="p">,</span>
+    <span class="n">QualityPredictionModelParameterResponse</span><span class="p">,</span>
+    <span class="n">QualityPredictionModelResponse</span><span class="p">,</span>
+    <span class="n">QualityPredictionResponse</span><span class="p">,</span>
 <span class="p">)</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">smartem_backend.mq_publisher</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">publish_acquisition_created</span><span class="p">,</span>
@@ -611,6 +632,18 @@
     <span class="n">version</span><span class="o">=</span><span class="n">__version__</span><span class="p">,</span>
     <span class="n">redoc_url</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="n">lifespan</span><span class="o">=</span><span class="n">lifespan</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="c1"># Configure CORS</span>
+<span class="n">cors_allowed_origins</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;CORS_ALLOWED_ORIGINS&quot;</span><span class="p">,</span> <span class="s2">&quot;*&quot;</span><span class="p">)</span>
+<span class="n">origins</span> <span class="o">=</span> <span class="p">[</span><span class="n">origin</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="k">for</span> <span class="n">origin</span> <span class="ow">in</span> <span class="n">cors_allowed_origins</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;,&quot;</span><span class="p">)</span> <span class="k">if</span> <span class="n">origin</span><span class="o">.</span><span class="n">strip</span><span class="p">()]</span>
+
+<span class="n">app</span><span class="o">.</span><span class="n">add_middleware</span><span class="p">(</span>
+    <span class="n">CORSMiddleware</span><span class="p">,</span>
+    <span class="n">allow_origins</span><span class="o">=</span><span class="n">origins</span><span class="p">,</span>
+    <span class="n">allow_credentials</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">allow_methods</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;*&quot;</span><span class="p">],</span>
+    <span class="n">allow_headers</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;*&quot;</span><span class="p">],</span>
 <span class="p">)</span>
 
 
@@ -1316,6 +1349,43 @@
 
 
 
+<div class="viewcode-block" id="link_atlas_tile_to_gridsquares">
+<a class="viewcode-back" href="../../_api/smartem_backend.api_server.html#smartem_backend.api_server.link_atlas_tile_to_gridsquares">[docs]</a>
+<span class="nd">@app</span><span class="o">.</span><span class="n">post</span><span class="p">(</span>
+    <span class="s2">&quot;/atlas-tiles/</span><span class="si">{tile_uuid}</span><span class="s2">/gridsquares&quot;</span><span class="p">,</span>
+    <span class="n">response_model</span><span class="o">=</span><span class="nb">list</span><span class="p">[</span><span class="n">AtlasTileGridSquarePositionResponse</span><span class="p">],</span>
+    <span class="n">status_code</span><span class="o">=</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_201_CREATED</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">link_atlas_tile_to_gridsquares</span><span class="p">(</span>
+    <span class="n">tile_uuid</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">gridsquare_positions</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">GridSquarePositionRequest</span><span class="p">],</span>
+    <span class="n">db</span><span class="p">:</span> <span class="n">SqlAlchemySession</span> <span class="o">=</span> <span class="n">DB_DEPENDENCY</span><span class="p">,</span>
+<span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Connect mutliple grid squares to a tile with its position information&quot;&quot;&quot;</span>
+    <span class="n">response_data</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">gridsquare_position</span> <span class="ow">in</span> <span class="n">gridsquare_positions</span><span class="p">:</span>
+        <span class="n">position_data</span> <span class="o">=</span> <span class="n">gridsquare_position</span><span class="o">.</span><span class="n">model_dump</span><span class="p">()</span>
+        <span class="n">position_data</span><span class="p">[</span><span class="s2">&quot;atlastile_uuid&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">tile_uuid</span>
+        <span class="n">position_data</span><span class="p">[</span><span class="s2">&quot;gridsquare_uuid&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">gridsquare_position</span><span class="o">.</span><span class="n">gridsquare_uuid</span>
+
+        <span class="n">tile_square_link</span> <span class="o">=</span> <span class="n">AtlasTileGridSquarePosition</span><span class="p">(</span><span class="o">**</span><span class="n">position_data</span><span class="p">)</span>
+        <span class="n">db</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">tile_square_link</span><span class="p">)</span>
+        <span class="n">response_data</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;atlastile_uuid&quot;</span><span class="p">:</span> <span class="n">tile_square_link</span><span class="o">.</span><span class="n">atlastile_uuid</span><span class="p">,</span>
+                <span class="s2">&quot;gridsquare_uuid&quot;</span><span class="p">:</span> <span class="n">tile_square_link</span><span class="o">.</span><span class="n">gridsquare_uuid</span><span class="p">,</span>
+                <span class="s2">&quot;center_x&quot;</span><span class="p">:</span> <span class="n">tile_square_link</span><span class="o">.</span><span class="n">center_x</span><span class="p">,</span>
+                <span class="s2">&quot;center_y&quot;</span><span class="p">:</span> <span class="n">tile_square_link</span><span class="o">.</span><span class="n">center_y</span><span class="p">,</span>
+                <span class="s2">&quot;size_width&quot;</span><span class="p">:</span> <span class="n">tile_square_link</span><span class="o">.</span><span class="n">size_width</span><span class="p">,</span>
+                <span class="s2">&quot;size_height&quot;</span><span class="p">:</span> <span class="n">tile_square_link</span><span class="o">.</span><span class="n">size_height</span><span class="p">,</span>
+            <span class="p">}</span>
+        <span class="p">)</span>
+    <span class="n">db</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span>
+
+    <span class="k">return</span> <span class="p">[</span><span class="n">AtlasTileGridSquarePositionResponse</span><span class="p">(</span><span class="o">**</span><span class="n">rd</span><span class="p">)</span> <span class="k">for</span> <span class="n">rd</span> <span class="ow">in</span> <span class="n">response_data</span><span class="p">]</span></div>
+
+
+
 <span class="c1"># ============ GridSquare CRUD Operations ============</span>
 
 
@@ -1350,6 +1420,10 @@
         <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="n">status_code</span><span class="o">=</span><span class="mi">404</span><span class="p">,</span> <span class="n">detail</span><span class="o">=</span><span class="s2">&quot;Grid Square not found&quot;</span><span class="p">)</span>
 
     <span class="n">update_data</span> <span class="o">=</span> <span class="n">gridsquare</span><span class="o">.</span><span class="n">model_dump</span><span class="p">(</span><span class="n">exclude_unset</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="c1"># avoid overwriting a status with NONE</span>
+    <span class="k">if</span> <span class="n">update_data</span><span class="p">[</span><span class="s2">&quot;status&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="n">GridSquareStatus</span><span class="o">.</span><span class="n">NONE</span><span class="p">:</span>
+        <span class="n">update_data</span><span class="p">[</span><span class="s2">&quot;status&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">db_gridsquare</span><span class="o">.</span><span class="n">status</span>
 
     <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">update_data</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
         <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">db_gridsquare</span><span class="p">,</span> <span class="n">key</span><span class="p">):</span>
@@ -1473,9 +1547,17 @@
 <div class="viewcode-block" id="gridsquare_registered">
 <a class="viewcode-back" href="../../_api/smartem_backend.api_server.html#smartem_backend.api_server.gridsquare_registered">[docs]</a>
 <span class="nd">@app</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">&quot;/gridsquares/</span><span class="si">{gridsquare_uuid}</span><span class="s2">/registered&quot;</span><span class="p">)</span>
-<span class="k">def</span><span class="w"> </span><span class="nf">gridsquare_registered</span><span class="p">(</span><span class="n">gridsquare_uuid</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">gridsquare_registered</span><span class="p">(</span>
+    <span class="n">gridsquare_uuid</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">count</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">db</span><span class="p">:</span> <span class="n">SqlAlchemySession</span> <span class="o">=</span> <span class="n">DB_DEPENDENCY</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;All holes on a grid square have been registered at square mag&quot;&quot;&quot;</span>
-    <span class="n">success</span> <span class="o">=</span> <span class="n">publish_gridsquare_registered</span><span class="p">(</span><span class="n">gridsquare_uuid</span><span class="p">)</span>
+    <span class="n">db_gridsquare</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">GridSquare</span><span class="p">)</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">GridSquare</span><span class="o">.</span><span class="n">uuid</span> <span class="o">==</span> <span class="n">gridsquare_uuid</span><span class="p">)</span><span class="o">.</span><span class="n">first</span><span class="p">()</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">db_gridsquare</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="n">status_code</span><span class="o">=</span><span class="mi">404</span><span class="p">,</span> <span class="n">detail</span><span class="o">=</span><span class="s2">&quot;Grid Square not found&quot;</span><span class="p">)</span>
+    <span class="n">db_gridsquare</span><span class="o">.</span><span class="n">status</span> <span class="o">=</span> <span class="n">GridSquareStatus</span><span class="o">.</span><span class="n">REGISTERED</span>
+    <span class="n">db</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">db_gridsquare</span><span class="p">)</span>
+    <span class="n">db</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span>
+    <span class="n">success</span> <span class="o">=</span> <span class="n">publish_gridsquare_registered</span><span class="p">(</span><span class="n">gridsquare_uuid</span><span class="p">,</span> <span class="n">count</span><span class="o">=</span><span class="n">count</span><span class="p">)</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">success</span><span class="p">:</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Failed to publish grid square created event for UUID: </span><span class="si">{</span><span class="n">gridsquare_uuid</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">success</span></div>
@@ -1577,48 +1659,63 @@
 <div class="viewcode-block" id="get_gridsquare_foilholes">
 <a class="viewcode-back" href="../../_api/smartem_backend.api_server.html#smartem_backend.api_server.get_gridsquare_foilholes">[docs]</a>
 <span class="nd">@app</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;/gridsquares/</span><span class="si">{gridsquare_uuid}</span><span class="s2">/foilholes&quot;</span><span class="p">,</span> <span class="n">response_model</span><span class="o">=</span><span class="nb">list</span><span class="p">[</span><span class="n">FoilHoleResponse</span><span class="p">])</span>
-<span class="k">def</span><span class="w"> </span><span class="nf">get_gridsquare_foilholes</span><span class="p">(</span><span class="n">gridsquare_uuid</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">db</span><span class="p">:</span> <span class="n">SqlAlchemySession</span> <span class="o">=</span> <span class="n">DB_DEPENDENCY</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_gridsquare_foilholes</span><span class="p">(</span><span class="n">gridsquare_uuid</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">on_square_only</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">db</span><span class="p">:</span> <span class="n">SqlAlchemySession</span> <span class="o">=</span> <span class="n">DB_DEPENDENCY</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Get all foil holes for a specific grid square&quot;&quot;&quot;</span>
-    <span class="k">return</span> <span class="n">db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">FoilHole</span><span class="p">)</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">FoilHole</span><span class="o">.</span><span class="n">gridsquare_id</span> <span class="o">==</span> <span class="n">gridsquare_uuid</span><span class="p">)</span><span class="o">.</span><span class="n">all</span><span class="p">()</span></div>
+    <span class="k">if</span> <span class="n">on_square_only</span><span class="p">:</span>
+        <span class="n">holes</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">FoilHole</span><span class="p">)</span>
+            <span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">FoilHole</span><span class="o">.</span><span class="n">gridsquare_uuid</span> <span class="o">==</span> <span class="n">gridsquare_uuid</span><span class="p">)</span>
+            <span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">FoilHole</span><span class="o">.</span><span class="n">is_near_grid_bar</span> <span class="o">==</span> <span class="kc">False</span><span class="p">)</span>  <span class="c1"># noqa: E712</span>
+            <span class="o">.</span><span class="n">all</span><span class="p">()</span>
+        <span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">holes</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">FoilHole</span><span class="p">)</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">FoilHole</span><span class="o">.</span><span class="n">gridsquare_uuid</span> <span class="o">==</span> <span class="n">gridsquare_uuid</span><span class="p">)</span><span class="o">.</span><span class="n">all</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">holes</span></div>
 
 
 
 <div class="viewcode-block" id="create_gridsquare_foilhole">
 <a class="viewcode-back" href="../../_api/smartem_backend.api_server.html#smartem_backend.api_server.create_gridsquare_foilhole">[docs]</a>
 <span class="nd">@app</span><span class="o">.</span><span class="n">post</span><span class="p">(</span>
-    <span class="s2">&quot;/gridsquares/</span><span class="si">{gridsquare_uuid}</span><span class="s2">/foilholes&quot;</span><span class="p">,</span> <span class="n">response_model</span><span class="o">=</span><span class="n">FoilHoleResponse</span><span class="p">,</span> <span class="n">status_code</span><span class="o">=</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_201_CREATED</span>
+    <span class="s2">&quot;/gridsquares/</span><span class="si">{gridsquare_uuid}</span><span class="s2">/foilholes&quot;</span><span class="p">,</span>
+    <span class="n">response_model</span><span class="o">=</span><span class="nb">list</span><span class="p">[</span><span class="n">FoilHoleResponse</span><span class="p">],</span>
+    <span class="n">status_code</span><span class="o">=</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_201_CREATED</span><span class="p">,</span>
 <span class="p">)</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">create_gridsquare_foilhole</span><span class="p">(</span>
-    <span class="n">gridsquare_uuid</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">foilhole</span><span class="p">:</span> <span class="n">FoilHoleCreateRequest</span><span class="p">,</span> <span class="n">db</span><span class="p">:</span> <span class="n">SqlAlchemySession</span> <span class="o">=</span> <span class="n">DB_DEPENDENCY</span>
+    <span class="n">gridsquare_uuid</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">foilholes</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">FoilHoleCreateRequest</span><span class="p">],</span> <span class="n">db</span><span class="p">:</span> <span class="n">SqlAlchemySession</span> <span class="o">=</span> <span class="n">DB_DEPENDENCY</span>
 <span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Create a new foil hole for a specific grid square&quot;&quot;&quot;</span>
-    <span class="n">foilhole_data</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;gridsquare_uuid&quot;</span><span class="p">:</span> <span class="n">gridsquare_uuid</span><span class="p">,</span> <span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="n">FoilHoleStatus</span><span class="o">.</span><span class="n">NONE</span><span class="p">,</span> <span class="o">**</span><span class="n">foilhole</span><span class="o">.</span><span class="n">model_dump</span><span class="p">()}</span>
-
-    <span class="n">db_foilhole</span> <span class="o">=</span> <span class="n">FoilHole</span><span class="p">(</span><span class="o">**</span><span class="n">foilhole_data</span><span class="p">)</span>
-    <span class="n">db</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">db_foilhole</span><span class="p">)</span>
+    <span class="n">added_holes</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">response</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">foilhole</span> <span class="ow">in</span> <span class="n">foilholes</span><span class="p">:</span>
+        <span class="n">foilhole_data</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;gridsquare_uuid&quot;</span><span class="p">:</span> <span class="n">gridsquare_uuid</span><span class="p">,</span> <span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="n">FoilHoleStatus</span><span class="o">.</span><span class="n">NONE</span><span class="p">,</span> <span class="o">**</span><span class="n">foilhole</span><span class="o">.</span><span class="n">model_dump</span><span class="p">()}</span>
+        <span class="n">db_foilhole</span> <span class="o">=</span> <span class="n">FoilHole</span><span class="p">(</span><span class="o">**</span><span class="n">foilhole_data</span><span class="p">)</span>
+        <span class="n">db</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">db_foilhole</span><span class="p">)</span>
+        <span class="n">added_holes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">FoilHole</span><span class="p">(</span><span class="o">**</span><span class="n">foilhole_data</span><span class="p">))</span>
     <span class="n">db</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span>
-    <span class="n">db</span><span class="o">.</span><span class="n">refresh</span><span class="p">(</span><span class="n">db_foilhole</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">foilhole</span> <span class="ow">in</span> <span class="n">added_holes</span><span class="p">:</span>
+        <span class="n">success</span> <span class="o">=</span> <span class="n">publish_foilhole_created</span><span class="p">(</span>
+            <span class="n">uuid</span><span class="o">=</span><span class="n">foilhole</span><span class="o">.</span><span class="n">uuid</span><span class="p">,</span>
+            <span class="n">foilhole_id</span><span class="o">=</span><span class="n">foilhole</span><span class="o">.</span><span class="n">foilhole_id</span><span class="p">,</span>
+            <span class="n">gridsquare_uuid</span><span class="o">=</span><span class="n">foilhole</span><span class="o">.</span><span class="n">gridsquare_uuid</span><span class="p">,</span>
+            <span class="n">gridsquare_id</span><span class="o">=</span><span class="n">foilhole</span><span class="o">.</span><span class="n">gridsquare_id</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">success</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Failed to publish foilhole created event for UUID: </span><span class="si">{</span><span class="n">foilhole</span><span class="o">.</span><span class="n">uuid</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
-    <span class="n">success</span> <span class="o">=</span> <span class="n">publish_foilhole_created</span><span class="p">(</span>
-        <span class="n">uuid</span><span class="o">=</span><span class="n">db_foilhole</span><span class="o">.</span><span class="n">uuid</span><span class="p">,</span>
-        <span class="n">foilhole_id</span><span class="o">=</span><span class="n">db_foilhole</span><span class="o">.</span><span class="n">foilhole_id</span><span class="p">,</span>
-        <span class="n">gridsquare_uuid</span><span class="o">=</span><span class="n">db_foilhole</span><span class="o">.</span><span class="n">gridsquare_uuid</span><span class="p">,</span>
-        <span class="n">gridsquare_id</span><span class="o">=</span><span class="n">db_foilhole</span><span class="o">.</span><span class="n">gridsquare_id</span><span class="p">,</span>
-    <span class="p">)</span>
-    <span class="k">if</span> <span class="ow">not</span> <span class="n">success</span><span class="p">:</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Failed to publish foilhole created event for UUID: </span><span class="si">{</span><span class="n">db_foilhole</span><span class="o">.</span><span class="n">uuid</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;gridsquare_uuid&quot;</span><span class="p">:</span> <span class="n">gridsquare_uuid</span><span class="p">,</span>
+            <span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="n">FoilHoleStatus</span><span class="o">.</span><span class="n">NONE</span><span class="o">.</span><span class="n">value</span><span class="p">,</span>
+            <span class="o">**</span><span class="n">foilhole</span><span class="o">.</span><span class="n">model_dump</span><span class="p">(),</span>
+        <span class="p">}</span>
 
-    <span class="n">response_data</span> <span class="o">=</span> <span class="p">{</span>
-        <span class="s2">&quot;gridsquare_uuid&quot;</span><span class="p">:</span> <span class="n">gridsquare_uuid</span><span class="p">,</span>
-        <span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="n">FoilHoleStatus</span><span class="o">.</span><span class="n">NONE</span><span class="o">.</span><span class="n">value</span><span class="p">,</span>
-        <span class="o">**</span><span class="n">foilhole</span><span class="o">.</span><span class="n">model_dump</span><span class="p">(),</span>
-    <span class="p">}</span>
+        <span class="c1"># Make sure status is set correctly (the above might get overridden by model_dump)</span>
+        <span class="k">if</span> <span class="s2">&quot;status&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">data</span> <span class="ow">or</span> <span class="n">data</span><span class="p">[</span><span class="s2">&quot;status&quot;</span><span class="p">]</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">data</span><span class="p">[</span><span class="s2">&quot;status&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">FoilHoleStatus</span><span class="o">.</span><span class="n">NONE</span><span class="o">.</span><span class="n">value</span>
 
-    <span class="c1"># Make sure status is set correctly (the above might get overridden by model_dump)</span>
-    <span class="k">if</span> <span class="s2">&quot;status&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">response_data</span> <span class="ow">or</span> <span class="n">response_data</span><span class="p">[</span><span class="s2">&quot;status&quot;</span><span class="p">]</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">response_data</span><span class="p">[</span><span class="s2">&quot;status&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">FoilHoleStatus</span><span class="o">.</span><span class="n">NONE</span><span class="o">.</span><span class="n">value</span>
+        <span class="n">response</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">FoilHoleResponse</span><span class="p">(</span><span class="o">**</span><span class="n">data</span><span class="p">))</span>
 
-    <span class="k">return</span> <span class="n">FoilHoleResponse</span><span class="p">(</span><span class="o">**</span><span class="n">response_data</span><span class="p">)</span></div>
+    <span class="k">return</span> <span class="n">response</span></div>
 
 
 
@@ -1773,6 +1870,199 @@
 
     <span class="k">return</span> <span class="n">MicrographResponse</span><span class="p">(</span><span class="o">**</span><span class="n">response_data</span><span class="p">)</span></div>
 
+
+
+<span class="c1"># ============ Quality Prediction Model Endpoints ============</span>
+
+
+<span class="nd">@app</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;/prediction_models&quot;</span><span class="p">,</span> <span class="n">response_model</span><span class="o">=</span><span class="nb">list</span><span class="p">[</span><span class="n">QualityPredictionModelResponse</span><span class="p">])</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_prediction_models</span><span class="p">(</span><span class="n">db</span><span class="p">:</span> <span class="n">SqlAlchemySession</span> <span class="o">=</span> <span class="n">DB_DEPENDENCY</span><span class="p">):</span>
+    <span class="n">models</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">QualityPredictionModel</span><span class="p">)</span><span class="o">.</span><span class="n">all</span><span class="p">()</span>
+    <span class="k">return</span> <span class="p">[</span><span class="n">QualityPredictionModelResponse</span><span class="o">.</span><span class="n">model_validate</span><span class="p">(</span><span class="n">model</span><span class="p">)</span> <span class="k">for</span> <span class="n">model</span> <span class="ow">in</span> <span class="n">models</span><span class="p">]</span>
+
+
+<span class="nd">@app</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;/prediction_models/</span><span class="si">{name}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">response_model</span><span class="o">=</span><span class="n">QualityPredictionModelResponse</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_prediction_model</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">db</span><span class="p">:</span> <span class="n">SqlAlchemySession</span> <span class="o">=</span> <span class="n">DB_DEPENDENCY</span><span class="p">):</span>
+    <span class="n">model</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">QualityPredictionModel</span><span class="p">)</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">QualityPredictionModel</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="n">name</span><span class="p">)</span><span class="o">.</span><span class="n">first</span><span class="p">()</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">model</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="n">status_code</span><span class="o">=</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_404_NOT_FOUND</span><span class="p">,</span> <span class="n">detail</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;Prediction model </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2"> not found&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">QualityPredictionModelResponse</span><span class="o">.</span><span class="n">model_validate</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
+
+
+<span class="nd">@app</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">&quot;/prediction_models&quot;</span><span class="p">,</span> <span class="n">response_model</span><span class="o">=</span><span class="n">QualityPredictionModelResponse</span><span class="p">,</span> <span class="n">status_code</span><span class="o">=</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_201_CREATED</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">create_prediction_model</span><span class="p">(</span><span class="n">request</span><span class="p">:</span> <span class="n">QualityPredictionModelCreateRequest</span><span class="p">,</span> <span class="n">db</span><span class="p">:</span> <span class="n">SqlAlchemySession</span> <span class="o">=</span> <span class="n">DB_DEPENDENCY</span><span class="p">):</span>
+    <span class="n">existing</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">QualityPredictionModel</span><span class="p">)</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">QualityPredictionModel</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="n">request</span><span class="o">.</span><span class="n">name</span><span class="p">)</span><span class="o">.</span><span class="n">first</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">existing</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span>
+            <span class="n">status_code</span><span class="o">=</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_409_CONFLICT</span><span class="p">,</span> <span class="n">detail</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;Prediction model </span><span class="si">{</span><span class="n">request</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> already exists&quot;</span>
+        <span class="p">)</span>
+
+    <span class="n">model</span> <span class="o">=</span> <span class="n">QualityPredictionModel</span><span class="p">(</span><span class="o">**</span><span class="n">request</span><span class="o">.</span><span class="n">model_dump</span><span class="p">())</span>
+    <span class="n">db</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
+    <span class="n">db</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span>
+    <span class="n">db</span><span class="o">.</span><span class="n">refresh</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">QualityPredictionModelResponse</span><span class="o">.</span><span class="n">model_validate</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
+
+
+<span class="nd">@app</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="s2">&quot;/prediction_models/</span><span class="si">{name}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">response_model</span><span class="o">=</span><span class="n">QualityPredictionModelResponse</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">update_prediction_model</span><span class="p">(</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">request</span><span class="p">:</span> <span class="n">QualityPredictionModelUpdateRequest</span><span class="p">,</span> <span class="n">db</span><span class="p">:</span> <span class="n">SqlAlchemySession</span> <span class="o">=</span> <span class="n">DB_DEPENDENCY</span>
+<span class="p">):</span>
+    <span class="n">model</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">QualityPredictionModel</span><span class="p">)</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">QualityPredictionModel</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="n">name</span><span class="p">)</span><span class="o">.</span><span class="n">first</span><span class="p">()</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">model</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="n">status_code</span><span class="o">=</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_404_NOT_FOUND</span><span class="p">,</span> <span class="n">detail</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;Prediction model </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2"> not found&quot;</span><span class="p">)</span>
+
+    <span class="n">update_data</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">model_dump</span><span class="p">(</span><span class="n">exclude_unset</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">update_data</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="nb">setattr</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+
+    <span class="n">db</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span>
+    <span class="n">db</span><span class="o">.</span><span class="n">refresh</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">QualityPredictionModelResponse</span><span class="o">.</span><span class="n">model_validate</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
+
+
+<span class="nd">@app</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="s2">&quot;/prediction_models/</span><span class="si">{name}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">status_code</span><span class="o">=</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_204_NO_CONTENT</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">delete_prediction_model</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">db</span><span class="p">:</span> <span class="n">SqlAlchemySession</span> <span class="o">=</span> <span class="n">DB_DEPENDENCY</span><span class="p">):</span>
+    <span class="n">model</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">QualityPredictionModel</span><span class="p">)</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">QualityPredictionModel</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="n">name</span><span class="p">)</span><span class="o">.</span><span class="n">first</span><span class="p">()</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">model</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="n">status_code</span><span class="o">=</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_404_NOT_FOUND</span><span class="p">,</span> <span class="n">detail</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;Prediction model </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2"> not found&quot;</span><span class="p">)</span>
+
+    <span class="n">db</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
+    <span class="n">db</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span>
+
+
+<span class="c1"># ============ Quality Prediction Endpoints ============</span>
+
+
+<span class="nd">@app</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;/gridsquares/</span><span class="si">{gridsquare_uuid}</span><span class="s2">/quality_predictions&quot;</span><span class="p">,</span> <span class="n">response_model</span><span class="o">=</span><span class="nb">list</span><span class="p">[</span><span class="n">QualityPredictionResponse</span><span class="p">])</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_gridsquare_quality_predictions</span><span class="p">(</span><span class="n">gridsquare_uuid</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">db</span><span class="p">:</span> <span class="n">SqlAlchemySession</span> <span class="o">=</span> <span class="n">DB_DEPENDENCY</span><span class="p">):</span>
+    <span class="n">gridsquare</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">GridSquare</span><span class="p">)</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">GridSquare</span><span class="o">.</span><span class="n">uuid</span> <span class="o">==</span> <span class="n">gridsquare_uuid</span><span class="p">)</span><span class="o">.</span><span class="n">first</span><span class="p">()</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">gridsquare</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="n">status_code</span><span class="o">=</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_404_NOT_FOUND</span><span class="p">,</span> <span class="n">detail</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;GridSquare </span><span class="si">{</span><span class="n">gridsquare_uuid</span><span class="si">}</span><span class="s2"> not found&quot;</span><span class="p">)</span>
+
+    <span class="n">predictions</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">QualityPrediction</span><span class="p">)</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">QualityPrediction</span><span class="o">.</span><span class="n">gridsquare_uuid</span> <span class="o">==</span> <span class="n">gridsquare_uuid</span><span class="p">)</span><span class="o">.</span><span class="n">all</span><span class="p">()</span>
+    <span class="k">return</span> <span class="p">[</span><span class="n">QualityPredictionResponse</span><span class="o">.</span><span class="n">model_validate</span><span class="p">(</span><span class="n">pred</span><span class="p">)</span> <span class="k">for</span> <span class="n">pred</span> <span class="ow">in</span> <span class="n">predictions</span><span class="p">]</span>
+
+
+<span class="nd">@app</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;/gridsquares/</span><span class="si">{gridsquare_uuid}</span><span class="s2">/foilhole_quality_predictions&quot;</span><span class="p">,</span> <span class="n">response_model</span><span class="o">=</span><span class="nb">list</span><span class="p">[</span><span class="n">QualityPredictionResponse</span><span class="p">])</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_gridsquare_foilhole_quality_predictions</span><span class="p">(</span><span class="n">gridsquare_uuid</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">db</span><span class="p">:</span> <span class="n">SqlAlchemySession</span> <span class="o">=</span> <span class="n">DB_DEPENDENCY</span><span class="p">):</span>
+    <span class="n">gridsquare</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">GridSquare</span><span class="p">)</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">GridSquare</span><span class="o">.</span><span class="n">uuid</span> <span class="o">==</span> <span class="n">gridsquare_uuid</span><span class="p">)</span><span class="o">.</span><span class="n">first</span><span class="p">()</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">gridsquare</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="n">status_code</span><span class="o">=</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_404_NOT_FOUND</span><span class="p">,</span> <span class="n">detail</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;GridSquare </span><span class="si">{</span><span class="n">gridsquare_uuid</span><span class="si">}</span><span class="s2"> not found&quot;</span><span class="p">)</span>
+
+    <span class="n">foilhole_uuids</span> <span class="o">=</span> <span class="p">[</span><span class="n">fh</span><span class="o">.</span><span class="n">uuid</span> <span class="k">for</span> <span class="n">fh</span> <span class="ow">in</span> <span class="n">gridsquare</span><span class="o">.</span><span class="n">foilholes</span><span class="p">]</span>
+    <span class="n">predictions</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">QualityPrediction</span><span class="p">)</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">QualityPrediction</span><span class="o">.</span><span class="n">foilhole_uuid</span><span class="o">.</span><span class="n">in_</span><span class="p">(</span><span class="n">foilhole_uuids</span><span class="p">))</span><span class="o">.</span><span class="n">all</span><span class="p">()</span>
+
+    <span class="k">return</span> <span class="p">[</span><span class="n">QualityPredictionResponse</span><span class="o">.</span><span class="n">model_validate</span><span class="p">(</span><span class="n">pred</span><span class="p">)</span> <span class="k">for</span> <span class="n">pred</span> <span class="ow">in</span> <span class="n">predictions</span><span class="p">]</span>
+
+
+<span class="nd">@app</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">&quot;/quality_predictions&quot;</span><span class="p">,</span> <span class="n">response_model</span><span class="o">=</span><span class="n">QualityPredictionResponse</span><span class="p">,</span> <span class="n">status_code</span><span class="o">=</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_201_CREATED</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">create_quality_prediction</span><span class="p">(</span><span class="n">request</span><span class="p">:</span> <span class="n">QualityPredictionCreateRequest</span><span class="p">,</span> <span class="n">db</span><span class="p">:</span> <span class="n">SqlAlchemySession</span> <span class="o">=</span> <span class="n">DB_DEPENDENCY</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">request</span><span class="o">.</span><span class="n">foilhole_uuid</span><span class="p">:</span>
+        <span class="n">foilhole</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">FoilHole</span><span class="p">)</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">FoilHole</span><span class="o">.</span><span class="n">uuid</span> <span class="o">==</span> <span class="n">request</span><span class="o">.</span><span class="n">foilhole_uuid</span><span class="p">)</span><span class="o">.</span><span class="n">first</span><span class="p">()</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">foilhole</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span>
+                <span class="n">status_code</span><span class="o">=</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_404_NOT_FOUND</span><span class="p">,</span> <span class="n">detail</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;FoilHole </span><span class="si">{</span><span class="n">request</span><span class="o">.</span><span class="n">foilhole_uuid</span><span class="si">}</span><span class="s2"> not found&quot;</span>
+            <span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">request</span><span class="o">.</span><span class="n">gridsquare_uuid</span><span class="p">:</span>
+        <span class="n">gridsquare</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">GridSquare</span><span class="p">)</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">GridSquare</span><span class="o">.</span><span class="n">uuid</span> <span class="o">==</span> <span class="n">request</span><span class="o">.</span><span class="n">gridsquare_uuid</span><span class="p">)</span><span class="o">.</span><span class="n">first</span><span class="p">()</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">gridsquare</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span>
+                <span class="n">status_code</span><span class="o">=</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_404_NOT_FOUND</span><span class="p">,</span> <span class="n">detail</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;GridSquare </span><span class="si">{</span><span class="n">request</span><span class="o">.</span><span class="n">gridsquare_uuid</span><span class="si">}</span><span class="s2"> not found&quot;</span>
+            <span class="p">)</span>
+
+    <span class="n">model</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">QualityPredictionModel</span><span class="p">)</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">QualityPredictionModel</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="n">request</span><span class="o">.</span><span class="n">prediction_model_name</span><span class="p">)</span><span class="o">.</span><span class="n">first</span><span class="p">()</span>
+    <span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">model</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span>
+            <span class="n">status_code</span><span class="o">=</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_404_NOT_FOUND</span><span class="p">,</span> <span class="n">detail</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;Prediction model </span><span class="si">{</span><span class="n">request</span><span class="o">.</span><span class="n">prediction_model_name</span><span class="si">}</span><span class="s2"> not found&quot;</span>
+        <span class="p">)</span>
+
+    <span class="n">prediction</span> <span class="o">=</span> <span class="n">QualityPrediction</span><span class="p">(</span><span class="o">**</span><span class="n">request</span><span class="o">.</span><span class="n">model_dump</span><span class="p">())</span>
+    <span class="n">db</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">prediction</span><span class="p">)</span>
+    <span class="n">db</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span>
+    <span class="n">db</span><span class="o">.</span><span class="n">refresh</span><span class="p">(</span><span class="n">prediction</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">QualityPredictionResponse</span><span class="o">.</span><span class="n">model_validate</span><span class="p">(</span><span class="n">prediction</span><span class="p">)</span>
+
+
+<span class="nd">@app</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;/quality_metrics&quot;</span><span class="p">,</span> <span class="n">response_model</span><span class="o">=</span><span class="n">QualityMetricsResponse</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_quality_metrics</span><span class="p">(</span><span class="n">db</span><span class="p">:</span> <span class="n">SqlAlchemySession</span> <span class="o">=</span> <span class="n">DB_DEPENDENCY</span><span class="p">):</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">sqlalchemy</span><span class="w"> </span><span class="kn">import</span> <span class="n">func</span>
+
+    <span class="n">total_predictions</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">func</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="n">QualityPrediction</span><span class="o">.</span><span class="n">id</span><span class="p">))</span><span class="o">.</span><span class="n">scalar</span><span class="p">()</span> <span class="ow">or</span> <span class="mi">0</span>
+    <span class="n">avg_quality</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">func</span><span class="o">.</span><span class="n">avg</span><span class="p">(</span><span class="n">QualityPrediction</span><span class="o">.</span><span class="n">value</span><span class="p">))</span><span class="o">.</span><span class="n">scalar</span><span class="p">()</span>
+    <span class="n">min_quality</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">func</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">QualityPrediction</span><span class="o">.</span><span class="n">value</span><span class="p">))</span><span class="o">.</span><span class="n">scalar</span><span class="p">()</span>
+    <span class="n">max_quality</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">func</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">QualityPrediction</span><span class="o">.</span><span class="n">value</span><span class="p">))</span><span class="o">.</span><span class="n">scalar</span><span class="p">()</span>
+    <span class="n">models_count</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">func</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="n">QualityPredictionModel</span><span class="o">.</span><span class="n">name</span><span class="p">))</span><span class="o">.</span><span class="n">scalar</span><span class="p">()</span> <span class="ow">or</span> <span class="mi">0</span>
+
+    <span class="k">return</span> <span class="n">QualityMetricsResponse</span><span class="p">(</span>
+        <span class="n">total_predictions</span><span class="o">=</span><span class="n">total_predictions</span><span class="p">,</span>
+        <span class="n">average_quality</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">avg_quality</span><span class="p">)</span> <span class="k">if</span> <span class="n">avg_quality</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">min_quality</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">min_quality</span><span class="p">)</span> <span class="k">if</span> <span class="n">min_quality</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">max_quality</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">max_quality</span><span class="p">)</span> <span class="k">if</span> <span class="n">max_quality</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">models_count</span><span class="o">=</span><span class="n">models_count</span><span class="p">,</span>
+    <span class="p">)</span>
+
+
+<span class="nd">@app</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+    <span class="s2">&quot;/prediction_model/</span><span class="si">{prediction_model_name}</span><span class="s2">/grid/</span><span class="si">{grid_uuid}</span><span class="s2">/prediction&quot;</span><span class="p">,</span>
+    <span class="n">response_model</span><span class="o">=</span><span class="nb">list</span><span class="p">[</span><span class="n">QualityPredictionResponse</span><span class="p">],</span>
+<span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_grid_predictions</span><span class="p">(</span><span class="n">prediction_model_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">grid_uuid</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">db</span><span class="p">:</span> <span class="n">SqlAlchemySession</span> <span class="o">=</span> <span class="n">DB_DEPENDENCY</span><span class="p">):</span>
+    <span class="n">grid</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">Grid</span><span class="p">)</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">Grid</span><span class="o">.</span><span class="n">uuid</span> <span class="o">==</span> <span class="n">grid_uuid</span><span class="p">)</span><span class="o">.</span><span class="n">first</span><span class="p">()</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">grid</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="n">status_code</span><span class="o">=</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_404_NOT_FOUND</span><span class="p">,</span> <span class="n">detail</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;Grid </span><span class="si">{</span><span class="n">grid_uuid</span><span class="si">}</span><span class="s2"> not found&quot;</span><span class="p">)</span>
+
+    <span class="n">model</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">QualityPredictionModel</span><span class="p">)</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">QualityPredictionModel</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="n">prediction_model_name</span><span class="p">)</span><span class="o">.</span><span class="n">first</span><span class="p">()</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">model</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span>
+            <span class="n">status_code</span><span class="o">=</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_404_NOT_FOUND</span><span class="p">,</span> <span class="n">detail</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;Prediction model </span><span class="si">{</span><span class="n">prediction_model_name</span><span class="si">}</span><span class="s2"> not found&quot;</span>
+        <span class="p">)</span>
+
+    <span class="n">gridsquare_uuids</span> <span class="o">=</span> <span class="p">[</span><span class="n">gs</span><span class="o">.</span><span class="n">uuid</span> <span class="k">for</span> <span class="n">gs</span> <span class="ow">in</span> <span class="n">grid</span><span class="o">.</span><span class="n">gridsquares</span><span class="p">]</span>
+    <span class="n">predictions</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">QualityPrediction</span><span class="p">)</span>
+        <span class="o">.</span><span class="n">filter</span><span class="p">(</span>
+            <span class="n">and_</span><span class="p">(</span>
+                <span class="n">QualityPrediction</span><span class="o">.</span><span class="n">prediction_model_name</span> <span class="o">==</span> <span class="n">prediction_model_name</span><span class="p">,</span>
+                <span class="n">QualityPrediction</span><span class="o">.</span><span class="n">gridsquare_uuid</span><span class="o">.</span><span class="n">in_</span><span class="p">(</span><span class="n">gridsquare_uuids</span><span class="p">),</span>
+            <span class="p">)</span>
+        <span class="p">)</span>
+        <span class="o">.</span><span class="n">all</span><span class="p">()</span>
+    <span class="p">)</span>
+
+    <span class="k">return</span> <span class="p">[</span><span class="n">QualityPredictionResponse</span><span class="o">.</span><span class="n">model_validate</span><span class="p">(</span><span class="n">pred</span><span class="p">)</span> <span class="k">for</span> <span class="n">pred</span> <span class="ow">in</span> <span class="n">predictions</span><span class="p">]</span>
+
+
+<span class="nd">@app</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+    <span class="s2">&quot;/prediction_model/</span><span class="si">{prediction_model_name}</span><span class="s2">/grid/</span><span class="si">{grid_uuid}</span><span class="s2">/latent_representation&quot;</span><span class="p">,</span>
+    <span class="n">response_model</span><span class="o">=</span><span class="nb">list</span><span class="p">[</span><span class="n">QualityPredictionModelParameterResponse</span><span class="p">],</span>
+<span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_grid_latent_representation</span><span class="p">(</span><span class="n">prediction_model_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">grid_uuid</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">db</span><span class="p">:</span> <span class="n">SqlAlchemySession</span> <span class="o">=</span> <span class="n">DB_DEPENDENCY</span><span class="p">):</span>
+    <span class="n">grid</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">Grid</span><span class="p">)</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">Grid</span><span class="o">.</span><span class="n">uuid</span> <span class="o">==</span> <span class="n">grid_uuid</span><span class="p">)</span><span class="o">.</span><span class="n">first</span><span class="p">()</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">grid</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="n">status_code</span><span class="o">=</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_404_NOT_FOUND</span><span class="p">,</span> <span class="n">detail</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;Grid </span><span class="si">{</span><span class="n">grid_uuid</span><span class="si">}</span><span class="s2"> not found&quot;</span><span class="p">)</span>
+
+    <span class="n">model</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">QualityPredictionModel</span><span class="p">)</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">QualityPredictionModel</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="n">prediction_model_name</span><span class="p">)</span><span class="o">.</span><span class="n">first</span><span class="p">()</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">model</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span>
+            <span class="n">status_code</span><span class="o">=</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_404_NOT_FOUND</span><span class="p">,</span> <span class="n">detail</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;Prediction model </span><span class="si">{</span><span class="n">prediction_model_name</span><span class="si">}</span><span class="s2"> not found&quot;</span>
+        <span class="p">)</span>
+
+    <span class="n">parameters</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">QualityPredictionModelParameter</span><span class="p">)</span>
+        <span class="o">.</span><span class="n">filter</span><span class="p">(</span>
+            <span class="n">and_</span><span class="p">(</span>
+                <span class="n">QualityPredictionModelParameter</span><span class="o">.</span><span class="n">grid_uuid</span> <span class="o">==</span> <span class="n">grid_uuid</span><span class="p">,</span>
+                <span class="n">QualityPredictionModelParameter</span><span class="o">.</span><span class="n">prediction_model_name</span> <span class="o">==</span> <span class="n">prediction_model_name</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="p">)</span>
+        <span class="o">.</span><span class="n">all</span><span class="p">()</span>
+    <span class="p">)</span>
+
+    <span class="k">return</span> <span class="p">[</span><span class="n">QualityPredictionModelParameterResponse</span><span class="o">.</span><span class="n">model_validate</span><span class="p">(</span><span class="n">param</span><span class="p">)</span> <span class="k">for</span> <span class="n">param</span> <span class="ow">in</span> <span class="n">parameters</span><span class="p">]</span>
 
 
 <span class="c1"># ============ Agent Communication Endpoints ============</span>
@@ -2397,6 +2687,381 @@
     <span class="n">host</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;HTTP_API_HOST&quot;</span><span class="p">,</span> <span class="s2">&quot;127.0.0.1&quot;</span><span class="p">)</span>
 
     <span class="n">uvicorn</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="s2">&quot;smartem_backend.api_server:app&quot;</span><span class="p">,</span> <span class="n">host</span><span class="o">=</span><span class="n">host</span><span class="p">,</span> <span class="n">port</span><span class="o">=</span><span class="n">port</span><span class="p">,</span> <span class="n">reload</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">log_level</span><span class="o">=</span><span class="s2">&quot;info&quot;</span><span class="p">)</span>
+<span class="c1"># ============ Quality Prediction Model CRUD Operations ============</span>
+
+
+<div class="viewcode-block" id="get_model_weights_for_grid">
+<a class="viewcode-back" href="../../_api/smartem_backend.api_server.html#smartem_backend.api_server.get_model_weights_for_grid">[docs]</a>
+<span class="nd">@app</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;/grid/</span><span class="si">{grid_uuid}</span><span class="s2">/model_weights&quot;</span><span class="p">,</span> <span class="n">response_model</span><span class="o">=</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="n">QualityPredictionModelWeight</span><span class="p">]])</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_model_weights_for_grid</span><span class="p">(</span><span class="n">grid_uuid</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">db</span><span class="p">:</span> <span class="n">SqlAlchemySession</span> <span class="o">=</span> <span class="n">DB_DEPENDENCY</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get time series of model weights for grid&quot;&quot;&quot;</span>
+    <span class="n">weights</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">QualityPredictionModelWeight</span><span class="p">)</span>
+        <span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">QualityPredictionModelWeight</span><span class="o">.</span><span class="n">grid_uuid</span> <span class="o">==</span> <span class="n">grid_uuid</span><span class="p">)</span>
+        <span class="o">.</span><span class="n">order_by</span><span class="p">(</span><span class="n">QualityPredictionModelWeight</span><span class="o">.</span><span class="n">timestamp</span><span class="p">)</span>
+        <span class="o">.</span><span class="n">all</span><span class="p">()</span>
+    <span class="p">)</span>
+    <span class="n">grouped_weights</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="nb">list</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">itertools</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="n">weights</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="o">.</span><span class="n">prediction_model_name</span><span class="p">)}</span>
+    <span class="k">return</span> <span class="n">grouped_weights</span></div>
+
+
+
+<div class="viewcode-block" id="get_gridsquare_quality_prediction_time_series">
+<a class="viewcode-back" href="../../_api/smartem_backend.api_server.html#smartem_backend.api_server.get_gridsquare_quality_prediction_time_series">[docs]</a>
+<span class="nd">@app</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;/gridsquares/</span><span class="si">{gridsquare_uuid}</span><span class="s2">/quality_predictions&quot;</span><span class="p">,</span> <span class="n">response_model</span><span class="o">=</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="n">QualityPrediction</span><span class="p">]])</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_gridsquare_quality_prediction_time_series</span><span class="p">(</span><span class="n">gridsquare_uuid</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">db</span><span class="p">:</span> <span class="n">SqlAlchemySession</span> <span class="o">=</span> <span class="n">DB_DEPENDENCY</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get time ordered predictions for all models that provide them for this square&quot;&quot;&quot;</span>
+    <span class="n">predictions</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">QualityPrediction</span><span class="p">)</span>
+        <span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">QualityPrediction</span><span class="o">.</span><span class="n">gridsquare_uuid</span> <span class="o">==</span> <span class="n">gridsquare_uuid</span><span class="p">)</span>
+        <span class="o">.</span><span class="n">order_by</span><span class="p">(</span><span class="n">QualityPrediction</span><span class="o">.</span><span class="n">timestamp</span><span class="p">)</span>
+        <span class="o">.</span><span class="n">all</span><span class="p">()</span>
+    <span class="p">)</span>
+    <span class="n">grouped_predictions</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="nb">list</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">itertools</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="n">predictions</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="o">.</span><span class="n">prediction_model_name</span><span class="p">)}</span>
+    <span class="k">return</span> <span class="n">grouped_predictions</span></div>
+
+
+
+<div class="viewcode-block" id="get_foilhole_quality_prediction_time_series_for_gridsquare">
+<a class="viewcode-back" href="../../_api/smartem_backend.api_server.html#smartem_backend.api_server.get_foilhole_quality_prediction_time_series_for_gridsquare">[docs]</a>
+<span class="nd">@app</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+    <span class="s2">&quot;/gridsquares/</span><span class="si">{gridsquare_uuid}</span><span class="s2">/foilhole_quality_predictions&quot;</span><span class="p">,</span>
+    <span class="n">response_model</span><span class="o">=</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="n">QualityPrediction</span><span class="p">]]],</span>
+<span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_foilhole_quality_prediction_time_series_for_gridsquare</span><span class="p">(</span>
+    <span class="n">gridsquare_uuid</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">db</span><span class="p">:</span> <span class="n">SqlAlchemySession</span> <span class="o">=</span> <span class="n">DB_DEPENDENCY</span>
+<span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get time ordered predictions for all models that provide them for this square&quot;&quot;&quot;</span>
+    <span class="n">predictions</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">QualityPrediction</span><span class="p">,</span> <span class="n">FoilHole</span><span class="p">)</span>
+        <span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">QualityPrediction</span><span class="o">.</span><span class="n">foilhole_uuid</span> <span class="o">==</span> <span class="n">FoilHole</span><span class="o">.</span><span class="n">uuid</span><span class="p">)</span>
+        <span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">FoilHole</span><span class="o">.</span><span class="n">gridsquare_uuid</span> <span class="o">==</span> <span class="n">gridsquare_uuid</span><span class="p">)</span>
+        <span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">QualityPrediction</span><span class="o">.</span><span class="n">metric_name</span> <span class="o">==</span> <span class="kc">None</span><span class="p">)</span>  <span class="c1"># noqa: E711</span>
+        <span class="o">.</span><span class="n">order_by</span><span class="p">(</span><span class="n">QualityPrediction</span><span class="o">.</span><span class="n">timestamp</span><span class="p">)</span>
+        <span class="o">.</span><span class="n">all</span><span class="p">()</span>
+    <span class="p">)</span>
+    <span class="n">predictions</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">predictions</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">foilhole_id</span><span class="p">)</span>
+    <span class="n">predictions</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">predictions</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">prediction_model_name</span><span class="p">)</span>
+    <span class="n">grouped_predictions</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="n">k</span><span class="p">:</span> <span class="p">{</span><span class="n">fh</span><span class="p">:</span> <span class="p">[</span><span class="n">elem</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">elem</span> <span class="ow">in</span> <span class="n">v2</span><span class="p">]</span> <span class="k">for</span> <span class="n">fh</span><span class="p">,</span> <span class="n">v2</span> <span class="ow">in</span> <span class="n">itertools</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">v</span><span class="p">),</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">foilhole_id</span><span class="p">)}</span>
+        <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">itertools</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="n">predictions</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">prediction_model_name</span><span class="p">)</span>
+    <span class="p">}</span>
+    <span class="k">return</span> <span class="n">grouped_predictions</span></div>
+
+
+
+<div class="viewcode-block" id="get_foilhole_quality_prediction_time_series_for_gridsquare_for_metric">
+<a class="viewcode-back" href="../../_api/smartem_backend.api_server.html#smartem_backend.api_server.get_foilhole_quality_prediction_time_series_for_gridsquare_for_metric">[docs]</a>
+<span class="nd">@app</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+    <span class="s2">&quot;/quality_metric/</span><span class="si">{metric_name}</span><span class="s2">/gridsquares/</span><span class="si">{gridsquare_uuid}</span><span class="s2">/foilhole_quality_predictions&quot;</span><span class="p">,</span>
+    <span class="n">response_model</span><span class="o">=</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="n">QualityPrediction</span><span class="p">]]],</span>
+<span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_foilhole_quality_prediction_time_series_for_gridsquare_for_metric</span><span class="p">(</span>
+    <span class="n">metric_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">gridsquare_uuid</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">db</span><span class="p">:</span> <span class="n">SqlAlchemySession</span> <span class="o">=</span> <span class="n">DB_DEPENDENCY</span>
+<span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get time ordered predictions for all models that provide them for this square&quot;&quot;&quot;</span>
+    <span class="n">predictions</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">QualityPrediction</span><span class="p">,</span> <span class="n">FoilHole</span><span class="p">)</span>
+        <span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">QualityPrediction</span><span class="o">.</span><span class="n">foilhole_uuid</span> <span class="o">==</span> <span class="n">FoilHole</span><span class="o">.</span><span class="n">uuid</span><span class="p">)</span>
+        <span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">FoilHole</span><span class="o">.</span><span class="n">gridsquare_uuid</span> <span class="o">==</span> <span class="n">gridsquare_uuid</span><span class="p">)</span>
+        <span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">QualityPrediction</span><span class="o">.</span><span class="n">metric_name</span> <span class="o">==</span> <span class="n">metric_name</span><span class="p">)</span>
+        <span class="o">.</span><span class="n">order_by</span><span class="p">(</span><span class="n">QualityPrediction</span><span class="o">.</span><span class="n">timestamp</span><span class="p">)</span>
+        <span class="o">.</span><span class="n">all</span><span class="p">()</span>
+    <span class="p">)</span>
+    <span class="n">predictions</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">predictions</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">foilhole_id</span><span class="p">)</span>
+    <span class="n">predictions</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">predictions</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">prediction_model_name</span><span class="p">)</span>
+    <span class="n">grouped_predictions</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="n">k</span><span class="p">:</span> <span class="p">{</span><span class="n">fh</span><span class="p">:</span> <span class="p">[</span><span class="n">elem</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">elem</span> <span class="ow">in</span> <span class="n">v2</span><span class="p">]</span> <span class="k">for</span> <span class="n">fh</span><span class="p">,</span> <span class="n">v2</span> <span class="ow">in</span> <span class="n">itertools</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">v</span><span class="p">),</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">foilhole_id</span><span class="p">)}</span>
+        <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">itertools</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="n">predictions</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">prediction_model_name</span><span class="p">)</span>
+    <span class="p">}</span>
+    <span class="k">return</span> <span class="n">grouped_predictions</span></div>
+
+
+
+<span class="nd">@app</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+    <span class="s2">&quot;/prediction_model/</span><span class="si">{prediction_model_name}</span><span class="s2">/grid/</span><span class="si">{grid_uuid}</span><span class="s2">/prediction&quot;</span><span class="p">,</span>
+    <span class="n">response_model</span><span class="o">=</span><span class="nb">list</span><span class="p">[</span><span class="n">QualityPredictionResponse</span><span class="p">],</span>
+<span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_prediction_for_grid</span><span class="p">(</span><span class="n">prediction_model_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">grid_uuid</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">db</span><span class="p">:</span> <span class="n">SqlAlchemySession</span> <span class="o">=</span> <span class="n">DB_DEPENDENCY</span><span class="p">):</span>
+    <span class="n">squares</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">GridSquare</span><span class="p">)</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">GridSquare</span><span class="o">.</span><span class="n">grid_uuid</span> <span class="o">==</span> <span class="n">grid_uuid</span><span class="p">)</span><span class="o">.</span><span class="n">all</span><span class="p">()</span>
+    <span class="n">predictions</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="n">db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">QualityPrediction</span><span class="p">)</span>
+        <span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">QualityPrediction</span><span class="o">.</span><span class="n">gridsquare_uuid</span> <span class="o">==</span> <span class="n">gs</span><span class="o">.</span><span class="n">uuid</span><span class="p">)</span>
+        <span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">QualityPrediction</span><span class="o">.</span><span class="n">prediction_model_name</span> <span class="o">==</span> <span class="n">prediction_model_name</span><span class="p">)</span>
+        <span class="o">.</span><span class="n">order_by</span><span class="p">(</span><span class="n">QualityPrediction</span><span class="o">.</span><span class="n">timestamp</span><span class="o">.</span><span class="n">desc</span><span class="p">())</span>
+        <span class="o">.</span><span class="n">all</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">gs</span> <span class="ow">in</span> <span class="n">squares</span>
+    <span class="p">]</span>
+    <span class="n">predictions</span> <span class="o">=</span> <span class="p">[</span><span class="n">p</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">predictions</span> <span class="k">if</span> <span class="n">p</span><span class="p">]</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">predictions</span><span class="p">:</span>
+        <span class="n">holes</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">GridSquare</span><span class="p">,</span> <span class="n">FoilHole</span><span class="p">)</span>
+            <span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">GridSquare</span><span class="o">.</span><span class="n">grid_uuid</span> <span class="o">==</span> <span class="n">grid_uuid</span><span class="p">)</span>
+            <span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">FoilHole</span><span class="o">.</span><span class="n">gridsquare_uuid</span> <span class="o">==</span> <span class="n">GridSquare</span><span class="o">.</span><span class="n">uuid</span><span class="p">)</span>
+            <span class="o">.</span><span class="n">all</span><span class="p">()</span>
+        <span class="p">)</span>
+        <span class="n">predictions</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">QualityPrediction</span><span class="p">)</span>
+            <span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">QualityPrediction</span><span class="o">.</span><span class="n">foilhole_uuid</span> <span class="o">==</span> <span class="n">fh</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">uuid</span><span class="p">)</span>
+            <span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">QualityPrediction</span><span class="o">.</span><span class="n">prediction_model_name</span> <span class="o">==</span> <span class="n">prediction_model_name</span><span class="p">)</span>
+            <span class="o">.</span><span class="n">order_by</span><span class="p">(</span><span class="n">QualityPrediction</span><span class="o">.</span><span class="n">timestamp</span><span class="o">.</span><span class="n">desc</span><span class="p">())</span>
+            <span class="o">.</span><span class="n">first</span><span class="p">()</span>
+            <span class="k">for</span> <span class="n">fh</span> <span class="ow">in</span> <span class="n">holes</span>
+        <span class="p">]</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">predictions</span><span class="p">)):</span>
+            <span class="n">predictions</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">gridsquare_uuid</span> <span class="o">=</span> <span class="n">holes</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">uuid</span>
+    <span class="k">return</span> <span class="n">predictions</span>
+
+
+<span class="nd">@app</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+    <span class="s2">&quot;/prediction_model/</span><span class="si">{prediction_model_name}</span><span class="s2">/gridsquare/</span><span class="si">{gridsquare_uuid}</span><span class="s2">/prediction&quot;</span><span class="p">,</span>
+    <span class="n">response_model</span><span class="o">=</span><span class="nb">list</span><span class="p">[</span><span class="n">QualityPredictionResponse</span><span class="p">],</span>
+<span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_prediction_for_gridsquare</span><span class="p">(</span>
+    <span class="n">prediction_model_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">gridsquare_uuid</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">db</span><span class="p">:</span> <span class="n">SqlAlchemySession</span> <span class="o">=</span> <span class="n">DB_DEPENDENCY</span>
+<span class="p">):</span>
+    <span class="n">holes</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">FoilHole</span><span class="p">)</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">FoilHole</span><span class="o">.</span><span class="n">gridsquare_uuid</span> <span class="o">==</span> <span class="n">gridsquare_uuid</span><span class="p">)</span><span class="o">.</span><span class="n">all</span><span class="p">()</span>
+    <span class="n">predictions</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="n">db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">QualityPrediction</span><span class="p">)</span>
+        <span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">QualityPrediction</span><span class="o">.</span><span class="n">foilhole_uuid</span> <span class="o">==</span> <span class="n">fh</span><span class="o">.</span><span class="n">uuid</span><span class="p">)</span>
+        <span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">QualityPrediction</span><span class="o">.</span><span class="n">prediction_model_name</span> <span class="o">==</span> <span class="n">prediction_model_name</span><span class="p">)</span>
+        <span class="o">.</span><span class="n">order_by</span><span class="p">(</span><span class="n">QualityPrediction</span><span class="o">.</span><span class="n">timestamp</span><span class="o">.</span><span class="n">desc</span><span class="p">())</span>
+        <span class="o">.</span><span class="n">all</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">fh</span> <span class="ow">in</span> <span class="n">holes</span>
+    <span class="p">]</span>
+    <span class="n">predictions</span> <span class="o">=</span> <span class="p">[</span><span class="n">p</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">predictions</span> <span class="k">if</span> <span class="n">p</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">predictions</span>
+
+
+<span class="nd">@app</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+    <span class="s2">&quot;/gridsquare/</span><span class="si">{gridsquare_uuid}</span><span class="s2">/overall_prediction&quot;</span><span class="p">,</span>
+    <span class="n">response_model</span><span class="o">=</span><span class="nb">list</span><span class="p">[</span><span class="n">OverallQualityPrediction</span><span class="p">],</span>
+<span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_overall_prediction_for_gridsquare</span><span class="p">(</span><span class="n">gridsquare_uuid</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">db</span><span class="p">:</span> <span class="n">SqlAlchemySession</span> <span class="o">=</span> <span class="n">DB_DEPENDENCY</span><span class="p">):</span>
+    <span class="n">holes</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">FoilHole</span><span class="p">)</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">FoilHole</span><span class="o">.</span><span class="n">gridsquare_uuid</span> <span class="o">==</span> <span class="n">gridsquare_uuid</span><span class="p">)</span><span class="o">.</span><span class="n">all</span><span class="p">()</span>
+    <span class="n">predictions</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">OverallQualityPrediction</span><span class="p">)</span>
+        <span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">OverallQualityPrediction</span><span class="o">.</span><span class="n">foilhole_uuid</span><span class="o">.</span><span class="n">in_</span><span class="p">([</span><span class="n">h</span><span class="o">.</span><span class="n">uuid</span> <span class="k">for</span> <span class="n">h</span> <span class="ow">in</span> <span class="n">holes</span><span class="p">]))</span>
+        <span class="o">.</span><span class="n">all</span><span class="p">()</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="n">predictions</span>
+
+
+<span class="nd">@app</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+    <span class="s2">&quot;/grid/</span><span class="si">{grid_uuid}</span><span class="s2">/prediction_model/</span><span class="si">{prediction_model_name}</span><span class="s2">/latent_rep/</span><span class="si">{latent_rep_model_name}</span><span class="s2">/suggested_squares&quot;</span><span class="p">,</span>
+    <span class="n">response_model</span><span class="o">=</span><span class="nb">list</span><span class="p">[</span><span class="n">GridSquare</span><span class="p">],</span>
+<span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_suggested_square_collections</span><span class="p">(</span>
+    <span class="n">grid_uuid</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">prediction_model_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">latent_rep_model_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">db</span><span class="p">:</span> <span class="n">SqlAlchemySession</span> <span class="o">=</span> <span class="n">DB_DEPENDENCY</span>
+<span class="p">):</span>
+    <span class="n">scores</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">GridSquare</span><span class="p">,</span> <span class="n">CurrentQualityPrediction</span><span class="p">)</span>
+        <span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">CurrentQualityPrediction</span><span class="o">.</span><span class="n">gridsquare_uuid</span> <span class="o">==</span> <span class="n">GridSquare</span><span class="o">.</span><span class="n">uuid</span><span class="p">)</span>
+        <span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">GridSquare</span><span class="o">.</span><span class="n">grid_uuid</span> <span class="o">==</span> <span class="n">grid_uuid</span><span class="p">)</span>
+        <span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">CurrentQualityPrediction</span><span class="o">.</span><span class="n">prediction_model_name</span> <span class="o">==</span> <span class="n">prediction_model_name</span><span class="p">)</span>
+        <span class="o">.</span><span class="n">all</span><span class="p">()</span>
+    <span class="p">)</span>
+    <span class="n">cluster_indices</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="n">p</span><span class="o">.</span><span class="n">key</span><span class="p">:</span> <span class="n">p</span><span class="o">.</span><span class="n">value</span>
+        <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">QualityPredictionModelParameter</span><span class="p">)</span>
+        <span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">QualityPredictionModelParameter</span><span class="o">.</span><span class="n">grid_uuid</span> <span class="o">==</span> <span class="n">grid_uuid</span><span class="p">)</span>
+        <span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">QualityPredictionModelParameter</span><span class="o">.</span><span class="n">prediction_model_name</span> <span class="o">==</span> <span class="n">latent_rep_model_name</span><span class="p">)</span>
+        <span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">QualityPredictionModelParameter</span><span class="o">.</span><span class="n">group</span> <span class="o">==</span> <span class="s2">&quot;cluster_indices&quot;</span><span class="p">)</span>
+        <span class="o">.</span><span class="n">all</span><span class="p">()</span>
+    <span class="p">}</span>
+    <span class="n">score_ordered_squares</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="n">p</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span>
+            <span class="n">scores</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">value</span> <span class="o">*</span> <span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">size_width</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="mi">0</span> <span class="k">if</span> <span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">size_width</span> <span class="o">&lt;</span> <span class="mi">60</span> <span class="k">else</span> <span class="mi">1</span><span class="p">),</span> <span class="n">reverse</span><span class="o">=</span><span class="kc">True</span>
+        <span class="p">)</span>
+    <span class="p">]</span>
+    <span class="n">cluster_counts</span> <span class="o">=</span> <span class="nb">dict</span><span class="o">.</span><span class="n">fromkeys</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">cluster_indices</span><span class="o">.</span><span class="n">values</span><span class="p">()),</span> <span class="mi">0</span><span class="p">)</span>
+    <span class="n">suggested</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">score_ordered_squares</span><span class="p">)</span> <span class="o">//</span> <span class="mi">2</span><span class="p">):</span>
+        <span class="n">square</span> <span class="o">=</span> <span class="n">score_ordered_squares</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">cluster_counts</span><span class="p">[</span><span class="n">cluster_indices</span><span class="p">[</span><span class="n">square</span><span class="o">.</span><span class="n">uuid</span><span class="p">]]</span> <span class="o">&lt;</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="n">suggested</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">square</span><span class="p">)</span>
+            <span class="n">cluster_counts</span><span class="p">[</span><span class="n">cluster_indices</span><span class="p">[</span><span class="n">square</span><span class="o">.</span><span class="n">uuid</span><span class="p">]]</span> <span class="o">+=</span> <span class="mi">1</span>
+    <span class="k">return</span> <span class="n">suggested</span>
+
+
+<span class="nd">@app</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+    <span class="s2">&quot;/prediction_model/</span><span class="si">{prediction_model_name}</span><span class="s2">/grid/</span><span class="si">{grid_uuid}</span><span class="s2">/latent_representation&quot;</span><span class="p">,</span>
+    <span class="n">response_model</span><span class="o">=</span><span class="nb">list</span><span class="p">[</span><span class="n">LatentRepresentationResponse</span><span class="p">],</span>
+<span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_latent_rep</span><span class="p">(</span><span class="n">prediction_model_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">grid_uuid</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">db</span><span class="p">:</span> <span class="n">SqlAlchemySession</span> <span class="o">=</span> <span class="n">DB_DEPENDENCY</span><span class="p">):</span>
+    <span class="n">xs</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">QualityPredictionModelParameter</span><span class="p">)</span>
+        <span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">QualityPredictionModelParameter</span><span class="o">.</span><span class="n">prediction_model_name</span> <span class="o">==</span> <span class="n">prediction_model_name</span><span class="p">)</span>
+        <span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">QualityPredictionModelParameter</span><span class="o">.</span><span class="n">grid_uuid</span> <span class="o">==</span> <span class="n">grid_uuid</span><span class="p">)</span>
+        <span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">QualityPredictionModelParameter</span><span class="o">.</span><span class="n">group</span><span class="o">.</span><span class="n">like</span><span class="p">(</span><span class="s2">&quot;coordinates:%&quot;</span><span class="p">))</span>
+        <span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">QualityPredictionModelParameter</span><span class="o">.</span><span class="n">key</span> <span class="o">==</span> <span class="s2">&quot;x&quot;</span><span class="p">)</span>
+        <span class="o">.</span><span class="n">order_by</span><span class="p">(</span><span class="n">QualityPredictionModelParameter</span><span class="o">.</span><span class="n">timestamp</span><span class="o">.</span><span class="n">desc</span><span class="p">())</span>
+        <span class="o">.</span><span class="n">all</span><span class="p">()</span>
+    <span class="p">)</span>
+    <span class="n">ys</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">QualityPredictionModelParameter</span><span class="p">)</span>
+        <span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">QualityPredictionModelParameter</span><span class="o">.</span><span class="n">prediction_model_name</span> <span class="o">==</span> <span class="n">prediction_model_name</span><span class="p">)</span>
+        <span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">QualityPredictionModelParameter</span><span class="o">.</span><span class="n">grid_uuid</span> <span class="o">==</span> <span class="n">grid_uuid</span><span class="p">)</span>
+        <span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">QualityPredictionModelParameter</span><span class="o">.</span><span class="n">group</span><span class="o">.</span><span class="n">like</span><span class="p">(</span><span class="s2">&quot;coordinates:%&quot;</span><span class="p">))</span>
+        <span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">QualityPredictionModelParameter</span><span class="o">.</span><span class="n">key</span> <span class="o">==</span> <span class="s2">&quot;y&quot;</span><span class="p">)</span>
+        <span class="o">.</span><span class="n">order_by</span><span class="p">(</span><span class="n">QualityPredictionModelParameter</span><span class="o">.</span><span class="n">timestamp</span><span class="o">.</span><span class="n">desc</span><span class="p">())</span>
+        <span class="o">.</span><span class="n">all</span><span class="p">()</span>
+    <span class="p">)</span>
+    <span class="n">cluster_indices</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">QualityPredictionModelParameter</span><span class="p">)</span>
+        <span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">QualityPredictionModelParameter</span><span class="o">.</span><span class="n">prediction_model_name</span> <span class="o">==</span> <span class="n">prediction_model_name</span><span class="p">)</span>
+        <span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">QualityPredictionModelParameter</span><span class="o">.</span><span class="n">grid_uuid</span> <span class="o">==</span> <span class="n">grid_uuid</span><span class="p">)</span>
+        <span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">QualityPredictionModelParameter</span><span class="o">.</span><span class="n">group</span> <span class="o">==</span> <span class="s2">&quot;cluster_indices&quot;</span><span class="p">)</span>
+        <span class="o">.</span><span class="n">order_by</span><span class="p">(</span><span class="n">QualityPredictionModelParameter</span><span class="o">.</span><span class="n">timestamp</span><span class="o">.</span><span class="n">desc</span><span class="p">())</span>
+        <span class="o">.</span><span class="n">all</span><span class="p">()</span>
+    <span class="p">)</span>
+
+    <span class="k">class</span><span class="w"> </span><span class="nc">LatentRep</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+        <span class="n">x</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="n">y</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="n">index</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="k">def</span><span class="w"> </span><span class="nf">complete</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+            <span class="k">return</span> <span class="nb">all</span><span class="p">(</span><span class="n">a</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">y</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">index</span><span class="p">))</span>
+
+    <span class="n">rep</span> <span class="o">=</span> <span class="p">{</span><span class="n">p</span><span class="o">.</span><span class="n">uuid</span><span class="p">:</span> <span class="n">LatentRep</span><span class="p">()</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">GridSquare</span><span class="p">)</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">GridSquare</span><span class="o">.</span><span class="n">grid_uuid</span> <span class="o">==</span> <span class="n">grid_uuid</span><span class="p">)</span><span class="o">.</span><span class="n">all</span><span class="p">()}</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">set</span><span class="p">(</span><span class="n">rep</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span><span class="o">.</span><span class="n">intersection</span><span class="p">({</span><span class="n">ci</span><span class="o">.</span><span class="n">key</span> <span class="k">for</span> <span class="n">ci</span> <span class="ow">in</span> <span class="n">cluster_indices</span><span class="p">}):</span>
+        <span class="n">rep</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="n">p</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">uuid</span><span class="p">:</span> <span class="n">LatentRep</span><span class="p">()</span>
+            <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">GridSquare</span><span class="p">,</span> <span class="n">FoilHole</span><span class="p">)</span>
+            <span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">GridSquare</span><span class="o">.</span><span class="n">grid_uuid</span> <span class="o">==</span> <span class="n">grid_uuid</span><span class="p">)</span>
+            <span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">FoilHole</span><span class="o">.</span><span class="n">gridsquare_uuid</span> <span class="o">==</span> <span class="n">GridSquare</span><span class="o">.</span><span class="n">uuid</span><span class="p">)</span>
+            <span class="o">.</span><span class="n">all</span><span class="p">()</span>
+        <span class="p">}</span>
+    <span class="n">indices</span> <span class="o">=</span> <span class="p">{</span><span class="n">ci</span><span class="o">.</span><span class="n">key</span><span class="p">:</span> <span class="n">ci</span><span class="o">.</span><span class="n">value</span> <span class="k">for</span> <span class="n">ci</span> <span class="ow">in</span> <span class="n">cluster_indices</span><span class="p">}</span>
+    <span class="n">res</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">xs</span><span class="p">,</span> <span class="n">ys</span><span class="p">,</span> <span class="n">strict</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="n">uuid</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">group</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;coordinates:&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+        <span class="n">res</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">LatentRepresentationResponse</span><span class="p">(</span><span class="n">gridsquare_uuid</span><span class="o">=</span><span class="n">uuid</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="n">x</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="n">y</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="n">indices</span><span class="p">[</span><span class="n">uuid</span><span class="p">]))</span>
+    <span class="k">return</span> <span class="n">res</span>
+
+
+<span class="nd">@app</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+    <span class="s2">&quot;/prediction_model/</span><span class="si">{prediction_model_name}</span><span class="s2">/gridsquare/</span><span class="si">{gridsquare_uuid}</span><span class="s2">/latent_representation&quot;</span><span class="p">,</span>
+    <span class="n">response_model</span><span class="o">=</span><span class="nb">list</span><span class="p">[</span><span class="n">LatentRepresentationResponse</span><span class="p">],</span>
+<span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_square_latent_rep</span><span class="p">(</span><span class="n">prediction_model_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">gridsquare_uuid</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">db</span><span class="p">:</span> <span class="n">SqlAlchemySession</span> <span class="o">=</span> <span class="n">DB_DEPENDENCY</span><span class="p">):</span>
+    <span class="n">square_and_holes</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">GridSquare</span><span class="p">,</span> <span class="n">FoilHole</span><span class="p">)</span>
+        <span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">GridSquare</span><span class="o">.</span><span class="n">uuid</span> <span class="o">==</span> <span class="n">gridsquare_uuid</span><span class="p">)</span>
+        <span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">FoilHole</span><span class="o">.</span><span class="n">gridsquare_uuid</span> <span class="o">==</span> <span class="n">GridSquare</span><span class="o">.</span><span class="n">uuid</span><span class="p">)</span>
+        <span class="o">.</span><span class="n">all</span><span class="p">()</span>
+    <span class="p">)</span>
+    <span class="n">grid_uuid</span> <span class="o">=</span> <span class="n">square_and_holes</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">grid_uuid</span>
+    <span class="n">hole_uuids</span> <span class="o">=</span> <span class="p">[</span><span class="n">p</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">uuid</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">square_and_holes</span><span class="p">]</span>
+    <span class="n">model_parameters</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">QualityPredictionModelParameter</span><span class="p">)</span>
+        <span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">QualityPredictionModelParameter</span><span class="o">.</span><span class="n">prediction_model_name</span> <span class="o">==</span> <span class="n">prediction_model_name</span><span class="p">)</span>
+        <span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">QualityPredictionModelParameter</span><span class="o">.</span><span class="n">grid_uuid</span> <span class="o">==</span> <span class="n">grid_uuid</span><span class="p">)</span>
+        <span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">QualityPredictionModelParameter</span><span class="o">.</span><span class="n">group</span><span class="o">.</span><span class="n">like</span><span class="p">(</span><span class="s2">&quot;coordinates:%&quot;</span><span class="p">))</span>
+        <span class="o">.</span><span class="n">order_by</span><span class="p">(</span><span class="n">QualityPredictionModelParameter</span><span class="o">.</span><span class="n">timestamp</span><span class="o">.</span><span class="n">desc</span><span class="p">())</span>
+        <span class="o">.</span><span class="n">all</span><span class="p">()</span>
+    <span class="p">)</span>
+    <span class="n">cluster_indices</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">QualityPredictionModelParameter</span><span class="p">)</span>
+        <span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">QualityPredictionModelParameter</span><span class="o">.</span><span class="n">prediction_model_name</span> <span class="o">==</span> <span class="n">prediction_model_name</span><span class="p">)</span>
+        <span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">QualityPredictionModelParameter</span><span class="o">.</span><span class="n">grid_uuid</span> <span class="o">==</span> <span class="n">grid_uuid</span><span class="p">)</span>
+        <span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">QualityPredictionModelParameter</span><span class="o">.</span><span class="n">group</span> <span class="o">==</span> <span class="s2">&quot;cluster_indices&quot;</span><span class="p">)</span>
+        <span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">QualityPredictionModelParameter</span><span class="o">.</span><span class="n">key</span><span class="o">.</span><span class="n">in_</span><span class="p">(</span><span class="n">hole_uuids</span><span class="p">))</span>
+        <span class="o">.</span><span class="n">order_by</span><span class="p">(</span><span class="n">QualityPredictionModelParameter</span><span class="o">.</span><span class="n">timestamp</span><span class="o">.</span><span class="n">desc</span><span class="p">())</span>
+        <span class="o">.</span><span class="n">all</span><span class="p">()</span>
+    <span class="p">)</span>
+
+    <span class="k">class</span><span class="w"> </span><span class="nc">LatentRep</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+        <span class="n">x</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="n">y</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="n">index</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="k">def</span><span class="w"> </span><span class="nf">complete</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+            <span class="k">return</span> <span class="nb">all</span><span class="p">(</span><span class="n">a</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">y</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">index</span><span class="p">))</span>
+
+    <span class="n">rep</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="n">p</span><span class="o">.</span><span class="n">uuid</span><span class="p">:</span> <span class="n">LatentRep</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">FoilHole</span><span class="p">)</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">FoilHole</span><span class="o">.</span><span class="n">gridsquare_uuid</span> <span class="o">==</span> <span class="n">gridsquare_uuid</span><span class="p">)</span><span class="o">.</span><span class="n">all</span><span class="p">()</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">p</span><span class="o">.</span><span class="n">is_near_grid_bar</span>
+    <span class="p">}</span>
+    <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">cluster_indices</span> <span class="o">+</span> <span class="n">model_parameters</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">p</span><span class="o">.</span><span class="n">group</span> <span class="o">==</span> <span class="s2">&quot;cluster_indices&quot;</span><span class="p">:</span>
+            <span class="n">hole_uuid</span> <span class="o">=</span> <span class="n">p</span><span class="o">.</span><span class="n">key</span>
+            <span class="k">if</span> <span class="n">rep</span><span class="p">[</span><span class="n">hole_uuid</span><span class="p">]</span><span class="o">.</span><span class="n">index</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">rep</span><span class="p">[</span><span class="n">hole_uuid</span><span class="p">]</span><span class="o">.</span><span class="n">index</span> <span class="o">=</span> <span class="n">p</span><span class="o">.</span><span class="n">value</span>
+            <span class="k">continue</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">hole_uuid</span> <span class="o">=</span> <span class="n">p</span><span class="o">.</span><span class="n">group</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;coordinates:&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">hole_uuid</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">rep</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="k">continue</span>
+        <span class="k">if</span> <span class="n">rep</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">hole_uuid</span><span class="p">,</span> <span class="n">LatentRep</span><span class="p">())</span><span class="o">.</span><span class="n">complete</span><span class="p">():</span>
+            <span class="k">continue</span>
+        <span class="k">if</span> <span class="n">p</span><span class="o">.</span><span class="n">key</span> <span class="o">==</span> <span class="s2">&quot;x&quot;</span><span class="p">:</span>
+            <span class="n">rep</span><span class="p">[</span><span class="n">hole_uuid</span><span class="p">]</span><span class="o">.</span><span class="n">x</span> <span class="o">=</span> <span class="n">p</span><span class="o">.</span><span class="n">value</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">rep</span><span class="p">[</span><span class="n">hole_uuid</span><span class="p">]</span><span class="o">.</span><span class="n">y</span> <span class="o">=</span> <span class="n">p</span><span class="o">.</span><span class="n">value</span>
+    <span class="k">return</span> <span class="p">[</span><span class="n">LatentRepresentationResponse</span><span class="p">(</span><span class="n">foilhole_uuid</span><span class="o">=</span><span class="n">k</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="n">v</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="n">v</span><span class="o">.</span><span class="n">y</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="n">v</span><span class="o">.</span><span class="n">index</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">rep</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">v</span><span class="p">]</span>
+
+
+<div class="viewcode-block" id="get_grid_atlas_image">
+<a class="viewcode-back" href="../../_api/smartem_backend.api_server.html#smartem_backend.api_server.get_grid_atlas_image">[docs]</a>
+<span class="nd">@app</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;/grids/</span><span class="si">{grid_uuid}</span><span class="s2">/atlas_image&quot;</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_grid_atlas_image</span><span class="p">(</span>
+    <span class="n">grid_uuid</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">x</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">y</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">w</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">h</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">db</span><span class="p">:</span> <span class="n">SqlAlchemySession</span> <span class="o">=</span> <span class="n">DB_DEPENDENCY</span><span class="p">,</span>
+<span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get a single grid by ID&quot;&quot;&quot;</span>
+    <span class="n">grid</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">Grid</span><span class="p">)</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">Grid</span><span class="o">.</span><span class="n">uuid</span> <span class="o">==</span> <span class="n">grid_uuid</span><span class="p">)</span><span class="o">.</span><span class="n">first</span><span class="p">()</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">grid</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="n">status_code</span><span class="o">=</span><span class="mi">404</span><span class="p">,</span> <span class="n">detail</span><span class="o">=</span><span class="s2">&quot;Grid not found&quot;</span><span class="p">)</span>
+    <span class="n">atlas_img_path</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">Path</span><span class="p">(</span><span class="n">grid</span><span class="o">.</span><span class="n">atlas_dir</span><span class="p">)</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="s2">&quot;Atlas*.mrc&quot;</span><span class="p">))[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">mrc</span> <span class="o">=</span> <span class="n">mrcfile</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">atlas_img_path</span><span class="p">)</span>
+    <span class="n">mrc</span> <span class="o">=</span> <span class="n">mrc</span> <span class="o">-</span> <span class="n">mrc</span><span class="o">.</span><span class="n">min</span><span class="p">()</span>
+    <span class="n">mrc</span> <span class="o">=</span> <span class="n">mrc</span> <span class="o">*</span> <span class="p">(</span><span class="mi">255</span> <span class="o">/</span> <span class="n">mrc</span><span class="o">.</span><span class="n">max</span><span class="p">())</span>
+    <span class="n">mrc</span> <span class="o">=</span> <span class="n">mrc</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="s2">&quot;uint8&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="kc">None</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">w</span><span class="p">,</span> <span class="n">h</span><span class="p">):</span>
+        <span class="n">mrc</span> <span class="o">=</span> <span class="n">mrc</span><span class="p">[</span><span class="n">y</span> <span class="o">-</span> <span class="n">h</span> <span class="o">//</span> <span class="mi">2</span> <span class="p">:</span> <span class="n">y</span> <span class="o">+</span> <span class="n">h</span> <span class="o">//</span> <span class="mi">2</span><span class="p">,</span> <span class="n">x</span> <span class="o">-</span> <span class="n">w</span> <span class="o">//</span> <span class="mi">2</span> <span class="p">:</span> <span class="n">x</span> <span class="o">+</span> <span class="n">w</span> <span class="o">//</span> <span class="mi">2</span><span class="p">]</span>
+    <span class="n">im</span> <span class="o">=</span> <span class="n">Image</span><span class="o">.</span><span class="n">fromarray</span><span class="p">(</span><span class="n">mrc</span><span class="p">)</span>
+    <span class="k">with</span> <span class="n">io</span><span class="o">.</span><span class="n">BytesIO</span><span class="p">()</span> <span class="k">as</span> <span class="n">buf</span><span class="p">:</span>
+        <span class="n">im</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">buf</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s2">&quot;PNG&quot;</span><span class="p">)</span>
+        <span class="n">im_bytes</span> <span class="o">=</span> <span class="n">buf</span><span class="o">.</span><span class="n">getvalue</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">Response</span><span class="p">(</span><span class="n">im_bytes</span><span class="p">,</span> <span class="n">media_type</span><span class="o">=</span><span class="s2">&quot;image/png&quot;</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="get_gridsquare_image">
+<a class="viewcode-back" href="../../_api/smartem_backend.api_server.html#smartem_backend.api_server.get_gridsquare_image">[docs]</a>
+<span class="nd">@app</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;/gridsquares/</span><span class="si">{gridsquare_uuid}</span><span class="s2">/gridsquare_image&quot;</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_gridsquare_image</span><span class="p">(</span>
+    <span class="n">gridsquare_uuid</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">db</span><span class="p">:</span> <span class="n">SqlAlchemySession</span> <span class="o">=</span> <span class="n">DB_DEPENDENCY</span><span class="p">,</span>
+<span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get a single grid square by ID&quot;&quot;&quot;</span>
+    <span class="n">gridsquare</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">GridSquare</span><span class="p">)</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">GridSquare</span><span class="o">.</span><span class="n">uuid</span> <span class="o">==</span> <span class="n">gridsquare_uuid</span><span class="p">)</span><span class="o">.</span><span class="n">first</span><span class="p">()</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">gridsquare</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="n">status_code</span><span class="o">=</span><span class="mi">404</span><span class="p">,</span> <span class="n">detail</span><span class="o">=</span><span class="s2">&quot;Grid square not found&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">gridsquare</span><span class="o">.</span><span class="n">image_path</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="n">status_code</span><span class="o">=</span><span class="mi">404</span><span class="p">,</span> <span class="n">detail</span><span class="o">=</span><span class="s2">&quot;Grid square image unknown&quot;</span><span class="p">)</span>
+    <span class="n">square_img_path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">gridsquare</span><span class="o">.</span><span class="n">image_path</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">square_img_path</span><span class="o">.</span><span class="n">suffix</span> <span class="o">==</span> <span class="s2">&quot;.mrc&quot;</span><span class="p">:</span>
+        <span class="n">imdata</span> <span class="o">=</span> <span class="n">mrcfile</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">square_img_path</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">imdata</span> <span class="o">=</span> <span class="n">tifffile</span><span class="o">.</span><span class="n">imread</span><span class="p">(</span><span class="n">square_img_path</span><span class="p">)</span>
+    <span class="n">imdata</span> <span class="o">=</span> <span class="n">imdata</span> <span class="o">-</span> <span class="n">imdata</span><span class="o">.</span><span class="n">min</span><span class="p">()</span>
+    <span class="n">imdata</span> <span class="o">=</span> <span class="n">imdata</span> <span class="o">*</span> <span class="p">(</span><span class="mi">255</span> <span class="o">/</span> <span class="n">imdata</span><span class="o">.</span><span class="n">max</span><span class="p">())</span>
+    <span class="n">imdata</span> <span class="o">=</span> <span class="n">imdata</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="s2">&quot;uint8&quot;</span><span class="p">)</span>
+    <span class="n">im</span> <span class="o">=</span> <span class="n">Image</span><span class="o">.</span><span class="n">fromarray</span><span class="p">(</span><span class="n">imdata</span><span class="p">)</span>
+    <span class="k">with</span> <span class="n">io</span><span class="o">.</span><span class="n">BytesIO</span><span class="p">()</span> <span class="k">as</span> <span class="n">buf</span><span class="p">:</span>
+        <span class="n">im</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">buf</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s2">&quot;PNG&quot;</span><span class="p">)</span>
+        <span class="n">im_bytes</span> <span class="o">=</span> <span class="n">buf</span><span class="o">.</span><span class="n">getvalue</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">Response</span><span class="p">(</span><span class="n">im_bytes</span><span class="p">,</span> <span class="n">media_type</span><span class="o">=</span><span class="s2">&quot;image/png&quot;</span><span class="p">)</span></div>
+
 </pre></div>
 
                 </article>

@@ -7,7 +7,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>smartem_backend.model.mq_event &#8212; smartem-decisions 0.1.dev334+gd573f69a5.d20251007 documentation</title>
+    <title>smartem_backend.model.mq_event &#8212; smartem-decisions 0.1.dev372+g0f036fa24.d20251008 documentation</title>
   
   
   
@@ -40,7 +40,7 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../../../_static/documentation_options.js?v=afc44027"></script>
+    <script src="../../../_static/documentation_options.js?v=e306b88a"></script>
     <script src="../../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -505,8 +505,10 @@
     <span class="n">MICROGRAPHS_DETECTED</span> <span class="o">=</span> <span class="s2">&quot;micrographs.detected&quot;</span>  <span class="c1"># TODO is this redundant?</span>
     <span class="c1"># MOTION_CORRECTION_START = &quot;motion_correction.started&quot;</span>
     <span class="n">MOTION_CORRECTION_COMPLETE</span> <span class="o">=</span> <span class="s2">&quot;motion_correction.completed&quot;</span>
+    <span class="n">MOTION_CORRECTION_REGISTERED</span> <span class="o">=</span> <span class="s2">&quot;motion_correction.registered&quot;</span>
     <span class="c1"># CTF_START = &quot;ctf.started&quot;</span>
     <span class="n">CTF_COMPLETE</span> <span class="o">=</span> <span class="s2">&quot;ctf.completed&quot;</span>
+    <span class="n">CTF_REGISTERED</span> <span class="o">=</span> <span class="s2">&quot;ctf.registered&quot;</span>
     <span class="c1"># PARTICLE_PICKING_START = &quot;particle_picking.started&quot;</span>
     <span class="n">PARTICLE_PICKING_COMPLETE</span> <span class="o">=</span> <span class="s2">&quot;particle_picking.completed&quot;</span>
     <span class="c1"># PARTICLE_SELECTION_START = &quot;particle_selection.started&quot;</span>
@@ -514,7 +516,10 @@
 
     <span class="n">GRIDSQUARE_MODEL_PREDICTION</span> <span class="o">=</span> <span class="s2">&quot;gridsquare.model_prediction&quot;</span>
     <span class="n">FOILHOLE_MODEL_PREDICTION</span> <span class="o">=</span> <span class="s2">&quot;foilhole.model_prediction&quot;</span>
+    <span class="n">MULTI_FOILHOLE_MODEL_PREDICTION</span> <span class="o">=</span> <span class="s2">&quot;foilhole.model_multi_prediction&quot;</span>
     <span class="n">MODEL_PARAMETER_UPDATE</span> <span class="o">=</span> <span class="s2">&quot;gridsquare.model_parameter_update&quot;</span>
+
+    <span class="n">REFRESH_PREDICTIONS</span> <span class="o">=</span> <span class="s2">&quot;refresh.predictions&quot;</span>
 
     <span class="c1"># Agent communication events</span>
     <span class="n">AGENT_INSTRUCTION_CREATED</span> <span class="o">=</span> <span class="s2">&quot;agent.instruction.created&quot;</span>
@@ -759,7 +764,8 @@
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Event emitted when all holes at square mag have been registered for a grid square&quot;&quot;&quot;</span>
 
     <span class="n">uuid</span><span class="p">:</span> <span class="nb">str</span>
-    <span class="n">grid_uuid</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span></div>
+    <span class="n">grid_uuid</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">count</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span></div>
 
 
 
@@ -858,7 +864,6 @@
     <span class="n">micrograph_uuid</span><span class="p">:</span> <span class="nb">str</span>
     <span class="n">total_motion</span><span class="p">:</span> <span class="nb">float</span>
     <span class="n">average_motion</span><span class="p">:</span> <span class="nb">float</span>
-    <span class="n">ctf_max_resolution_estimate</span><span class="p">:</span> <span class="nb">float</span>
 
     <span class="nd">@model_validator</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s2">&quot;after&quot;</span><span class="p">)</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">check_model</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -866,9 +871,13 @@
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Total Motion should be a non-negative float&quot;</span><span class="p">)</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">average_motion</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Average Motion should be a non-negative float&quot;</span><span class="p">)</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">ctf_max_resolution_estimate</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;CTF Max Resolution should be a non-negative float&quot;</span><span class="p">)</span>
         <span class="k">return</span> <span class="bp">self</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">MotionCorrectionRegisteredBody</span><span class="p">(</span><span class="n">GenericEventMessageBody</span><span class="p">):</span>
+    <span class="n">micrograph_uuid</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">quality</span><span class="p">:</span> <span class="nb">bool</span>
+    <span class="n">metric_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="s2">&quot;motioncorrection&quot;</span>
 
 
 <span class="k">class</span><span class="w"> </span><span class="nc">CtfStartBody</span><span class="p">(</span><span class="n">GenericEventMessageBody</span><span class="p">):</span>
@@ -877,19 +886,19 @@
 
 <span class="k">class</span><span class="w"> </span><span class="nc">CtfCompleteBody</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
     <span class="n">micrograph_uuid</span><span class="p">:</span> <span class="nb">str</span>
-    <span class="n">total_motion</span><span class="p">:</span> <span class="nb">float</span>
-    <span class="n">average_motion</span><span class="p">:</span> <span class="nb">float</span>
     <span class="n">ctf_max_resolution_estimate</span><span class="p">:</span> <span class="nb">float</span>
 
     <span class="nd">@model_validator</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s2">&quot;after&quot;</span><span class="p">)</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">check_model</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">total_motion</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Total Motion should be a non-negative float&quot;</span><span class="p">)</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">average_motion</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Average Motion should be a non-negative float&quot;</span><span class="p">)</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">ctf_max_resolution_estimate</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;CTF Max Resolution should be a non-negative float&quot;</span><span class="p">)</span>
         <span class="k">return</span> <span class="bp">self</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">CtfRegisteredBody</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+    <span class="n">micrograph_uuid</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">quality</span><span class="p">:</span> <span class="nb">bool</span>
+    <span class="n">metric_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="s2">&quot;ctfmaxresolution&quot;</span>
 
 
 <span class="k">class</span><span class="w"> </span><span class="nc">ParticlePickingStartBody</span><span class="p">(</span><span class="n">GenericEventMessageBody</span><span class="p">):</span>
@@ -950,12 +959,21 @@
     <span class="n">gridsquare_uuid</span><span class="p">:</span> <span class="nb">str</span>
     <span class="n">prediction_model_name</span><span class="p">:</span> <span class="nb">str</span>
     <span class="n">prediction_value</span><span class="p">:</span> <span class="nb">float</span>
+    <span class="n">metric</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
 
 
 <span class="k">class</span><span class="w"> </span><span class="nc">FoilHoleModelPredictionEvent</span><span class="p">(</span><span class="n">GenericEventMessageBody</span><span class="p">):</span>
     <span class="n">foilhole_uuid</span><span class="p">:</span> <span class="nb">str</span>
     <span class="n">prediction_model_name</span><span class="p">:</span> <span class="nb">str</span>
     <span class="n">prediction_value</span><span class="p">:</span> <span class="nb">float</span>
+    <span class="n">metric</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">MultiFoilHoleModelPredictionEvent</span><span class="p">(</span><span class="n">GenericEventMessageBody</span><span class="p">):</span>
+    <span class="n">foilhole_uuids</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
+    <span class="n">prediction_model_name</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">prediction_value</span><span class="p">:</span> <span class="nb">float</span>
+    <span class="n">metric</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
 
 
 <span class="k">class</span><span class="w"> </span><span class="nc">ModelParameterUpdateEvent</span><span class="p">(</span><span class="n">GenericEventMessageBody</span><span class="p">):</span>
@@ -963,6 +981,11 @@
     <span class="n">prediction_model_name</span><span class="p">:</span> <span class="nb">str</span>
     <span class="n">key</span><span class="p">:</span> <span class="nb">str</span>
     <span class="n">value</span><span class="p">:</span> <span class="nb">float</span>
+    <span class="n">metric</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">RefreshPredictionsEvent</span><span class="p">(</span><span class="n">GenericEventMessageBody</span><span class="p">):</span>
+    <span class="n">grid_uuid</span><span class="p">:</span> <span class="nb">str</span>
     <span class="n">group</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
 
 

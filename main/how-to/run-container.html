@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Run in a container &#8212; smartem-decisions 0.1.dev334+gd573f69a5.d20251007 documentation</title>
+    <title>Run in a container &#8212; smartem-decisions 0.1.dev372+g0f036fa24.d20251008 documentation</title>
   
   
   
@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../_static/documentation_options.js?v=afc44027"></script>
+    <script src="../_static/documentation_options.js?v=e306b88a"></script>
     <script src="../_static/doctools.js?v=9bcbadda"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -58,7 +58,7 @@
     <link rel="icon" href="../_static/dls-logo.svg"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="SmartEM CLI Troubleshooting Guide" href="troubleshoot-cli.html" />
+    <link rel="next" title="Run an end-to-end simulation in development" href="run-e2e-dev-simulation.html" />
     <link rel="prev" title="Run SmartEM Backend" href="run-backend.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
@@ -399,6 +399,7 @@
   <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
 <li class="toctree-l1"><a class="reference internal" href="use-api-documentation.html">Using the API Documentation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="configure-logging.html">Configure Logging and Verbosity</a></li>
+<li class="toctree-l1"><a class="reference internal" href="container-user-configuration.html">Container User Configuration</a></li>
 <li class="toctree-l1"><a class="reference internal" href="containerization.html">Containerization</a></li>
 <li class="toctree-l1"><a class="reference internal" href="contribute.html">Contribute to the project</a></li>
 <li class="toctree-l1"><a class="reference internal" href="database-migrations.html">Database Migrations</a></li>
@@ -409,6 +410,7 @@
 <li class="toctree-l1"><a class="reference internal" href="run-agent.html">Run SmartEM Agent (EPU Agent)</a></li>
 <li class="toctree-l1"><a class="reference internal" href="run-backend.html">Run SmartEM Backend</a></li>
 <li class="toctree-l1 current active"><a class="current reference internal" href="#">Run in a container</a></li>
+<li class="toctree-l1"><a class="reference internal" href="run-e2e-dev-simulation.html">Run an end-to-end simulation in development</a></li>
 <li class="toctree-l1"><a class="reference internal" href="troubleshoot-cli.html">SmartEM CLI Troubleshooting Guide</a></li>
 <li class="toctree-l1"><a class="reference internal" href="use-core-http-api-client.html">How to Use the SmartEM API Client</a></li>
 <li class="toctree-l1"><a class="reference internal" href="use-mcp-interface.html">Using SmartEM MCP Interface</a></li>
@@ -548,6 +550,20 @@ $<span class="w"> </span>docker<span class="w"> </span>run<span class="w"> </spa
 <h2>Complete Development Stack<a class="headerlink" href="#complete-development-stack" title="Link to this heading">#</a></h2>
 <p>For a complete development environment with database and message queue, see the <a class="reference internal" href="#../../k8s/README.md"><span class="xref myst">Kubernetes deployment guide</span></a> which provides a docker-compose-like experience.</p>
 </section>
+<section id="advanced-configuration">
+<h2>Advanced Configuration<a class="headerlink" href="#advanced-configuration" title="Link to this heading">#</a></h2>
+<section id="custom-user-group-for-production-deployments">
+<h3>Custom User/Group for Production Deployments<a class="headerlink" href="#custom-user-group-for-production-deployments" title="Link to this heading">#</a></h3>
+<p>The pre-built containers run as root by default, which is suitable for development and CI/CD. For production deployments at Diamond Light Source that require access to the <code class="docutils literal notranslate"><span class="pre">/dls</span></code> filesystem, you’ll need to build custom images with specific UID/GID.</p>
+<p>See <a class="reference internal" href="container-user-configuration.html"><span class="std std-doc">Container User Configuration</span></a> for:</p>
+<ul class="simple">
+<li><p>Building containers with custom user/group settings</p></li>
+<li><p>Mounting the <code class="docutils literal notranslate"><span class="pre">/dls</span></code> filesystem for image serving</p></li>
+<li><p>Security considerations and best practices</p></li>
+<li><p>Troubleshooting permission issues</p></li>
+</ul>
+</section>
+</section>
 </section>
 
 
@@ -570,11 +586,11 @@ $<span class="w"> </span>docker<span class="w"> </span>run<span class="w"> </spa
       </div>
     </a>
     <a class="right-next"
-       href="troubleshoot-cli.html"
+       href="run-e2e-dev-simulation.html"
        title="next page">
       <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">SmartEM CLI Troubleshooting Guide</p>
+        <p class="prev-next-title">Run an end-to-end simulation in development</p>
       </div>
       <i class="fa-solid fa-angle-right"></i>
     </a>
@@ -605,6 +621,10 @@ $<span class="w"> </span>docker<span class="w"> </span>run<span class="w"> </spa
 </li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#environment-variables">Environment Variables</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#complete-development-stack">Complete Development Stack</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#advanced-configuration">Advanced Configuration</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#custom-user-group-for-production-deployments">Custom User/Group for Production Deployments</a></li>
+</ul>
+</li>
 </ul>
   </nav></div>
 

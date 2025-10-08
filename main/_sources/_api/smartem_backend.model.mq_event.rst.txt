@@ -47,6 +47,10 @@
         
         
         
+        
+        
+        
+        
 
 .. automodule:: smartem_backend.model.mq_event
     :members:
@@ -78,6 +82,7 @@
         AtlasTileUpdatedEvent
         AtlasUpdatedEvent
         CtfCompleteBody
+        CtfRegisteredBody
         CtfStartBody
         FoilHoleCreatedEvent
         FoilHoleDeletedEvent
@@ -103,11 +108,14 @@
         MicrographUpdatedEvent
         ModelParameterUpdateEvent
         MotionCorrectionCompleteBody
+        MotionCorrectionRegisteredBody
         MotionCorrectionStartBody
+        MultiFoilHoleModelPredictionEvent
         ParticlePickingCompleteBody
         ParticlePickingStartBody
         ParticleSelectionCompleteBody
         ParticleSelectionStartBody
+        RefreshPredictionsEvent
         non_negative_float
     
     

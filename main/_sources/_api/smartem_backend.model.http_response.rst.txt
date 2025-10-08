@@ -9,6 +9,12 @@
         
         
         
+        
+        
+        
+        
+        
+        
 
 .. automodule:: smartem_backend.model.http_response
     :members:
@@ -32,6 +38,12 @@
         FoilHoleResponse
         GridResponse
         GridSquareResponse
+        LatentRepresentationResponse
         MicrographResponse
+        QualityMetricsResponse
+        QualityPredictionModelParameterResponse
+        QualityPredictionModelResponse
+        QualityPredictionModelWeightResponse
+        QualityPredictionResponse
     
     

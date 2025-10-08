@@ -38,6 +38,10 @@
         
         
         
+        
+        
+        
+        
 
 .. automodule:: smartem_backend.consumer
     :members:
@@ -64,6 +68,7 @@
         handle_atlas_created
         handle_atlas_deleted
         handle_atlas_updated
+        handle_ctf_estimation_complete
         handle_external_foilhole_model_prediction
         handle_external_gridsquare_model_prediction
         handle_foilhole_created
@@ -88,6 +93,9 @@
         handle_micrograph_deleted
         handle_micrograph_updated
         handle_model_parameter_update
+        handle_motion_correction_complete
+        handle_multi_foilhole_model_prediction
+        handle_refresh_predictions
         main
         on_message
         signal_handler

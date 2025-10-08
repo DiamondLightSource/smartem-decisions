@@ -58,3 +58,15 @@ $ docker run -e ROLE=worker -e SMARTEM_LOG_LEVEL=DEBUG ghcr.io/DiamondLightSourc
 ## Complete Development Stack
 
 For a complete development environment with database and message queue, see the [Kubernetes deployment guide](../../k8s/README.md) which provides a docker-compose-like experience.
+
+## Advanced Configuration
+
+### Custom User/Group for Production Deployments
+
+The pre-built containers run as root by default, which is suitable for development and CI/CD. For production deployments at Diamond Light Source that require access to the `/dls` filesystem, you'll need to build custom images with specific UID/GID.
+
+See [Container User Configuration](container-user-configuration.md) for:
+- Building containers with custom user/group settings
+- Mounting the `/dls` filesystem for image serving
+- Security considerations and best practices
+- Troubleshooting permission issues

@@ -1,0 +1,1091 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Container User Configuration &#8212; smartem-decisions 0.1.dev372+g0f036fa24.d20251008 documentation</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+<link href="../_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=4ae1632d" />
+    <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinx-design.min.css?v=95c83b7e" />
+  
+  <!-- So that users can add custom icons -->
+  <script src="../_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
+<link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
+
+    <script src="../_static/documentation_options.js?v=e306b88a"></script>
+    <script src="../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../_static/copybutton.js?v=30646c52"></script>
+    <script src="../_static/design-tabs.js?v=f930bc37"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'how-to/container-user-configuration';</script>
+    <script>
+        DOCUMENTATION_OPTIONS.theme_version = '0.16.1';
+        DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://DiamondLightSource.github.io/smartem-decisions/switcher.json';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = 'main';
+        DOCUMENTATION_OPTIONS.show_version_warning_banner =
+            false;
+        </script>
+    <link rel="icon" href="../_static/dls-logo.svg"/>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Containerization" href="containerization.html" />
+    <link rel="prev" title="Configure Logging and Verbosity" href="configure-logging.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="main" />
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../_static/dls-logo.svg" class="logo__image only-light" alt=""/>
+    <img src="../_static/dls-logo.svg" class="logo__image only-dark pst-js-only" alt=""/>
+  
+  
+    <p class="title logo__title">smartem-decisions</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../tutorials.html">
+    Tutorials
+  </a>
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="../how-to.html">
+    How-to Guides
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../explanations.html">
+    Explanations
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../reference.html">
+    Reference
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/DiamondLightSource/smartem-decisions" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://pypi.org/project/smartem-decisions" title="PyPI" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fas fa-cube fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">PyPI</span></a>
+        </li>
+</ul></div>
+      
+        <div class="navbar-item">
+<div class="version-switcher__container dropdown pst-js-only">
+  <button id="pst-version-switcher-button-2"
+    type="button"
+    class="version-switcher__button btn btn-sm dropdown-toggle"
+    data-bs-toggle="dropdown"
+    aria-haspopup="listbox"
+    aria-controls="pst-version-switcher-list-2"
+    aria-label="Version switcher list"
+  >
+    Choose version  <!-- this text may get changed later by javascript -->
+    <span class="caret"></span>
+  </button>
+  <div id="pst-version-switcher-list-2"
+    class="version-switcher__menu dropdown-menu list-group-flush py-0"
+    role="listbox" aria-labelledby="pst-version-switcher-button-2">
+    <!-- dropdown will be populated by javascript on page load -->
+  </div>
+</div></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+    <button class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../tutorials.html">
+    Tutorials
+  </a>
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="../how-to.html">
+    How-to Guides
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../explanations.html">
+    Explanations
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../reference.html">
+    Reference
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/DiamondLightSource/smartem-decisions" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://pypi.org/project/smartem-decisions" title="PyPI" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fas fa-cube fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">PyPI</span></a>
+        </li>
+</ul></div>
+        
+          <div class="navbar-item">
+<div class="version-switcher__container dropdown pst-js-only">
+  <button id="pst-version-switcher-button-3"
+    type="button"
+    class="version-switcher__button btn btn-sm dropdown-toggle"
+    data-bs-toggle="dropdown"
+    aria-haspopup="listbox"
+    aria-controls="pst-version-switcher-list-3"
+    aria-label="Version switcher list"
+  >
+    Choose version  <!-- this text may get changed later by javascript -->
+    <span class="caret"></span>
+  </button>
+  <div id="pst-version-switcher-list-3"
+    class="version-switcher__menu dropdown-menu list-group-flush py-0"
+    role="listbox" aria-labelledby="pst-version-switcher-button-3">
+    <!-- dropdown will be populated by javascript on page load -->
+  </div>
+</div></div>
+        
+      </div>
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+<nav class="bd-docs-nav bd-links"
+     aria-label="Section Navigation">
+  <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
+  <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="use-api-documentation.html">Using the API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="configure-logging.html">Configure Logging and Verbosity</a></li>
+<li class="toctree-l1 current active"><a class="current reference internal" href="#">Container User Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="containerization.html">Containerization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contribute.html">Contribute to the project</a></li>
+<li class="toctree-l1"><a class="reference internal" href="database-migrations.html">Database Migrations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="deploy-kubernetes.html">Kubernetes Deployment</a></li>
+<li class="toctree-l1"><a class="reference internal" href="development-tools.html">Development Tools</a></li>
+<li class="toctree-l1"><a class="reference internal" href="generate-docs.html">Generate Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="manage-kubernetes-secrets.html">Managing Kubernetes Secrets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="run-agent.html">Run SmartEM Agent (EPU Agent)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="run-backend.html">Run SmartEM Backend</a></li>
+<li class="toctree-l1"><a class="reference internal" href="run-container.html">Run in a container</a></li>
+<li class="toctree-l1"><a class="reference internal" href="run-e2e-dev-simulation.html">Run an end-to-end simulation in development</a></li>
+<li class="toctree-l1"><a class="reference internal" href="troubleshoot-cli.html">SmartEM CLI Troubleshooting Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="use-core-http-api-client.html">How to Use the SmartEM API Client</a></li>
+<li class="toctree-l1"><a class="reference internal" href="use-mcp-interface.html">Using SmartEM MCP Interface</a></li>
+</ul>
+</div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="../how-to.html" class="nav-link">How-to Guides</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Container User Configuration</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section id="container-user-configuration">
+<h1>Container User Configuration<a class="headerlink" href="#container-user-configuration" title="Link to this heading">#</a></h1>
+<p>This guide explains how to configure the SmartEM Decisions container to run as a non-root user with specific UID/GID, which is essential for certain deployment scenarios at Diamond Light Source (DLS).</p>
+<section id="overview">
+<h2>Overview<a class="headerlink" href="#overview" title="Link to this heading">#</a></h2>
+<p>The SmartEM Decisions Dockerfile supports two distinct operational modes:</p>
+<ol class="arabic simple">
+<li><p><strong>Default Mode (Root User)</strong>: For CI/CD pipelines and local development</p></li>
+<li><p><strong>Custom User Mode</strong>: For production deployments requiring filesystem access with specific permissions</p></li>
+</ol>
+</section>
+<section id="why-non-root-users">
+<h2>Why Non-Root Users?<a class="headerlink" href="#why-non-root-users" title="Link to this heading">#</a></h2>
+<p>At Diamond Light Source, the HTTP API service needs to access microscopy images stored on the <code class="docutils literal notranslate"><span class="pre">/dls</span></code> filesystem. This filesystem:</p>
+<ul class="simple">
+<li><p>Contains electron microscopy data from EPU sessions</p></li>
+<li><p>Cannot be mounted in containers with root privileges due to security policies</p></li>
+<li><p>Requires the container to run with a specific UID/GID that has read permissions</p></li>
+<li><p>Is accessed by image serving endpoints in the HTTP API</p></li>
+</ul>
+<p>Without proper user configuration, the container cannot access <code class="docutils literal notranslate"><span class="pre">/dls</span></code> and image serving endpoints will fail.</p>
+</section>
+<section id="build-arguments">
+<h2>Build Arguments<a class="headerlink" href="#build-arguments" title="Link to this heading">#</a></h2>
+<p>The Dockerfile accepts three build arguments that control user/group creation:</p>
+<div class="pst-scrollable-table-container"><table class="table">
+<thead>
+<tr class="row-odd"><th class="head"><p>Argument</p></th>
+<th class="head"><p>Default</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">groupid</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">0</span></code></p></td>
+<td><p>Group ID for the container user. When set to <code class="docutils literal notranslate"><span class="pre">0</span></code>, no custom user is created (runs as root).</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">userid</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">0</span></code></p></td>
+<td><p>User ID for the container user. Should match the required UID for filesystem access.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">groupname</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">root</span></code></p></td>
+<td><p>Name for both the group and user. Used for identification in container processes.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="default-behavior-root-user">
+<h2>Default Behavior: Root User<a class="headerlink" href="#default-behavior-root-user" title="Link to this heading">#</a></h2>
+<p>When build arguments are not specified (or explicitly set to defaults), the container runs as root:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Build with defaults (runs as root)</span>
+docker<span class="w"> </span>build<span class="w"> </span>-t<span class="w"> </span>smartem-decisions<span class="w"> </span>.
+
+<span class="c1"># This is equivalent to:</span>
+docker<span class="w"> </span>build<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--build-arg<span class="w"> </span><span class="nv">groupid</span><span class="o">=</span><span class="m">0</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--build-arg<span class="w"> </span><span class="nv">userid</span><span class="o">=</span><span class="m">0</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--build-arg<span class="w"> </span><span class="nv">groupname</span><span class="o">=</span>root<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-t<span class="w"> </span>smartem-decisions<span class="w"> </span>.
+</pre></div>
+</div>
+<p><strong>Use cases for root mode:</strong></p>
+<ul class="simple">
+<li><p>CI/CD pipelines (GitHub Actions, GitLab CI)</p></li>
+<li><p>Local development environments</p></li>
+<li><p>Environments without specific filesystem permission requirements</p></li>
+<li><p>Testing and debugging</p></li>
+</ul>
+<p><strong>Implications:</strong></p>
+<ul class="simple">
+<li><p>Container has full privileges</p></li>
+<li><p>No user creation step is executed</p></li>
+<li><p>All files owned by root (UID 0, GID 0)</p></li>
+<li><p>Cannot mount DLS filesystem in production</p></li>
+</ul>
+</section>
+<section id="custom-user-mode-dls-deployment">
+<h2>Custom User Mode: DLS Deployment<a class="headerlink" href="#custom-user-mode-dls-deployment" title="Link to this heading">#</a></h2>
+<p>For production deployment at DLS, build the container with specific UID/GID:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Build with custom user (example values)</span>
+docker<span class="w"> </span>build<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--build-arg<span class="w"> </span><span class="nv">groupid</span><span class="o">=</span><span class="m">1000</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--build-arg<span class="w"> </span><span class="nv">userid</span><span class="o">=</span><span class="m">1000</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--build-arg<span class="w"> </span><span class="nv">groupname</span><span class="o">=</span>smartem<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-t<span class="w"> </span>smartem-decisions:dls<span class="w"> </span>.
+</pre></div>
+</div>
+<p><strong>What happens during build:</strong></p>
+<ol class="arabic simple">
+<li><p>A group is created with the specified <code class="docutils literal notranslate"><span class="pre">groupid</span></code> and <code class="docutils literal notranslate"><span class="pre">groupname</span></code></p></li>
+<li><p>A user is created with the specified <code class="docutils literal notranslate"><span class="pre">userid</span></code>, belonging to the group</p></li>
+<li><p>All application files (<code class="docutils literal notranslate"><span class="pre">/venv</span></code>, <code class="docutils literal notranslate"><span class="pre">/app</span></code>, <code class="docutils literal notranslate"><span class="pre">/entrypoint.sh</span></code>) are set to be owned by this user</p></li>
+<li><p>The container will execute processes as this user (not root)</p></li>
+</ol>
+<p><strong>Use cases for custom user mode:</strong></p>
+<ul class="simple">
+<li><p>DLS production/staging deployments</p></li>
+<li><p>Any environment requiring specific filesystem permissions</p></li>
+<li><p>Security-hardened deployments following least-privilege principles</p></li>
+</ul>
+<p><strong>Implications:</strong></p>
+<ul class="simple">
+<li><p>Container runs with limited privileges</p></li>
+<li><p>Can access <code class="docutils literal notranslate"><span class="pre">/dls</span></code> filesystem when mounted with matching permissions</p></li>
+<li><p>Image serving endpoints function correctly</p></li>
+<li><p>More secure than running as root</p></li>
+</ul>
+</section>
+<section id="volume-mounting-considerations">
+<h2>Volume Mounting Considerations<a class="headerlink" href="#volume-mounting-considerations" title="Link to this heading">#</a></h2>
+<section id="the-dls-directory">
+<h3>The /dls Directory<a class="headerlink" href="#the-dls-directory" title="Link to this heading">#</a></h3>
+<p>The <code class="docutils literal notranslate"><span class="pre">/dls</span></code> directory is <strong>not</strong> created in the Docker image. It should be mounted at runtime:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Mount /dls directory (example)</span>
+docker<span class="w"> </span>run<span class="w"> </span>-v<span class="w"> </span>/path/to/dls:/dls<span class="w"> </span>smartem-decisions:dls
+</pre></div>
+</div>
+<p>In Kubernetes, this is typically done via a PersistentVolume or hostPath mount:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">apps/v1</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Deployment</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">smartem-http-api</span>
+<span class="nt">spec</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">template</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">spec</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">containers</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">smartem-http-api</span>
+<span class="w">        </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ghcr.io/diamondlightsource/smartem-decisions:dls</span>
+<span class="w">        </span><span class="nt">volumeMounts</span><span class="p">:</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">dls-data</span>
+<span class="w">          </span><span class="nt">mountPath</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/dls</span>
+<span class="w">          </span><span class="nt">readOnly</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">      </span><span class="nt">volumes</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">dls-data</span>
+<span class="w">        </span><span class="nt">hostPath</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/dls</span>
+<span class="w">          </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Directory</span>
+</pre></div>
+</div>
+</section>
+<section id="when-dls-is-not-mounted">
+<h3>When /dls is Not Mounted<a class="headerlink" href="#when-dls-is-not-mounted" title="Link to this heading">#</a></h3>
+<p>If the <code class="docutils literal notranslate"><span class="pre">/dls</span></code> directory is not mounted or does not exist:</p>
+<ul class="simple">
+<li><p>The container will start normally</p></li>
+<li><p>Most API endpoints will function correctly</p></li>
+<li><p>Image serving endpoints will return 404 errors when image paths reference <code class="docutils literal notranslate"><span class="pre">/dls</span></code></p></li>
+<li><p>Error messages will indicate that the file cannot be found</p></li>
+</ul>
+<p>This is by design - the container is operational without <code class="docutils literal notranslate"><span class="pre">/dls</span></code>, but image serving functionality is unavailable.</p>
+</section>
+<section id="optional-mount-strategy">
+<h3>Optional Mount Strategy<a class="headerlink" href="#optional-mount-strategy" title="Link to this heading">#</a></h3>
+<p>The <code class="docutils literal notranslate"><span class="pre">/dls</span></code> mount should be considered <strong>optional for development</strong> but <strong>required for production</strong>:</p>
+<ul class="simple">
+<li><p><strong>Development/Testing</strong>: Run without <code class="docutils literal notranslate"><span class="pre">/dls</span></code> mount for testing non-image features</p></li>
+<li><p><strong>Staging</strong>: Mount a subset of <code class="docutils literal notranslate"><span class="pre">/dls</span></code> or test data directory</p></li>
+<li><p><strong>Production</strong>: Mount full <code class="docutils literal notranslate"><span class="pre">/dls</span></code> filesystem with proper permissions</p></li>
+</ul>
+</section>
+</section>
+<section id="image-serving-endpoints">
+<h2>Image Serving Endpoints<a class="headerlink" href="#image-serving-endpoints" title="Link to this heading">#</a></h2>
+<p>The HTTP API provides endpoints for serving microscopy images:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">GET</span> <span class="pre">/grids/{grid_uuid}/atlas_image</span></code> - Serve grid atlas images</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">GET</span> <span class="pre">/gridsquares/{gridsquare_uuid}/gridsquare_image</span></code> - Serve grid square images</p></li>
+</ul>
+<p>These endpoints:</p>
+<ol class="arabic simple">
+<li><p>Query the database for image file paths</p></li>
+<li><p>Read image files from the filesystem (typically <code class="docutils literal notranslate"><span class="pre">/dls</span></code>)</p></li>
+<li><p>Process and return images in PNG format</p></li>
+</ol>
+<p><strong>Requirements:</strong></p>
+<ul class="simple">
+<li><p>Container must run as user with read access to image files</p></li>
+<li><p>Image paths in database must be accessible by the container user</p></li>
+<li><p>Filesystem must be mounted at the correct path</p></li>
+</ul>
+<p><strong>Error handling:</strong></p>
+<ul class="simple">
+<li><p>If image path is not in database: Returns 404 “Grid square image unknown”</p></li>
+<li><p>If file doesn’t exist: Returns 404 or file system error</p></li>
+<li><p>If permissions denied: Returns 500 error with permission details</p></li>
+</ul>
+</section>
+<section id="security-considerations">
+<h2>Security Considerations<a class="headerlink" href="#security-considerations" title="Link to this heading">#</a></h2>
+<section id="principle-of-least-privilege">
+<h3>Principle of Least Privilege<a class="headerlink" href="#principle-of-least-privilege" title="Link to this heading">#</a></h3>
+<p>Running containers as non-root is a security best practice:</p>
+<ul class="simple">
+<li><p><strong>Risk Reduction</strong>: Limited damage if container is compromised</p></li>
+<li><p><strong>Policy Compliance</strong>: Many organizations require non-root containers</p></li>
+<li><p><strong>Audit Trail</strong>: Clear user identity in logs and process lists</p></li>
+</ul>
+</section>
+<section id="choosing-uid-gid">
+<h3>Choosing UID/GID<a class="headerlink" href="#choosing-uid-gid" title="Link to this heading">#</a></h3>
+<p>When selecting UID/GID for custom user mode:</p>
+<ol class="arabic simple">
+<li><p><strong>Match Filesystem Permissions</strong>: Use UID/GID that has read access to required files</p></li>
+<li><p><strong>Avoid System IDs</strong>: Don’t use UIDs below 1000 (reserved for system users)</p></li>
+<li><p><strong>Document Values</strong>: Keep a record of which UID/GID is used in each environment</p></li>
+<li><p><strong>Consistency</strong>: Use the same UID/GID across all pods in the same environment</p></li>
+</ol>
+</section>
+<section id="file-ownership">
+<h3>File Ownership<a class="headerlink" href="#file-ownership" title="Link to this heading">#</a></h3>
+<p>All files in the container are owned by the specified user:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Inside container running as custom user</span>
+ls<span class="w"> </span>-la<span class="w"> </span>/app
+<span class="c1"># Output: drwxr-xr-x 2 smartem smartem 4096 Oct 7 12:00 .</span>
+
+ls<span class="w"> </span>-la<span class="w"> </span>/venv
+<span class="c1"># Output: drwxr-xr-x 2 smartem smartem 4096 Oct 7 12:00 .</span>
+</pre></div>
+</div>
+<p>This ensures the application can read its own files while running as non-root.</p>
+</section>
+</section>
+<section id="building-for-different-environments">
+<h2>Building for Different Environments<a class="headerlink" href="#building-for-different-environments" title="Link to this heading">#</a></h2>
+<section id="local-development">
+<h3>Local Development<a class="headerlink" href="#local-development" title="Link to this heading">#</a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Simple build for local development</span>
+docker<span class="w"> </span>build<span class="w"> </span>-t<span class="w"> </span>smartem-decisions:dev<span class="w"> </span>.
+
+<span class="c1"># Run with local database</span>
+docker<span class="w"> </span>run<span class="w"> </span>-p<span class="w"> </span><span class="m">8000</span>:8000<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-e<span class="w"> </span><span class="nv">ROLE</span><span class="o">=</span>api<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-e<span class="w"> </span><span class="nv">POSTGRES_HOST</span><span class="o">=</span>host.docker.internal<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>smartem-decisions:dev
+</pre></div>
+</div>
+</section>
+<section id="ci-cd-pipeline">
+<h3>CI/CD Pipeline<a class="headerlink" href="#ci-cd-pipeline" title="Link to this heading">#</a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># GitHub Actions (runs as root by default)</span>
+docker<span class="w"> </span>build<span class="w"> </span>-t<span class="w"> </span>smartem-decisions:<span class="nv">$GITHUB_SHA</span><span class="w"> </span>.
+docker<span class="w"> </span>push<span class="w"> </span>ghcr.io/diamondlightsource/smartem-decisions:<span class="nv">$GITHUB_SHA</span>
+</pre></div>
+</div>
+</section>
+<section id="staging-environment">
+<h3>Staging Environment<a class="headerlink" href="#staging-environment" title="Link to this heading">#</a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Build with staging UID/GID</span>
+docker<span class="w"> </span>build<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--build-arg<span class="w"> </span><span class="nv">groupid</span><span class="o">=</span><span class="m">1001</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--build-arg<span class="w"> </span><span class="nv">userid</span><span class="o">=</span><span class="m">1001</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--build-arg<span class="w"> </span><span class="nv">groupname</span><span class="o">=</span>smartem-staging<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-t<span class="w"> </span>smartem-decisions:staging<span class="w"> </span>.
+
+<span class="c1"># Tag and push</span>
+docker<span class="w"> </span>tag<span class="w"> </span>smartem-decisions:staging<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>ghcr.io/diamondlightsource/smartem-decisions:staging
+docker<span class="w"> </span>push<span class="w"> </span>ghcr.io/diamondlightsource/smartem-decisions:staging
+</pre></div>
+</div>
+</section>
+<section id="production-environment">
+<h3>Production Environment<a class="headerlink" href="#production-environment" title="Link to this heading">#</a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Build with production UID/GID (example values)</span>
+docker<span class="w"> </span>build<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--build-arg<span class="w"> </span><span class="nv">groupid</span><span class="o">=</span><span class="m">5000</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--build-arg<span class="w"> </span><span class="nv">userid</span><span class="o">=</span><span class="m">5000</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--build-arg<span class="w"> </span><span class="nv">groupname</span><span class="o">=</span>smartem<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-t<span class="w"> </span>smartem-decisions:production<span class="w"> </span>.
+
+<span class="c1"># Tag and push</span>
+docker<span class="w"> </span>tag<span class="w"> </span>smartem-decisions:production<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>ghcr.io/diamondlightsource/smartem-decisions:production
+docker<span class="w"> </span>push<span class="w"> </span>ghcr.io/diamondlightsource/smartem-decisions:production
+</pre></div>
+</div>
+</section>
+</section>
+<section id="kubernetes-deployment-configuration">
+<h2>Kubernetes Deployment Configuration<a class="headerlink" href="#kubernetes-deployment-configuration" title="Link to this heading">#</a></h2>
+<section id="example-http-api-with-custom-user">
+<h3>Example: HTTP API with Custom User<a class="headerlink" href="#example-http-api-with-custom-user" title="Link to this heading">#</a></h3>
+<p>If you’ve built the image with custom UID/GID, deploy it in Kubernetes:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">apps/v1</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Deployment</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">smartem-http-api</span>
+<span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">smartem-decisions-production</span>
+<span class="nt">spec</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">replicas</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3</span>
+<span class="w">  </span><span class="nt">selector</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">matchLabels</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">app</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">smartem-http-api</span>
+<span class="w">  </span><span class="nt">template</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">metadata</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">labels</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">app</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">smartem-http-api</span>
+<span class="w">    </span><span class="nt">spec</span><span class="p">:</span>
+<span class="w">      </span><span class="c1"># Optional: Explicitly set security context to match build args</span>
+<span class="w">      </span><span class="nt">securityContext</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">runAsUser</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5000</span>
+<span class="w">        </span><span class="nt">runAsGroup</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5000</span>
+<span class="w">        </span><span class="nt">fsGroup</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5000</span>
+
+<span class="w">      </span><span class="nt">containers</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">smartem-http-api</span>
+<span class="w">        </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ghcr.io/diamondlightsource/smartem-decisions:production</span>
+
+<span class="w">        </span><span class="c1"># Mount /dls filesystem</span>
+<span class="w">        </span><span class="nt">volumeMounts</span><span class="p">:</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">dls-data</span>
+<span class="w">          </span><span class="nt">mountPath</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/dls</span>
+<span class="w">          </span><span class="nt">readOnly</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+
+<span class="w">        </span><span class="nt">env</span><span class="p">:</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ROLE</span>
+<span class="w">          </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;api&quot;</span>
+<span class="w">        </span><span class="c1"># ... other environment variables ...</span>
+
+<span class="w">      </span><span class="nt">volumes</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">dls-data</span>
+<span class="w">        </span><span class="nt">hostPath</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/dls</span>
+<span class="w">          </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Directory</span>
+</pre></div>
+</div>
+</section>
+<section id="security-context-in-kubernetes">
+<h3>Security Context in Kubernetes<a class="headerlink" href="#security-context-in-kubernetes" title="Link to this heading">#</a></h3>
+<p>While the Dockerfile sets ownership, Kubernetes <code class="docutils literal notranslate"><span class="pre">securityContext</span></code> provides additional enforcement:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">runAsUser</span></code>: Ensures container runs as specific UID</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">runAsGroup</span></code>: Sets primary group ID</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">fsGroup</span></code>: Sets group ownership for mounted volumes</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">runAsNonRoot</span></code>: Enforces non-root execution (Kubernetes validates)</p></li>
+</ul>
+<p>Example with security context:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">spec</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">template</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">spec</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">securityContext</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">runAsNonRoot</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">        </span><span class="nt">runAsUser</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5000</span>
+<span class="w">        </span><span class="nt">runAsGroup</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5000</span>
+<span class="w">        </span><span class="nt">fsGroup</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5000</span>
+<span class="w">      </span><span class="nt">containers</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">smartem-http-api</span>
+<span class="w">        </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ghcr.io/diamondlightsource/smartem-decisions:production</span>
+<span class="w">        </span><span class="nt">securityContext</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">allowPrivilegeEscalation</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+<span class="w">          </span><span class="nt">capabilities</span><span class="p">:</span>
+<span class="w">            </span><span class="nt">drop</span><span class="p">:</span>
+<span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ALL</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="troubleshooting">
+<h2>Troubleshooting<a class="headerlink" href="#troubleshooting" title="Link to this heading">#</a></h2>
+<section id="image-serving-endpoints-return-404">
+<h3>Image Serving Endpoints Return 404<a class="headerlink" href="#image-serving-endpoints-return-404" title="Link to this heading">#</a></h3>
+<p><strong>Symptoms:</strong></p>
+<ul class="simple">
+<li><p>API starts successfully</p></li>
+<li><p>Most endpoints work</p></li>
+<li><p>Image endpoints return 404</p></li>
+</ul>
+<p><strong>Possible causes:</strong></p>
+<ol class="arabic simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">/dls</span></code> not mounted</p></li>
+<li><p>Image paths in database incorrect</p></li>
+<li><p>Permission denied (check with 403/500 errors)</p></li>
+</ol>
+<p><strong>Solution:</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Check if /dls is mounted</span>
+kubectl<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>-it<span class="w"> </span>&lt;pod-name&gt;<span class="w"> </span>--<span class="w"> </span>ls<span class="w"> </span>-la<span class="w"> </span>/dls
+
+<span class="c1"># Check container user</span>
+kubectl<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>-it<span class="w"> </span>&lt;pod-name&gt;<span class="w"> </span>--<span class="w"> </span>id
+
+<span class="c1"># Check file permissions</span>
+kubectl<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>-it<span class="w"> </span>&lt;pod-name&gt;<span class="w"> </span>--<span class="w"> </span>ls<span class="w"> </span>-la<span class="w"> </span>/dls/path/to/images
+</pre></div>
+</div>
+</section>
+<section id="permission-denied-errors">
+<h3>Permission Denied Errors<a class="headerlink" href="#permission-denied-errors" title="Link to this heading">#</a></h3>
+<p><strong>Symptoms:</strong></p>
+<ul class="simple">
+<li><p>Container starts but cannot read files</p></li>
+<li><p>Errors like “Permission denied” in logs</p></li>
+</ul>
+<p><strong>Possible causes:</strong></p>
+<ol class="arabic simple">
+<li><p>UID/GID mismatch between container and filesystem</p></li>
+<li><p>Files owned by different user</p></li>
+</ol>
+<p><strong>Solution:</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Verify container UID/GID</span>
+docker<span class="w"> </span>run<span class="w"> </span>--rm<span class="w"> </span>smartem-decisions:dls<span class="w"> </span>id
+<span class="c1"># Output: uid=5000(smartem) gid=5000(smartem) groups=5000(smartem)</span>
+
+<span class="c1"># Verify filesystem permissions</span>
+ls<span class="w"> </span>-lan<span class="w"> </span>/path/to/dls/data
+<span class="c1"># Ensure UID 5000 has read access</span>
+</pre></div>
+</div>
+</section>
+<section id="container-fails-to-start">
+<h3>Container Fails to Start<a class="headerlink" href="#container-fails-to-start" title="Link to this heading">#</a></h3>
+<p><strong>Symptoms:</strong></p>
+<ul class="simple">
+<li><p>Container exits immediately</p></li>
+<li><p>Error about user creation</p></li>
+</ul>
+<p><strong>Possible causes:</strong></p>
+<ol class="arabic simple">
+<li><p>Invalid UID/GID values</p></li>
+<li><p>Conflicting user/group names</p></li>
+</ol>
+<p><strong>Solution:</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Check build arguments</span>
+docker<span class="w"> </span>inspect<span class="w"> </span>smartem-decisions:dls<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>-A<span class="w"> </span><span class="m">5</span><span class="w"> </span><span class="s2">&quot;Args&quot;</span>
+
+<span class="c1"># Rebuild with correct arguments</span>
+docker<span class="w"> </span>build<span class="w"> </span>--build-arg<span class="w"> </span><span class="nv">groupid</span><span class="o">=</span><span class="m">5000</span><span class="w"> </span>--build-arg<span class="w"> </span><span class="nv">userid</span><span class="o">=</span><span class="m">5000</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--build-arg<span class="w"> </span><span class="nv">groupname</span><span class="o">=</span>smartem<span class="w"> </span>-t<span class="w"> </span>smartem-decisions:dls<span class="w"> </span>.
+</pre></div>
+</div>
+</section>
+</section>
+<section id="best-practices">
+<h2>Best Practices<a class="headerlink" href="#best-practices" title="Link to this heading">#</a></h2>
+<ol class="arabic simple">
+<li><p><strong>Document UID/GID Choices</strong>: Keep a record of which UID/GID is used in each environment</p></li>
+<li><p><strong>Use Consistent Values</strong>: Don’t change UID/GID between builds for the same environment</p></li>
+<li><p><strong>Test Both Modes</strong>: Ensure the application works in both root and non-root modes</p></li>
+<li><p><strong>Validate Permissions</strong>: Before deploying, verify the container user can access required files</p></li>
+<li><p><strong>Plan Volume Mounts</strong>: Design mount strategy before building custom images</p></li>
+<li><p><strong>Monitor Logs</strong>: Watch for permission-related errors during deployment</p></li>
+<li><p><strong>Use Security Context</strong>: Combine Dockerfile user config with Kubernetes securityContext</p></li>
+<li><p><strong>Graceful Degradation</strong>: Ensure the application handles missing <code class="docutils literal notranslate"><span class="pre">/dls</span></code> gracefully</p></li>
+</ol>
+</section>
+<section id="related-documentation">
+<h2>Related Documentation<a class="headerlink" href="#related-documentation" title="Link to this heading">#</a></h2>
+<ul class="simple">
+<li><p><a class="reference internal" href="run-container.html"><span class="std std-doc">Run in a Container</span></a> - Basic container usage</p></li>
+<li><p><a class="reference internal" href="deploy-kubernetes.html"><span class="std std-doc">Kubernetes Deployment</span></a> - Full deployment guide</p></li>
+<li><p><a class="reference internal" href="containerization.html"><span class="std std-doc">Containerization</span></a> - Building and pushing images</p></li>
+<li><p><a class="reference internal" href="manage-kubernetes-secrets.html"><span class="std std-doc">Managing Kubernetes Secrets</span></a> - Secure credential management</p></li>
+</ul>
+</section>
+<section id="references">
+<h2>References<a class="headerlink" href="#references" title="Link to this heading">#</a></h2>
+<ul class="simple">
+<li><p><a class="reference external" href="https://docs.docker.com/engine/reference/builder/#user">Docker USER instruction</a></p></li>
+<li><p><a class="reference external" href="https://kubernetes.io/docs/tasks/configure-pod-container/security-context/">Kubernetes Security Context</a></p></li>
+<li><p><a class="reference external" href="https://docs.docker.com/develop/dev-best-practices/">Best practices for running containers</a></p></li>
+</ul>
+</section>
+</section>
+
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="configure-logging.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">Configure Logging and Verbosity</p>
+      </div>
+    </a>
+    <a class="right-next"
+       href="containerization.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">Containerization</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#overview">Overview</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#why-non-root-users">Why Non-Root Users?</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#build-arguments">Build Arguments</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#default-behavior-root-user">Default Behavior: Root User</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#custom-user-mode-dls-deployment">Custom User Mode: DLS Deployment</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#volume-mounting-considerations">Volume Mounting Considerations</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#the-dls-directory">The /dls Directory</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#when-dls-is-not-mounted">When /dls is Not Mounted</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#optional-mount-strategy">Optional Mount Strategy</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#image-serving-endpoints">Image Serving Endpoints</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#security-considerations">Security Considerations</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#principle-of-least-privilege">Principle of Least Privilege</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#choosing-uid-gid">Choosing UID/GID</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#file-ownership">File Ownership</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#building-for-different-environments">Building for Different Environments</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#local-development">Local Development</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#ci-cd-pipeline">CI/CD Pipeline</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#staging-environment">Staging Environment</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#production-environment">Production Environment</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#kubernetes-deployment-configuration">Kubernetes Deployment Configuration</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#example-http-api-with-custom-user">Example: HTTP API with Custom User</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#security-context-in-kubernetes">Security Context in Kubernetes</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#troubleshooting">Troubleshooting</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#image-serving-endpoints-return-404">Image Serving Endpoints Return 404</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#permission-denied-errors">Permission Denied Errors</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#container-fails-to-start">Container Fails to Start</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#best-practices">Best Practices</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#related-documentation">Related Documentation</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#references">References</a></li>
+</ul>
+  </nav></div>
+
+  <div class="sidebar-secondary-item">
+
+  
+  <div class="tocsection editthispage">
+    <a href="https://github.com/DiamondLightSource/smartem-decisions/edit/main/docs/how-to/container-user-configuration.md">
+      <i class="fa-solid fa-pencil"></i>
+      
+      
+        
+          Edit on GitHub
+        
+      
+    </a>
+  </div>
+</div>
+
+  <div class="sidebar-secondary-item">
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/how-to/container-user-configuration.md.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div></div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf"></script>
+<script defer src="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.16.1.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>
