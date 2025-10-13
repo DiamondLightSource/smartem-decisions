@@ -56,8 +56,8 @@ client = [
     "psycopg2-binary>=2.9.10,<3.0.0",
     "sqlmodel>=0.0.24,<1.0.0",
     "alembic>=1.13.0,<2.0.0",
-    "numpy>=2.0.0,<2.3.0",
-    "scipy>=1.0.0,<1.16.0",
+    "numpy>=2.0.0,<2.4.0",
+    "scipy>=1.0.0,<1.17.0",
 ]
 
 # CLI and general utilities
