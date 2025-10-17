@@ -480,6 +480,10 @@ class RateLimitedFilesystemEventHandler(FileSystemEventHandler):
 
             self.datastore.create_grid(grid, path_mapper=self.path_mapper)
 
+            # Process any orphaned files that may belong to this newly created grid
+            self._process_orphaned_files(grid.uuid)
+            return
+
         # try to work out which grid the touched file relates to
         grid_uuid = self.datastore.get_grid_by_path(event.src_path)
         if grid_uuid is None:
@@ -522,17 +526,18 @@ class RateLimitedFilesystemEventHandler(FileSystemEventHandler):
 
     def _process_orphaned_files(self, grid_uuid: str):
         """Process any orphaned files that belong to this grid"""
-        for path, (event, _timestamp, _file_stat) in self.orphaned_files.items():
+        for path_str, (event, _timestamp, _file_stat) in self.orphaned_files.items():
+            resolved_path = str(Path(path_str).resolve())
             # Check if this orphaned file belongs to the new grid
-            if self.datastore.get_grid_by_path(path) == grid_uuid:
-                logging.debug(f"Processing previously orphaned file: {path}")
+            if self.datastore.get_grid_by_path(resolved_path) == grid_uuid:
+                logging.debug(f"Processing previously orphaned file: {path_str}")
                 self.on_any_event(event)  # Process the file as if we just received the event
 
         # Create a new dictionary excluding the processed files
         self.orphaned_files = {
-            path: data
-            for path, data in self.orphaned_files.items()
-            if self.datastore.get_grid_by_path(path) != grid_uuid
+            path_str: data
+            for path_str, data in self.orphaned_files.items()
+            if self.datastore.get_grid_by_path(str(Path(path_str).resolve())) != grid_uuid
         }
 
     def _on_atlas_detected(self, path: str, grid_uuid: str, is_new_file: bool = True):
