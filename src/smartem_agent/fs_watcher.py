@@ -531,6 +531,8 @@ class RateLimitedFilesystemEventHandler(FileSystemEventHandler):
             # Check if this orphaned file belongs to the new grid
             if self.datastore.get_grid_by_path(resolved_path) == grid_uuid:
                 logging.debug(f"Processing previously orphaned file: {path_str}")
+                # Remove from changed_files so it will be processed as a new file
+                self.changed_files.pop(path_str, None)
                 self.on_any_event(event)  # Process the file as if we just received the event
 
         # Create a new dictionary excluding the processed files
