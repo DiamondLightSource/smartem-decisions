@@ -7,7 +7,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>smartem_backend.model.database &#8212; smartem-decisions 0.1.dev374+g8636ba9c0.d20251019 documentation</title>
+    <title>smartem_backend.model.database &#8212; smartem-decisions 0.1.dev378+g306734cba.d20251020 documentation</title>
   
   
   
@@ -40,7 +40,7 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../../../_static/documentation_options.js?v=e5fae776"></script>
+    <script src="../../../_static/documentation_options.js?v=e69c0609"></script>
     <script src="../../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -710,7 +710,7 @@
     <span class="n">value_sum</span><span class="p">:</span> <span class="nb">float</span>
     <span class="n">squared_value_sum</span><span class="p">:</span> <span class="nb">float</span>
     <span class="n">metric</span><span class="p">:</span> <span class="n">QualityMetric</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n">Relationship</span><span class="p">(</span><span class="n">back_populates</span><span class="o">=</span><span class="s2">&quot;statistics&quot;</span><span class="p">)</span>
-    <span class="n">grid</span><span class="p">:</span> <span class="n">Grid</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n">Relationship</span><span class="p">(</span><span class="n">back_populates</span><span class="o">=</span><span class="s2">&quot;quality_metric_statistics&quot;</span><span class="p">)</span>
+    <span class="n">grid</span><span class="p">:</span> <span class="n">Grid</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n">Relationship</span><span class="p">(</span><span class="n">back_populates</span><span class="o">=</span><span class="s2">&quot;current_metric_statistics&quot;</span><span class="p">)</span>
 
 
 <span class="k">class</span><span class="w"> </span><span class="nc">QualityPredictionModelParameter</span><span class="p">(</span><span class="n">SQLModel</span><span class="p">,</span> <span class="n">table</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
@@ -780,9 +780,9 @@
     <span class="n">metric_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">foreign_key</span><span class="o">=</span><span class="s2">&quot;qualitymetric.name&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
     <span class="n">foilhole_uuid</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">foreign_key</span><span class="o">=</span><span class="s2">&quot;foilhole.uuid&quot;</span><span class="p">)</span>
     <span class="n">gridsquare_uuid</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">foreign_key</span><span class="o">=</span><span class="s2">&quot;gridsquare.uuid&quot;</span><span class="p">)</span>
-    <span class="n">foilhole</span><span class="p">:</span> <span class="n">FoilHole</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n">Relationship</span><span class="p">(</span><span class="n">back_populates</span><span class="o">=</span><span class="s2">&quot;prediction&quot;</span><span class="p">)</span>
-    <span class="n">gridsquare</span><span class="p">:</span> <span class="n">GridSquare</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n">Relationship</span><span class="p">(</span><span class="n">back_populates</span><span class="o">=</span><span class="s2">&quot;prediction&quot;</span><span class="p">)</span>
-    <span class="n">model</span><span class="p">:</span> <span class="n">QualityPredictionModel</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n">Relationship</span><span class="p">(</span><span class="n">back_populates</span><span class="o">=</span><span class="s2">&quot;predictions&quot;</span><span class="p">)</span>
+    <span class="n">foilhole</span><span class="p">:</span> <span class="n">FoilHole</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n">Relationship</span><span class="p">(</span><span class="n">back_populates</span><span class="o">=</span><span class="s2">&quot;current_prediction&quot;</span><span class="p">)</span>
+    <span class="n">gridsquare</span><span class="p">:</span> <span class="n">GridSquare</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n">Relationship</span><span class="p">(</span><span class="n">back_populates</span><span class="o">=</span><span class="s2">&quot;current_prediction&quot;</span><span class="p">)</span>
+    <span class="n">model</span><span class="p">:</span> <span class="n">QualityPredictionModel</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n">Relationship</span><span class="p">(</span><span class="n">back_populates</span><span class="o">=</span><span class="s2">&quot;current_predictions&quot;</span><span class="p">)</span>
     <span class="n">metric</span><span class="p">:</span> <span class="n">QualityMetric</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n">Relationship</span><span class="p">(</span><span class="n">back_populates</span><span class="o">=</span><span class="s2">&quot;current_predictions&quot;</span><span class="p">)</span>
     <span class="n">grid</span><span class="p">:</span> <span class="n">Grid</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n">Relationship</span><span class="p">(</span><span class="n">back_populates</span><span class="o">=</span><span class="s2">&quot;current_quality_predictions&quot;</span><span class="p">)</span>
 

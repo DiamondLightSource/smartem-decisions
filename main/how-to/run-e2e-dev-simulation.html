@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Run an end-to-end simulation in development &#8212; smartem-decisions 0.1.dev374+g8636ba9c0.d20251019 documentation</title>
+    <title>End-to-End Development Test Runs &#8212; smartem-decisions 0.1.dev378+g306734cba.d20251020 documentation</title>
   
   
   
@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../_static/documentation_options.js?v=e5fae776"></script>
+    <script src="../_static/documentation_options.js?v=e69c0609"></script>
     <script src="../_static/doctools.js?v=9bcbadda"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -410,7 +410,7 @@
 <li class="toctree-l1"><a class="reference internal" href="run-agent.html">Run SmartEM Agent (EPU Agent)</a></li>
 <li class="toctree-l1"><a class="reference internal" href="run-backend.html">Run SmartEM Backend</a></li>
 <li class="toctree-l1"><a class="reference internal" href="run-container.html">Run in a container</a></li>
-<li class="toctree-l1 current active"><a class="current reference internal" href="#">Run an end-to-end simulation in development</a></li>
+<li class="toctree-l1 current active"><a class="current reference internal" href="#">End-to-End Development Test Runs</a></li>
 <li class="toctree-l1"><a class="reference internal" href="troubleshoot-cli.html">SmartEM CLI Troubleshooting Guide</a></li>
 <li class="toctree-l1"><a class="reference internal" href="use-core-http-api-client.html">How to Use the SmartEM API Client</a></li>
 <li class="toctree-l1"><a class="reference internal" href="use-mcp-interface.html">Using SmartEM MCP Interface</a></li>
@@ -457,7 +457,7 @@
     
     <li class="breadcrumb-item"><a href="../how-to.html" class="nav-link">How-to Guides</a></li>
     
-    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Run an end-to-end simulation in development</span></li>
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">End-to-End Development Test Runs</span></li>
   </ul>
 </nav>
 </div>
@@ -474,196 +474,641 @@
 <div id="searchbox"></div>
                 <article class="bd-article">
                   
-  <section id="run-an-end-to-end-simulation-in-development">
-<h1>Run an end-to-end simulation in development<a class="headerlink" href="#run-an-end-to-end-simulation-in-development" title="Link to this heading">#</a></h1>
-<p>To simulate all system components running together in a development environment, follow these steps in order. Each component should be run in a separate terminal tab/window and left running in the background.</p>
+  <section id="end-to-end-development-test-runs">
+<h1>End-to-End Development Test Runs<a class="headerlink" href="#end-to-end-development-test-runs" title="Link to this heading">#</a></h1>
+<p>This document describes the complete workflow for running repeatable end-to-end tests of the SmartEM system using pre-recorded microscope sessions. It serves as both a runbook for executing tests and a reference for understanding test requirements.</p>
+<section id="quick-start-resume-from-previous-session">
+<h2>Quick Start (Resume from Previous Session)<a class="headerlink" href="#quick-start-resume-from-previous-session" title="Link to this heading">#</a></h2>
+<p>If you’ve already set up once and just need to run another test:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># 1. Ensure k3s is running</span>
+./tools/dev-k8s.sh<span class="w"> </span>status
+
+<span class="c1"># 2. Prepare clean environment</span>
+<span class="nb">unset</span><span class="w"> </span>POSTGRES_HOST<span class="w"> </span>POSTGRES_PORT<span class="w"> </span>POSTGRES_DB<span class="w"> </span>POSTGRES_USER<span class="w"> </span>POSTGRES_PASSWORD
+<span class="nb">unset</span><span class="w"> </span>RABBITMQ_HOST<span class="w"> </span>RABBITMQ_PORT<span class="w"> </span>RABBITMQ_USER<span class="w"> </span>RABBITMQ_PASSWORD
+<span class="nb">unset</span><span class="w"> </span>HTTP_API_HOST<span class="w"> </span>HTTP_API_PORT
+<span class="nb">set</span><span class="w"> </span>-a<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="nb">source</span><span class="w"> </span>.env.local-test-run<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="nb">set</span><span class="w"> </span>+a
+
+<span class="c1"># 3. Create timestamped test directory</span>
+<span class="nv">TEST_DIR</span><span class="o">=</span><span class="s2">&quot;/tmp/e2e-test-results/</span><span class="k">$(</span>date<span class="w"> </span>+%Y-%m-%d_%H%M%S<span class="k">)</span><span class="s2">_test-type-name&quot;</span>
+mkdir<span class="w"> </span>-p<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$TEST_DIR</span><span class="s2">/logs&quot;</span>
+
+<span class="c1"># 4. Kill any running processes</span>
+pkill<span class="w"> </span>-f<span class="w"> </span><span class="s2">&quot;smartem_backend\|smartem_agent\|fsrecorder\|uvicorn\|fastapi&quot;</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="nb">true</span>
+
+<span class="c1"># 5. Restart RabbitMQ (ensures empty queue)</span>
+kubectl<span class="w"> </span>rollout<span class="w"> </span>restart<span class="w"> </span>deployment/rabbitmq<span class="w"> </span>-n<span class="w"> </span>smartem-decisions
+kubectl<span class="w"> </span>rollout<span class="w"> </span>status<span class="w"> </span>deployment/rabbitmq<span class="w"> </span>-n<span class="w"> </span>smartem-decisions
+
+<span class="c1"># 6. Reset database</span>
+<span class="nb">source</span><span class="w"> </span>.venv/bin/activate
+python<span class="w"> </span>-m<span class="w"> </span>smartem_backend.model.database
+
+<span class="c1"># 7. Clean playback directory</span>
+rm<span class="w"> </span>-rf<span class="w"> </span>../epu-test-dir<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>mkdir<span class="w"> </span>-p<span class="w"> </span>../epu-test-dir
+
+<span class="c1"># 8. Start services (choose a test type below, or see Test Execution Scenarios section)</span>
+<span class="c1"># Example: Test Type 1 - Post-acquisition</span>
+python<span class="w"> </span>-m<span class="w"> </span>fastapi<span class="w"> </span>dev<span class="w"> </span>src/smartem_backend/api_server.py<span class="w"> </span>--host<span class="w"> </span><span class="m">127</span>.0.0.1<span class="w"> </span>--port<span class="w"> </span><span class="m">8000</span><span class="w"> </span><span class="m">2</span>&gt;<span class="p">&amp;</span><span class="m">1</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>tee<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$TEST_DIR</span><span class="s2">/logs/api.log&quot;</span><span class="w"> </span><span class="p">&amp;</span>
+python<span class="w"> </span>-m<span class="w"> </span>smartem_backend.consumer<span class="w"> </span>-vv<span class="w"> </span><span class="m">2</span>&gt;<span class="p">&amp;</span><span class="m">1</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>tee<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$TEST_DIR</span><span class="s2">/logs/consumer.log&quot;</span><span class="w"> </span><span class="p">&amp;</span>
+sleep<span class="w"> </span><span class="m">3</span>
+
+<span class="c1"># Run playback (default is --fast mode, no flag needed)</span>
+python<span class="w"> </span>./tools/fsrecorder/fsrecorder.py<span class="w"> </span>replay<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>~/dev/DLS/smartem-decisions-test-recordings/bi37708-42_fsrecord.tar.gz<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>../epu-test-dir<span class="w"> </span><span class="m">2</span>&gt;<span class="p">&amp;</span><span class="m">1</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>tee<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$TEST_DIR</span><span class="s2">/logs/playback.log&quot;</span>
+
+<span class="c1"># Start agent after playback completes</span>
+python<span class="w"> </span>-m<span class="w"> </span>smartem_agent<span class="w"> </span>watch<span class="w"> </span>--api-url<span class="w"> </span>http://localhost:8000<span class="w"> </span>-vv<span class="w"> </span>../epu-test-dir<span class="w"> </span><span class="m">2</span>&gt;<span class="p">&amp;</span><span class="m">1</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>tee<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$TEST_DIR</span><span class="s2">/logs/agent.log&quot;</span>
+</pre></div>
+</div>
+<p><strong>For detailed explanations, first-time setup, or different test scenarios, see sections below.</strong></p>
+</section>
+<hr class="docutils" />
+<section id="overview">
+<h2>Overview<a class="headerlink" href="#overview" title="Link to this heading">#</a></h2>
+<p>The test setup simulates a complete SmartEM workflow:</p>
+<ul class="simple">
+<li><p><strong>Local k3s cluster</strong>: Runs PostgreSQL and RabbitMQ services</p></li>
+<li><p><strong>Host OS services</strong>: Runs SmartEM backend API and worker for easier debugging</p></li>
+<li><p><strong>Microscope simulation</strong>: Plays back pre-recorded microscopy sessions</p></li>
+<li><p><strong>Agent monitoring</strong>: SmartEM agent watches for file changes and processes data</p></li>
+</ul>
+</section>
 <section id="prerequisites">
 <h2>Prerequisites<a class="headerlink" href="#prerequisites" title="Link to this heading">#</a></h2>
-<ol class="arabic">
-<li><p><strong>Activate virtual environment</strong> in every terminal before proceeding:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">source</span><span class="w"> </span>.venv/bin/activate
-</pre></div>
-</div>
-</li>
-<li><p><strong>Verify test recordings exist</strong>:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>ls<span class="w"> </span>-la<span class="w"> </span>../smartem-decisions-test-recordings/
-</pre></div>
-</div>
-<p>Available recordings:</p>
+<section id="environment-setup">
+<h3>Environment Setup<a class="headerlink" href="#environment-setup" title="Link to this heading">#</a></h3>
+<ul class="simple">
+<li><p>Python 3.12+ with venv activated: <code class="docutils literal notranslate"><span class="pre">source</span> <span class="pre">.venv/bin/activate</span></code></p></li>
+<li><p>Full development install: <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">-e</span> <span class="pre">.[all]</span></code></p></li>
+<li><p>Local k3s cluster running: <code class="docutils literal notranslate"><span class="pre">./tools/dev-k8s.sh</span> <span class="pre">up</span></code></p></li>
+<li><p>Environment file: <code class="docutils literal notranslate"><span class="pre">.env.local-test-run</span></code> (created manually - see Environment File Setup below)</p></li>
+</ul>
+</section>
+<section id="test-data">
+<h3>Test Data<a class="headerlink" href="#test-data" title="Link to this heading">#</a></h3>
+<p>Pre-recorded microscope sessions are stored in <code class="docutils literal notranslate"><span class="pre">~/dev/DLS/smartem-decisions-test-recordings/</span></code>:</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">bi37600-29_fsrecord.tar.gz</span></code></p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">bi37708-42_fsrecord.tar.gz</span></code> (recommended for testing)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">bi37708-42_fsrecord.tar.gz</span></code> (recommended for testing, 8389 events)</p></li>
 </ul>
-</li>
-<li><p><strong>Prepare output directory</strong> for playback:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>mkdir<span class="w"> </span>-p<span class="w"> </span>../epu-test-dir
+<p><strong>Note</strong>: Path should be absolute or relative to working directory (<code class="docutils literal notranslate"><span class="pre">smartem-decisions/</span></code>)</p>
+</section>
+<section id="directory-structure">
+<h3>Directory Structure<a class="headerlink" href="#directory-structure" title="Link to this heading">#</a></h3>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">/</span><span class="n">tmp</span><span class="o">/</span><span class="n">e2e</span><span class="o">-</span><span class="n">test</span><span class="o">-</span><span class="n">results</span><span class="o">/</span>           <span class="c1"># Test results root (gitignored)</span>
+  <span class="n">YYYY</span><span class="o">-</span><span class="n">MM</span><span class="o">-</span><span class="n">DD_HHmmss_test</span><span class="o">-</span><span class="nb">type</span><span class="o">/</span>   <span class="c1"># Individual test run</span>
+    <span class="n">logs</span><span class="o">/</span>                        <span class="c1"># All log outputs (4 services)</span>
+      <span class="n">playback</span><span class="o">.</span><span class="n">log</span>               <span class="c1"># Microscope recording playback</span>
+      <span class="n">agent</span><span class="o">.</span><span class="n">log</span>                  <span class="c1"># SmartEM agent</span>
+      <span class="n">api</span><span class="o">.</span><span class="n">log</span>                    <span class="c1"># Backend HTTP API</span>
+      <span class="n">consumer</span><span class="o">.</span><span class="n">log</span>               <span class="c1"># Backend worker/consumer</span>
+    <span class="n">db</span><span class="o">-</span><span class="n">dump</span><span class="o">.</span><span class="n">sql</span>                  <span class="c1"># Database state after test</span>
+    <span class="n">test</span><span class="o">-</span><span class="n">params</span><span class="o">.</span><span class="n">json</span>             <span class="c1"># Test configuration used</span>
 </pre></div>
 </div>
-</li>
+</section>
+<section id="environment-file-setup">
+<h3>Environment File Setup<a class="headerlink" href="#environment-file-setup" title="Link to this heading">#</a></h3>
+<p>The <code class="docutils literal notranslate"><span class="pre">.env.local-test-run</span></code> file configures services to run on host OS while connecting to k3s infrastructure.</p>
+<p><strong>Source for initial values</strong>: Copy from <code class="docutils literal notranslate"><span class="pre">.dev.env</span></code> (used by <code class="docutils literal notranslate"><span class="pre">./tools/dev-k8s.sh</span></code> for development cluster)</p>
+<p><strong>Required configuration</strong>:</p>
+<ul class="simple">
+<li><p>PostgreSQL: Point to k3s NodePort <code class="docutils literal notranslate"><span class="pre">localhost:30432</span></code></p></li>
+<li><p>RabbitMQ: Point to k3s NodePort <code class="docutils literal notranslate"><span class="pre">localhost:30672</span></code></p></li>
+<li><p>Backend API: Run on host OS (typically <code class="docutils literal notranslate"><span class="pre">127.0.0.1:8000</span></code>)</p></li>
+<li><p>Agent: Run on host OS</p></li>
+</ul>
+<p><strong>Example <code class="docutils literal notranslate"><span class="pre">.env.local-test-run</span></code></strong>:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Database connection (k3s NodePort)</span>
+<span class="nv">POSTGRES_HOST</span><span class="o">=</span>localhost
+<span class="nv">POSTGRES_PORT</span><span class="o">=</span><span class="m">30432</span>
+<span class="nv">POSTGRES_DB</span><span class="o">=</span>smartem_db
+<span class="nv">POSTGRES_USER</span><span class="o">=</span>username
+<span class="nv">POSTGRES_PASSWORD</span><span class="o">=</span>password
+
+<span class="c1"># RabbitMQ connection (k3s NodePort)</span>
+<span class="nv">RABBITMQ_HOST</span><span class="o">=</span>localhost
+<span class="nv">RABBITMQ_PORT</span><span class="o">=</span><span class="m">30672</span>
+<span class="nv">RABBITMQ_USER</span><span class="o">=</span>guest
+<span class="nv">RABBITMQ_PASSWORD</span><span class="o">=</span>guest
+
+<span class="c1"># Backend API (host OS)</span>
+<span class="nv">HTTP_API_HOST</span><span class="o">=</span><span class="m">127</span>.0.0.1
+<span class="nv">HTTP_API_PORT</span><span class="o">=</span><span class="m">8000</span>
+</pre></div>
+</div>
+<p><strong>Usage</strong>: <code class="docutils literal notranslate"><span class="pre">source</span> <span class="pre">.env.local-test-run</span></code> before starting services</p>
+</section>
+</section>
+<section id="database-operations">
+<h2>Database Operations<a class="headerlink" href="#database-operations" title="Link to this heading">#</a></h2>
+<section id="creating-fresh-database">
+<h3>Creating Fresh Database<a class="headerlink" href="#creating-fresh-database" title="Link to this heading">#</a></h3>
+<p>Run <code class="docutils literal notranslate"><span class="pre">database.py</span></code> to drop all tables and recreate schema with indexes:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">source</span><span class="w"> </span>.venv/bin/activate
+python<span class="w"> </span>-m<span class="w"> </span>smartem_backend.model.database
+</pre></div>
+</div>
+<p><strong>Note</strong>: This script uses <code class="docutils literal notranslate"><span class="pre">_create_db_and_tables()</span></code> which:</p>
+<ol class="arabic simple">
+<li><p>Drops all existing tables and custom enum types</p></li>
+<li><p>Creates all tables from SQLModel definitions</p></li>
+<li><p>Creates all indexes for optimal query performance</p></li>
+<li><p>Does NOT require Alembic migrations</p></li>
 </ol>
 </section>
-<section id="step-1-launch-backend-infrastructure-services">
-<h2>Step 1: Launch backend infrastructure services<a class="headerlink" href="#step-1-launch-backend-infrastructure-services" title="Link to this heading">#</a></h2>
-<p>Deploy PostgreSQL, RabbitMQ, and containerised API/worker services:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>./tools/dev-k8s.sh<span class="w"> </span>up
-</pre></div>
-</div>
-<p><strong>Expected output</strong>: All pods should show as “Running” with services accessible on:</p>
-<ul class="simple">
-<li><p>SmartEM API: http://localhost:30080/docs</p></li>
-<li><p>RabbitMQ Management: http://localhost:30673</p></li>
-<li><p>Adminer Database UI: http://localhost:30808</p></li>
-</ul>
-<p><strong>Verification</strong>:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>curl<span class="w"> </span>-s<span class="w"> </span>http://localhost:30080/status
-</pre></div>
-</div>
-</section>
-<section id="step-2-launch-local-consumer-optional">
-<h2>Step 2: Launch local consumer (optional)<a class="headerlink" href="#step-2-launch-local-consumer-optional" title="Link to this heading">#</a></h2>
-<p>If you want to run a local consumer instead of the containerised worker:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nv">RABBITMQ_URL</span><span class="o">=</span>amqp://guest:guest@localhost:30672/<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>smartem_backend.consumer<span class="w">  </span><span class="c1"># pragma: allowlist secret</span>
-</pre></div>
-</div>
-<p><strong>Note</strong>: The containerised deployment already includes a worker, so this step is optional.</p>
-</section>
-<section id="step-3-launch-smartem-agent-in-watch-mode">
-<h2>Step 3: Launch SmartEM agent in watch mode<a class="headerlink" href="#step-3-launch-smartem-agent-in-watch-mode" title="Link to this heading">#</a></h2>
-<p>Configure the agent to connect to the containerised API:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>-m<span class="w"> </span>smartem_agent<span class="w"> </span>watch<span class="w"> </span>--api-url<span class="w"> </span>http://localhost:30080<span class="w"> </span>../epu-test-dir
-</pre></div>
-</div>
-<p><strong>Expected output</strong>:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">INFO</span> <span class="o">-</span> <span class="n">Initialized</span> <span class="n">SmartEM</span> <span class="n">API</span> <span class="n">client</span> <span class="k">with</span> <span class="n">base</span> <span class="n">URL</span><span class="p">:</span> <span class="n">http</span><span class="p">:</span><span class="o">//</span><span class="n">localhost</span><span class="p">:</span><span class="mi">30080</span>
-<span class="n">INFO</span> <span class="o">-</span> <span class="n">API</span> <span class="ow">is</span> <span class="n">reachable</span> <span class="n">at</span> <span class="n">http</span><span class="p">:</span><span class="o">//</span><span class="n">localhost</span><span class="p">:</span><span class="mi">30080</span> <span class="o">-</span> <span class="n">Status</span><span class="p">:</span> <span class="o">...</span>
-</pre></div>
-</div>
-</section>
-<section id="step-4-start-session-recording-playback">
-<h2>Step 4: Start session recording playback<a class="headerlink" href="#step-4-start-session-recording-playback" title="Link to this heading">#</a></h2>
-<p>Begin the microscopy data simulation:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>./tools/fsrecorder/fsrecorder.py<span class="w"> </span>replay<span class="w"> </span>../smartem-decisions-test-recordings/bi37708-42_fsrecord.tar.gz<span class="w"> </span>../epu-test-dir/<span class="w"> </span><span class="p">|</span><span class="w"> </span>tee<span class="w"> </span>epu-test-dir.log
-</pre></div>
-</div>
-<p><strong>Expected behaviour</strong>:</p>
-<ul class="simple">
-<li><p>Progress updates showing file creation events</p></li>
-<li><p>Files being created in <code class="docutils literal notranslate"><span class="pre">../epu-test-dir/atlas/...</span></code></p></li>
-<li><p>SmartEM agent detecting file changes and sending data to API</p></li>
-<li><p>Database records being created (visible via API endpoints)</p></li>
-</ul>
-</section>
-<section id="step-5-run-external-message-simulator-complete-feedback-loop">
-<h2>Step 5: Run external message simulator (complete feedback loop)<a class="headerlink" href="#step-5-run-external-message-simulator-complete-feedback-loop" title="Link to this heading">#</a></h2>
-<p>Start the external message simulator to send processing results that trigger agent instructions:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>tools/external_message_simulator.py<span class="w"> </span>workflow-simulation<span class="w"> </span>--delay<span class="w"> </span><span class="m">3</span>.0
-</pre></div>
-</div>
-<p><strong>Alternative simulation options</strong>:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Send specific message types</span>
-python<span class="w"> </span>tools/external_message_simulator.py<span class="w"> </span>gridsquare-prediction<span class="w"> </span>--count<span class="w"> </span><span class="m">3</span>
-python<span class="w"> </span>tools/external_message_simulator.py<span class="w"> </span>foilhole-prediction<span class="w"> </span>--count<span class="w"> </span><span class="m">2</span>
+<section id="connecting-to-database">
+<h3>Connecting to Database<a class="headerlink" href="#connecting-to-database" title="Link to this heading">#</a></h3>
+<p>From host OS (using k3s NodePort mappings):</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Connection details (from .env.local-test-run)</span>
+<span class="nv">POSTGRES_HOST</span><span class="o">=</span>localhost
+<span class="nv">POSTGRES_PORT</span><span class="o">=</span><span class="m">30432</span>
+<span class="nv">POSTGRES_DB</span><span class="o">=</span>smartem_db
+<span class="nv">POSTGRES_USER</span><span class="o">=</span>username
+<span class="nv">POSTGRES_PASSWORD</span><span class="o">=</span>password
 
-<span class="c1"># Batch simulation with different quality scenarios</span>
-python<span class="w"> </span>tools/external_message_simulator.py<span class="w"> </span>batch-simulation<span class="w"> </span>--gridsquare-count<span class="w"> </span><span class="m">5</span><span class="w"> </span>--scenario<span class="w"> </span>mixed
+<span class="c1"># Example: Dump database for test results</span>
+pg_dump<span class="w"> </span>-h<span class="w"> </span>localhost<span class="w"> </span>-p<span class="w"> </span><span class="m">30432</span><span class="w"> </span>-U<span class="w"> </span>username<span class="w"> </span>-d<span class="w"> </span>smartem_db<span class="w"> </span>&gt;<span class="w"> </span>/tmp/e2e-test-results/TIMESTAMP/db-dump.sql
 </pre></div>
 </div>
-<p><strong>Expected behaviour</strong>:</p>
+</section>
+</section>
+<section id="rabbitmq-queue-management">
+<h2>RabbitMQ Queue Management<a class="headerlink" href="#rabbitmq-queue-management" title="Link to this heading">#</a></h2>
+<section id="queue-behaviour">
+<h3>Queue Behaviour<a class="headerlink" href="#queue-behaviour" title="Link to this heading">#</a></h3>
 <ul class="simple">
-<li><p>External simulator publishes messages to RabbitMQ</p></li>
-<li><p>Backend consumer processes messages and transforms them</p></li>
-<li><p>Agent receives instructions via SSE (Server-Sent Events)</p></li>
-<li><p>Agent logs show received instructions and decision-making</p></li>
-<li><p>Complete feedback loop: files → processing → ML results → agent instructions</p></li>
+<li><p>Queue name: <code class="docutils literal notranslate"><span class="pre">smartem_backend</span></code> (configured in <code class="docutils literal notranslate"><span class="pre">src/smartem_backend/appconfig.yml</span></code>)</p></li>
+<li><p>Queue is declared with <code class="docutils literal notranslate"><span class="pre">durable=True</span></code> by both publisher and consumer</p></li>
+<li><p>Queue persists across reconnections but NOT across RabbitMQ service restarts</p></li>
+<li><p><strong>Important</strong>: Queue is NOT recreated empty on each connection - existing messages persist</p></li>
 </ul>
 </section>
-<section id="monitoring-the-simulation">
-<h2>Monitoring the simulation<a class="headerlink" href="#monitoring-the-simulation" title="Link to this heading">#</a></h2>
-<ol class="arabic">
-<li><p><strong>Check API status and data</strong>:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>curl<span class="w"> </span>-s<span class="w"> </span>http://localhost:30080/status<span class="w"> </span><span class="p">|</span><span class="w"> </span>jq
-curl<span class="w"> </span>-s<span class="w"> </span>http://localhost:30080/acquisitions<span class="w"> </span><span class="p">|</span><span class="w"> </span>jq
+<section id="verifying-queue-state">
+<h3>Verifying Queue State<a class="headerlink" href="#verifying-queue-state" title="Link to this heading">#</a></h3>
+<p>Access RabbitMQ management UI:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># RabbitMQ management interface (if enabled in k3s)</span>
+<span class="c1"># Check k8s service for management UI port mapping</span>
+<span class="c1"># Default credentials: guest/guest  # pragma: allowlist secret</span>
 </pre></div>
 </div>
-</li>
-<li><p><strong>Monitor file system activity</strong>:</p>
+</section>
+<section id="cleaning-queue-between-tests">
+<h3>Cleaning Queue Between Tests<a class="headerlink" href="#cleaning-queue-between-tests" title="Link to this heading">#</a></h3>
+<p><strong>Option 1</strong>: Restart RabbitMQ service (recommended for clean state):</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>kubectl<span class="w"> </span>rollout<span class="w"> </span>restart<span class="w"> </span>deployment/rabbitmq<span class="w"> </span>-n<span class="w"> </span>smartem-decisions
+kubectl<span class="w"> </span>rollout<span class="w"> </span>status<span class="w"> </span>deployment/rabbitmq<span class="w"> </span>-n<span class="w"> </span>smartem-decisions
+</pre></div>
+</div>
+<p><strong>Option 2</strong>: Purge queue programmatically (if needed):</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Add to teardown script if queue purging is required</span>
+<span class="c1"># This would need to be implemented in utils.py</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="service-commands">
+<h2>Service Commands<a class="headerlink" href="#service-commands" title="Link to this heading">#</a></h2>
+<p><strong>IMPORTANT - Environment Variables</strong>:
+All services use <code class="docutils literal notranslate"><span class="pre">load_dotenv(override=False)</span></code> which loads <code class="docutils literal notranslate"><span class="pre">.env</span></code> by default but doesn’t override already-set variables.
+For testing, you MUST export variables from <code class="docutils literal notranslate"><span class="pre">.env.local-test-run</span></code> before starting services:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Unset any previously loaded env vars to avoid conflicts</span>
+<span class="nb">unset</span><span class="w"> </span>POSTGRES_HOST<span class="w"> </span>POSTGRES_PORT<span class="w"> </span>POSTGRES_DB<span class="w"> </span>POSTGRES_USER<span class="w"> </span>POSTGRES_PASSWORD
+<span class="nb">unset</span><span class="w"> </span>RABBITMQ_HOST<span class="w"> </span>RABBITMQ_PORT<span class="w"> </span>RABBITMQ_USER<span class="w"> </span>RABBITMQ_PASSWORD
+<span class="nb">unset</span><span class="w"> </span>HTTP_API_HOST<span class="w"> </span>HTTP_API_PORT
+
+<span class="c1"># Load test environment (exports all variables)</span>
+<span class="nb">set</span><span class="w"> </span>-a
+<span class="nb">source</span><span class="w"> </span>.env.local-test-run
+<span class="nb">set</span><span class="w"> </span>+a
+</pre></div>
+</div>
+<section id="backend-http-api">
+<h3>Backend HTTP API<a class="headerlink" href="#backend-http-api" title="Link to this heading">#</a></h3>
+<p><strong>Option 1: FastAPI CLI (recommended for development)</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">source</span><span class="w"> </span>.venv/bin/activate
+python<span class="w"> </span>-m<span class="w"> </span>fastapi<span class="w"> </span>dev<span class="w"> </span>src/smartem_backend/api_server.py<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--host<span class="w"> </span><span class="m">127</span>.0.0.1<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--port<span class="w"> </span><span class="m">8000</span><span class="w"> </span><span class="m">2</span>&gt;<span class="p">&amp;</span><span class="m">1</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>tee<span class="w"> </span>/tmp/e2e-test-results/TIMESTAMP/logs/api.log
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>Auto-reload on code changes</p></li>
+<li><p>Default development mode</p></li>
+<li><p>Clean output</p></li>
+</ul>
+<p><strong>Option 2: Uvicorn (more control over logging)</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">source</span><span class="w"> </span>.venv/bin/activate
+python<span class="w"> </span>-m<span class="w"> </span>uvicorn<span class="w"> </span>smartem_backend.api_server:app<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--host<span class="w"> </span><span class="m">127</span>.0.0.1<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--port<span class="w"> </span><span class="m">8000</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--log-level<span class="w"> </span>debug<span class="w"> </span><span class="m">2</span>&gt;<span class="p">&amp;</span><span class="m">1</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>tee<span class="w"> </span>/tmp/e2e-test-results/TIMESTAMP/logs/api.log
+</pre></div>
+</div>
+<ul class="simple">
+<li><p><strong>Log level options</strong>: <code class="docutils literal notranslate"><span class="pre">critical</span></code>, <code class="docutils literal notranslate"><span class="pre">error</span></code>, <code class="docutils literal notranslate"><span class="pre">warning</span></code>, <code class="docutils literal notranslate"><span class="pre">info</span></code>, <code class="docutils literal notranslate"><span class="pre">debug</span></code>, <code class="docutils literal notranslate"><span class="pre">trace</span></code></p></li>
+<li><p>More verbose logging control</p></li>
+<li><p>Use for debugging</p></li>
+</ul>
+<p><strong>Note</strong>: Both read database and RabbitMQ connection details from environment variables</p>
+</section>
+<section id="backend-worker-consumer">
+<h3>Backend Worker/Consumer<a class="headerlink" href="#backend-worker-consumer" title="Link to this heading">#</a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">source</span><span class="w"> </span>.venv/bin/activate
+<span class="nb">export</span><span class="w"> </span><span class="nv">RABBITMQ_URL</span><span class="o">=</span>amqp://guest:guest@localhost:30672/<span class="w">  </span><span class="c1"># pragma: allowlist secret</span>
+python<span class="w"> </span>-m<span class="w"> </span>smartem_backend.consumer<span class="w"> </span>-vv<span class="w"> </span><span class="m">2</span>&gt;<span class="p">&amp;</span><span class="m">1</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>tee<span class="w"> </span>/tmp/e2e-test-results/TIMESTAMP/logs/consumer.log
+</pre></div>
+</div>
+<p><strong>Verbosity flags</strong>: <code class="docutils literal notranslate"><span class="pre">-v</span></code> for INFO, <code class="docutils literal notranslate"><span class="pre">-vv</span></code> for DEBUG</p>
+</section>
+<section id="smartem-agent">
+<h3>SmartEM Agent<a class="headerlink" href="#smartem-agent" title="Link to this heading">#</a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">source</span><span class="w"> </span>.venv/bin/activate
+python<span class="w"> </span>-m<span class="w"> </span>smartem_agent<span class="w"> </span>watch<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--api-url<span class="w"> </span>http://localhost:30080<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--verbose<span class="w"> </span>-v<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>../epu-test-dir<span class="w"> </span><span class="m">2</span>&gt;<span class="p">&amp;</span><span class="m">1</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>tee<span class="w"> </span>/tmp/e2e-test-results/TIMESTAMP/logs/agent.log
+</pre></div>
+</div>
+<p><strong>Verbosity flags</strong>: <code class="docutils literal notranslate"><span class="pre">-v</span></code> for INFO, <code class="docutils literal notranslate"><span class="pre">-vv</span></code> for DEBUG
+<strong>Agent options</strong>:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">--agent-id</span> <span class="pre">TEXT</span></code>: Agent identifier for SSE connection</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--session-id</span> <span class="pre">TEXT</span></code>: Session identifier for SSE connection</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--sse-timeout</span> <span class="pre">INTEGER</span></code>: SSE connection timeout in seconds (default: 30)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--heartbeat-interval</span> <span class="pre">INTEGER</span></code>: Agent heartbeat interval in seconds (default: 60)</p></li>
+</ul>
+</section>
+<section id="microscope-playback-fsrecorder">
+<h3>Microscope Playback (fsrecorder)<a class="headerlink" href="#microscope-playback-fsrecorder" title="Link to this heading">#</a></h3>
+<p><strong>Tool location</strong>: <code class="docutils literal notranslate"><span class="pre">./tools/fsrecorder/fsrecorder.py</span></code> (relative to repo root)</p>
+<p><strong>Command syntax</strong>:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">source</span><span class="w"> </span>.venv/bin/activate
+python<span class="w"> </span>./tools/fsrecorder/fsrecorder.py<span class="w"> </span>replay<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>~/dev/DLS/smartem-decisions-test-recordings/bi37708-42_fsrecord.tar.gz<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>../epu-test-dir<span class="w"> </span><span class="m">2</span>&gt;<span class="p">&amp;</span><span class="m">1</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>tee<span class="w"> </span>/tmp/e2e-test-results/TIMESTAMP/logs/playback.log
+</pre></div>
+</div>
+<p><strong>Important</strong>:</p>
+<ul class="simple">
+<li><p>Use <code class="docutils literal notranslate"><span class="pre">replay</span></code> subcommand (NOT <code class="docutils literal notranslate"><span class="pre">--mode</span> <span class="pre">replay</span></code> or <code class="docutils literal notranslate"><span class="pre">--mode</span> <span class="pre">player</span></code>)</p></li>
+<li><p>First positional argument is the recording file (<code class="docutils literal notranslate"><span class="pre">.tar.gz</span></code>, not <code class="docutils literal notranslate"><span class="pre">.events</span></code>)</p></li>
+<li><p>Second positional argument is the target directory (no trailing slash needed)</p></li>
+<li><p>Recording file path should be absolute (<code class="docutils literal notranslate"><span class="pre">~/dev/DLS/...</span></code>) or relative to current directory</p></li>
+</ul>
+<p><strong>Speed control options</strong> (from <code class="docutils literal notranslate"><span class="pre">--help</span></code>):</p>
+<ul class="simple">
+<li><p>Default behavior: <code class="docutils literal notranslate"><span class="pre">--fast</span></code> mode (100x speed, 1s max delays) - <strong>enabled by default</strong></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--dev-mode</span></code>: Maximum speed for rapid iteration (1000x + burst) - quick smoke tests</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--fast</span></code>: Balanced acceleration (100x + 1s delays) - same as default</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--exact</span></code>: Preserve original timing (1x speed) - debug timing issues</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">-s</span> <span class="pre">SPEED,</span> <span class="pre">--speed</span> <span class="pre">SPEED</span></code>: Custom speed multiplier</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--max-delay</span> <span class="pre">MAX_DELAY</span></code>: Maximum delay between events in seconds</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--burst</span></code>: Process events as fast as possible</p></li>
+</ul>
+<p><strong>Additional options</strong>:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">--no-verify</span></code>: Skip integrity verification</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--skip-unreadable</span></code>: Skip files that were unreadable during recording</p></li>
+</ul>
+<p><strong>Example usage</strong>:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Default fast mode (no flag needed)</span>
+python<span class="w"> </span>./tools/fsrecorder/fsrecorder.py<span class="w"> </span>replay<span class="w"> </span>recording.tar.gz<span class="w"> </span>../output-dir
+
+<span class="c1"># Dev mode for rapid testing</span>
+python<span class="w"> </span>./tools/fsrecorder/fsrecorder.py<span class="w"> </span>replay<span class="w"> </span>--dev-mode<span class="w"> </span>recording.tar.gz<span class="w"> </span>../output-dir
+
+<span class="c1"># Exact timing for debugging</span>
+python<span class="w"> </span>./tools/fsrecorder/fsrecorder.py<span class="w"> </span>replay<span class="w"> </span>--exact<span class="w"> </span>recording.tar.gz<span class="w"> </span>../output-dir
+</pre></div>
+</div>
+</section>
+</section>
+<section id="test-preparation-workflow">
+<h2>Test Preparation Workflow<a class="headerlink" href="#test-preparation-workflow" title="Link to this heading">#</a></h2>
+<section id="backup-previous-test-logs">
+<h3>1. Backup Previous Test Logs<a class="headerlink" href="#backup-previous-test-logs" title="Link to this heading">#</a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># If previous test exists, logs are already in /tmp/e2e-test-results/PREVIOUS_TIMESTAMP/</span>
+<span class="c1"># No action needed - each test creates its own timestamped directory</span>
+</pre></div>
+</div>
+</section>
+<section id="prepare-test-environment">
+<h3>2. Prepare Test Environment<a class="headerlink" href="#prepare-test-environment" title="Link to this heading">#</a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># 1. Unset any previously loaded environment variables</span>
+<span class="nb">unset</span><span class="w"> </span>POSTGRES_HOST<span class="w"> </span>POSTGRES_PORT<span class="w"> </span>POSTGRES_DB<span class="w"> </span>POSTGRES_USER<span class="w"> </span>POSTGRES_PASSWORD
+<span class="nb">unset</span><span class="w"> </span>RABBITMQ_HOST<span class="w"> </span>RABBITMQ_PORT<span class="w"> </span>RABBITMQ_USER<span class="w"> </span>RABBITMQ_PASSWORD
+<span class="nb">unset</span><span class="w"> </span>HTTP_API_HOST<span class="w"> </span>HTTP_API_PORT
+
+<span class="c1"># 2. Load test environment variables (export all)</span>
+<span class="nb">set</span><span class="w"> </span>-a
+<span class="nb">source</span><span class="w"> </span>.env.local-test-run
+<span class="nb">set</span><span class="w"> </span>+a
+
+<span class="c1"># 3. Create test results directory with timestamp</span>
+<span class="nv">TEST_DIR</span><span class="o">=</span><span class="s2">&quot;/tmp/e2e-test-results/</span><span class="k">$(</span>date<span class="w"> </span>+%Y-%m-%d_%H%M%S<span class="k">)</span><span class="s2">_test-type-name&quot;</span>
+mkdir<span class="w"> </span>-p<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$TEST_DIR</span><span class="s2">/logs&quot;</span>
+
+<span class="c1"># 4. Stop any running services from previous test</span>
+pkill<span class="w"> </span>-f<span class="w"> </span>smartem_backend.api
+pkill<span class="w"> </span>-f<span class="w"> </span>smartem_backend.consumer
+pkill<span class="w"> </span>-f<span class="w"> </span>smartem_agent
+pkill<span class="w"> </span>-f<span class="w"> </span>fsrecorder
+pkill<span class="w"> </span>-f<span class="w"> </span>uvicorn
+pkill<span class="w"> </span>-f<span class="w"> </span>fastapi
+
+<span class="c1"># 5. Verify k3s services are running</span>
+./tools/dev-k8s.sh<span class="w"> </span>status
+
+<span class="c1"># 6. Clean RabbitMQ (restart to ensure empty queue)</span>
+kubectl<span class="w"> </span>rollout<span class="w"> </span>restart<span class="w"> </span>deployment/rabbitmq<span class="w"> </span>-n<span class="w"> </span>smartem-decisions
+kubectl<span class="w"> </span>rollout<span class="w"> </span>status<span class="w"> </span>deployment/rabbitmq<span class="w"> </span>-n<span class="w"> </span>smartem-decisions
+
+<span class="c1"># 7. Drop and recreate database</span>
+<span class="nb">source</span><span class="w"> </span>.venv/bin/activate
+python<span class="w"> </span>-m<span class="w"> </span>smartem_backend.model.database
+
+<span class="c1"># 8. Clean playback output directory</span>
+rm<span class="w"> </span>-rf<span class="w"> </span>../epu-test-dir
+mkdir<span class="w"> </span>-p<span class="w"> </span>../epu-test-dir
+</pre></div>
+</div>
+</section>
+<section id="verify-prerequisites">
+<h3>3. Verify Prerequisites<a class="headerlink" href="#verify-prerequisites" title="Link to this heading">#</a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Check test recordings exist</span>
+ls<span class="w"> </span>-lh<span class="w"> </span>~/dev/DLS/smartem-decisions-test-recordings/
+
+<span class="c1"># Verify k3s services accessible</span>
+curl<span class="w"> </span>-s<span class="w"> </span>http://localhost:30080/status<span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;API not ready yet&quot;</span>
+
+<span class="c1"># Check database connectivity</span>
+psql<span class="w"> </span>-h<span class="w"> </span>localhost<span class="w"> </span>-p<span class="w"> </span><span class="m">30432</span><span class="w"> </span>-U<span class="w"> </span>username<span class="w"> </span>-d<span class="w"> </span>smartem_db<span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;SELECT version();&quot;</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="test-execution-scenarios">
+<h2>Test Execution Scenarios<a class="headerlink" href="#test-execution-scenarios" title="Link to this heading">#</a></h2>
+<section id="test-type-1-post-acquisition-data-intake">
+<h3>Test Type 1: Post-Acquisition Data Intake<a class="headerlink" href="#test-type-1-post-acquisition-data-intake" title="Link to this heading">#</a></h3>
+<p><strong>Scenario</strong>: Agent starts watching after playback completes (easiest, should work)</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># 1. Start backend services (ensure env vars are already exported from prep step)</span>
+python<span class="w"> </span>-m<span class="w"> </span>fastapi<span class="w"> </span>dev<span class="w"> </span>src/smartem_backend/api_server.py<span class="w"> </span>--host<span class="w"> </span><span class="m">127</span>.0.0.1<span class="w"> </span>--port<span class="w"> </span><span class="m">8000</span><span class="w"> </span><span class="m">2</span>&gt;<span class="p">&amp;</span><span class="m">1</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>tee<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$TEST_DIR</span><span class="s2">/logs/api.log&quot;</span><span class="w"> </span><span class="p">&amp;</span>
+python<span class="w"> </span>-m<span class="w"> </span>smartem_backend.consumer<span class="w"> </span>-vv<span class="w"> </span><span class="m">2</span>&gt;<span class="p">&amp;</span><span class="m">1</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>tee<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$TEST_DIR</span><span class="s2">/logs/consumer.log&quot;</span><span class="w"> </span><span class="p">&amp;</span>
+
+<span class="c1"># Wait a moment for services to start</span>
+sleep<span class="w"> </span><span class="m">3</span>
+
+<span class="c1"># 2. Run playback to completion (no agent watching yet)</span>
+python<span class="w"> </span>./tools/fsrecorder/fsrecorder.py<span class="w"> </span>replay<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>~/dev/DLS/smartem-decisions-test-recordings/bi37708-42_fsrecord.tar.gz<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>../epu-test-dir<span class="w"> </span><span class="m">2</span>&gt;<span class="p">&amp;</span><span class="m">1</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>tee<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$TEST_DIR</span><span class="s2">/logs/playback.log&quot;</span>
+
+<span class="c1"># 3. Wait for playback to finish, then start agent</span>
+python<span class="w"> </span>-m<span class="w"> </span>smartem_agent<span class="w"> </span>watch<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--api-url<span class="w"> </span>http://localhost:8000<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-vv<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>../epu-test-dir<span class="w"> </span><span class="m">2</span>&gt;<span class="p">&amp;</span><span class="m">1</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>tee<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$TEST_DIR</span><span class="s2">/logs/agent.log&quot;</span>
+</pre></div>
+</div>
+</section>
+<section id="test-type-2-pre-acquisition-agent-setup">
+<h3>Test Type 2: Pre-Acquisition Agent Setup<a class="headerlink" href="#test-type-2-pre-acquisition-agent-setup" title="Link to this heading">#</a></h3>
+<p><strong>Scenario</strong>: Agent starts watching before any data exists</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># 1. Start backend services</span>
+python<span class="w"> </span>-m<span class="w"> </span>fastapi<span class="w"> </span>dev<span class="w"> </span>src/smartem_backend/api_server.py<span class="w"> </span>--host<span class="w"> </span><span class="m">127</span>.0.0.1<span class="w"> </span>--port<span class="w"> </span><span class="m">8000</span><span class="w"> </span><span class="m">2</span>&gt;<span class="p">&amp;</span><span class="m">1</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>tee<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$TEST_DIR</span><span class="s2">/logs/api.log&quot;</span><span class="w"> </span><span class="p">&amp;</span>
+python<span class="w"> </span>-m<span class="w"> </span>smartem_backend.consumer<span class="w"> </span>-vv<span class="w"> </span><span class="m">2</span>&gt;<span class="p">&amp;</span><span class="m">1</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>tee<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$TEST_DIR</span><span class="s2">/logs/consumer.log&quot;</span><span class="w"> </span><span class="p">&amp;</span>
+
+<span class="c1"># Wait a moment for services to start</span>
+sleep<span class="w"> </span><span class="m">3</span>
+
+<span class="c1"># 2. Start agent watching empty directory</span>
+python<span class="w"> </span>-m<span class="w"> </span>smartem_agent<span class="w"> </span>watch<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--api-url<span class="w"> </span>http://localhost:8000<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-vv<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>../epu-test-dir<span class="w"> </span><span class="m">2</span>&gt;<span class="p">&amp;</span><span class="m">1</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>tee<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$TEST_DIR</span><span class="s2">/logs/agent.log&quot;</span><span class="w"> </span><span class="p">&amp;</span>
+
+<span class="c1"># 3. Begin playback after agent is watching</span>
+python<span class="w"> </span>./tools/fsrecorder/fsrecorder.py<span class="w"> </span>replay<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>~/dev/DLS/smartem-decisions-test-recordings/bi37708-42_fsrecord.tar.gz<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>../epu-test-dir<span class="w"> </span><span class="m">2</span>&gt;<span class="p">&amp;</span><span class="m">1</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>tee<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$TEST_DIR</span><span class="s2">/logs/playback.log&quot;</span>
+</pre></div>
+</div>
+</section>
+<section id="test-type-3-mid-acquisition-agent-start">
+<h3>Test Type 3: Mid-Acquisition Agent Start<a class="headerlink" href="#test-type-3-mid-acquisition-agent-start" title="Link to this heading">#</a></h3>
+<p><strong>Scenario</strong>: Agent starts after playback begins but before completion (tests handling existing + new data)</p>
+<p><strong>Timing considerations</strong>:</p>
+<ul class="simple">
+<li><p>Playback script initially extracts data from recording (no files written yet)</p></li>
+<li><p>After extraction, playback begins writing files to output directory</p></li>
+<li><p>Agent should start after some files exist but before playback completes</p></li>
+<li><p>Use different delays to test at various stages of data availability</p></li>
+</ul>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># 1. Start backend services</span>
+python<span class="w"> </span>-m<span class="w"> </span>fastapi<span class="w"> </span>dev<span class="w"> </span>src/smartem_backend/api_server.py<span class="w"> </span>--host<span class="w"> </span><span class="m">127</span>.0.0.1<span class="w"> </span>--port<span class="w"> </span><span class="m">8000</span><span class="w"> </span><span class="m">2</span>&gt;<span class="p">&amp;</span><span class="m">1</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>tee<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$TEST_DIR</span><span class="s2">/logs/api.log&quot;</span><span class="w"> </span><span class="p">&amp;</span>
+python<span class="w"> </span>-m<span class="w"> </span>smartem_backend.consumer<span class="w"> </span>-vv<span class="w"> </span><span class="m">2</span>&gt;<span class="p">&amp;</span><span class="m">1</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>tee<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$TEST_DIR</span><span class="s2">/logs/consumer.log&quot;</span><span class="w"> </span><span class="p">&amp;</span>
+
+<span class="c1"># Wait a moment for services to start</span>
+sleep<span class="w"> </span><span class="m">3</span>
+
+<span class="c1"># 2. Start playback first</span>
+python<span class="w"> </span>./tools/fsrecorder/fsrecorder.py<span class="w"> </span>replay<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>~/dev/DLS/smartem-decisions-test-recordings/bi37708-42_fsrecord.tar.gz<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>../epu-test-dir<span class="w"> </span><span class="m">2</span>&gt;<span class="p">&amp;</span><span class="m">1</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>tee<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$TEST_DIR</span><span class="s2">/logs/playback.log&quot;</span><span class="w"> </span><span class="p">&amp;</span>
+
+<span class="c1"># 3. Monitor file creation to choose optimal start time</span>
+watch<span class="w"> </span>-n<span class="w"> </span><span class="m">1</span><span class="w"> </span><span class="s2">&quot;find ../epu-test-dir -type f | wc -l&quot;</span>
+
+<span class="c1"># 4. When desired number of files exist, start agent</span>
+<span class="c1"># Experiment with different timing:</span>
+<span class="c1">#   - sleep 5   # Very early (minimal files)</span>
+<span class="c1">#   - sleep 15  # Early-mid stage</span>
+<span class="c1">#   - sleep 30  # Mid-stage</span>
+<span class="c1">#   - sleep 60  # Late stage</span>
+sleep<span class="w"> </span><span class="m">15</span><span class="w">  </span><span class="c1"># Adjust based on monitoring above</span>
+
+python<span class="w"> </span>-m<span class="w"> </span>smartem_agent<span class="w"> </span>watch<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--api-url<span class="w"> </span>http://localhost:8000<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-vv<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>../epu-test-dir<span class="w"> </span><span class="m">2</span>&gt;<span class="p">&amp;</span><span class="m">1</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>tee<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$TEST_DIR</span><span class="s2">/logs/agent.log&quot;</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="post-test-data-collection">
+<h2>Post-Test Data Collection<a class="headerlink" href="#post-test-data-collection" title="Link to this heading">#</a></h2>
+<p>After test completion, capture all relevant data for analysis:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># 1. Database dump (final state after all processing)</span>
+pg_dump<span class="w"> </span>-h<span class="w"> </span>localhost<span class="w"> </span>-p<span class="w"> </span><span class="m">30432</span><span class="w"> </span>-U<span class="w"> </span>username<span class="w"> </span>-d<span class="w"> </span>smartem_db<span class="w"> </span>&gt;<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$TEST_DIR</span><span class="s2">/db-dump.sql&quot;</span>
+
+<span class="c1"># 2. Create test parameters record</span>
+cat<span class="w"> </span>&gt;<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$TEST_DIR</span><span class="s2">/test-params.json&quot;</span><span class="w"> </span><span class="s">&lt;&lt; EOF</span>
+<span class="s">{</span>
+<span class="s">  &quot;test_type&quot;: &quot;post-acquisition&quot;,</span>
+<span class="s">  &quot;timestamp&quot;: &quot;$(date -Iseconds)&quot;,</span>
+<span class="s">  &quot;recording&quot;: &quot;bi37708-42_fsrecord.tar.gz&quot;,</span>
+<span class="s">  &quot;playback_mode&quot;: &quot;fast&quot;,</span>
+<span class="s">  &quot;agent_verbosity&quot;: &quot;debug&quot;,</span>
+<span class="s">  &quot;consumer_verbosity&quot;: &quot;debug&quot;,</span>
+<span class="s">  &quot;api_log_level&quot;: &quot;debug&quot;,</span>
+<span class="s">  &quot;notes&quot;: &quot;Testing data intake after microscope session completes&quot;</span>
+<span class="s">}</span>
+<span class="s">EOF</span>
+
+<span class="c1"># 3. Verify all 4 service logs were captured</span>
+ls<span class="w"> </span>-lh<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$TEST_DIR</span><span class="s2">/logs/&quot;</span>
+<span class="c1"># Expected files:</span>
+<span class="c1">#   - playback.log  (microscope recording playback)</span>
+<span class="c1">#   - agent.log     (SmartEM agent)</span>
+<span class="c1">#   - api.log       (backend HTTP API)</span>
+<span class="c1">#   - consumer.log  (backend worker/consumer)</span>
+
+<span class="c1"># 4. Optional: Capture k8s infrastructure logs if debugging issues</span>
+kubectl<span class="w"> </span>logs<span class="w"> </span>deployment/postgres<span class="w"> </span>-n<span class="w"> </span>smartem-decisions<span class="w"> </span>&gt;<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$TEST_DIR</span><span class="s2">/logs/postgres.log&quot;</span>
+kubectl<span class="w"> </span>logs<span class="w"> </span>deployment/rabbitmq<span class="w"> </span>-n<span class="w"> </span>smartem-decisions<span class="w"> </span>&gt;<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$TEST_DIR</span><span class="s2">/logs/rabbitmq.log&quot;</span>
+</pre></div>
+</div>
+<p><strong>Critical logs for analysis</strong>:</p>
+<ol class="arabic simple">
+<li><p><strong>playback.log</strong>: File creation timeline, extraction timing</p></li>
+<li><p><strong>agent.log</strong>: File detection, API communication, SSE events</p></li>
+<li><p><strong>api.log</strong>: HTTP requests, database writes, SSE connections</p></li>
+<li><p><strong>consumer.log</strong>: RabbitMQ message processing, prediction updates</p></li>
+<li><p><strong>db-dump.sql</strong>: Final database state (acquisitions, grids, predictions)</p></li>
+</ol>
+</section>
+<section id="monitoring-and-verification">
+<h2>Monitoring and Verification<a class="headerlink" href="#monitoring-and-verification" title="Link to this heading">#</a></h2>
+<section id="during-test-execution">
+<h3>During Test Execution<a class="headerlink" href="#during-test-execution" title="Link to this heading">#</a></h3>
+<p><strong>Check file creation</strong>:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>watch<span class="w"> </span>-n<span class="w"> </span><span class="m">2</span><span class="w"> </span><span class="s2">&quot;find ../epu-test-dir -type f | wc -l&quot;</span>
 </pre></div>
 </div>
-</li>
-<li><p><strong>View logs</strong>:</p>
+<p><strong>Monitor API status</strong>:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Check acquisitions being created</span>
+curl<span class="w"> </span>-s<span class="w"> </span>http://localhost:8000/acquisitions<span class="w"> </span><span class="p">|</span><span class="w"> </span>jq
+
+<span class="c1"># Check overall status</span>
+curl<span class="w"> </span>-s<span class="w"> </span>http://localhost:8000/status<span class="w"> </span><span class="p">|</span><span class="w"> </span>jq
+</pre></div>
+</div>
+<p><strong>Watch logs in real-time</strong>:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>tail<span class="w"> </span>-f<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$TEST_DIR</span><span class="s2">/logs/agent.log&quot;</span>
+tail<span class="w"> </span>-f<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$TEST_DIR</span><span class="s2">/logs/consumer.log&quot;</span>
+tail<span class="w"> </span>-f<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$TEST_DIR</span><span class="s2">/logs/playback.log&quot;</span>
+</pre></div>
+</div>
+</section>
+<section id="success-criteria">
+<h3>Success Criteria<a class="headerlink" href="#success-criteria" title="Link to this heading">#</a></h3>
+<p>A successful test should demonstrate:</p>
 <ul class="simple">
-<li><p>Recording playback: <code class="docutils literal notranslate"><span class="pre">tail</span> <span class="pre">-f</span> <span class="pre">epu-test-dir.log</span></code></p></li>
-<li><p>Kubernetes pods: <code class="docutils literal notranslate"><span class="pre">kubectl</span> <span class="pre">logs</span> <span class="pre">-f</span> <span class="pre">deployment/smartem-http-api</span> <span class="pre">-n</span> <span class="pre">smartem-decisions</span></code></p></li>
+<li><p>✅ All backend services start without errors</p></li>
+<li><p>✅ RabbitMQ queue is empty at test start</p></li>
+<li><p>✅ Database is freshly created with no leftover data</p></li>
+<li><p>✅ Playback creates expected files in output directory</p></li>
+<li><p>✅ Agent detects file changes and sends data to API</p></li>
+<li><p>✅ API receives and stores data in database</p></li>
+<li><p>✅ Worker processes messages from queue</p></li>
+<li><p>✅ No errors in any service logs</p></li>
+<li><p>✅ Database contains expected entities after test</p></li>
 </ul>
-</li>
-</ol>
+</section>
+</section>
+<section id="cleanup-and-teardown">
+<h2>Cleanup and Teardown<a class="headerlink" href="#cleanup-and-teardown" title="Link to this heading">#</a></h2>
+<section id="stop-running-services">
+<h3>Stop Running Services<a class="headerlink" href="#stop-running-services" title="Link to this heading">#</a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Stop all test-related processes</span>
+pkill<span class="w"> </span>-f<span class="w"> </span>smartem_backend.api
+pkill<span class="w"> </span>-f<span class="w"> </span>smartem_backend.consumer
+pkill<span class="w"> </span>-f<span class="w"> </span>smartem_agent
+pkill<span class="w"> </span>-f<span class="w"> </span>fsrecorder
+
+<span class="c1"># Verify processes stopped</span>
+pgrep<span class="w"> </span>-f<span class="w"> </span><span class="s2">&quot;smartem_backend|smartem_agent|fsrecorder&quot;</span>
+</pre></div>
+</div>
+</section>
+<section id="optional-full-teardown">
+<h3>Optional: Full Teardown<a class="headerlink" href="#optional-full-teardown" title="Link to this heading">#</a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Clean playback directory</span>
+rm<span class="w"> </span>-rf<span class="w"> </span>../epu-test-dir
+
+<span class="c1"># Stop k3s cluster (if needed)</span>
+./tools/dev-k8s.sh<span class="w"> </span>down
+</pre></div>
+</div>
+</section>
 </section>
 <section id="troubleshooting">
 <h2>Troubleshooting<a class="headerlink" href="#troubleshooting" title="Link to this heading">#</a></h2>
-<section id="agent-connection-issues">
-<h3>Agent connection issues<a class="headerlink" href="#agent-connection-issues" title="Link to this heading">#</a></h3>
-<ul class="simple">
-<li><p>Ensure agent uses <code class="docutils literal notranslate"><span class="pre">--api-url</span> <span class="pre">http://localhost:30080</span></code> (not the default port 8000)</p></li>
-<li><p>Check API accessibility: <code class="docutils literal notranslate"><span class="pre">curl</span> <span class="pre">http://localhost:30080/status</span></code></p></li>
-</ul>
-</section>
-<section id="backend-services-not-starting">
-<h3>Backend services not starting<a class="headerlink" href="#backend-services-not-starting" title="Link to this heading">#</a></h3>
-<ul class="simple">
-<li><p>Check k3s permissions: ensure you can run <code class="docutils literal notranslate"><span class="pre">kubectl</span> <span class="pre">get</span> <span class="pre">pods</span></code></p></li>
-<li><p>Verify Docker registry access in <code class="docutils literal notranslate"><span class="pre">.dev.env</span></code> configuration</p></li>
-<li><p>Check pod status: <code class="docutils literal notranslate"><span class="pre">kubectl</span> <span class="pre">get</span> <span class="pre">pods</span> <span class="pre">-n</span> <span class="pre">smartem-decisions</span></code></p></li>
-</ul>
-</section>
-<section id="consumer-connection-issues">
-<h3>Consumer connection issues<a class="headerlink" href="#consumer-connection-issues" title="Link to this heading">#</a></h3>
-<ul class="simple">
-<li><p>Use correct RabbitMQ URL: <code class="docutils literal notranslate"><span class="pre">RABBITMQ_URL=amqp://guest:guest&#64;localhost:30672/</span></code> <!-- pragma: allowlist secret --></p></li>
-<li><p>Verify RabbitMQ is accessible: <code class="docutils literal notranslate"><span class="pre">curl</span> <span class="pre">http://localhost:30673</span></code> (management UI)</p></li>
-</ul>
-</section>
-<section id="recording-playback-issues">
-<h3>Recording playback issues<a class="headerlink" href="#recording-playback-issues" title="Link to this heading">#</a></h3>
-<ul class="simple">
-<li><p>Ensure recording file exists and is readable</p></li>
-<li><p>Check target directory permissions: <code class="docutils literal notranslate"><span class="pre">ls</span> <span class="pre">-la</span> <span class="pre">../epu-test-dir</span></code></p></li>
-<li><p>Monitor playback progress in log file</p></li>
-</ul>
-</section>
-</section>
-<section id="success-criteria">
-<h2>Success criteria<a class="headerlink" href="#success-criteria" title="Link to this heading">#</a></h2>
-<p>A successful end-to-end simulation should show:</p>
-<ol class="arabic simple">
-<li><p>✅ All backend services running (check with <code class="docutils literal notranslate"><span class="pre">kubectl</span> <span class="pre">get</span> <span class="pre">pods</span> <span class="pre">-n</span> <span class="pre">smartem-decisions</span></code>)</p></li>
-<li><p>✅ SmartEM agent connected to API (check agent logs)</p></li>
-<li><p>✅ Recording playback creating files (check <code class="docutils literal notranslate"><span class="pre">../epu-test-dir</span></code> contents)</p></li>
-<li><p>✅ API receiving data (check <code class="docutils literal notranslate"><span class="pre">curl</span> <span class="pre">http://localhost:30080/acquisitions</span></code>)</p></li>
-<li><p>✅ Files being processed and stored in database</p></li>
-<li><p>✅ External simulator publishing messages to RabbitMQ</p></li>
-<li><p>✅ Consumer processing external messages and transforming them</p></li>
-<li><p>✅ Agent receiving instructions via SSE (check agent logs for instruction reception)</p></li>
-<li><p>✅ Complete feedback loop: file detection → processing → ML results → agent instructions</p></li>
-</ol>
-</section>
-<section id="cleanup">
-<h2>Cleanup<a class="headerlink" href="#cleanup" title="Link to this heading">#</a></h2>
-<p>To stop all services:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Stop backend services</span>
-./tools/dev-k8s.sh<span class="w"> </span>down
+<section id="database-connection-issues">
+<h3>Database Connection Issues<a class="headerlink" href="#database-connection-issues" title="Link to this heading">#</a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Verify k3s postgres is accessible</span>
+kubectl<span class="w"> </span>get<span class="w"> </span>pods<span class="w"> </span>-n<span class="w"> </span>smartem-decisions
+kubectl<span class="w"> </span>logs<span class="w"> </span>deployment/postgres<span class="w"> </span>-n<span class="w"> </span>smartem-decisions
 
-<span class="c1"># Kill background processes</span>
-pkill<span class="w"> </span>-f<span class="w"> </span>smartem_agent
-pkill<span class="w"> </span>-f<span class="w"> </span>smartem_backend.consumer
-pkill<span class="w"> </span>-f<span class="w"> </span>fsrecorder
-pkill<span class="w"> </span>-f<span class="w"> </span>external_message_simulator
-
-<span class="c1"># Clean up test data (optional)</span>
-rm<span class="w"> </span>-rf<span class="w"> </span>../epu-test-dir
-rm<span class="w"> </span>-f<span class="w"> </span>epu-test-dir.log
+<span class="c1"># Test connection</span>
+psql<span class="w"> </span>-h<span class="w"> </span>localhost<span class="w"> </span>-p<span class="w"> </span><span class="m">30432</span><span class="w"> </span>-U<span class="w"> </span>username<span class="w"> </span>-d<span class="w"> </span>smartem_db<span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;\l&quot;</span>
 </pre></div>
 </div>
+</section>
+<section id="rabbitmq-connection-issues">
+<h3>RabbitMQ Connection Issues<a class="headerlink" href="#rabbitmq-connection-issues" title="Link to this heading">#</a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Check RabbitMQ pod status</span>
+kubectl<span class="w"> </span>get<span class="w"> </span>pods<span class="w"> </span>-n<span class="w"> </span>smartem-decisions
+kubectl<span class="w"> </span>logs<span class="w"> </span>deployment/rabbitmq<span class="w"> </span>-n<span class="w"> </span>smartem-decisions
+
+<span class="c1"># Verify connection from host</span>
+curl<span class="w"> </span>-u<span class="w"> </span>guest:guest<span class="w"> </span>http://localhost:30673<span class="w">  </span><span class="c1"># pragma: allowlist secret</span>
+</pre></div>
+</div>
+</section>
+<section id="agent-not-detecting-files">
+<h3>Agent Not Detecting Files<a class="headerlink" href="#agent-not-detecting-files" title="Link to this heading">#</a></h3>
+<ul class="simple">
+<li><p>Ensure <code class="docutils literal notranslate"><span class="pre">--api-url</span> <span class="pre">http://localhost:8000</span></code> points to correct API endpoint</p></li>
+<li><p>Check agent logs for connection errors</p></li>
+<li><p>Verify playback is writing to the directory agent is watching</p></li>
+<li><p>Confirm file permissions allow agent to read files</p></li>
+</ul>
+</section>
+<section id="consumer-not-processing-messages">
+<h3>Consumer Not Processing Messages<a class="headerlink" href="#consumer-not-processing-messages" title="Link to this heading">#</a></h3>
+<ul class="simple">
+<li><p>Verify <code class="docutils literal notranslate"><span class="pre">RABBITMQ_URL=amqp://guest:guest&#64;localhost:30672/</span></code> is correct  <!-- pragma: allowlist secret --></p></li>
+<li><p>Check queue has messages waiting</p></li>
+<li><p>Review consumer logs for connection errors</p></li>
+<li><p>Ensure database is accessible to worker</p></li>
+</ul>
+</section>
+</section>
+<section id="known-issues-and-notes">
+<h2>Known Issues and Notes<a class="headerlink" href="#known-issues-and-notes" title="Link to this heading">#</a></h2>
+<p><strong>RabbitMQ Queue Persistence</strong>:</p>
+<ul class="simple">
+<li><p>Queue <code class="docutils literal notranslate"><span class="pre">smartem_backend</span></code> is durable and persists messages across connections</p></li>
+<li><p><strong>If multiple workers are started, they may compete for messages</strong> - verify this is intended behaviour</p></li>
+<li><p>Restarting RabbitMQ service is currently the cleanest way to ensure empty queue between tests</p></li>
+<li><p>Consider implementing programmatic queue purging if restart is too slow</p></li>
+</ul>
+</section>
+<section id="notes-for-future-refinement">
+<h2>Notes for Future Refinement<a class="headerlink" href="#notes-for-future-refinement" title="Link to this heading">#</a></h2>
+<p>This document will evolve as we:</p>
+<ul class="simple">
+<li><p>Complete missing command details</p></li>
+<li><p>Identify optimal test parameters</p></li>
+<li><p>Discover edge cases during testing</p></li>
+<li><p>Convert manual steps into automation scripts</p></li>
+<li><p>Potentially create custom slash commands for common workflows</p></li>
+</ul>
 </section>
 </section>
 
@@ -714,22 +1159,65 @@ rm<span class="w"> </span>-f<span class="w"> </span>epu-test-dir.log
   </div>
   <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
     <ul class="visible nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#prerequisites">Prerequisites</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#step-1-launch-backend-infrastructure-services">Step 1: Launch backend infrastructure services</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#step-2-launch-local-consumer-optional">Step 2: Launch local consumer (optional)</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#step-3-launch-smartem-agent-in-watch-mode">Step 3: Launch SmartEM agent in watch mode</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#step-4-start-session-recording-playback">Step 4: Start session recording playback</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#step-5-run-external-message-simulator-complete-feedback-loop">Step 5: Run external message simulator (complete feedback loop)</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#monitoring-the-simulation">Monitoring the simulation</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#troubleshooting">Troubleshooting</a><ul class="nav section-nav flex-column">
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#agent-connection-issues">Agent connection issues</a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#backend-services-not-starting">Backend services not starting</a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#consumer-connection-issues">Consumer connection issues</a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#recording-playback-issues">Recording playback issues</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#quick-start-resume-from-previous-session">Quick Start (Resume from Previous Session)</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#overview">Overview</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#prerequisites">Prerequisites</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#environment-setup">Environment Setup</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#test-data">Test Data</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#directory-structure">Directory Structure</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#environment-file-setup">Environment File Setup</a></li>
 </ul>
 </li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#success-criteria">Success criteria</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#cleanup">Cleanup</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#database-operations">Database Operations</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#creating-fresh-database">Creating Fresh Database</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#connecting-to-database">Connecting to Database</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#rabbitmq-queue-management">RabbitMQ Queue Management</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#queue-behaviour">Queue Behaviour</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#verifying-queue-state">Verifying Queue State</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#cleaning-queue-between-tests">Cleaning Queue Between Tests</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#service-commands">Service Commands</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#backend-http-api">Backend HTTP API</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#backend-worker-consumer">Backend Worker/Consumer</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#smartem-agent">SmartEM Agent</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#microscope-playback-fsrecorder">Microscope Playback (fsrecorder)</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#test-preparation-workflow">Test Preparation Workflow</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#backup-previous-test-logs">1. Backup Previous Test Logs</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#prepare-test-environment">2. Prepare Test Environment</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#verify-prerequisites">3. Verify Prerequisites</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#test-execution-scenarios">Test Execution Scenarios</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#test-type-1-post-acquisition-data-intake">Test Type 1: Post-Acquisition Data Intake</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#test-type-2-pre-acquisition-agent-setup">Test Type 2: Pre-Acquisition Agent Setup</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#test-type-3-mid-acquisition-agent-start">Test Type 3: Mid-Acquisition Agent Start</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#post-test-data-collection">Post-Test Data Collection</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#monitoring-and-verification">Monitoring and Verification</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#during-test-execution">During Test Execution</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#success-criteria">Success Criteria</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#cleanup-and-teardown">Cleanup and Teardown</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#stop-running-services">Stop Running Services</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#optional-full-teardown">Optional: Full Teardown</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#troubleshooting">Troubleshooting</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#database-connection-issues">Database Connection Issues</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#rabbitmq-connection-issues">RabbitMQ Connection Issues</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#agent-not-detecting-files">Agent Not Detecting Files</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#consumer-not-processing-messages">Consumer Not Processing Messages</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#known-issues-and-notes">Known Issues and Notes</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#notes-for-future-refinement">Notes for Future Refinement</a></li>
 </ul>
   </nav></div>
 
