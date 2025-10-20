@@ -266,7 +266,7 @@ class QualityMetricStatistics(SQLModel, table=True):
     value_sum: float
     squared_value_sum: float
     metric: QualityMetric | None = Relationship(back_populates="statistics")
-    grid: Grid | None = Relationship(back_populates="quality_metric_statistics")
+    grid: Grid | None = Relationship(back_populates="current_metric_statistics")
 
 
 class QualityPredictionModelParameter(SQLModel, table=True):
@@ -336,9 +336,9 @@ class CurrentQualityPrediction(SQLModel, table=True):
     metric_name: str | None = Field(foreign_key="qualitymetric.name", default=None)
     foilhole_uuid: str | None = Field(default=None, foreign_key="foilhole.uuid")
     gridsquare_uuid: str | None = Field(default=None, foreign_key="gridsquare.uuid")
-    foilhole: FoilHole | None = Relationship(back_populates="prediction")
-    gridsquare: GridSquare | None = Relationship(back_populates="prediction")
-    model: QualityPredictionModel | None = Relationship(back_populates="predictions")
+    foilhole: FoilHole | None = Relationship(back_populates="current_prediction")
+    gridsquare: GridSquare | None = Relationship(back_populates="current_prediction")
+    model: QualityPredictionModel | None = Relationship(back_populates="current_predictions")
     metric: QualityMetric | None = Relationship(back_populates="current_predictions")
     grid: Grid | None = Relationship(back_populates="current_quality_predictions")
 

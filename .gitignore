@@ -17,6 +17,7 @@ output.txt
 .dev.env
 .env.staging
 .env.production
+.env.local-test-run
 log/
 
 # Distribution / packaging
@@ -99,3 +100,6 @@ tools/.secrets-*
 # Editor/IDE files
 .kiro/
 .vscode/settings.json
+
+# E2E test results
+/tmp/e2e-test-results/
