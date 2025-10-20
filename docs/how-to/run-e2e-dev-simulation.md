@@ -2,7 +2,52 @@
 
 This document describes the complete workflow for running repeatable end-to-end tests of the SmartEM system using pre-recorded microscope sessions. It serves as both a runbook for executing tests and a reference for understanding test requirements.
 
-## Quick Start (Resume from Previous Session)
+## Quick Start (Automated Test Runner)
+
+For the simplest test execution, use the automated test runner script:
+
+```bash
+# Ensure k3s is running
+./tools/dev-k8s.sh status
+
+# Run automated test (Test Type 2: Pre-Acquisition Agent Setup)
+./tools/run-e2e-test.sh
+
+# With custom parameters
+./tools/run-e2e-test.sh \
+  ~/dev/DLS/smartem-decisions-test-recordings/bi37708-42_fsrecord.tar.gz \
+  /home/username/dev/DLS/epu-test-dir \
+  0.1
+```
+
+**Script parameters** (all optional):
+1. Recording file path (default: `~/dev/DLS/smartem-decisions-test-recordings/bi37708-42_fsrecord.tar.gz`)
+2. EPU output directory (default: `~/dev/DLS/epu-test-dir`)
+3. Max delay in seconds (default: `0.1`)
+
+**What the script does**:
+- Creates timestamped test results directory in `logs/e2e-tests/`
+- Activates venv and loads environment variables from `.env.local-test-run`
+- Resets database to clean state
+- Starts API server and consumer
+- Starts agent watching empty directory
+- Runs playback with specified timing
+- Collects filesystem and database statistics
+- Saves all logs to test results directory
+- Cleans up background processes on exit
+
+**When to use**:
+- Quick smoke tests during development
+- Consistent repeatable test runs
+- Pre-Acquisition scenario testing (Test Type 2)
+
+**When to use manual execution instead**:
+- Testing Post-Acquisition scenario (Test Type 1)
+- Testing Mid-Acquisition scenario (Test Type 3)
+- Debugging specific service interactions
+- Custom timing or service startup order
+
+## Quick Start (Manual Execution)
 
 If you've already set up once and just need to run another test:
 
@@ -17,7 +62,7 @@ unset HTTP_API_HOST HTTP_API_PORT
 set -a && source .env.local-test-run && set +a
 
 # 3. Create timestamped test directory
-TEST_DIR="/tmp/e2e-test-results/$(date +%Y-%m-%d_%H%M%S)_test-type-name"
+TEST_DIR="logs/e2e-tests/$(date +%Y-%m-%d_%H%M%S)_test-type-name"
 mkdir -p "$TEST_DIR/logs"
 
 # 4. Kill any running processes
@@ -36,7 +81,7 @@ rm -rf ../epu-test-dir && mkdir -p ../epu-test-dir
 
 # 8. Start services (choose a test type below, or see Test Execution Scenarios section)
 # Example: Test Type 1 - Post-acquisition
-python -m fastapi dev src/smartem_backend/api_server.py --host 127.0.0.1 --port 8000 2>&1 | tee "$TEST_DIR/logs/api.log" &
+python -m uvicorn smartem_backend.api_server:app --host 127.0.0.1 --port 8000 --log-level debug 2>&1 | tee "$TEST_DIR/logs/api.log" &
 python -m smartem_backend.consumer -vv 2>&1 | tee "$TEST_DIR/logs/consumer.log" &
 sleep 3
 
@@ -78,7 +123,7 @@ Pre-recorded microscope sessions are stored in `~/dev/DLS/smartem-decisions-test
 
 ### Directory Structure
 ```
-/tmp/e2e-test-results/           # Test results root (gitignored)
+logs/e2e-tests/                  # Test results root (gitignored, at repo root)
   YYYY-MM-DD_HHmmss_test-type/   # Individual test run
     logs/                        # All log outputs (4 services)
       playback.log               # Microscope recording playback
@@ -148,7 +193,7 @@ POSTGRES_USER=username
 POSTGRES_PASSWORD=password
 
 # Example: Dump database for test results
-pg_dump -h localhost -p 30432 -U username -d smartem_db > /tmp/e2e-test-results/TIMESTAMP/db-dump.sql
+pg_dump -h localhost -p 30432 -U username -d smartem_db > logs/e2e-tests/TIMESTAMP/db-dump.sql
 ```
 
 ## RabbitMQ Queue Management
@@ -200,28 +245,29 @@ set +a
 
 ### Backend HTTP API
 
-**Option 1: FastAPI CLI (recommended for development)**
+**RECOMMENDED: Uvicorn without auto-reload (for e2e tests)**
+```bash
+source .venv/bin/activate
+python -m uvicorn smartem_backend.api_server:app \
+  --host 127.0.0.1 \
+  --port 8000 \
+  --log-level debug 2>&1 | tee logs/e2e-tests/TIMESTAMP/logs/api.log
+```
+- **Log level options**: `critical`, `error`, `warning`, `info`, `debug`, `trace`
+- No auto-reload to avoid file watch limits (important for repos with .tox directories)
+- More verbose logging control
+- Stable for long-running tests
+
+**Alternative: FastAPI CLI (NOT recommended for e2e tests)**
 ```bash
 source .venv/bin/activate
 python -m fastapi dev src/smartem_backend/api_server.py \
   --host 127.0.0.1 \
   --port 8000 2>&1 | tee /tmp/e2e-test-results/TIMESTAMP/logs/api.log
 ```
-- Auto-reload on code changes
-- Default development mode
-- Clean output
-
-**Option 2: Uvicorn (more control over logging)**
-```bash
-source .venv/bin/activate
-python -m uvicorn smartem_backend.api_server:app \
-  --host 127.0.0.1 \
-  --port 8000 \
-  --log-level debug 2>&1 | tee /tmp/e2e-test-results/TIMESTAMP/logs/api.log
-```
-- **Log level options**: `critical`, `error`, `warning`, `info`, `debug`, `trace`
-- More verbose logging control
-- Use for debugging
+- Auto-reload on code changes (watches entire project directory)
+- **WARNING**: Will fail with "OS file watch limit reached" error if .tox or other large directories exist
+- Only use for quick manual development, not for e2e test runs
 
 **Note**: Both read database and RabbitMQ connection details from environment variables
 
@@ -229,7 +275,7 @@ python -m uvicorn smartem_backend.api_server:app \
 ```bash
 source .venv/bin/activate
 export RABBITMQ_URL=amqp://guest:guest@localhost:30672/  # pragma: allowlist secret
-python -m smartem_backend.consumer -vv 2>&1 | tee /tmp/e2e-test-results/TIMESTAMP/logs/consumer.log
+python -m smartem_backend.consumer -vv 2>&1 | tee logs/e2e-tests/TIMESTAMP/logs/consumer.log
 ```
 **Verbosity flags**: `-v` for INFO, `-vv` for DEBUG
 
@@ -239,7 +285,7 @@ source .venv/bin/activate
 python -m smartem_agent watch \
   --api-url http://localhost:30080 \
   --verbose -v \
-  ../epu-test-dir 2>&1 | tee /tmp/e2e-test-results/TIMESTAMP/logs/agent.log
+  ../epu-test-dir 2>&1 | tee logs/e2e-tests/TIMESTAMP/logs/agent.log
 ```
 
 **Verbosity flags**: `-v` for INFO, `-vv` for DEBUG
@@ -258,7 +304,7 @@ python -m smartem_agent watch \
 source .venv/bin/activate
 python ./tools/fsrecorder/fsrecorder.py replay \
   ~/dev/DLS/smartem-decisions-test-recordings/bi37708-42_fsrecord.tar.gz \
-  ../epu-test-dir 2>&1 | tee /tmp/e2e-test-results/TIMESTAMP/logs/playback.log
+  ../epu-test-dir 2>&1 | tee logs/e2e-tests/TIMESTAMP/logs/playback.log
 ```
 
 **Important**:
@@ -296,7 +342,7 @@ python ./tools/fsrecorder/fsrecorder.py replay --exact recording.tar.gz ../outpu
 
 ### 1. Backup Previous Test Logs
 ```bash
-# If previous test exists, logs are already in /tmp/e2e-test-results/PREVIOUS_TIMESTAMP/
+# If previous test exists, logs are already in logs/e2e-tests/PREVIOUS_TIMESTAMP/
 # No action needed - each test creates its own timestamped directory
 ```
 
@@ -313,7 +359,7 @@ source .env.local-test-run
 set +a
 
 # 3. Create test results directory with timestamp
-TEST_DIR="/tmp/e2e-test-results/$(date +%Y-%m-%d_%H%M%S)_test-type-name"
+TEST_DIR="logs/e2e-tests/$(date +%Y-%m-%d_%H%M%S)_test-type-name"
 mkdir -p "$TEST_DIR/logs"
 
 # 4. Stop any running services from previous test
@@ -354,23 +400,27 @@ psql -h localhost -p 30432 -U username -d smartem_db -c "SELECT version();"
 
 ## Test Execution Scenarios
 
+**CRITICAL**: Agent command is `python -m smartem_agent watch` (NOT `python -m smartem_agent.main`!)
+
 ### Test Type 1: Post-Acquisition Data Intake
 **Scenario**: Agent starts watching after playback completes (easiest, should work)
 
 ```bash
 # 1. Start backend services (ensure env vars are already exported from prep step)
-python -m fastapi dev src/smartem_backend/api_server.py --host 127.0.0.1 --port 8000 2>&1 | tee "$TEST_DIR/logs/api.log" &
+python -m uvicorn smartem_backend.api_server:app --host 127.0.0.1 --port 8000 --log-level debug 2>&1 | tee "$TEST_DIR/logs/api.log" &
 python -m smartem_backend.consumer -vv 2>&1 | tee "$TEST_DIR/logs/consumer.log" &
 
 # Wait a moment for services to start
 sleep 3
 
 # 2. Run playback to completion (no agent watching yet)
+# NOTE: Recording must be a .tar.gz file (e.g., bi37708-42_fsrecord.tar.gz)
 python ./tools/fsrecorder/fsrecorder.py replay \
   ~/dev/DLS/smartem-decisions-test-recordings/bi37708-42_fsrecord.tar.gz \
   ../epu-test-dir 2>&1 | tee "$TEST_DIR/logs/playback.log"
 
 # 3. Wait for playback to finish, then start agent
+# IMPORTANT: Use "python -m smartem_agent watch" NOT "python -m smartem_agent.main"
 python -m smartem_agent watch \
   --api-url http://localhost:8000 \
   -vv \
@@ -382,19 +432,21 @@ python -m smartem_agent watch \
 
 ```bash
 # 1. Start backend services
-python -m fastapi dev src/smartem_backend/api_server.py --host 127.0.0.1 --port 8000 2>&1 | tee "$TEST_DIR/logs/api.log" &
+python -m uvicorn smartem_backend.api_server:app --host 127.0.0.1 --port 8000 --log-level debug 2>&1 | tee "$TEST_DIR/logs/api.log" &
 python -m smartem_backend.consumer -vv 2>&1 | tee "$TEST_DIR/logs/consumer.log" &
 
 # Wait a moment for services to start
 sleep 3
 
 # 2. Start agent watching empty directory
+# IMPORTANT: Use "python -m smartem_agent watch" NOT "python -m smartem_agent.main"
 python -m smartem_agent watch \
   --api-url http://localhost:8000 \
   -vv \
   ../epu-test-dir 2>&1 | tee "$TEST_DIR/logs/agent.log" &
 
 # 3. Begin playback after agent is watching
+# NOTE: Recording must be a .tar.gz file (e.g., bi37708-42_fsrecord.tar.gz)
 python ./tools/fsrecorder/fsrecorder.py replay \
   ~/dev/DLS/smartem-decisions-test-recordings/bi37708-42_fsrecord.tar.gz \
   ../epu-test-dir 2>&1 | tee "$TEST_DIR/logs/playback.log"
@@ -411,13 +463,14 @@ python ./tools/fsrecorder/fsrecorder.py replay \
 
 ```bash
 # 1. Start backend services
-python -m fastapi dev src/smartem_backend/api_server.py --host 127.0.0.1 --port 8000 2>&1 | tee "$TEST_DIR/logs/api.log" &
+python -m uvicorn smartem_backend.api_server:app --host 127.0.0.1 --port 8000 --log-level debug 2>&1 | tee "$TEST_DIR/logs/api.log" &
 python -m smartem_backend.consumer -vv 2>&1 | tee "$TEST_DIR/logs/consumer.log" &
 
 # Wait a moment for services to start
 sleep 3
 
 # 2. Start playback first
+# NOTE: Recording must be a .tar.gz file (e.g., bi37708-42_fsrecord.tar.gz)
 python ./tools/fsrecorder/fsrecorder.py replay \
   ~/dev/DLS/smartem-decisions-test-recordings/bi37708-42_fsrecord.tar.gz \
   ../epu-test-dir 2>&1 | tee "$TEST_DIR/logs/playback.log" &
@@ -433,21 +486,64 @@ watch -n 1 "find ../epu-test-dir -type f | wc -l"
 #   - sleep 60  # Late stage
 sleep 15  # Adjust based on monitoring above
 
+# IMPORTANT: Use "python -m smartem_agent watch" NOT "python -m smartem_agent.main"
 python -m smartem_agent watch \
   --api-url http://localhost:8000 \
   -vv \
   ../epu-test-dir 2>&1 | tee "$TEST_DIR/logs/agent.log"
 ```
 
+## Common Mistakes to Avoid
+
+**ALWAYS check the agent log file first if things aren't working!**
+
+1. **Wrong agent command**: Use `python -m smartem_agent watch`, NOT:
+   - ❌ `python -m smartem_agent.main`
+   - ❌ `python -m smartem_agent`
+   - ✅ `python -m smartem_agent watch`
+
+2. **Wrong recording path**: Must use .tar.gz file, NOT directory:
+   - ❌ `~/dev/DLS/smartem-decisions-test-recordings/pre-acquisition`
+   - ✅ `~/dev/DLS/smartem-decisions-test-recordings/bi37708-42_fsrecord.tar.gz`
+
+3. **FastAPI dev server**: Use uvicorn for e2e tests, NOT `python -m fastapi dev`:
+   - ❌ `python -m fastapi dev src/smartem_backend/api_server.py`
+   - ✅ `python -m uvicorn smartem_backend.api_server:app`
+
+4. **Forgot to activate venv**: All commands must run with venv activated:
+   - ✅ `source .venv/bin/activate` at the start
+
+5. **Agent log is tiny (< 1KB)**: Agent failed to start - check the error message in agent.log
+
 ## Post-Test Data Collection
 
 After test completion, capture all relevant data for analysis:
 
 ```bash
-# 1. Database dump (final state after all processing)
-pg_dump -h localhost -p 30432 -U username -d smartem_db > "$TEST_DIR/db-dump.sql"
+# 1. Verify filesystem vs database counts
+echo "=== Filesystem Counts ==="
+echo "EPU Sessions (Supervisor_* dirs): $(ls -1d ../epu-test-dir/Supervisor_* 2>/dev/null | wc -l)"
+echo "GridSquare directories: $(find ../epu-test-dir -type d -name "GridSquare_*" | wc -l)"
+echo "FoilHole directories: $(find ../epu-test-dir -type d -name "FoilHole_*" | wc -l)"
+echo "MRC files (micrographs): $(find ../epu-test-dir -type f -name "*.mrc" | wc -l)"
+echo "XML metadata files: $(find ../epu-test-dir -type f -name "*.xml" | wc -l)"
+echo ""
+echo "=== Database Counts ==="
+kubectl exec -n smartem-decisions deployment/postgres -- psql -U username -d smartem_db -c \
+  "SELECT 'acquisition' as table_name, COUNT(*) as count FROM acquisition
+   UNION ALL SELECT 'grid', COUNT(*) FROM grid
+   UNION ALL SELECT 'gridsquare', COUNT(*) FROM gridsquare
+   UNION ALL SELECT 'foilhole', COUNT(*) FROM foilhole
+   UNION ALL SELECT 'micrograph', COUNT(*) FROM micrograph
+   ORDER BY table_name;"
+echo ""
+echo "=== Agent Processing Issues ==="
+echo "No grid found messages: $(grep -c 'No grid found' "$TEST_DIR/logs/agent.log" 2>/dev/null || echo 0)"
 
-# 2. Create test parameters record
+# 2. Database dump (final state after all processing)
+kubectl exec -n smartem-decisions deployment/postgres -- pg_dump -U username -d smartem_db > "$TEST_DIR/db-dump.sql"
+
+# 3. Create test parameters record
 cat > "$TEST_DIR/test-params.json" << EOF
 {
   "test_type": "post-acquisition",
@@ -461,7 +557,7 @@ cat > "$TEST_DIR/test-params.json" << EOF
 }
 EOF
 
-# 3. Verify all 4 service logs were captured
+# 4. Verify all 4 service logs were captured
 ls -lh "$TEST_DIR/logs/"
 # Expected files:
 #   - playback.log  (microscope recording playback)
@@ -469,17 +565,18 @@ ls -lh "$TEST_DIR/logs/"
 #   - api.log       (backend HTTP API)
 #   - consumer.log  (backend worker/consumer)
 
-# 4. Optional: Capture k8s infrastructure logs if debugging issues
+# 5. Optional: Capture k8s infrastructure logs if debugging issues
 kubectl logs deployment/postgres -n smartem-decisions > "$TEST_DIR/logs/postgres.log"
 kubectl logs deployment/rabbitmq -n smartem-decisions > "$TEST_DIR/logs/rabbitmq.log"
 ```
 
-**Critical logs for analysis**:
-1. **playback.log**: File creation timeline, extraction timing
-2. **agent.log**: File detection, API communication, SSE events
-3. **api.log**: HTTP requests, database writes, SSE connections
-4. **consumer.log**: RabbitMQ message processing, prediction updates
-5. **db-dump.sql**: Final database state (acquisitions, grids, predictions)
+**Critical data for analysis**:
+1. **Filesystem vs Database counts**: Verify data ingestion completeness
+2. **playback.log**: File creation timeline, extraction timing
+3. **agent.log**: File detection, API communication, SSE events, "No grid found" errors
+4. **api.log**: HTTP requests, database writes, SSE connections
+5. **consumer.log**: RabbitMQ message processing, prediction updates
+6. **db-dump.sql**: Final database state (acquisitions, grids, predictions)
 
 ## Monitoring and Verification
 
@@ -518,6 +615,8 @@ A successful test should demonstrate:
 - ✅ Worker processes messages from queue
 - ✅ No errors in any service logs
 - ✅ Database contains expected entities after test
+- ✅ **Filesystem counts match database counts**: EPU sessions → grids, GridSquares → gridsquare rows, MRC files → micrograph rows
+- ✅ **No or minimal "No grid found" messages** in agent.log (indicates proper grid association)
 
 ## Cleanup and Teardown
 

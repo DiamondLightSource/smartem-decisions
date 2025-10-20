@@ -103,3 +103,4 @@ tools/.secrets-*
 
 # E2E test results
 /tmp/e2e-test-results/
+logs/e2e-tests/
