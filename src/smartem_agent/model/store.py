@@ -22,9 +22,9 @@ from smartem_common.utils import get_logger
 logger = get_logger("smartem_agent")
 
 # Retry configuration constants
-DEFAULT_MAX_RETRIES = 5
-DEFAULT_INITIAL_DELAY = 1.0
-DEFAULT_BACKOFF_FACTOR = 1.5
+DEFAULT_MAX_RETRIES = 3
+DEFAULT_INITIAL_DELAY = 0.1
+DEFAULT_BACKOFF_FACTOR = 2.0
 
 
 def retry_with_backoff(
@@ -581,7 +581,7 @@ class PersistentDataStore(InMemoryDataStore):
     @retry_with_backoff()
     def _create_foilhole_with_retry(self, foilhole: FoilHoleData):
         """Create foilhole with retry logic for handling race conditions"""
-        return self.api_client.create_gridsquare_foilholes([foilhole])
+        return self.api_client.create_gridsquare_foilholes(foilhole.gridsquare_uuid, [foilhole])
 
     def update_foilhole(self, foilhole: FoilHoleData):
         try:
