@@ -37,7 +37,7 @@ def setup_test_database() -> str:
     Returns:
         Database URL for the temporary database
     """
-    load_dotenv(dotenv_path=project_root / ".dev.env", override=False)
+    load_dotenv(dotenv_path=project_root / ".env.k8s.development", override=False)
 
     # Get PostgreSQL connection details from environment
     required_vars = ["POSTGRES_HOST", "POSTGRES_PORT", "POSTGRES_USER", "POSTGRES_PASSWORD"]
