@@ -12,7 +12,14 @@
   passes cleanly
 - **New line at end of file**: All files must end with a newline (pre-commit enforces this)
 - **No Comments**: Code should be self-explanatory - avoid explanatory comments
-- **No Emojis**: Never use emojis or font icons in Python code, print statements, or documentation. Use plain text only
+- **ABSOLUTELY NO EMOJIS OR UNICODE SYMBOLS**: Never use emojis, font icons, or special Unicode characters anywhere:
+  - Not in Python code (source files, strings, comments)
+  - Not in print statements or logging messages
+  - Not in documentation (Markdown, RST, docstrings)
+  - Not in commit messages or PR descriptions
+  - Not in configuration files or scripts
+  - Reason: Windows binary compilation uses 'charmap' encoding which causes runtime crashes with Unicode characters
+  - Use plain ASCII text only (brackets, dashes, and standard punctuation are fine)
 - **Modern Python**: Use Python 3.12 typing features (no legacy `typing` imports where unnecessary)
 - **Line Length**: 120 characters maximum (ruff enforces this)
 - **Import Sorting**: Use ruff's import sorting (I001 rule)

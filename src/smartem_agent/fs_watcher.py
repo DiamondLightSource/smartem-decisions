@@ -217,7 +217,7 @@ class RateLimitedFilesystemEventHandler(FileSystemEventHandler):
         instruction_type = instruction_data.get("instruction_type")
         payload = instruction_data.get("payload", {})
 
-        print("\n📨 SSE INSTRUCTION RECEIVED:")
+        print("\n[SSE INSTRUCTION RECEIVED]")
         print(f"   ID: {instruction_id}")
         print(f"   Type: {instruction_type}")
         print(f"   Payload: {payload}")
