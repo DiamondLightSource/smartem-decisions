@@ -137,7 +137,7 @@ logs/e2e-tests/                  # Test results root (gitignored, at repo root)
 ### Environment File Setup
 The `.env.local-test-run` file configures services to run on host OS while connecting to k3s infrastructure.
 
-**Source for initial values**: Copy from `.dev.env` (used by `./tools/dev-k8s.sh` for development cluster)
+**Source for initial values**: Copy from `.env.example.k8s.development` (K8s development environment template)
 
 **Required configuration**:
 - PostgreSQL: Point to k3s NodePort `localhost:30432`
