@@ -217,11 +217,11 @@ class RateLimitedFilesystemEventHandler(FileSystemEventHandler):
         instruction_type = instruction_data.get("instruction_type")
         payload = instruction_data.get("payload", {})
 
-        print("\n[SSE INSTRUCTION RECEIVED]")
-        print(f"   ID: {instruction_id}")
-        print(f"   Type: {instruction_type}")
-        print(f"   Payload: {payload}")
-        print(f"   Timestamp: {instruction_data.get('created_at')}")
+        print("\n[SSE INSTRUCTION RECEIVED]", flush=True)
+        print(f"   ID: {instruction_id}", flush=True)
+        print(f"   Type: {instruction_type}", flush=True)
+        print(f"   Payload: {payload}", flush=True)
+        print(f"   Timestamp: {instruction_data.get('created_at')}", flush=True)
 
         logging.info(f"SSE Instruction - ID: {instruction_id}, Type: {instruction_type}, Payload: {payload}")
 
@@ -323,11 +323,11 @@ class RateLimitedFilesystemEventHandler(FileSystemEventHandler):
         session_id = connection_data.get("session_id")
         connection_id = connection_data.get("connection_id")
 
-        print("\nSSE CONNECTION ESTABLISHED:")
-        print(f"   Agent ID: {agent_id}")
-        print(f"   Session ID: {session_id}")
-        print(f"   Connection ID: {connection_id}")
-        print("   Listening for instructions...")
+        print("\nSSE CONNECTION ESTABLISHED:", flush=True)
+        print(f"   Agent ID: {agent_id}", flush=True)
+        print(f"   Session ID: {session_id}", flush=True)
+        print(f"   Connection ID: {connection_id}", flush=True)
+        print("   Listening for instructions...", flush=True)
 
         logging.info(f"SSE Connected - Agent: {agent_id}, Session: {session_id}, Connection: {connection_id}")
 
