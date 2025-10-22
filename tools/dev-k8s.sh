@@ -22,13 +22,13 @@ load_env_file() {
     # Determine which .env file to load based on DEPLOY_ENV
     case "$DEPLOY_ENV" in
         development)
-            env_file="$PROJECT_ROOT/.dev.env"
+            env_file="$PROJECT_ROOT/.env.k8s.development"
             ;;
         staging)
-            env_file="$PROJECT_ROOT/.env.staging"
+            env_file="$PROJECT_ROOT/.env.k8s.staging"
             ;;
         production)
-            env_file="$PROJECT_ROOT/.env.production"
+            env_file="$PROJECT_ROOT/.env.k8s.production"
             ;;
         *)
             log_error "Unknown DEPLOY_ENV: $DEPLOY_ENV"
@@ -40,8 +40,8 @@ load_env_file() {
     # Check if environment-specific file exists
     if [[ ! -f "$env_file" ]]; then
         if [[ "$DEPLOY_ENV" == "development" ]]; then
-            log_error "Missing .dev.env file at: $env_file"
-            log_error "Please copy .dev.env.example to .dev.env and configure your credentials"
+            log_error "Missing .env.k8s.development file at: $env_file"
+            log_error "Please copy .env.example.k8s.development to .env.k8s.development and configure your credentials"
             log_error "Or use --docker-password parameter with 'gh auth token'"
             exit 1
         else
@@ -89,7 +89,7 @@ validate_credentials() {
         for var in "${missing_vars[@]}"; do
             log_error "  - $var"
         done
-        log_error "Please check .dev.env.example for required variables or use --docker-password parameter"
+        log_error "Please check .env.example.k8s.development for required variables or use --docker-password parameter"
         exit 1
     fi
     
@@ -270,8 +270,8 @@ ensure_app_secrets() {
 
     if [[ "$using_defaults" == true ]]; then
         log_warning "Using hardcoded default credentials!"
-        log_warning "Set environment variables or create .env.$DEPLOY_ENV file with real credentials"
-        log_warning "See .env.$DEPLOY_ENV.example for required variables"
+        log_warning "Set environment variables or create .env.k8s.$DEPLOY_ENV file with real credentials"
+        log_warning "See .env.example.k8s.$DEPLOY_ENV for required variables"
     fi
 
     log_info "Creating application secrets for environment: $DEPLOY_ENV"

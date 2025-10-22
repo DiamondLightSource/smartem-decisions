@@ -106,7 +106,7 @@ The script will:
 
 ### Custom Database Configuration
 
-The script uses environment variables from `.env.k8s.development`:
+The script uses environment variables from `.env.k8s.development` or similar K8s environment files:
 
 ```bash
 POSTGRES_HOST=localhost

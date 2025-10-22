@@ -19,6 +19,23 @@ pip install -e .[mcp]
 
 This installs the required FastMCP 2.0 framework and SmartEM MCP components.
 
+## Configuration
+
+The MCP server can be configured using environment variables. A template configuration file is provided:
+
+```bash
+# Copy the example configuration
+cp .env.example.mcp .env.mcp
+
+# Edit .env.mcp with your settings
+```
+
+Available configuration options (see `.env.example.mcp` for details):
+- `SMARTEM_MCP_DATA_PATH`: Path to EPU sessions directory (for filesystem adapter)
+- `SMARTEM_MCP_API_URL`: SmartEM backend API URL (for API adapter)
+- `SMARTEM_MCP_ADAPTER`: Data adapter selection (`filesystem` or `api`)
+- `SMARTEM_MCP_LOG_LEVEL`: Logging level (`DEBUG`, `INFO`, `WARNING`, `ERROR`)
+
 ## Quick Start
 
 ### 1. Interactive Query Mode
