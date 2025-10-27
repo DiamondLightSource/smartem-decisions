@@ -62,7 +62,7 @@ client = [
 
 # CLI and general utilities
 cli = [
-    "python-dotenv==1.1.1",
+    "python-dotenv==1.2.1",
     "pyyaml",
     "rich",
     "typer==0.20.0",
