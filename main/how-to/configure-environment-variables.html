@@ -1,0 +1,1017 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Configure Environment Variables &#8212; smartem-decisions 0.1.dev384+g0c7843cc2.d20251028 documentation</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+<link href="../_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=4ae1632d" />
+    <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinx-design.min.css?v=95c83b7e" />
+  
+  <!-- So that users can add custom icons -->
+  <script src="../_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
+<link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
+
+    <script src="../_static/documentation_options.js?v=79029fbc"></script>
+    <script src="../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../_static/copybutton.js?v=30646c52"></script>
+    <script src="../_static/design-tabs.js?v=f930bc37"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'how-to/configure-environment-variables';</script>
+    <script>
+        DOCUMENTATION_OPTIONS.theme_version = '0.16.1';
+        DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://DiamondLightSource.github.io/smartem-decisions/switcher.json';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = 'main';
+        DOCUMENTATION_OPTIONS.show_version_warning_banner =
+            false;
+        </script>
+    <link rel="icon" href="../_static/dls-logo.svg"/>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Configure Logging and Verbosity" href="configure-logging.html" />
+    <link rel="prev" title="Using the API Documentation" href="use-api-documentation.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="main" />
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../_static/dls-logo.svg" class="logo__image only-light" alt=""/>
+    <img src="../_static/dls-logo.svg" class="logo__image only-dark pst-js-only" alt=""/>
+  
+  
+    <p class="title logo__title">smartem-decisions</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../tutorials.html">
+    Tutorials
+  </a>
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="../how-to.html">
+    How-to Guides
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../explanations.html">
+    Explanations
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../reference.html">
+    Reference
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/DiamondLightSource/smartem-decisions" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://pypi.org/project/smartem-decisions" title="PyPI" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fas fa-cube fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">PyPI</span></a>
+        </li>
+</ul></div>
+      
+        <div class="navbar-item">
+<div class="version-switcher__container dropdown pst-js-only">
+  <button id="pst-version-switcher-button-2"
+    type="button"
+    class="version-switcher__button btn btn-sm dropdown-toggle"
+    data-bs-toggle="dropdown"
+    aria-haspopup="listbox"
+    aria-controls="pst-version-switcher-list-2"
+    aria-label="Version switcher list"
+  >
+    Choose version  <!-- this text may get changed later by javascript -->
+    <span class="caret"></span>
+  </button>
+  <div id="pst-version-switcher-list-2"
+    class="version-switcher__menu dropdown-menu list-group-flush py-0"
+    role="listbox" aria-labelledby="pst-version-switcher-button-2">
+    <!-- dropdown will be populated by javascript on page load -->
+  </div>
+</div></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+    <button class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../tutorials.html">
+    Tutorials
+  </a>
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="../how-to.html">
+    How-to Guides
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../explanations.html">
+    Explanations
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../reference.html">
+    Reference
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/DiamondLightSource/smartem-decisions" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://pypi.org/project/smartem-decisions" title="PyPI" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fas fa-cube fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">PyPI</span></a>
+        </li>
+</ul></div>
+        
+          <div class="navbar-item">
+<div class="version-switcher__container dropdown pst-js-only">
+  <button id="pst-version-switcher-button-3"
+    type="button"
+    class="version-switcher__button btn btn-sm dropdown-toggle"
+    data-bs-toggle="dropdown"
+    aria-haspopup="listbox"
+    aria-controls="pst-version-switcher-list-3"
+    aria-label="Version switcher list"
+  >
+    Choose version  <!-- this text may get changed later by javascript -->
+    <span class="caret"></span>
+  </button>
+  <div id="pst-version-switcher-list-3"
+    class="version-switcher__menu dropdown-menu list-group-flush py-0"
+    role="listbox" aria-labelledby="pst-version-switcher-button-3">
+    <!-- dropdown will be populated by javascript on page load -->
+  </div>
+</div></div>
+        
+      </div>
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+<nav class="bd-docs-nav bd-links"
+     aria-label="Section Navigation">
+  <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
+  <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="use-api-documentation.html">Using the API Documentation</a></li>
+<li class="toctree-l1 current active"><a class="current reference internal" href="#">Configure Environment Variables</a></li>
+<li class="toctree-l1"><a class="reference internal" href="configure-logging.html">Configure Logging and Verbosity</a></li>
+<li class="toctree-l1"><a class="reference internal" href="container-user-configuration.html">Container User Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="containerization.html">Containerization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contribute.html">Contribute to the project</a></li>
+<li class="toctree-l1"><a class="reference internal" href="database-migrations.html">Database Migrations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="deploy-kubernetes.html">Kubernetes Deployment</a></li>
+<li class="toctree-l1"><a class="reference internal" href="development-tools.html">Development Tools</a></li>
+<li class="toctree-l1"><a class="reference internal" href="generate-docs.html">Generate Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="manage-kubernetes-secrets.html">Managing Kubernetes Secrets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="run-agent.html">Run SmartEM Agent (EPU Agent)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="run-backend.html">Run SmartEM Backend</a></li>
+<li class="toctree-l1"><a class="reference internal" href="run-container.html">Run in a container</a></li>
+<li class="toctree-l1"><a class="reference internal" href="run-e2e-dev-simulation.html">End-to-End Development Test Runs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="troubleshoot-cli.html">SmartEM CLI Troubleshooting Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="use-core-http-api-client.html">How to Use the SmartEM API Client</a></li>
+<li class="toctree-l1"><a class="reference internal" href="use-mcp-interface.html">Using SmartEM MCP Interface</a></li>
+</ul>
+</div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="../how-to.html" class="nav-link">How-to Guides</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Configure Environment Variables</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section id="configure-environment-variables">
+<h1>Configure Environment Variables<a class="headerlink" href="#configure-environment-variables" title="Link to this heading">#</a></h1>
+<p>This guide explains the different environment configuration files used in the SmartEM Decisions project and their specific purposes.</p>
+<section id="overview">
+<h2>Overview<a class="headerlink" href="#overview" title="Link to this heading">#</a></h2>
+<p>The project uses multiple environment configuration patterns for different deployment scenarios:</p>
+<div class="pst-scrollable-table-container"><table class="table">
+<thead>
+<tr class="row-odd"><th class="head"><p>File Pattern</p></th>
+<th class="head"><p>Purpose</p></th>
+<th class="head"><p>Gitignored</p></th>
+<th class="head"><p>Created From</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">.env.example</span></code></p></td>
+<td><p>Template for local development</p></td>
+<td><p>No (committed)</p></td>
+<td><p>N/A</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">.env</span></code></p></td>
+<td><p>Local development on host OS</p></td>
+<td><p>Yes</p></td>
+<td><p>Copy from <code class="docutils literal notranslate"><span class="pre">.env.example</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">.env.example.k8s.development</span></code></p></td>
+<td><p>Template for K8s development</p></td>
+<td><p>No (committed)</p></td>
+<td><p>N/A</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">.env.k8s.development</span></code></p></td>
+<td><p>K8s development cluster config</p></td>
+<td><p>Yes</p></td>
+<td><p>Copy from <code class="docutils literal notranslate"><span class="pre">.env.example.k8s.development</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">.env.example.k8s.staging</span></code></p></td>
+<td><p>Template for K8s staging</p></td>
+<td><p>No (committed)</p></td>
+<td><p>N/A</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">.env.k8s.staging</span></code></p></td>
+<td><p>K8s staging cluster config</p></td>
+<td><p>Yes</p></td>
+<td><p>Copy from <code class="docutils literal notranslate"><span class="pre">.env.example.k8s.staging</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">.env.example.k8s.production</span></code></p></td>
+<td><p>Template for K8s production</p></td>
+<td><p>No (committed)</p></td>
+<td><p>N/A</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">.env.k8s.production</span></code></p></td>
+<td><p>K8s production cluster config</p></td>
+<td><p>Yes</p></td>
+<td><p>Copy from <code class="docutils literal notranslate"><span class="pre">.env.example.k8s.production</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">.env.example.mcp</span></code></p></td>
+<td><p>Template for MCP configuration</p></td>
+<td><p>No (committed)</p></td>
+<td><p>N/A</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">.env.mcp</span></code></p></td>
+<td><p>MCP server configuration</p></td>
+<td><p>Yes</p></td>
+<td><p>Copy from <code class="docutils literal notranslate"><span class="pre">.env.example.mcp</span></code></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="environment-file-types">
+<h2>Environment File Types<a class="headerlink" href="#environment-file-types" title="Link to this heading">#</a></h2>
+<section id="local-development-env">
+<h3>1. Local Development: <code class="docutils literal notranslate"><span class="pre">.env</span></code><a class="headerlink" href="#local-development-env" title="Link to this heading">#</a></h3>
+<p><strong>Use Case</strong>: Running backend services directly on your host OS (outside containers) while connecting to K8s infrastructure.</p>
+<p><strong>When to Use</strong>:</p>
+<ul class="simple">
+<li><p>Day-to-day development with <code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">-m</span> <span class="pre">smartem_backend.consumer</span></code></p></li>
+<li><p>Running API server locally with <code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">-m</span> <span class="pre">smartem_backend.api_server</span></code></p></li>
+<li><p>E2E testing with <code class="docutils literal notranslate"><span class="pre">./tools/run-e2e-test.sh</span></code></p></li>
+<li><p>Manual debugging and development workflows</p></li>
+</ul>
+<p><strong>Setup</strong>:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>cp<span class="w"> </span>.env.example<span class="w"> </span>.env
+<span class="c1"># Edit .env with your local credentials</span>
+</pre></div>
+</div>
+<p><strong>Key Configuration</strong>:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Connect to K8s infrastructure via NodePorts</span>
+<span class="nv">POSTGRES_HOST</span><span class="o">=</span>localhost
+<span class="nv">POSTGRES_PORT</span><span class="o">=</span><span class="m">30432</span><span class="w">          </span><span class="c1"># K8s NodePort for PostgreSQL</span>
+<span class="nv">RABBITMQ_HOST</span><span class="o">=</span>localhost
+<span class="nv">RABBITMQ_PORT</span><span class="o">=</span><span class="m">30672</span><span class="w">          </span><span class="c1"># K8s NodePort for RabbitMQ</span>
+
+<span class="c1"># Run services on host OS</span>
+<span class="nv">HTTP_API_PORT</span><span class="o">=</span><span class="m">8000</span>
+</pre></div>
+</div>
+<p><strong>Used By</strong>:</p>
+<ul class="simple">
+<li><p>Python code via <code class="docutils literal notranslate"><span class="pre">load_dotenv()</span></code> in <code class="docutils literal notranslate"><span class="pre">smartem_backend/consumer.py</span></code>, <code class="docutils literal notranslate"><span class="pre">smartem_backend/utils.py</span></code></p></li>
+<li><p>Docker <code class="docutils literal notranslate"><span class="pre">entrypoint.sh</span></code> when running containers outside Kubernetes</p></li>
+<li><p>E2E test scripts (<code class="docutils literal notranslate"><span class="pre">./tools/run-e2e-test.sh</span></code>)</p></li>
+</ul>
+</section>
+<section id="kubernetes-development-env-k8s-development">
+<h3>2. Kubernetes Development: <code class="docutils literal notranslate"><span class="pre">.env.k8s.development</span></code><a class="headerlink" href="#kubernetes-development-env-k8s-development" title="Link to this heading">#</a></h3>
+<p><strong>Use Case</strong>: Deploying SmartEM to local K8s cluster (k3s) for development.</p>
+<p><strong>When to Use</strong>:</p>
+<ul class="simple">
+<li><p>Running <code class="docutils literal notranslate"><span class="pre">./tools/dev-k8s.sh</span> <span class="pre">up</span></code></p></li>
+<li><p>Setting up local development cluster with all services</p></li>
+</ul>
+<p><strong>Setup</strong>:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>cp<span class="w"> </span>.env.example.k8s.development<span class="w"> </span>.env.k8s.development
+<span class="c1"># Add your DOCKER_USERNAME, DOCKER_EMAIL, DOCKER_PASSWORD (GitHub token)</span>
+</pre></div>
+</div>
+<p><strong>Key Configuration</strong>:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Docker/GHCR credentials for pulling container images</span>
+<span class="nv">DOCKER_USERNAME</span><span class="o">=</span>your-github-username
+<span class="nv">DOCKER_EMAIL</span><span class="o">=</span>your-email@example.com
+<span class="nv">DOCKER_PASSWORD</span><span class="o">=</span>ghp_your_github_token
+
+<span class="c1"># K8s internal service names (not localhost)</span>
+<span class="nv">POSTGRES_HOST</span><span class="o">=</span>postgres-service
+<span class="nv">POSTGRES_PORT</span><span class="o">=</span><span class="m">5432</span>
+<span class="nv">RABBITMQ_HOST</span><span class="o">=</span>rabbitmq-service
+<span class="nv">RABBITMQ_PORT</span><span class="o">=</span><span class="m">5672</span>
+
+<span class="c1"># Credentials (can be simple for local dev)</span>
+<span class="nv">POSTGRES_USER</span><span class="o">=</span>username
+<span class="nv">POSTGRES_PASSWORD</span><span class="o">=</span>password
+<span class="nv">RABBITMQ_USER</span><span class="o">=</span>username
+<span class="nv">RABBITMQ_PASSWORD</span><span class="o">=</span>password
+</pre></div>
+</div>
+<p><strong>Used By</strong>:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">./tools/dev-k8s.sh</span></code> script to create K8s Secrets and ConfigMaps</p></li>
+</ul>
+</section>
+<section id="kubernetes-staging-env-k8s-staging">
+<h3>3. Kubernetes Staging: <code class="docutils literal notranslate"><span class="pre">.env.k8s.staging</span></code><a class="headerlink" href="#kubernetes-staging-env-k8s-staging" title="Link to this heading">#</a></h3>
+<p><strong>Use Case</strong>: Deploying to staging Kubernetes cluster.</p>
+<p><strong>Setup</strong>:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>cp<span class="w"> </span>.env.example.k8s.staging<span class="w"> </span>.env.k8s.staging
+<span class="c1"># Add production-like credentials and configuration</span>
+</pre></div>
+</div>
+<p><strong>Key Differences from Development</strong>:</p>
+<ul class="simple">
+<li><p>Real credentials (not test values)</p></li>
+<li><p>Production-like service names and ports</p></li>
+<li><p>Staging-specific CORS origins</p></li>
+<li><p>May use sealed secrets instead of plain credentials</p></li>
+</ul>
+<p><strong>Used By</strong>:</p>
+<ul class="simple">
+<li><p>CI/CD pipelines for staging deployments</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">DEPLOY_ENV=staging</span> <span class="pre">./tools/dev-k8s.sh</span> <span class="pre">up</span></code> (if adapted for remote clusters)</p></li>
+</ul>
+</section>
+<section id="kubernetes-production-env-k8s-production">
+<h3>4. Kubernetes Production: <code class="docutils literal notranslate"><span class="pre">.env.k8s.production</span></code><a class="headerlink" href="#kubernetes-production-env-k8s-production" title="Link to this heading">#</a></h3>
+<p><strong>Use Case</strong>: Deploying to production Kubernetes cluster.</p>
+<p><strong>Setup</strong>:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>cp<span class="w"> </span>.env.example.k8s.production<span class="w"> </span>.env.k8s.production
+<span class="c1"># Add production credentials (should use Sealed Secrets in practice)</span>
+</pre></div>
+</div>
+<p><strong>Security Considerations</strong>:</p>
+<ul class="simple">
+<li><p>Should use Sealed Secrets (encrypted) instead of plain <code class="docutils literal notranslate"><span class="pre">.env</span></code> files</p></li>
+<li><p>Credentials should be rotated regularly</p></li>
+<li><p>Access to this file should be strictly controlled</p></li>
+<li><p>See <a class="reference internal" href="manage-kubernetes-secrets.html"><span class="std std-doc">Manage Kubernetes Secrets</span></a> for best practices</p></li>
+</ul>
+<p><strong>Used By</strong>:</p>
+<ul class="simple">
+<li><p>Production CI/CD pipelines</p></li>
+<li><p>Production deployment automation</p></li>
+</ul>
+</section>
+<section id="mcp-configuration-env-mcp">
+<h3>5. MCP Configuration: <code class="docutils literal notranslate"><span class="pre">.env.mcp</span></code><a class="headerlink" href="#mcp-configuration-env-mcp" title="Link to this heading">#</a></h3>
+<p><strong>Use Case</strong>: Configuring Model Context Protocol (MCP) server for Claude Code integration.</p>
+<p><strong>Setup</strong>:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>cp<span class="w"> </span>.env.example.mcp<span class="w"> </span>.env.mcp
+<span class="c1"># Configure paths and adapter settings</span>
+</pre></div>
+</div>
+<p><strong>Key Configuration</strong>:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nv">SMARTEM_MCP_DATA_PATH</span><span class="o">=</span>/path/to/epu/sessions<span class="w">    </span><span class="c1"># Filesystem adapter</span>
+<span class="nv">SMARTEM_MCP_API_URL</span><span class="o">=</span>http://backend:8000<span class="w">        </span><span class="c1"># API adapter</span>
+<span class="nv">SMARTEM_MCP_ADAPTER</span><span class="o">=</span>filesystem<span class="w">                 </span><span class="c1"># Adapter selection</span>
+<span class="nv">SMARTEM_MCP_LOG_LEVEL</span><span class="o">=</span>INFO
+</pre></div>
+</div>
+<p><strong>Used By</strong>:</p>
+<ul class="simple">
+<li><p>MCP server when run via Claude Code</p></li>
+<li><p>See <a class="reference internal" href="use-mcp-interface.html"><span class="std std-doc">Use MCP Interface</span></a> for details</p></li>
+</ul>
+</section>
+</section>
+<section id="quick-start-first-time-setup">
+<h2>Quick Start: First-Time Setup<a class="headerlink" href="#quick-start-first-time-setup" title="Link to this heading">#</a></h2>
+<p>For local development on a new machine:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># 1. Copy environment templates</span>
+cp<span class="w"> </span>.env.example<span class="w"> </span>.env
+cp<span class="w"> </span>.env.example.k8s.development<span class="w"> </span>.env.k8s.development
+
+<span class="c1"># 2. Edit .env.k8s.development with your GitHub credentials</span>
+<span class="c1"># Required: DOCKER_USERNAME, DOCKER_EMAIL, DOCKER_PASSWORD</span>
+nano<span class="w"> </span>.env.k8s.development
+
+<span class="c1"># 3. Start K8s cluster (creates infrastructure)</span>
+./tools/dev-k8s.sh<span class="w"> </span>up
+
+<span class="c1"># 4. .env is already configured to connect to K8s NodePorts</span>
+<span class="c1"># No changes needed unless you want custom ports</span>
+
+<span class="c1"># 5. Test local development</span>
+<span class="nb">source</span><span class="w"> </span>.venv/bin/activate
+python<span class="w"> </span>-m<span class="w"> </span>smartem_backend.api_server
+</pre></div>
+</div>
+</section>
+<section id="how-environment-variables-are-loaded">
+<h2>How Environment Variables Are Loaded<a class="headerlink" href="#how-environment-variables-are-loaded" title="Link to this heading">#</a></h2>
+<section id="python-services">
+<h3>Python Services<a class="headerlink" href="#python-services" title="Link to this heading">#</a></h3>
+<p>All Python services use <code class="docutils literal notranslate"><span class="pre">load_dotenv(override=False)</span></code>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">dotenv</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_dotenv</span>
+<span class="n">load_dotenv</span><span class="p">(</span><span class="n">override</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>  <span class="c1"># Loads .env but doesn&#39;t override existing env vars</span>
+</pre></div>
+</div>
+<p><strong>Loading Priority</strong> (first wins):</p>
+<ol class="arabic simple">
+<li><p>Already exported environment variables (from <code class="docutils literal notranslate"><span class="pre">export</span></code> or <code class="docutils literal notranslate"><span class="pre">source</span> <span class="pre">.env</span></code>)</p></li>
+<li><p>Variables in <code class="docutils literal notranslate"><span class="pre">.env</span></code> file (loaded by <code class="docutils literal notranslate"><span class="pre">load_dotenv()</span></code>)</p></li>
+<li><p>Hardcoded defaults in code (if any)</p></li>
+</ol>
+<p><strong>Important for Testing</strong>:
+When running E2E tests or manual services, you must export variables BEFORE starting services:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Export all variables from .env</span>
+<span class="nb">set</span><span class="w"> </span>-a<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="nb">source</span><span class="w"> </span>.env<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="nb">set</span><span class="w"> </span>+a
+
+<span class="c1"># Now start services</span>
+python<span class="w"> </span>-m<span class="w"> </span>smartem_backend.api_server
+python<span class="w"> </span>-m<span class="w"> </span>smartem_backend.consumer
+</pre></div>
+</div>
+</section>
+<section id="docker-containers">
+<h3>Docker Containers<a class="headerlink" href="#docker-containers" title="Link to this heading">#</a></h3>
+<p>Container behaviour depends on runtime environment:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># entrypoint.sh checks for Kubernetes</span>
+<span class="k">if</span><span class="w"> </span><span class="o">[</span><span class="w"> </span>-z<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$KUBERNETES_SERVICE_HOST</span><span class="s2">&quot;</span><span class="w"> </span><span class="o">]</span><span class="p">;</span><span class="w"> </span><span class="k">then</span>
+<span class="w">    </span><span class="c1"># Running locally - source .env file</span>
+<span class="w">    </span><span class="nb">source</span><span class="w"> </span>.env
+<span class="k">else</span>
+<span class="w">    </span><span class="c1"># Running in K8s - use ConfigMap/Secrets</span>
+<span class="w">    </span><span class="c1"># Variables already injected by K8s</span>
+<span class="k">fi</span>
+</pre></div>
+</div>
+</section>
+<section id="kubernetes-deployments">
+<h3>Kubernetes Deployments<a class="headerlink" href="#kubernetes-deployments" title="Link to this heading">#</a></h3>
+<p>When running in Kubernetes:</p>
+<ul class="simple">
+<li><p>ConfigMaps provide non-sensitive configuration (hosts, ports, URLs)</p></li>
+<li><p>Secrets provide sensitive data (passwords, tokens)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">.env</span></code> files are NOT used inside containers</p></li>
+<li><p>All configuration comes from K8s resources created by <code class="docutils literal notranslate"><span class="pre">dev-k8s.sh</span></code></p></li>
+</ul>
+</section>
+</section>
+<section id="common-scenarios">
+<h2>Common Scenarios<a class="headerlink" href="#common-scenarios" title="Link to this heading">#</a></h2>
+<section id="scenario-1-local-development-with-k8s-infrastructure">
+<h3>Scenario 1: Local Development with K8s Infrastructure<a class="headerlink" href="#scenario-1-local-development-with-k8s-infrastructure" title="Link to this heading">#</a></h3>
+<p><strong>Goal</strong>: Run backend/agent on host OS, connect to K8s database/RabbitMQ.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># 1. Start K8s cluster</span>
+./tools/dev-k8s.sh<span class="w"> </span>up
+
+<span class="c1"># 2. Use .env (already configured for NodePorts)</span>
+cat<span class="w"> </span>.env
+<span class="c1"># POSTGRES_HOST=localhost</span>
+<span class="c1"># POSTGRES_PORT=30432</span>
+<span class="c1"># RABBITMQ_HOST=localhost</span>
+<span class="c1"># RABBITMQ_PORT=30672</span>
+
+<span class="c1"># 3. Run services on host</span>
+<span class="nb">source</span><span class="w"> </span>.venv/bin/activate
+python<span class="w"> </span>-m<span class="w"> </span>smartem_backend.api_server<span class="w">    </span><span class="c1"># Uses .env via load_dotenv()</span>
+python<span class="w"> </span>-m<span class="w"> </span>smartem_backend.consumer<span class="w"> </span>-vv<span class="w">  </span><span class="c1"># Uses .env via load_dotenv()</span>
+</pre></div>
+</div>
+</section>
+<section id="scenario-2-full-k8s-deployment">
+<h3>Scenario 2: Full K8s Deployment<a class="headerlink" href="#scenario-2-full-k8s-deployment" title="Link to this heading">#</a></h3>
+<p><strong>Goal</strong>: Everything runs in K8s (no host OS services).</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># 1. Configure K8s environment</span>
+cp<span class="w"> </span>.env.example.k8s.development<span class="w"> </span>.env.k8s.development
+<span class="c1"># Edit with your credentials</span>
+
+<span class="c1"># 2. Deploy</span>
+./tools/dev-k8s.sh<span class="w"> </span>up
+
+<span class="c1"># 3. All services run in pods</span>
+kubectl<span class="w"> </span>get<span class="w"> </span>pods<span class="w"> </span>-n<span class="w"> </span>smartem-decisions
+<span class="c1"># Access via NodePorts:</span>
+<span class="c1"># - API: http://localhost:30080</span>
+<span class="c1"># - Adminer: http://localhost:30808</span>
+<span class="c1"># - RabbitMQ UI: http://localhost:30673</span>
+</pre></div>
+</div>
+</section>
+<section id="scenario-3-e2e-testing">
+<h3>Scenario 3: E2E Testing<a class="headerlink" href="#scenario-3-e2e-testing" title="Link to this heading">#</a></h3>
+<p><strong>Goal</strong>: Run automated E2E tests with recorded microscope data.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># 1. Ensure .env exists and is configured</span>
+<span class="nb">test</span><span class="w"> </span>-f<span class="w"> </span>.env<span class="w"> </span><span class="o">||</span><span class="w"> </span>cp<span class="w"> </span>.env.example<span class="w"> </span>.env
+
+<span class="c1"># 2. Start K8s cluster</span>
+./tools/dev-k8s.sh<span class="w"> </span>up
+
+<span class="c1"># 3. Run E2E test (script loads .env automatically)</span>
+./tools/run-e2e-test.sh
+
+<span class="c1"># The script does:</span>
+<span class="c1"># - source .env (loads variables)</span>
+<span class="c1"># - Starts services on host OS</span>
+<span class="c1"># - Runs recorded data playback</span>
+<span class="c1"># - Collects results</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="troubleshooting">
+<h2>Troubleshooting<a class="headerlink" href="#troubleshooting" title="Link to this heading">#</a></h2>
+<section id="issue-services-can-t-connect-to-database">
+<h3>Issue: Services can’t connect to database<a class="headerlink" href="#issue-services-can-t-connect-to-database" title="Link to this heading">#</a></h3>
+<p><strong>Symptom</strong>: <code class="docutils literal notranslate"><span class="pre">psycopg2.OperationalError:</span> <span class="pre">could</span> <span class="pre">not</span> <span class="pre">connect</span> <span class="pre">to</span> <span class="pre">server</span></code></p>
+<p><strong>Check</strong>:</p>
+<ol class="arabic">
+<li><p>Is K8s cluster running? <code class="docutils literal notranslate"><span class="pre">kubectl</span> <span class="pre">get</span> <span class="pre">pods</span> <span class="pre">-n</span> <span class="pre">smartem-decisions</span></code></p></li>
+<li><p>Are NodePorts accessible? <code class="docutils literal notranslate"><span class="pre">curl</span> <span class="pre">http://localhost:30432</span></code> (should refuse connection but not timeout)</p></li>
+<li><p>Is <code class="docutils literal notranslate"><span class="pre">.env</span></code> configured correctly?</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>grep<span class="w"> </span>POSTGRES<span class="w"> </span>.env
+<span class="c1"># Should show localhost:30432 for K8s NodePort</span>
+</pre></div>
+</div>
+</li>
+</ol>
+</section>
+<section id="issue-docker-password-invalid-in-dev-k8s-sh">
+<h3>Issue: Docker password invalid in dev-k8s.sh<a class="headerlink" href="#issue-docker-password-invalid-in-dev-k8s-sh" title="Link to this heading">#</a></h3>
+<p><strong>Symptom</strong>: <code class="docutils literal notranslate"><span class="pre">DOCKER_PASSWORD</span> <span class="pre">does</span> <span class="pre">not</span> <span class="pre">appear</span> <span class="pre">to</span> <span class="pre">be</span> <span class="pre">a</span> <span class="pre">valid</span> <span class="pre">GitHub</span> <span class="pre">token</span></code></p>
+<p><strong>Solution</strong>:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Generate token: https://github.com/settings/tokens</span>
+<span class="c1"># Or use GitHub CLI</span>
+gh<span class="w"> </span>auth<span class="w"> </span>token
+
+<span class="c1"># Add to .env.k8s.development</span>
+<span class="nv">DOCKER_PASSWORD</span><span class="o">=</span>ghp_your_token_here
+</pre></div>
+</div>
+</section>
+<section id="issue-services-using-wrong-database">
+<h3>Issue: Services using wrong database<a class="headerlink" href="#issue-services-using-wrong-database" title="Link to this heading">#</a></h3>
+<p><strong>Symptom</strong>: Services connect to different database than expected.</p>
+<p><strong>Check loading priority</strong>:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Unset ALL environment variables first</span>
+<span class="nb">unset</span><span class="w"> </span>POSTGRES_HOST<span class="w"> </span>POSTGRES_PORT<span class="w"> </span>POSTGRES_DB<span class="w"> </span>POSTGRES_USER<span class="w"> </span>POSTGRES_PASSWORD
+
+<span class="c1"># Then load .env</span>
+<span class="nb">set</span><span class="w"> </span>-a<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="nb">source</span><span class="w"> </span>.env<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="nb">set</span><span class="w"> </span>+a
+
+<span class="c1"># Verify variables</span>
+env<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>POSTGRES
+</pre></div>
+</div>
+</section>
+</section>
+<section id="related-documentation">
+<h2>Related Documentation<a class="headerlink" href="#related-documentation" title="Link to this heading">#</a></h2>
+<ul class="simple">
+<li><p><a class="reference internal" href="run-backend.html"><span class="std std-doc">Run Backend Services</span></a> - Starting backend API and consumer</p></li>
+<li><p><a class="reference internal" href="run-e2e-dev-simulation.html"><span class="std std-doc">Run E2E Development Simulation</span></a> - E2E testing workflows</p></li>
+<li><p><a class="reference internal" href="deploy-kubernetes.html"><span class="std std-doc">Deploy to Kubernetes</span></a> - K8s deployment guide</p></li>
+<li><p><a class="reference internal" href="manage-kubernetes-secrets.html"><span class="std std-doc">Manage Kubernetes Secrets</span></a> - Sealed Secrets and security</p></li>
+<li><p><a class="reference internal" href="database-migrations.html"><span class="std std-doc">Database Migrations</span></a> - Alembic migration workflow</p></li>
+<li><p><a class="reference internal" href="use-mcp-interface.html"><span class="std std-doc">Use MCP Interface</span></a> - Claude Code MCP integration</p></li>
+</ul>
+</section>
+</section>
+
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="use-api-documentation.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">Using the API Documentation</p>
+      </div>
+    </a>
+    <a class="right-next"
+       href="configure-logging.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">Configure Logging and Verbosity</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#overview">Overview</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#environment-file-types">Environment File Types</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#local-development-env">1. Local Development: <code class="docutils literal notranslate"><span class="pre">.env</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#kubernetes-development-env-k8s-development">2. Kubernetes Development: <code class="docutils literal notranslate"><span class="pre">.env.k8s.development</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#kubernetes-staging-env-k8s-staging">3. Kubernetes Staging: <code class="docutils literal notranslate"><span class="pre">.env.k8s.staging</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#kubernetes-production-env-k8s-production">4. Kubernetes Production: <code class="docutils literal notranslate"><span class="pre">.env.k8s.production</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#mcp-configuration-env-mcp">5. MCP Configuration: <code class="docutils literal notranslate"><span class="pre">.env.mcp</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#quick-start-first-time-setup">Quick Start: First-Time Setup</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#how-environment-variables-are-loaded">How Environment Variables Are Loaded</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#python-services">Python Services</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#docker-containers">Docker Containers</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#kubernetes-deployments">Kubernetes Deployments</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#common-scenarios">Common Scenarios</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#scenario-1-local-development-with-k8s-infrastructure">Scenario 1: Local Development with K8s Infrastructure</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#scenario-2-full-k8s-deployment">Scenario 2: Full K8s Deployment</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#scenario-3-e2e-testing">Scenario 3: E2E Testing</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#troubleshooting">Troubleshooting</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#issue-services-can-t-connect-to-database">Issue: Services can’t connect to database</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#issue-docker-password-invalid-in-dev-k8s-sh">Issue: Docker password invalid in dev-k8s.sh</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#issue-services-using-wrong-database">Issue: Services using wrong database</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#related-documentation">Related Documentation</a></li>
+</ul>
+  </nav></div>
+
+  <div class="sidebar-secondary-item">
+
+  
+  <div class="tocsection editthispage">
+    <a href="https://github.com/DiamondLightSource/smartem-decisions/edit/main/docs/how-to/configure-environment-variables.md">
+      <i class="fa-solid fa-pencil"></i>
+      
+      
+        
+          Edit on GitHub
+        
+      
+    </a>
+  </div>
+</div>
+
+  <div class="sidebar-secondary-item">
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/how-to/configure-environment-variables.md.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div></div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf"></script>
+<script defer src="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.16.1.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>

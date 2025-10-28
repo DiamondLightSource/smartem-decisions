@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Database Schema Drift Prevention &#8212; smartem-decisions 0.1.dev383+g682959e6f.d20251022 documentation</title>
+    <title>Database Schema Drift Prevention &#8212; smartem-decisions 0.1.dev384+g0c7843cc2.d20251028 documentation</title>
   
   
   
@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="_static/documentation_options.js?v=0f0d0625"></script>
+    <script src="_static/documentation_options.js?v=79029fbc"></script>
     <script src="_static/doctools.js?v=9bcbadda"></script>
     <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/clipboard.min.js?v=a7894cd8"></script>
@@ -535,7 +535,7 @@ git<span class="w"> </span>commit<span class="w"> </span>-m<span class="w"> </sp
 <section id="running-the-check-locally">
 <h2>Running the Check Locally<a class="headerlink" href="#running-the-check-locally" title="Link to this heading">#</a></h2>
 <p>You can run the schema drift check locally before pushing:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Ensure you have a PostgreSQL instance running and .dev.env configured</span>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Ensure you have a PostgreSQL instance running and .env.k8s.development configured</span>
 python<span class="w"> </span>tools/check_schema_drift.py
 </pre></div>
 </div>
@@ -552,7 +552,7 @@ python<span class="w"> </span>tools/check_schema_drift.py
 <h2>Advanced Usage<a class="headerlink" href="#advanced-usage" title="Link to this heading">#</a></h2>
 <section id="custom-database-configuration">
 <h3>Custom Database Configuration<a class="headerlink" href="#custom-database-configuration" title="Link to this heading">#</a></h3>
-<p>The script uses environment variables from <code class="docutils literal notranslate"><span class="pre">.dev.env</span></code>:</p>
+<p>The script uses environment variables from <code class="docutils literal notranslate"><span class="pre">.env.k8s.development</span></code>:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nv">POSTGRES_HOST</span><span class="o">=</span>localhost
 <span class="nv">POSTGRES_PORT</span><span class="o">=</span><span class="m">5432</span>
 <span class="nv">POSTGRES_USER</span><span class="o">=</span>your_user
@@ -609,7 +609,7 @@ python<span class="w"> </span>tools/check_schema_drift.py
 <h3>Common Issues<a class="headerlink" href="#common-issues" title="Link to this heading">#</a></h3>
 <p><strong>Issue</strong>: “Environment variable POSTGRES_X not set”</p>
 <ul class="simple">
-<li><p><strong>Solution</strong>: Ensure <code class="docutils literal notranslate"><span class="pre">.dev.env</span></code> is properly configured with database credentials</p></li>
+<li><p><strong>Solution</strong>: Ensure <code class="docutils literal notranslate"><span class="pre">.env.k8s.development</span></code> is properly configured with database credentials</p></li>
 </ul>
 <p><strong>Issue</strong>: “Error creating temporary database”</p>
 <ul class="simple">

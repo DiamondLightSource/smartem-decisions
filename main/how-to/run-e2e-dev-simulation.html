@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>End-to-End Development Test Runs &#8212; smartem-decisions 0.1.dev383+g682959e6f.d20251022 documentation</title>
+    <title>End-to-End Development Test Runs &#8212; smartem-decisions 0.1.dev384+g0c7843cc2.d20251028 documentation</title>
   
   
   
@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../_static/documentation_options.js?v=0f0d0625"></script>
+    <script src="../_static/documentation_options.js?v=79029fbc"></script>
     <script src="../_static/doctools.js?v=9bcbadda"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -398,6 +398,7 @@
   <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
   <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
 <li class="toctree-l1"><a class="reference internal" href="use-api-documentation.html">Using the API Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="configure-environment-variables.html">Configure Environment Variables</a></li>
 <li class="toctree-l1"><a class="reference internal" href="configure-logging.html">Configure Logging and Verbosity</a></li>
 <li class="toctree-l1"><a class="reference internal" href="container-user-configuration.html">Container User Configuration</a></li>
 <li class="toctree-l1"><a class="reference internal" href="containerization.html">Containerization</a></li>
@@ -502,7 +503,7 @@
 <p><strong>What the script does</strong>:</p>
 <ul class="simple">
 <li><p>Creates timestamped test results directory in <code class="docutils literal notranslate"><span class="pre">logs/e2e-tests/</span></code></p></li>
-<li><p>Activates venv and loads environment variables from <code class="docutils literal notranslate"><span class="pre">.env.local-test-run</span></code></p></li>
+<li><p>Activates venv and loads environment variables from <code class="docutils literal notranslate"><span class="pre">.env</span></code></p></li>
 <li><p>Resets database to clean state</p></li>
 <li><p>Starts API server and consumer</p></li>
 <li><p>Starts agent watching empty directory</p></li>
@@ -535,7 +536,7 @@
 <span class="nb">unset</span><span class="w"> </span>POSTGRES_HOST<span class="w"> </span>POSTGRES_PORT<span class="w"> </span>POSTGRES_DB<span class="w"> </span>POSTGRES_USER<span class="w"> </span>POSTGRES_PASSWORD
 <span class="nb">unset</span><span class="w"> </span>RABBITMQ_HOST<span class="w"> </span>RABBITMQ_PORT<span class="w"> </span>RABBITMQ_USER<span class="w"> </span>RABBITMQ_PASSWORD
 <span class="nb">unset</span><span class="w"> </span>HTTP_API_HOST<span class="w"> </span>HTTP_API_PORT
-<span class="nb">set</span><span class="w"> </span>-a<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="nb">source</span><span class="w"> </span>.env.local-test-run<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="nb">set</span><span class="w"> </span>+a
+<span class="nb">set</span><span class="w"> </span>-a<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="nb">source</span><span class="w"> </span>.env<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="nb">set</span><span class="w"> </span>+a
 
 <span class="c1"># 3. Create timestamped test directory</span>
 <span class="nv">TEST_DIR</span><span class="o">=</span><span class="s2">&quot;logs/e2e-tests/</span><span class="k">$(</span>date<span class="w"> </span>+%Y-%m-%d_%H%M%S<span class="k">)</span><span class="s2">_test-type-name&quot;</span>
@@ -591,7 +592,7 @@ python<span class="w"> </span>-m<span class="w"> </span>smartem_agent<span class
 <li><p>Python 3.12+ with venv activated: <code class="docutils literal notranslate"><span class="pre">source</span> <span class="pre">.venv/bin/activate</span></code></p></li>
 <li><p>Full development install: <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">-e</span> <span class="pre">.[all]</span></code></p></li>
 <li><p>Local k3s cluster running: <code class="docutils literal notranslate"><span class="pre">./tools/dev-k8s.sh</span> <span class="pre">up</span></code></p></li>
-<li><p>Environment file: <code class="docutils literal notranslate"><span class="pre">.env.local-test-run</span></code> (created manually - see Environment File Setup below)</p></li>
+<li><p>Environment file: <code class="docutils literal notranslate"><span class="pre">.env</span></code> (created from <code class="docutils literal notranslate"><span class="pre">.env.example</span></code> - see Environment File Setup below)</p></li>
 </ul>
 </section>
 <section id="test-data">
@@ -619,8 +620,8 @@ python<span class="w"> </span>-m<span class="w"> </span>smartem_agent<span class
 </section>
 <section id="environment-file-setup">
 <h3>Environment File Setup<a class="headerlink" href="#environment-file-setup" title="Link to this heading">#</a></h3>
-<p>The <code class="docutils literal notranslate"><span class="pre">.env.local-test-run</span></code> file configures services to run on host OS while connecting to k3s infrastructure.</p>
-<p><strong>Source for initial values</strong>: Copy from <code class="docutils literal notranslate"><span class="pre">.dev.env</span></code> (used by <code class="docutils literal notranslate"><span class="pre">./tools/dev-k8s.sh</span></code> for development cluster)</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">.env</span></code> file configures services to run on host OS while connecting to k3s infrastructure.</p>
+<p><strong>Source for initial values</strong>: Copy from <code class="docutils literal notranslate"><span class="pre">.env.example</span></code> and configure credentials</p>
 <p><strong>Required configuration</strong>:</p>
 <ul class="simple">
 <li><p>PostgreSQL: Point to k3s NodePort <code class="docutils literal notranslate"><span class="pre">localhost:30432</span></code></p></li>
@@ -628,7 +629,7 @@ python<span class="w"> </span>-m<span class="w"> </span>smartem_agent<span class
 <li><p>Backend API: Run on host OS (typically <code class="docutils literal notranslate"><span class="pre">127.0.0.1:8000</span></code>)</p></li>
 <li><p>Agent: Run on host OS</p></li>
 </ul>
-<p><strong>Example <code class="docutils literal notranslate"><span class="pre">.env.local-test-run</span></code></strong>:</p>
+<p><strong>Example <code class="docutils literal notranslate"><span class="pre">.env</span></code></strong>:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Database connection (k3s NodePort)</span>
 <span class="nv">POSTGRES_HOST</span><span class="o">=</span>localhost
 <span class="nv">POSTGRES_PORT</span><span class="o">=</span><span class="m">30432</span>
@@ -647,7 +648,7 @@ python<span class="w"> </span>-m<span class="w"> </span>smartem_agent<span class
 <span class="nv">HTTP_API_PORT</span><span class="o">=</span><span class="m">8000</span>
 </pre></div>
 </div>
-<p><strong>Usage</strong>: <code class="docutils literal notranslate"><span class="pre">source</span> <span class="pre">.env.local-test-run</span></code> before starting services</p>
+<p><strong>Usage</strong>: <code class="docutils literal notranslate"><span class="pre">source</span> <span class="pre">.env</span></code> before starting services</p>
 </section>
 </section>
 <section id="database-operations">
@@ -670,7 +671,7 @@ python<span class="w"> </span>-m<span class="w"> </span>smartem_backend.model.da
 <section id="connecting-to-database">
 <h3>Connecting to Database<a class="headerlink" href="#connecting-to-database" title="Link to this heading">#</a></h3>
 <p>From host OS (using k3s NodePort mappings):</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Connection details (from .env.local-test-run)</span>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Connection details (from .env)</span>
 <span class="nv">POSTGRES_HOST</span><span class="o">=</span>localhost
 <span class="nv">POSTGRES_PORT</span><span class="o">=</span><span class="m">30432</span>
 <span class="nv">POSTGRES_DB</span><span class="o">=</span>smartem_db
@@ -721,7 +722,7 @@ kubectl<span class="w"> </span>rollout<span class="w"> </span>status<span class=
 <h2>Service Commands<a class="headerlink" href="#service-commands" title="Link to this heading">#</a></h2>
 <p><strong>IMPORTANT - Environment Variables</strong>:
 All services use <code class="docutils literal notranslate"><span class="pre">load_dotenv(override=False)</span></code> which loads <code class="docutils literal notranslate"><span class="pre">.env</span></code> by default but doesn’t override already-set variables.
-For testing, you MUST export variables from <code class="docutils literal notranslate"><span class="pre">.env.local-test-run</span></code> before starting services:</p>
+For testing, you MUST export variables from <code class="docutils literal notranslate"><span class="pre">.env</span></code> before starting services:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Unset any previously loaded env vars to avoid conflicts</span>
 <span class="nb">unset</span><span class="w"> </span>POSTGRES_HOST<span class="w"> </span>POSTGRES_PORT<span class="w"> </span>POSTGRES_DB<span class="w"> </span>POSTGRES_USER<span class="w"> </span>POSTGRES_PASSWORD
 <span class="nb">unset</span><span class="w"> </span>RABBITMQ_HOST<span class="w"> </span>RABBITMQ_PORT<span class="w"> </span>RABBITMQ_USER<span class="w"> </span>RABBITMQ_PASSWORD
@@ -729,7 +730,7 @@ For testing, you MUST export variables from <code class="docutils literal notran
 
 <span class="c1"># Load test environment (exports all variables)</span>
 <span class="nb">set</span><span class="w"> </span>-a
-<span class="nb">source</span><span class="w"> </span>.env.local-test-run
+<span class="nb">source</span><span class="w"> </span>.env
 <span class="nb">set</span><span class="w"> </span>+a
 </pre></div>
 </div>
@@ -853,7 +854,7 @@ python<span class="w"> </span>./tools/fsrecorder/fsrecorder.py<span class="w"> <
 
 <span class="c1"># 2. Load test environment variables (export all)</span>
 <span class="nb">set</span><span class="w"> </span>-a
-<span class="nb">source</span><span class="w"> </span>.env.local-test-run
+<span class="nb">source</span><span class="w"> </span>.env
 <span class="nb">set</span><span class="w"> </span>+a
 
 <span class="c1"># 3. Create test results directory with timestamp</span>
