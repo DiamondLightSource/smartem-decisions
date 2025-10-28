@@ -27,7 +27,7 @@ For the simplest test execution, use the automated test runner script:
 
 **What the script does**:
 - Creates timestamped test results directory in `logs/e2e-tests/`
-- Activates venv and loads environment variables from `.env.local-test-run`
+- Activates venv and loads environment variables from `.env`
 - Resets database to clean state
 - Starts API server and consumer
 - Starts agent watching empty directory
@@ -59,7 +59,7 @@ If you've already set up once and just need to run another test:
 unset POSTGRES_HOST POSTGRES_PORT POSTGRES_DB POSTGRES_USER POSTGRES_PASSWORD
 unset RABBITMQ_HOST RABBITMQ_PORT RABBITMQ_USER RABBITMQ_PASSWORD
 unset HTTP_API_HOST HTTP_API_PORT
-set -a && source .env.local-test-run && set +a
+set -a && source .env && set +a
 
 # 3. Create timestamped test directory
 TEST_DIR="logs/e2e-tests/$(date +%Y-%m-%d_%H%M%S)_test-type-name"
@@ -112,7 +112,7 @@ The test setup simulates a complete SmartEM workflow:
 - Python 3.12+ with venv activated: `source .venv/bin/activate`
 - Full development install: `pip install -e .[all]`
 - Local k3s cluster running: `./tools/dev-k8s.sh up`
-- Environment file: `.env.local-test-run` (created manually - see Environment File Setup below)
+- Environment file: `.env` (created from `.env.example` - see Environment File Setup below)
 
 ### Test Data
 Pre-recorded microscope sessions are stored in `~/dev/DLS/smartem-decisions-test-recordings/`:
@@ -135,9 +135,9 @@ logs/e2e-tests/                  # Test results root (gitignored, at repo root)
 ```
 
 ### Environment File Setup
-The `.env.local-test-run` file configures services to run on host OS while connecting to k3s infrastructure.
+The `.env` file configures services to run on host OS while connecting to k3s infrastructure.
 
-**Source for initial values**: Copy from `.dev.env` (used by `./tools/dev-k8s.sh` for development cluster)
+**Source for initial values**: Copy from `.env.example` and configure credentials
 
 **Required configuration**:
 - PostgreSQL: Point to k3s NodePort `localhost:30432`
@@ -145,7 +145,7 @@ The `.env.local-test-run` file configures services to run on host OS while conne
 - Backend API: Run on host OS (typically `127.0.0.1:8000`)
 - Agent: Run on host OS
 
-**Example `.env.local-test-run`**:
+**Example `.env`**:
 ```bash
 # Database connection (k3s NodePort)
 POSTGRES_HOST=localhost
@@ -165,7 +165,7 @@ HTTP_API_HOST=127.0.0.1
 HTTP_API_PORT=8000
 ```
 
-**Usage**: `source .env.local-test-run` before starting services
+**Usage**: `source .env` before starting services
 
 ## Database Operations
 
@@ -185,7 +185,7 @@ python -m smartem_backend.model.database
 ### Connecting to Database
 From host OS (using k3s NodePort mappings):
 ```bash
-# Connection details (from .env.local-test-run)
+# Connection details (from .env)
 POSTGRES_HOST=localhost
 POSTGRES_PORT=30432
 POSTGRES_DB=smartem_db
@@ -229,7 +229,7 @@ kubectl rollout status deployment/rabbitmq -n smartem-decisions
 
 **IMPORTANT - Environment Variables**:
 All services use `load_dotenv(override=False)` which loads `.env` by default but doesn't override already-set variables.
-For testing, you MUST export variables from `.env.local-test-run` before starting services:
+For testing, you MUST export variables from `.env` before starting services:
 
 ```bash
 # Unset any previously loaded env vars to avoid conflicts
@@ -239,7 +239,7 @@ unset HTTP_API_HOST HTTP_API_PORT
 
 # Load test environment (exports all variables)
 set -a
-source .env.local-test-run
+source .env
 set +a
 ```
 
@@ -355,7 +355,7 @@ unset HTTP_API_HOST HTTP_API_PORT
 
 # 2. Load test environment variables (export all)
 set -a
-source .env.local-test-run
+source .env
 set +a
 
 # 3. Create test results directory with timestamp

@@ -42,7 +42,7 @@ source .venv/bin/activate
 
 echo "[3/9] Loading environment variables..."
 set -a
-source .env.local-test-run
+source .env
 set +a
 
 echo "[4/9] Resetting database..."
