@@ -55,6 +55,10 @@ class SmartEMWatcherV2(FileSystemEventHandler):
         processing_interval: float = 0.05,
         orphan_timeout: float = 300.0,
         orphan_check_interval: float = 60.0,
+        error_max_retries: int = 5,
+        error_base_delay: float = 1.0,
+        error_max_delay: float = 60.0,
+        metrics_window_size: int = 1000,
     ):
         self.watch_dir = watch_dir.absolute()
         self.log_interval = log_interval
@@ -77,8 +81,10 @@ class SmartEMWatcherV2(FileSystemEventHandler):
         from smartem_agent2.error_handler import ErrorHandler
         from smartem_agent2.metrics import ProcessingMetrics
 
-        self.error_handler = ErrorHandler()
-        self.metrics = ProcessingMetrics()
+        self.error_handler = ErrorHandler(
+            max_retries=error_max_retries, base_delay=error_base_delay, max_delay=error_max_delay
+        )
+        self.metrics = ProcessingMetrics(window_size=metrics_window_size)
         self.event_processor = EventProcessor(
             self.parser, self.datastore, self.orphan_manager, self.error_handler, self.metrics, path_mapper
         )
