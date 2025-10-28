@@ -2,9 +2,21 @@
 
 This document describes the complete workflow for running repeatable end-to-end tests of the SmartEM system using pre-recorded microscope sessions. It serves as both a runbook for executing tests and a reference for understanding test requirements.
 
+## Agent Versions
+
+SmartEM Decisions includes two agent implementations:
+
+- **Agent V1** (`smartem_agent`): Original implementation
+- **Agent V2** (`smartem_agent2`): Rewritten architecture with improved state management and processing pipeline
+
+Both agents provide the same core functionality but differ in internal architecture. Agent V2 represents the current development
+direction with enhanced modularity and maintainability.
+
 ## Quick Start (Automated Test Runner)
 
-For the simplest test execution, use the automated test runner script:
+For the simplest test execution, use the automated test runner scripts:
+
+### Agent V1 (Original)
 
 ```bash
 # Ensure k3s is running
@@ -20,17 +32,33 @@ For the simplest test execution, use the automated test runner script:
   0.1
 ```
 
-**Script parameters** (all optional):
+### Agent V2 (Rewrite)
+
+```bash
+# Ensure k3s is running
+./tools/dev-k8s.sh status
+
+# Run automated test with agent v2
+./tools/run-e2e-test-v2.sh
+
+# With custom parameters
+./tools/run-e2e-test-v2.sh \
+  ~/dev/DLS/smartem-decisions-test-recordings/bi37708-42_fsrecord.tar.gz \
+  /home/username/dev/DLS/epu-test-dir \
+  0.1
+```
+
+**Script parameters** (all optional, both scripts):
 1. Recording file path (default: `~/dev/DLS/smartem-decisions-test-recordings/bi37708-42_fsrecord.tar.gz`)
 2. EPU output directory (default: `~/dev/DLS/epu-test-dir`)
 3. Max delay in seconds (default: `0.1`)
 
-**What the script does**:
+**What the scripts do**:
 - Creates timestamped test results directory in `logs/e2e-tests/`
-- Activates venv and loads environment variables from `.env`
+- Activates venv and loads environment variables from `.env` (v1) or `.env.local-test-run` (v2)
 - Resets database to clean state
 - Starts API server and consumer
-- Starts agent watching empty directory
+- Starts agent watching empty directory (with `--use-v2` flag for v2 script)
 - Runs playback with specified timing
 - Collects filesystem and database statistics
 - Saves all logs to test results directory
@@ -40,6 +68,7 @@ For the simplest test execution, use the automated test runner script:
 - Quick smoke tests during development
 - Consistent repeatable test runs
 - Pre-Acquisition scenario testing (Test Type 2)
+- Comparing behaviour between agent versions
 
 **When to use manual execution instead**:
 - Testing Post-Acquisition scenario (Test Type 1)
@@ -135,7 +164,12 @@ logs/e2e-tests/                  # Test results root (gitignored, at repo root)
 ```
 
 ### Environment File Setup
-The `.env` file configures services to run on host OS while connecting to k3s infrastructure.
+
+The project uses different environment files depending on the agent version being tested:
+
+#### Agent V1 Environment Configuration
+
+The `.env` file configures services to run on host OS whilst connecting to k3s infrastructure.
 
 **Source for initial values**: Copy from `.env.example` and configure credentials
 
@@ -166,6 +200,41 @@ HTTP_API_PORT=8000
 ```
 
 **Usage**: `source .env` before starting services
+
+#### Agent V2 Environment Configuration
+
+The `.env.local-test-run` file is used specifically for agent v2 testing.
+
+**Source for initial values**: Copy from `.env.example.local-test-run` and configure credentials
+
+**Configuration matches agent v1** with the same NodePort mappings and service endpoints. The separate file allows for
+isolated configuration when testing the new agent implementation.
+
+**Example `.env.local-test-run`**:
+```bash
+# Database configuration (connecting to K8s NodePort)
+POSTGRES_HOST=localhost
+POSTGRES_PORT=30432
+POSTGRES_DB=smartem_db
+POSTGRES_USER=username
+POSTGRES_PASSWORD=password
+
+# RabbitMQ configuration (connecting to K8s NodePort)
+RABBITMQ_HOST=localhost
+RABBITMQ_PORT=30672
+RABBITMQ_UI_PORT=15672
+RABBITMQ_USER=username
+RABBITMQ_PASSWORD=password
+
+# HTTP API configuration (running on host OS)
+HTTP_API_PORT=8000
+ADMINER_PORT=8080
+
+# CORS Configuration
+CORS_ALLOWED_ORIGINS=*
+```
+
+**Usage**: Automatically loaded by `./tools/run-e2e-test-v2.sh` script
 
 ## Database Operations
 
@@ -280,6 +349,8 @@ python -m smartem_backend.consumer -vv 2>&1 | tee logs/e2e-tests/TIMESTAMP/logs/
 **Verbosity flags**: `-v` for INFO, `-vv` for DEBUG
 
 ### SmartEM Agent
+
+#### Agent V1 (Original)
 ```bash
 source .venv/bin/activate
 python -m smartem_agent watch \
@@ -288,12 +359,24 @@ python -m smartem_agent watch \
   ../epu-test-dir 2>&1 | tee logs/e2e-tests/TIMESTAMP/logs/agent.log
 ```
 
-**Verbosity flags**: `-v` for INFO, `-vv` for DEBUG
-**Agent options**:
+#### Agent V2 (Rewrite)
+```bash
+source .venv/bin/activate
+python -m smartem_agent watch \
+  --api-url http://localhost:30080 \
+  --use-v2 \
+  --verbose -v \
+  ../epu-test-dir 2>&1 | tee logs/e2e-tests/TIMESTAMP/logs/agent.log
+```
+
+**Verbosity flags** (both versions): `-v` for INFO, `-vv` for DEBUG
+
+**Agent options** (both versions):
 - `--agent-id TEXT`: Agent identifier for SSE connection
 - `--session-id TEXT`: Session identifier for SSE connection
 - `--sse-timeout INTEGER`: SSE connection timeout in seconds (default: 30)
 - `--heartbeat-interval INTEGER`: Agent heartbeat interval in seconds (default: 60)
+- `--use-v2`: Use agent v2 implementation (smartem_agent2 package)
 
 ### Microscope Playback (fsrecorder)
 
@@ -402,6 +485,9 @@ psql -h localhost -p 30432 -U username -d smartem_db -c "SELECT version();"
 
 **CRITICAL**: Agent command is `python -m smartem_agent watch` (NOT `python -m smartem_agent.main`!)
 
+**Note**: All test scenarios below can use either agent v1 (default) or agent v2 (add `--use-v2` flag). Examples show v1
+syntax; add `--use-v2` after the `watch` subcommand to test agent v2.
+
 ### Test Type 1: Post-Acquisition Data Intake
 **Scenario**: Agent starts watching after playback completes (easiest, should work)
 
@@ -500,7 +586,8 @@ python -m smartem_agent watch \
 1. **Wrong agent command**: Use `python -m smartem_agent watch`, NOT:
    - ❌ `python -m smartem_agent.main`
    - ❌ `python -m smartem_agent`
-   - ✅ `python -m smartem_agent watch`
+   - ✅ `python -m smartem_agent watch` (agent v1)
+   - ✅ `python -m smartem_agent watch --use-v2` (agent v2)
 
 2. **Wrong recording path**: Must use .tar.gz file, NOT directory:
    - ❌ `~/dev/DLS/smartem-decisions-test-recordings/pre-acquisition`
