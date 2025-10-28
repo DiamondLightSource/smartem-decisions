@@ -14,10 +14,13 @@ output.txt
 .claude/settings.local.json
 
 .env
-.dev.env
+.env.k8s.development
+.env.k8s.staging
+.env.k8s.production
+.env.mcp
+# Legacy env file patterns (deprecated)
 .env.staging
 .env.production
-.env.local-test-run
 log/
 
 # Distribution / packaging

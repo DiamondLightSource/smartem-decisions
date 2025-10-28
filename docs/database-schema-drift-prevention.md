@@ -91,7 +91,7 @@ git commit -m "Add migration for user preferences table"
 You can run the schema drift check locally before pushing:
 
 ```bash
-# Ensure you have a PostgreSQL instance running and .dev.env configured
+# Ensure you have a PostgreSQL instance running and .env.k8s.development configured
 python tools/check_schema_drift.py
 ```
 
@@ -106,7 +106,7 @@ The script will:
 
 ### Custom Database Configuration
 
-The script uses environment variables from `.dev.env`:
+The script uses environment variables from `.env.k8s.development`:
 
 ```bash
 POSTGRES_HOST=localhost
@@ -156,7 +156,7 @@ When reviewing PRs with database changes:
 ### Common Issues
 
 **Issue**: "Environment variable POSTGRES_X not set"
-- **Solution**: Ensure `.dev.env` is properly configured with database credentials
+- **Solution**: Ensure `.env.k8s.development` is properly configured with database credentials
 
 **Issue**: "Error creating temporary database"
 - **Solution**: Verify PostgreSQL is running and credentials are correct
