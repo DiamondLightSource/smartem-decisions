@@ -87,7 +87,6 @@ sleep 2
 
 python -m smartem_agent watch \
     --api-url http://localhost:8000 \
-    --use-v2 \
     -vv \
     "$EPU_DIR" \
     > "$TEST_DIR/logs/agent.log" 2>&1 &

@@ -167,7 +167,9 @@ def watch_directory(
     heartbeat_interval: int = typer.Option(
         60, "--heartbeat-interval", help="Agent heartbeat interval in seconds (0 to disable)"
     ),
-    use_v2: bool = typer.Option(False, "--use-v2", help="Use SmartEM Agent V2 (event-driven orphan resolution)"),
+    use_v2: bool = typer.Option(
+        True, "--use-v2/--use-v1", help="Use SmartEM Agent V2 by default (--use-v1 for legacy agent)"
+    ),
     verbose: int = typer.Option(
         0, "-v", "--verbose", count=True, help="Increase verbosity (-v for INFO, -vv for DEBUG)"
     ),

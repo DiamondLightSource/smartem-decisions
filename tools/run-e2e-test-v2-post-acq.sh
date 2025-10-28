@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# E2E Test Runner for SmartEM Decisions
-# This script automates the e2e test execution for Test Type 2 (Pre-Acquisition Agent Setup)
+# E2E Test Runner for SmartEM Decisions - Agent V2 POST-ACQUISITION
+# This script replays files FIRST, then starts agent v2 to process existing files
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
@@ -12,7 +12,7 @@ cd "$PROJECT_ROOT"
 RECORDING="${1:-/home/vredchenko/dev/DLS/smartem-decisions-test-recordings/bi37708-42_fsrecord.tar.gz}"
 EPU_DIR="${2:-/home/vredchenko/dev/DLS/epu-test-dir}"
 MAX_DELAY="${3:-0.1}"  # Default to 0.1s max delay (slower than no limit)
-TEST_DIR="$PROJECT_ROOT/logs/e2e-tests/$(date +%Y-%m-%d_%H%M%S)_pre-acquisition-test"
+TEST_DIR="$PROJECT_ROOT/logs/e2e-tests/$(date +%Y-%m-%d_%H%M%S)_post-acquisition-test"
 
 echo "===== SmartEM E2E Test Runner ====="
 echo "Recording: $RECORDING"
@@ -45,7 +45,7 @@ source .venv/bin/activate
 
 echo "[3/9] Loading environment variables..."
 set -a
-source .env
+source .env.local-test-run
 set +a
 
 echo "[4/9] Resetting database..."
@@ -53,12 +53,20 @@ POSTGRES_HOST=localhost POSTGRES_PORT=30432 POSTGRES_DB=postgres \
     POSTGRES_USER=username POSTGRES_PASSWORD=password \
     python -m smartem_backend.model.database
 
-echo "[5/9] Running database migrations..."
+echo "[5/10] Running database migrations..."
 POSTGRES_HOST=localhost POSTGRES_PORT=30432 POSTGRES_DB=smartem_db \
     POSTGRES_USER=username POSTGRES_PASSWORD=password \
     python -m alembic upgrade head
 
-echo "[6/9] Checking if port 8000 is free..."
+echo "[6/10] Replaying files FIRST (post-acquisition mode)..."
+python ./tools/fsrecorder/fsrecorder.py replay \
+    --max-delay "$MAX_DELAY" \
+    "$RECORDING" \
+    "$EPU_DIR" \
+    > "$TEST_DIR/logs/playback.log" 2>&1
+echo "Playback complete. Files are now in place."
+
+echo "[7/10] Checking if port 8000 is free..."
 if lsof -ti:8000 >/dev/null 2>&1; then
     echo "ERROR: Port 8000 is already in use!"
     echo "Killing process on port 8000..."
@@ -66,6 +74,7 @@ if lsof -ti:8000 >/dev/null 2>&1; then
     sleep 2
 fi
 
+echo "[8/10] Starting API and consumer..."
 python -m uvicorn smartem_backend.api_server:app \
     --host 127.0.0.1 --port 8000 --log-level debug \
     > "$TEST_DIR/logs/api.log" 2>&1 &
@@ -85,22 +94,15 @@ python -m smartem_backend.consumer -vv \
 CONSUMER_PID=$!
 sleep 2
 
+echo "[9/10] Starting agent v2 to process existing files..."
 python -m smartem_agent watch \
     --api-url http://localhost:8000 \
-    --use-v1 \
     -vv \
     "$EPU_DIR" \
     > "$TEST_DIR/logs/agent.log" 2>&1 &
 AGENT_PID=$!
-sleep 2
 
-python ./tools/fsrecorder/fsrecorder.py replay \
-    --max-delay "$MAX_DELAY" \
-    "$RECORDING" \
-    "$EPU_DIR" \
-    > "$TEST_DIR/logs/playback.log" 2>&1
-
-echo "Playback complete. Waiting for agent to finish processing (60 seconds)..."
+echo "Agent v2 started. Waiting for processing to complete (60 seconds)..."
 sleep 60
 
 echo ""
