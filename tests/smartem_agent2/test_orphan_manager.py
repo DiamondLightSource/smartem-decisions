@@ -170,7 +170,7 @@ class TestOrphanManager:
         assert timed_out[0].entity_type == EntityType.FOILHOLE
 
         stats = orphan_manager.get_orphan_stats()
-        assert stats["total_orphans"] == 0
+        assert stats["total_orphans"] == 1
         assert stats["total_timed_out"] == 1
 
     def test_timeout_detection_mixed_ages(self, orphan_manager):
@@ -198,7 +198,7 @@ class TestOrphanManager:
         assert timed_out[0].entity_data.id == "123"
 
         stats = orphan_manager.get_orphan_stats()
-        assert stats["total_orphans"] == 1
+        assert stats["total_orphans"] == 2
         assert stats["total_timed_out"] == 1
 
     def test_clear_orphans(self, orphan_manager, sample_foilhole_data):

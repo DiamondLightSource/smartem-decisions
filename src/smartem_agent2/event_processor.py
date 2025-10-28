@@ -1,10 +1,13 @@
+import time
 from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
 
 from smartem_agent.fs_parser import EpuParser
 from smartem_agent.model.store import InMemoryDataStore
+from smartem_agent2.error_handler import ErrorHandler
 from smartem_agent2.event_classifier import ClassifiedEvent, EntityType
+from smartem_agent2.metrics import ProcessingMetrics
 from smartem_agent2.orphan_manager import OrphanManager
 from smartem_common.schemas import FoilHoleData, GridData, GridSquareData, MicrographData
 from smartem_common.utils import get_logger
@@ -27,11 +30,15 @@ class EventProcessor:
         parser: EpuParser,
         datastore: InMemoryDataStore,
         orphan_manager: OrphanManager,
+        error_handler: ErrorHandler | None = None,
+        metrics: ProcessingMetrics | None = None,
         path_mapper: Callable[[Path], Path] = lambda p: p,
     ):
         self.parser = parser
         self.datastore = datastore
         self.orphan_manager = orphan_manager
+        self.error_handler = error_handler or ErrorHandler()
+        self.metrics = metrics or ProcessingMetrics()
         self.path_mapper = path_mapper
         self.stats = ProcessingStats()
 
@@ -39,18 +46,28 @@ class EventProcessor:
         batch_stats = ProcessingStats()
 
         for event in events:
+            start_time = time.time()
             try:
                 result = self._process_event(event)
+                latency_ms = (time.time() - start_time) * 1000
+                self.metrics.record_latency(latency_ms)
+
                 batch_stats.total_processed += 1
 
                 if result == ProcessingResult.SUCCESS:
                     batch_stats.successful += 1
+                    self.metrics.record_success()
                 elif result == ProcessingResult.ORPHANED:
                     batch_stats.orphaned += 1
                 elif result == ProcessingResult.FAILED:
                     batch_stats.failed += 1
+                    self.metrics.record_failure()
 
             except Exception as e:
+                latency_ms = (time.time() - start_time) * 1000
+                self.metrics.record_latency(latency_ms)
+                self.metrics.record_failure()
+
                 logger.error(f"Unexpected error processing {event.file_path}: {e}", exc_info=True)
                 batch_stats.total_processed += 1
                 batch_stats.failed += 1
@@ -91,14 +108,24 @@ class EventProcessor:
             self.datastore.create_grid(grid, path_mapper=self.path_mapper)
             logger.info(f"Created grid: {grid.uuid} from {event.file_path.name}")
 
+            self.error_handler.record_success(event.file_path)
+
             resolved_orphans = self.orphan_manager.resolve_orphans_for(EntityType.GRID, str(grid.data_dir))
             self._resolve_orphan_entities(resolved_orphans)
 
             return ProcessingResult.SUCCESS
 
         except Exception as e:
-            logger.error(f"Failed to process grid {event.file_path}: {e}")
-            return ProcessingResult.FAILED
+            if self.error_handler.should_retry(e, event.file_path):
+                category = self.error_handler.categorize_error(e, event.file_path)
+                self.error_handler.record_retry(event.file_path)
+                self.metrics.record_retry(category.value)
+                logger.warning(f"Transient error processing grid {event.file_path.name}, will retry: {e}")
+                return ProcessingResult.FAILED
+            else:
+                self.error_handler.record_permanent_failure(e, event.file_path)
+                logger.error(f"Permanent failure processing grid {event.file_path}: {e}")
+                return ProcessingResult.FAILED
 
     def _process_atlas(self, event: ClassifiedEvent) -> "ProcessingResult":
         try:
@@ -148,11 +175,20 @@ class EventProcessor:
                 self.datastore.grid_registered(grid_uuid)
 
             logger.info(f"Processed atlas for grid {grid_uuid} from {event.file_path.name}")
+            self.error_handler.record_success(event.file_path)
             return ProcessingResult.SUCCESS
 
         except Exception as e:
-            logger.error(f"Failed to process atlas {event.file_path}: {e}")
-            return ProcessingResult.FAILED
+            if self.error_handler.should_retry(e, event.file_path):
+                category = self.error_handler.categorize_error(e, event.file_path)
+                self.error_handler.record_retry(event.file_path)
+                self.metrics.record_retry(category.value)
+                logger.warning(f"Transient error processing atlas {event.file_path.name}, will retry: {e}")
+                return ProcessingResult.FAILED
+            else:
+                self.error_handler.record_permanent_failure(e, event.file_path)
+                logger.error(f"Permanent failure processing atlas {event.file_path}: {e}")
+                return ProcessingResult.FAILED
 
     def _process_gridsquare(self, event: ClassifiedEvent) -> "ProcessingResult":
         try:
@@ -224,11 +260,20 @@ class EventProcessor:
             resolved_orphans = self.orphan_manager.resolve_orphans_for(EntityType.GRIDSQUARE, gridsquare_id)
             self._resolve_orphan_entities(resolved_orphans)
 
+            self.error_handler.record_success(event.file_path)
             return ProcessingResult.SUCCESS
 
         except Exception as e:
-            logger.error(f"Failed to process gridsquare {event.file_path}: {e}")
-            return ProcessingResult.FAILED
+            if self.error_handler.should_retry(e, event.file_path):
+                category = self.error_handler.categorize_error(e, event.file_path)
+                self.error_handler.record_retry(event.file_path)
+                self.metrics.record_retry(category.value)
+                logger.warning(f"Transient error processing gridsquare {event.file_path.name}, will retry: {e}")
+                return ProcessingResult.FAILED
+            else:
+                self.error_handler.record_permanent_failure(e, event.file_path)
+                logger.error(f"Permanent failure processing gridsquare {event.file_path}: {e}")
+                return ProcessingResult.FAILED
 
     def _process_foilhole(self, event: ClassifiedEvent) -> "ProcessingResult":
         try:
@@ -261,11 +306,20 @@ class EventProcessor:
             resolved_orphans = self.orphan_manager.resolve_orphans_for(EntityType.FOILHOLE, foilhole.id)
             self._resolve_orphan_entities(resolved_orphans)
 
+            self.error_handler.record_success(event.file_path)
             return ProcessingResult.SUCCESS
 
         except Exception as e:
-            logger.error(f"Failed to process foilhole {event.file_path}: {e}")
-            return ProcessingResult.FAILED
+            if self.error_handler.should_retry(e, event.file_path):
+                category = self.error_handler.categorize_error(e, event.file_path)
+                self.error_handler.record_retry(event.file_path)
+                self.metrics.record_retry(category.value)
+                logger.warning(f"Transient error processing foilhole {event.file_path.name}, will retry: {e}")
+                return ProcessingResult.FAILED
+            else:
+                self.error_handler.record_permanent_failure(e, event.file_path)
+                logger.error(f"Permanent failure processing foilhole {event.file_path}: {e}")
+                return ProcessingResult.FAILED
 
     def _process_micrograph(self, event: ClassifiedEvent) -> "ProcessingResult":
         try:
@@ -306,11 +360,20 @@ class EventProcessor:
                 return ProcessingResult.FAILED
 
             logger.info(f"Processed micrograph {micrograph.id} (UUID: {micrograph.uuid})")
+            self.error_handler.record_success(event.file_path)
             return ProcessingResult.SUCCESS
 
         except Exception as e:
-            logger.error(f"Failed to process micrograph {event.file_path}: {e}")
-            return ProcessingResult.FAILED
+            if self.error_handler.should_retry(e, event.file_path):
+                category = self.error_handler.categorize_error(e, event.file_path)
+                self.error_handler.record_retry(event.file_path)
+                self.metrics.record_retry(category.value)
+                logger.warning(f"Transient error processing micrograph {event.file_path.name}, will retry: {e}")
+                return ProcessingResult.FAILED
+            else:
+                self.error_handler.record_permanent_failure(e, event.file_path)
+                logger.error(f"Permanent failure processing micrograph {event.file_path}: {e}")
+                return ProcessingResult.FAILED
 
     def _resolve_orphan_entities(self, orphans: list) -> None:
         for orphan in orphans:
