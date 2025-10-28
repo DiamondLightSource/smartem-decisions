@@ -5,7 +5,7 @@ from unittest.mock import patch
 import pytest
 from watchdog.events import FileCreatedEvent
 
-from smartem_agent2.fs_watcher import SmartEMWatcherV2
+from smartem_agent.fs_watcher import SmartEMWatcherV2
 
 
 class TestSmartEMWatcherV2:
@@ -185,7 +185,7 @@ class TestSmartEMWatcherV2:
         watcher = SmartEMWatcherV2(watch_dir=temp_dir, dry_run=True, orphan_timeout=0.2, orphan_check_interval=0.1)
 
         try:
-            from smartem_agent2.event_classifier import EntityType
+            from smartem_agent.event_classifier import EntityType
             from smartem_common.schemas import FoilHoleData
 
             orphan_data = FoilHoleData(id="999", gridsquare_id="99")

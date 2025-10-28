@@ -10,10 +10,7 @@ import typer
 from watchdog.observers import Observer
 
 from smartem_agent.fs_parser import EpuParser
-from smartem_agent.fs_watcher import (
-    DEFAULT_PATTERNS,
-    RateLimitedFilesystemEventHandler,
-)
+from smartem_agent.fs_watcher import DEFAULT_PATTERNS, SmartEMWatcherV2
 from smartem_agent.model.store import InMemoryDataStore
 from smartem_backend.api_client import SmartEMAPIClient as APIClient
 
@@ -167,9 +164,6 @@ def watch_directory(
     heartbeat_interval: int = typer.Option(
         60, "--heartbeat-interval", help="Agent heartbeat interval in seconds (0 to disable)"
     ),
-    use_v2: bool = typer.Option(
-        True, "--use-v2/--use-v1", help="Use SmartEM Agent V2 by default (--use-v1 for legacy agent)"
-    ),
     verbose: int = typer.Option(
         0, "-v", "--verbose", count=True, help="Increase verbosity (-v for INFO, -vv for DEBUG)"
     ),
@@ -210,99 +204,50 @@ def watch_directory(
             logging.error(f"Error: API at {api_url} is not reachable: {str(e)}")
             raise typer.Exit(1) from None
 
-    if use_v2:
-        from smartem_agent2.fs_watcher import DEFAULT_PATTERNS as V2_PATTERNS
-        from smartem_agent2.fs_watcher import SmartEMWatcherV2
+    logging.info(
+        f"Starting SmartEM Agent to watch directory: {str(path)} "
+        f"(including subdirectories) for patterns: {DEFAULT_PATTERNS}"
+    )
 
-        logging.info(
-            f"Starting SmartEM Agent V2 to watch directory: {str(path)} "
-            f"(including subdirectories) for patterns: {V2_PATTERNS}"
-        )
+    watcher = SmartEMWatcherV2(
+        watch_dir=path,
+        dry_run=dry_run,
+        api_url=api_url,
+        log_interval=log_interval,
+        patterns=DEFAULT_PATTERNS,
+        agent_id=agent_id,
+        session_id=session_id,
+        sse_timeout=sse_timeout,
+        heartbeat_interval=heartbeat_interval,
+    )
 
-        watcher = SmartEMWatcherV2(
-            watch_dir=path,
-            dry_run=dry_run,
-            api_url=api_url,
-            log_interval=log_interval,
-            patterns=V2_PATTERNS,
-            agent_id=agent_id,
-            session_id=session_id,
-            sse_timeout=sse_timeout,
-            heartbeat_interval=heartbeat_interval,
-        )
+    logging.info("Parsing existing directory contents...")
+    watcher.datastore = EpuParser.parse_epu_output_dir(watcher.datastore)
+    logging.info("..done! Now listening for new filesystem events")
 
-        logging.info("Parsing existing directory contents...")
-        watcher.datastore = EpuParser.parse_epu_output_dir(watcher.datastore)
-        logging.info("..done! Now listening for new filesystem events")
+    observer = Observer()
+    observer.schedule(watcher, str(path), recursive=True)
 
-        observer = Observer()
-        observer.schedule(watcher, str(path), recursive=True)
+    def handle_exit(signum, frame):
+        nonlocal watcher
+        logging.info(watcher.datastore)
+        watcher.stop()
+        observer.stop()
+        logging.info("Watching stopped")
+        observer.join()
+        raise typer.Exit()
 
-        def handle_exit_v2(signum, frame):
-            nonlocal watcher
-            logging.info(watcher.datastore)
-            watcher.stop()
-            observer.stop()
-            logging.info("Watching stopped")
-            observer.join()
-            raise typer.Exit()
+    signal.signal(signal.SIGINT, handle_exit)
+    if platform.system() == "Windows":
+        signal.signal(signal.SIGBREAK, handle_exit)
 
-        signal.signal(signal.SIGINT, handle_exit_v2)
-        if platform.system() == "Windows":
-            signal.signal(signal.SIGBREAK, handle_exit_v2)
+    observer.start()
 
-        observer.start()
-
-        try:
-            while True:
-                time.sleep(1)
-        except KeyboardInterrupt:
-            handle_exit_v2(None, None)
-
-    else:
-        logging.info(
-            f"Starting to watch directory: {str(path)} (including subdirectories) for patterns: {DEFAULT_PATTERNS}"
-        )
-
-        handler = RateLimitedFilesystemEventHandler(
-            watch_dir=path,
-            dry_run=dry_run,
-            api_url=api_url,
-            log_interval=log_interval,
-            patterns=DEFAULT_PATTERNS,
-            agent_id=agent_id,
-            session_id=session_id,
-            sse_timeout=sse_timeout,
-            heartbeat_interval=heartbeat_interval,
-        )
-
-        logging.info("Parsing existing directory contents...")
-        handler.datastore = EpuParser.parse_epu_output_dir(handler.datastore)
-
-        logging.info("..done! Now listening for new filesystem events")
-        observer = Observer()
-        observer.schedule(handler, str(path), recursive=True)
-
-        def handle_exit(signum, frame):
-            nonlocal handler
-            logging.info(handler.datastore)
-            handler.stop_sse_stream()
-            observer.stop()
-            logging.info("Watching stopped")
-            observer.join()
-            raise typer.Exit()
-
-        signal.signal(signal.SIGINT, handle_exit)
-        if platform.system() == "Windows":
-            signal.signal(signal.SIGBREAK, handle_exit)
-
-        observer.start()
-
-        try:
-            while True:
-                time.sleep(1)
-        except KeyboardInterrupt:
-            handle_exit(None, None)
+    try:
+        while True:
+            time.sleep(1)
+    except KeyboardInterrupt:
+        handle_exit(None, None)
 
 
 if __name__ == "__main__":

@@ -1,93 +1,46 @@
 import logging
 import os
-import re
-import sys
 import threading
 import time
 from collections.abc import Callable
 from datetime import datetime
-from fnmatch import fnmatch
 from pathlib import Path
 
 from watchdog.events import FileSystemEventHandler
 
+from smartem_agent.event_classifier import EventClassifier
+from smartem_agent.event_processor import EventProcessor
+from smartem_agent.event_queue import EventQueue
 from smartem_agent.fs_parser import EpuParser
 from smartem_agent.model.store import InMemoryDataStore, PersistentDataStore
+from smartem_agent.orphan_manager import OrphanManager
 from smartem_backend.api_client import SSEAgentClient
-from smartem_common.schemas import (
-    AtlasTileGridSquarePositionData,
-    FoilHoleData,
-    GridData,
-    GridSquareData,
-    MicrographData,
-    MicroscopeData,
-)
+from smartem_common.utils import get_logger
 
-"""Default glob patterns for EPU data files.
+logger = get_logger(__name__)
 
-A list of patterns that match the standard EPU file structure for cryo-EM data
-collection, including session files, grid squares, foil holes, and atlas images.
-
-Patterns match the following files:
-* Main EPU session file
-* Grid square metadata files
-* Grid square image XML files
-* Foil hole data XML files
-* Foil hole location XML files
-* Atlas overview files
-
-:type: list[str]
-"""
 DEFAULT_PATTERNS = [
-    # TODO consider merging with props in EpuParser
-    # TODO (techdebt) This should be treated as immutable - don't modify!
-    # Support both root-level files and files within acquisition subdirectories
-    # Using ** recursive patterns for cleaner, more maintainable matching
     "EpuSession.dm",
     "**/EpuSession.dm",
     "Metadata/GridSquare_*.dm",
     "**/Metadata/GridSquare_*.dm",
-    "**/Images-Disc*/GridSquare_*/GridSquare_*_*.xml",
-    "**/Images-Disc*/GridSquare_*/Data/FoilHole_*_Data_*_*_*_*.xml",
-    "**/Images-Disc*/GridSquare_*/FoilHoles/FoilHole_*_*_*.xml",
+    "Images-Disc*/GridSquare_*/GridSquare_*_*.xml",
+    "**/GridSquare_*/GridSquare_*_*.xml",
+    "Images-Disc*/GridSquare_*/Data/FoilHole_*_Data_*_*_*_*.xml",
+    "**/Data/FoilHole_*_Data_*_*_*_*.xml",
+    "Images-Disc*/GridSquare_*/FoilHoles/FoilHole_*_*_*.xml",
+    "**/FoilHoles/FoilHole_*_*_*.xml",
     "Sample*/Atlas/Atlas.dm",
-    "**/Sample*/Atlas/Atlas.dm",
+    "**/Atlas/Atlas.dm",
 ]
 
 
-class RateLimitedFilesystemEventHandler(FileSystemEventHandler):
-    """File system event handler with rate limiting capabilities.
-
-    This handler processes file system events from watchdog, specifically watching
-    for file creation and modification events. The implementation ensures reliable
-    file write detection across both Windows and Linux platforms.
-
-    :cvar watched_event_types: List of event types to monitor
-    :type watched_event_types: list[str]
-    :ivar acquisition: EPU session data store handler
-    :type acquisition: EpuAcquisitionSessionStore | None
-    :ivar watch_dir: Directory path being monitored for changes
-    :type watch_dir: Path | None
-    :ivar last_log_time: Timestamp of the last logging event
-    :type last_log_time: float
-    :ivar log_interval: Minimum time between logging events in seconds
-    :type log_interval: float
-    :ivar patterns: List of file patterns to watch for
-    :type patterns: list[str]
-    :ivar verbose: Enable detailed logging output
-    :type verbose: bool
-    :ivar changed_files: Dictionary tracking file modification states
-    :type changed_files: dict
-    """
-
+class SmartEMWatcherV2(FileSystemEventHandler):
     watched_event_types = ["created", "modified"]
-    datastore: InMemoryDataStore | None = None
-    watch_dir: Path | None = None
 
-    # TODO test with a lower log_interval value, set lowest possible default, better naming
     def __init__(
         self,
-        watch_dir,
+        watch_dir: Path,
         dry_run: bool = False,
         api_url: str | None = None,
         log_interval: float = 10.0,
@@ -97,42 +50,60 @@ class RateLimitedFilesystemEventHandler(FileSystemEventHandler):
         session_id: str | None = None,
         sse_timeout: int = 30,
         heartbeat_interval: int = 60,
+        max_queue_size: int = 50000,
+        batch_size: int = 100,
+        processing_interval: float = 0.05,
+        orphan_timeout: float = 300.0,
+        orphan_check_interval: float = 60.0,
+        error_max_retries: int = 5,
+        error_base_delay: float = 1.0,
+        error_max_delay: float = 60.0,
+        metrics_window_size: int = 1000,
     ):
-        self.last_log_time = time.time()
+        self.watch_dir = watch_dir.absolute()
         self.log_interval = log_interval
         self.patterns = patterns if patterns is not None else DEFAULT_PATTERNS.copy()
-        self.verbose = logging.getLogger().level <= logging.INFO
         self.path_mapper = path_mapper
-        # Distinguish between new and previously seen files.
-        self.changed_files = {}
+        self.last_log_time = time.time()
+        self.verbose = logging.getLogger().level <= logging.INFO
 
-        # Maintain a buffer of "orphaned" files - files that appear to belong to a grid that doesn't exist yet
-        self.orphaned_files = {}  # path -> (event, timestamp, file_stat)
-
-        # Track extracted instrument information per grid to avoid conflicts and duplicates
-        self._extracted_instruments = {}  # grid_uuid -> MicroscopeData
-
-        # TODO on Win there's primary and secondary output dirs - work directly with primary if possible otherwise
-        #  operate across both. Note: data is first written to primary output dir then later maybe partially copied
-        #  to secondary dir.
-        self.watch_dir = watch_dir.absolute()  # TODO this could cause problems in Win - test!
+        self.event_classifier = EventClassifier()
+        self.event_queue = EventQueue(max_size=max_queue_size)
+        self.orphan_manager = OrphanManager(timeout_seconds=orphan_timeout)
 
         if dry_run:
             self.datastore = InMemoryDataStore(str(self.watch_dir))
         else:
             self.datastore = PersistentDataStore(str(self.watch_dir), api_url)
-        logging.debug(
-            "Instantiated new datastore, "
-            + ("in-memory only" if dry_run else f"data will be permanently saved to backend: {api_url}")
+
+        self.parser = EpuParser()
+
+        from smartem_agent.error_handler import ErrorHandler
+        from smartem_agent.metrics import ProcessingMetrics
+
+        self.error_handler = ErrorHandler(
+            max_retries=error_max_retries, base_delay=error_base_delay, max_delay=error_max_delay
+        )
+        self.metrics = ProcessingMetrics(window_size=metrics_window_size)
+        self.event_processor = EventProcessor(
+            self.parser, self.datastore, self.orphan_manager, self.error_handler, self.metrics, path_mapper
         )
 
-        # Initialize SSE client if agent_id and session_id are provided
+        self.batch_size = batch_size
+        self.processing_interval = processing_interval
+        self.orphan_check_interval = orphan_check_interval
+
+        self._processing_thread = None
+        self._orphan_check_thread = None
+        self._shutdown_event = threading.Event()
+
         self.sse_client = None
         self.sse_thread = None
         self.heartbeat_thread = None
         self.heartbeat_interval = heartbeat_interval
         self._sse_shutdown_event = threading.Event()
         self._heartbeat_shutdown_event = threading.Event()
+
         if agent_id and session_id and api_url and not dry_run:
             self.sse_client = SSEAgentClient(
                 base_url=api_url, agent_id=agent_id, session_id=session_id, timeout=sse_timeout
@@ -140,90 +111,132 @@ class RateLimitedFilesystemEventHandler(FileSystemEventHandler):
             self._start_sse_stream()
             self._start_heartbeat_timer()
 
+        self._start_processing_loop()
+        self._start_orphan_check_loop()
+
+        logger.info(
+            f"SmartEM Watcher V2 initialized: watch_dir={self.watch_dir}, "
+            f"queue_size={max_queue_size}, batch_size={batch_size}, "
+            f"processing_interval={processing_interval}s, orphan_timeout={orphan_timeout}s"
+        )
+
+    def _start_processing_loop(self):
+        self._processing_thread = threading.Thread(target=self._processing_loop, daemon=False)
+        self._processing_thread.start()
+        logger.info("Started event processing loop")
+
+    def _processing_loop(self):
+        while not self._shutdown_event.is_set():
+            try:
+                if self.event_queue.size() > 0:
+                    batch = self.event_queue.dequeue_batch(max_size=self.batch_size)
+                    if batch:
+                        stats = self.event_processor.process_batch(batch)
+                        if stats.total_processed > 0:
+                            logger.info(
+                                f"Processed batch: {stats.total_processed} events "
+                                f"({stats.successful} successful, {stats.orphaned} orphaned, "
+                                f"{stats.failed} failed, {stats.orphans_resolved} resolved)"
+                            )
+                else:
+                    recovered = self.event_queue.recover_evicted_events()
+                    if recovered == 0:
+                        time.sleep(self.processing_interval)
+
+            except Exception as e:
+                logger.error(f"Error in processing loop: {e}", exc_info=True)
+                time.sleep(self.processing_interval)
+
+        logger.info("Processing loop stopped")
+
+    def _start_orphan_check_loop(self):
+        self._orphan_check_thread = threading.Thread(target=self._orphan_check_loop, daemon=False)
+        self._orphan_check_thread.start()
+        logger.info("Started orphan timeout check loop")
+
+    def _orphan_check_loop(self):
+        while not self._shutdown_event.is_set():
+            try:
+                if self._shutdown_event.wait(self.orphan_check_interval):
+                    break
+
+                timed_out_orphans = self.orphan_manager.check_timeouts()
+                if timed_out_orphans:
+                    logger.warning(f"Found {len(timed_out_orphans)} timed out orphans")
+
+            except Exception as e:
+                logger.error(f"Error in orphan check loop: {e}", exc_info=True)
+
+        logger.info("Orphan check loop stopped")
+
     def _start_sse_stream(self):
-        """Start SSE streaming in a background thread"""
         if self.sse_client:
-            logging.info(
+            logger.info(
                 f"Starting SSE stream for agent {self.sse_client.agent_id}, session {self.sse_client.session_id}"
             )
-            # Use non-daemon thread for better shutdown control
             self.sse_thread = threading.Thread(target=self._run_sse_stream, daemon=False)
             self.sse_thread.start()
 
     def _run_sse_stream(self):
-        """Run the SSE stream in background thread with reconnection logic"""
         retry_count = 0
         max_retries = 5
-        retry_delay = 10  # seconds
+        retry_delay = 10
 
         while not self._sse_shutdown_event.is_set() and retry_count < max_retries:
             try:
-                logging.info(f"SSE stream attempt {retry_count + 1}/{max_retries}")
+                logger.info(f"SSE stream attempt {retry_count + 1}/{max_retries}")
                 self.sse_client.stream_instructions(
                     instruction_callback=self._handle_sse_instruction,
                     connection_callback=self._handle_sse_connection,
                     error_callback=self._handle_sse_error,
                 )
-                # If we get here, connection closed normally
                 break
             except Exception as e:
                 retry_count += 1
-                logging.error(f"SSE stream error (attempt {retry_count}/{max_retries}): {e}")
+                logger.error(f"SSE stream error (attempt {retry_count}/{max_retries}): {e}")
 
                 if retry_count < max_retries and not self._sse_shutdown_event.is_set():
-                    logging.info(f"Retrying SSE connection in {retry_delay} seconds...")
+                    logger.info(f"Retrying SSE connection in {retry_delay} seconds...")
                     if self._sse_shutdown_event.wait(retry_delay):
-                        break  # Shutdown requested during wait
+                        break
 
         if retry_count >= max_retries:
-            logging.error("SSE stream failed after maximum retry attempts")
+            logger.error("SSE stream failed after maximum retry attempts")
         else:
-            logging.info("SSE stream stopped")
+            logger.info("SSE stream stopped")
 
     def _start_heartbeat_timer(self):
-        """Start heartbeat timer in a background thread"""
         if self.sse_client and self.heartbeat_interval > 0:
-            logging.info(f"Starting heartbeat timer with interval {self.heartbeat_interval} seconds")
+            logger.info(f"Starting heartbeat timer with interval {self.heartbeat_interval} seconds")
             self.heartbeat_thread = threading.Thread(target=self._run_heartbeat_loop, daemon=False)
             self.heartbeat_thread.start()
 
     def _run_heartbeat_loop(self):
-        """Run the heartbeat loop in background thread"""
         while not self._heartbeat_shutdown_event.is_set():
             try:
-                # Wait for heartbeat interval or shutdown signal
                 if self._heartbeat_shutdown_event.wait(self.heartbeat_interval):
-                    break  # Shutdown requested
+                    break
 
-                # Send heartbeat if SSE client is available and connected
                 if self.sse_client and self.sse_client.is_connected():
                     success = self.sse_client.send_heartbeat()
                     if success:
-                        logging.debug("Heartbeat sent successfully")
+                        logger.debug("Heartbeat sent successfully")
                     else:
-                        logging.warning("Failed to send heartbeat")
+                        logger.warning("Failed to send heartbeat")
                 else:
-                    logging.debug("Skipping heartbeat - SSE client not connected")
+                    logger.debug("Skipping heartbeat - SSE client not connected")
 
             except Exception as e:
-                logging.error(f"Error in heartbeat loop: {e}")
-                # Continue the loop even if heartbeat fails
+                logger.error(f"Error in heartbeat loop: {e}")
 
-        logging.info("Heartbeat loop stopped")
+        logger.info("Heartbeat loop stopped")
 
     def _handle_sse_instruction(self, instruction_data: dict):
-        """Handle incoming SSE instruction messages"""
         instruction_id = instruction_data.get("instruction_id")
         instruction_type = instruction_data.get("instruction_type")
         payload = instruction_data.get("payload", {})
 
-        print("\n[SSE INSTRUCTION RECEIVED]", flush=True)
-        print(f"   ID: {instruction_id}", flush=True)
-        print(f"   Type: {instruction_type}", flush=True)
-        print(f"   Payload: {payload}", flush=True)
-        print(f"   Timestamp: {instruction_data.get('created_at')}", flush=True)
-
-        logging.info(f"SSE Instruction - ID: {instruction_id}, Type: {instruction_type}, Payload: {payload}")
+        logger.info(f"SSE Instruction - ID: {instruction_id}, Type: {instruction_type}, Payload: {payload}")
 
         start_time = time.time()
         try:
@@ -236,11 +249,11 @@ class RateLimitedFilesystemEventHandler(FileSystemEventHandler):
                 result=result or "Instruction processed successfully",
                 processing_time_ms=processing_time_ms,
             )
-            logging.info(f"Processed and acknowledged instruction {instruction_id} in {processing_time_ms}ms")
+            logger.info(f"Processed and acknowledged instruction {instruction_id} in {processing_time_ms}ms")
 
         except Exception as e:
             processing_time_ms = int((time.time() - start_time) * 1000)
-            logging.error(f"Failed to process instruction {instruction_id}: {e}")
+            logger.error(f"Failed to process instruction {instruction_id}: {e}")
             try:
                 self.sse_client.acknowledge_instruction(
                     instruction_id=instruction_id,
@@ -249,14 +262,33 @@ class RateLimitedFilesystemEventHandler(FileSystemEventHandler):
                     processing_time_ms=processing_time_ms,
                 )
             except Exception as ack_error:
-                logging.error(f"Failed to acknowledge instruction failure {instruction_id}: {ack_error}")
+                logger.error(f"Failed to acknowledge instruction failure {instruction_id}: {ack_error}")
 
     def _process_instruction(self, instruction_type: str, payload: dict) -> str:
-        """Process different types of instructions including microscope control commands"""
-
         match instruction_type:
             case "agent.status.request":
-                return f"Agent watching {self.watch_dir}, {len(self.changed_files)} files in queue"
+                stats = self.event_processor.get_stats()
+                orphan_stats = self.orphan_manager.get_orphan_stats()
+                metrics_summary = self.metrics.get_summary()
+                error_stats = self.error_handler.get_error_stats()
+                latency = metrics_summary["latency_percentiles"]
+
+                return (
+                    f"Agent watching {self.watch_dir}\n"
+                    f"Queue: {self.event_queue.size()} events\n"
+                    f"Processed: {stats.total_processed} total "
+                    f"({stats.successful} success, {stats.orphaned} orphaned, {stats.failed} failed)\n"
+                    f"Orphans: {orphan_stats['total_orphans']} pending, "
+                    f"{orphan_stats['total_resolved']} resolved, "
+                    f"{orphan_stats['total_timed_out']} timed out\n"
+                    f"Performance: {metrics_summary['throughput_per_second']:.2f} events/sec, "
+                    f"success rate {metrics_summary['success_rate'] * 100:.1f}%\n"
+                    f"Latency (ms): p50={latency['p50']:.1f}, p95={latency['p95']:.1f}, "
+                    f"p99={latency['p99']:.1f}, max={latency['max']:.1f}\n"
+                    f"Errors: {error_stats['active_errors']} active, "
+                    f"by category: {error_stats['error_counts']}\n"
+                    f"Uptime: {metrics_summary['uptime_seconds']:.0f}s"
+                )
 
             case "agent.config.update":
                 if "log_interval" in payload:
@@ -269,18 +301,65 @@ class RateLimitedFilesystemEventHandler(FileSystemEventHandler):
                 grid_count = len(self.datastore.grids) if self.datastore else 0
                 return f"Datastore contains {grid_count} grids"
 
+            case "agent.info.metrics":
+                metrics_summary = self.metrics.get_summary()
+                retry_dist = metrics_summary["retry_distribution"]
+                latency = metrics_summary["latency_percentiles"]
+
+                return (
+                    f"Metrics Summary:\n"
+                    f"Successes: {metrics_summary['success_count']}, "
+                    f"Failures: {metrics_summary['failure_count']}\n"
+                    f"Success rate: {metrics_summary['success_rate'] * 100:.1f}%\n"
+                    f"Throughput: {metrics_summary['throughput_per_second']:.2f} events/sec\n"
+                    f"Latency percentiles (ms): p50={latency['p50']:.1f}, "
+                    f"p95={latency['p95']:.1f}, p99={latency['p99']:.1f}\n"
+                    f"Mean latency: {latency['mean']:.1f}ms, Max: {latency['max']:.1f}ms\n"
+                    f"Retry distribution: {retry_dist if retry_dist else 'none'}\n"
+                    f"Uptime: {metrics_summary['uptime_seconds']:.0f}s"
+                )
+
+            case "agent.info.errors":
+                error_stats = self.error_handler.get_error_stats()
+                return (
+                    f"Error Statistics:\n"
+                    f"Active errors: {error_stats['active_errors']}\n"
+                    f"Errors by category:\n"
+                    f"  Permanent corrupt: {error_stats['error_counts'].get('permanent_corrupt', 0)}\n"
+                    f"  Permanent missing: {error_stats['error_counts'].get('permanent_missing', 0)}\n"
+                    f"  Transient parser: {error_stats['error_counts'].get('transient_parser', 0)}\n"
+                    f"  Transient API: {error_stats['error_counts'].get('transient_api', 0)}\n"
+                    f"  Unknown: {error_stats['error_counts'].get('unknown', 0)}\n"
+                    f"Currently retrying:\n"
+                    f"  Transient parser: {error_stats['errors_by_category'].get('transient_parser', 0)}\n"
+                    f"  Transient API: {error_stats['errors_by_category'].get('transient_api', 0)}"
+                )
+
+            case "agent.info.orphans":
+                orphan_stats = self.orphan_manager.get_orphan_stats()
+                return (
+                    f"Orphan Statistics:\n"
+                    f"Total orphans: {orphan_stats['total_orphans']}\n"
+                    f"By type:\n"
+                    f"  GridSquares: {orphan_stats['by_type'].get('gridsquare', 0)}\n"
+                    f"  FoilHoles: {orphan_stats['by_type'].get('foilhole', 0)}\n"
+                    f"  Micrographs: {orphan_stats['by_type'].get('micrograph', 0)}\n"
+                    f"  Atlases: {orphan_stats['by_type'].get('atlas', 0)}\n"
+                    f"Total resolved: {orphan_stats['total_resolved']}\n"
+                    f"Total timed out: {orphan_stats['total_timed_out']}"
+                )
+
             case "microscope.control.move_stage":
                 stage_position = payload.get("stage_position", {})
                 speed = payload.get("speed", "normal")
                 x, y, z = stage_position.get("x"), stage_position.get("y"), stage_position.get("z")
-
-                logging.info(f"Moving stage to position: x={x}, y={y}, z={z}, speed={speed}")
+                logger.info(f"Moving stage to position: x={x}, y={y}, z={z}, speed={speed}")
                 time.sleep(0.5)
                 return f"Stage moved to {stage_position}"
 
             case "microscope.control.take_image":
                 image_params = payload.get("image_params", {})
-                logging.info(f"Taking image with parameters: {image_params}")
+                logger.info(f"Taking image with parameters: {image_params}")
                 time.sleep(1.0)
                 return f"Image acquired with params {image_params}"
 
@@ -288,16 +367,14 @@ class RateLimitedFilesystemEventHandler(FileSystemEventHandler):
                 gridsquare_ids = payload.get("gridsquare_ids", [])
                 priority = payload.get("priority", "normal")
                 reason = payload.get("reason", "")
-
-                logging.info(f"Reordering grid squares: {gridsquare_ids}, priority: {priority}, reason: {reason}")
+                logger.info(f"Reordering grid squares: {gridsquare_ids}, priority: {priority}, reason: {reason}")
                 time.sleep(0.3)
                 return f"Reordered {len(gridsquare_ids)} grid squares with {priority} priority"
 
             case "microscope.control.skip_gridsquares":
                 gridsquare_ids = payload.get("gridsquare_ids", [])
                 reason = payload.get("reason", "")
-
-                logging.info(f"Skipping grid squares: {gridsquare_ids}, reason: {reason}")
+                logger.info(f"Skipping grid squares: {gridsquare_ids}, reason: {reason}")
                 time.sleep(0.2)
                 return f"Skipped {len(gridsquare_ids)} grid squares"
 
@@ -306,39 +383,89 @@ class RateLimitedFilesystemEventHandler(FileSystemEventHandler):
                 foilhole_ids = payload.get("foilhole_ids", [])
                 priority = payload.get("priority", "normal")
                 reason = payload.get("reason", "")
-
-                logging.info(
+                logger.info(
                     f"Reordering foilholes in {gridsquare_id}: {foilhole_ids}, priority: {priority}, reason: {reason}"
                 )
                 time.sleep(0.4)
                 return f"Reordered {len(foilhole_ids)} foilholes in {gridsquare_id}"
 
             case _:
-                logging.warning(f"Unknown instruction type: {instruction_type}")
+                logger.warning(f"Unknown instruction type: {instruction_type}")
                 return f"Logged unknown instruction type: {instruction_type}"
 
     def _handle_sse_connection(self, connection_data: dict):
-        """Handle SSE connection events"""
         agent_id = connection_data.get("agent_id")
         session_id = connection_data.get("session_id")
         connection_id = connection_data.get("connection_id")
-
-        print("\nSSE CONNECTION ESTABLISHED:", flush=True)
-        print(f"   Agent ID: {agent_id}", flush=True)
-        print(f"   Session ID: {session_id}", flush=True)
-        print(f"   Connection ID: {connection_id}", flush=True)
-        print("   Listening for instructions...", flush=True)
-
-        logging.info(f"SSE Connected - Agent: {agent_id}, Session: {session_id}, Connection: {connection_id}")
+        logger.info(f"SSE Connected - Agent: {agent_id}, Session: {session_id}, Connection: {connection_id}")
 
     def _handle_sse_error(self, error: Exception):
-        """Handle SSE errors"""
-        print(f"\nSSE ERROR: {error}")
-        logging.error(f"SSE Error: {error}")
+        logger.error(f"SSE Error: {error}")
 
-    def stop_sse_stream(self):
-        """Stop the SSE stream and heartbeat timer"""
-        # Signal shutdown to prevent reconnection attempts
+    def matches_pattern(self, path: str) -> bool:
+        try:
+            rel_path = Path(path).relative_to(self.watch_dir)
+            return any(rel_path.match(pattern) for pattern in self.patterns)
+        except ValueError:
+            return False
+
+    def on_any_event(self, event):
+        if event.is_directory or not self.matches_pattern(event.src_path):
+            return
+
+        if event.event_type not in self.watched_event_types:
+            return
+
+        try:
+            if not os.path.exists(event.src_path):
+                return
+        except (FileNotFoundError, PermissionError) as e:
+            logger.warning(f"Error accessing file {event.src_path}: {str(e)}")
+            return
+
+        current_time = time.time()
+
+        classified_event = self.event_classifier.classify(event.src_path, event.event_type, current_time)
+
+        self.event_queue.enqueue(classified_event)
+
+        if current_time - self.last_log_time >= self.log_interval:
+            self._log_status()
+
+    def _log_status(self):
+        stats = self.event_processor.get_stats()
+        orphan_stats = self.orphan_manager.get_orphan_stats()
+        queue_size = self.event_queue.size()
+
+        status_log = {
+            "timestamp": datetime.now().isoformat(),
+            "queue_size": queue_size,
+            "events_processed": stats.total_processed,
+            "successful": stats.successful,
+            "orphaned": stats.orphaned,
+            "failed": stats.failed,
+            "orphans_resolved": stats.orphans_resolved,
+            "orphans_pending": orphan_stats["total_orphans"],
+            "orphans_by_type": orphan_stats["by_type"],
+            "orphans_timed_out": orphan_stats["total_timed_out"],
+        }
+
+        logger.info(status_log)
+        self.last_log_time = time.time()
+
+    def stop(self):
+        logger.info("Stopping SmartEM Watcher V2...")
+
+        self._shutdown_event.set()
+
+        if self._processing_thread and self._processing_thread.is_alive():
+            logger.info("Waiting for processing thread to stop...")
+            self._processing_thread.join(timeout=10)
+
+        if self._orphan_check_thread and self._orphan_check_thread.is_alive():
+            logger.info("Waiting for orphan check thread to stop...")
+            self._orphan_check_thread.join(timeout=10)
+
         self._sse_shutdown_event.set()
         self._heartbeat_shutdown_event.set()
 
@@ -346,425 +473,11 @@ class RateLimitedFilesystemEventHandler(FileSystemEventHandler):
             self.sse_client.stop()
 
         if self.sse_thread and self.sse_thread.is_alive():
-            logging.info("Waiting for SSE thread to stop...")
-            self.sse_thread.join(timeout=10)  # Increased timeout for graceful shutdown
-            if self.sse_thread.is_alive():
-                logging.warning("SSE thread did not stop within timeout period")
+            logger.info("Waiting for SSE thread to stop...")
+            self.sse_thread.join(timeout=10)
 
         if self.heartbeat_thread and self.heartbeat_thread.is_alive():
-            logging.info("Waiting for heartbeat thread to stop...")
+            logger.info("Waiting for heartbeat thread to stop...")
             self.heartbeat_thread.join(timeout=5)
-            if self.heartbeat_thread.is_alive():
-                logging.warning("Heartbeat thread did not stop within timeout period")
 
-    def _instruments_match(self, inst1: MicroscopeData, inst2: MicroscopeData) -> bool:
-        """Check if two instrument records are equivalent."""
-        return (
-            inst1.instrument_model == inst2.instrument_model
-            and inst1.instrument_id == inst2.instrument_id
-            and inst1.computer_name == inst2.computer_name
-        )
-
-    def _try_extract_instrument_info(self, file_path: str, grid_uuid: str) -> None:
-        """
-        Try to extract instrument info from any XML file and store it at the acquisition level.
-
-        This method:
-        1. Attempts to extract instrument information from the given XML file
-        2. Stores it once per grid (acquisition) to avoid duplicates
-        3. Detects and logs conflicts if different instrument info is found for the same grid
-        4. Updates the acquisition record when instrument info is found
-
-        Args:
-            file_path: Path to the XML file to parse
-            grid_uuid: UUID of the grid this file belongs to
-        """
-        if grid_uuid in self._extracted_instruments:
-            return  # Already have instrument info for this grid
-
-        try:
-            instrument = EpuParser.parse_microscope_from_image_metadata(file_path)
-            if instrument:
-                if grid_uuid in self._extracted_instruments:
-                    # Check for mismatch (double-check in case of race conditions)
-                    existing = self._extracted_instruments[grid_uuid]
-                    if not self._instruments_match(existing, instrument):
-                        logging.error(
-                            f"Instrument mismatch in grid {grid_uuid}: "
-                            f"existing=Model:{existing.instrument_model}/ID:{existing.instrument_id} vs "
-                            f"new=Model:{instrument.instrument_model}/ID:{instrument.instrument_id}"
-                        )
-                        return
-                    logging.debug(f"Instrument info already extracted for grid {grid_uuid}, skipping duplicate")
-                else:
-                    # Store instrument info for this grid
-                    self._extracted_instruments[grid_uuid] = instrument
-                    logging.info(
-                        f"Extracted instrument info from {Path(file_path).name}: "
-                        f"Model={instrument.instrument_model}, ID={instrument.instrument_id}"
-                    )
-
-                    # Update acquisition record in the datastore
-                    grid = self.datastore.get_grid(grid_uuid)
-                    if grid and grid.acquisition_data:
-                        grid.acquisition_data.instrument = instrument
-                        self.datastore.update_grid(grid)
-
-                        # Update acquisition via API if using PersistentDataStore
-                        if hasattr(self.datastore, "api_client"):
-                            try:
-                                self.datastore.api_client.update_acquisition(grid.acquisition_data)
-                                logging.info(
-                                    f"Updated acquisition {grid.acquisition_data.id} via API "
-                                    f"with instrument information"
-                                )
-                            except Exception as e:
-                                logging.error(f"Failed to update acquisition {grid.acquisition_data.id} via API: {e}")
-
-                        logging.info(f"Updated acquisition {grid.acquisition_data.id} with instrument information")
-                    else:
-                        logging.warning(f"Could not update acquisition record for grid {grid_uuid}")
-
-        except Exception as e:
-            logging.debug(f"Could not extract instrument info from {file_path}: {e}")
-
-    # TODO unit test this method
-    def matches_pattern(self, path: str) -> bool:
-        try:
-            rel_path = str(Path(path).relative_to(self.watch_dir))
-            rel_path = rel_path.replace("\\", "/")  # Normalize path separators
-            return any(fnmatch(rel_path, pattern) for pattern in self.patterns)
-        except ValueError:
-            return False
-
-    # TODO Enhancement: log all events for session debugging and playback
-    def on_any_event(self, event):
-        if event.is_directory or not self.matches_pattern(event.src_path):
-            if event.is_directory:
-                logging.debug(f"Skipping non-matching path: {event.src_path}")
-            return
-
-        if event.event_type not in self.watched_event_types:
-            if event.is_directory:
-                logging.debug(f"Skipping non-matching event type: {event.event_type}")
-            return
-
-        current_time = time.time()
-        if current_time - self.last_log_time >= self.log_interval:
-            self._flush_events()
-
-        file_stat = None
-        try:
-            if os.path.exists(event.src_path):
-                file_stat = os.stat(event.src_path)
-        except (FileNotFoundError, PermissionError) as e:
-            logging.warning(f"Error accessing file {event.src_path}: {str(e)}")
-            return  # Skip processing this file if we can't access it
-
-        new_file_detected = event.src_path not in self.changed_files
-        self.changed_files[event.src_path] = (event, current_time, file_stat)
-
-        # Skip processing if this is a duplicate event for the same file
-        if not new_file_detected:
-            return
-
-        # New grid discovered? If so - instantiate in store
-        if re.search(EpuParser.session_dm_pattern, event.src_path):
-            assert self.datastore.get_grid_by_path(event.src_path) is None  # guaranteed because is a new file
-            grid = GridData(data_dir=Path(event.src_path).parent.resolve())
-            grid.acquisition_data = EpuParser.parse_epu_session_manifest(event.src_path)
-
-            # Fix UUID mismatch: use the actual acquisition UUID from the datastore
-            # This ensures grid references the correct acquisition that exists in the database
-            grid.acquisition_data.uuid = self.datastore.acquisition.uuid
-
-            self.datastore.create_grid(grid, path_mapper=self.path_mapper)
-
-            # Process any orphaned files that may belong to this newly created grid
-            self._process_orphaned_files(grid.uuid)
-            return
-
-        # try to work out which grid the touched file relates to
-        grid_uuid = self.datastore.get_grid_by_path(event.src_path)
-        if grid_uuid is None:
-            # This must be an orphaned file since it matched one of patterns for files we are interested in,
-            #   but a containing grid doesn't exist yet - store it for when we have the grid.
-            logging.debug(f"Could not determine which grid this data belongs to: {event.src_path}, adding to orphans")
-            self.orphaned_files[event.src_path] = (event, current_time, file_stat)
-            return
-
-        match event.src_path:
-            case path if re.search(EpuParser.session_dm_pattern, path):
-                self._on_acquisition_detected(path, grid_uuid, new_file_detected)
-                # After processing the session file, check for any orphaned files belonging to this grid
-                self._process_orphaned_files(grid_uuid)
-            case path if re.search(EpuParser.atlas_dm_pattern, path):
-                self._on_atlas_detected(path, grid_uuid, new_file_detected)
-            case path if re.search(EpuParser.gridsquare_dm_file_pattern, path):
-                self._on_gridsquare_metadata_detected(path, grid_uuid, new_file_detected)
-            case path if re.search(EpuParser.gridsquare_xml_file_pattern, path):
-                self._on_gridsquare_manifest_detected(path, grid_uuid, new_file_detected)
-            case path if re.search(EpuParser.foilhole_xml_file_pattern, path):
-                self._on_foilhole_detected(path, grid_uuid, new_file_detected)
-            case path if re.search(EpuParser.micrograph_xml_file_pattern, path):
-                self._on_micrograph_detected(path, grid_uuid, new_file_detected)
-
-        # Try to extract instrument information from any XML file (GridSquare, FoilHole, Micrograph XMLs)
-        # This is done opportunistically - we'll get instrument info from whichever file contains it first
-        if event.src_path.endswith(".xml") and grid_uuid:
-            self._try_extract_instrument_info(event.src_path, grid_uuid)
-
-    def _on_acquisition_detected(self, path: str, grid_uuid: str, is_new_file: bool = True):
-        logging.debug(f"Session manifest {'detected' if is_new_file else 'updated'}: {path}")
-        acquisition_data = EpuParser.parse_epu_session_manifest(path)
-        grid = self.datastore.get_grid(grid_uuid)
-
-        if grid and acquisition_data != grid.acquisition_date:
-            grid.acquisition_data = acquisition_data
-            self.datastore.update_grid(grid)
-            logging.debug(f"Updated acquisition_data for grid: {grid_uuid}")
-
-    def _process_orphaned_files(self, grid_uuid: str):
-        """Process any orphaned files that belong to this grid"""
-        for path_str, (event, _timestamp, _file_stat) in self.orphaned_files.items():
-            resolved_path = str(Path(path_str).resolve())
-            # Check if this orphaned file belongs to the new grid
-            if self.datastore.get_grid_by_path(resolved_path) == grid_uuid:
-                logging.debug(f"Processing previously orphaned file: {path_str}")
-                # Remove from changed_files so it will be processed as a new file
-                self.changed_files.pop(path_str, None)
-                self.on_any_event(event)  # Process the file as if we just received the event
-
-        # Create a new dictionary excluding the processed files
-        self.orphaned_files = {
-            path_str: data
-            for path_str, data in self.orphaned_files.items()
-            if self.datastore.get_grid_by_path(str(Path(path_str).resolve())) != grid_uuid
-        }
-
-    def _on_atlas_detected(self, path: str, grid_uuid: str, is_new_file: bool = True):
-        logging.debug(f"Atlas {'detected' if is_new_file else 'updated'}: {path}")
-        atlas_data = EpuParser.parse_atlas_manifest(path)
-        grid = self.datastore.get_grid(grid_uuid)
-        if atlas_data != grid.atlas_data:
-            grid.atlas_data = atlas_data
-            self.datastore.update_grid(grid)
-            logging.debug(f"Updated atlas_data for grid: {grid_uuid}")
-
-            # Only proceed if atlas data parsing was successful and has gridsquare positions
-            if atlas_data is not None:
-                self.datastore.create_atlas(grid.atlas_data)
-                gs_uuid_map = {}
-
-                # Check if gridsquare_positions exists before iterating
-                if atlas_data.gridsquare_positions is not None:
-                    for gsid, gsp in atlas_data.gridsquare_positions.items():
-                        gridsquare = GridSquareData(
-                            gridsquare_id=str(gsid),
-                            metadata=None,
-                            grid_uuid=grid.uuid,
-                            center_x=gsp.center[0],
-                            center_y=gsp.center[1],
-                            size_width=gsp.size[0],
-                            size_height=gsp.size[1],
-                        )
-                        # need to check if each square exists already
-                        if found_grid_square := self.datastore.find_gridsquare_by_natural_id(str(gsid)):
-                            gridsquare.uuid = found_grid_square.uuid
-                            self.datastore.update_gridsquare(gridsquare, lowmag=True)
-                            gs_uuid_map[str(gsid)] = gridsquare.uuid
-                        else:
-                            self.datastore.create_gridsquare(gridsquare, lowmag=True)
-                            gs_uuid_map[str(gsid)] = gridsquare.uuid
-                    logging.debug(f"Registered all squares for grid: {grid_uuid}")
-                    self.datastore.grid_registered(grid_uuid)
-
-                # Process atlas tiles only if atlas data and tiles exist
-                if atlas_data.tiles:
-                    for atlastile in atlas_data.tiles:
-                        for gsid, gs_tile_pos in atlastile.gridsquare_positions.items():
-                            for pos in gs_tile_pos:
-                                self.datastore.link_atlastile_to_gridsquare(
-                                    AtlasTileGridSquarePositionData(
-                                        gridsquare_uuid=gs_uuid_map[gsid],
-                                        tile_uuid=atlastile.uuid,
-                                        position=pos.position,
-                                        size=pos.size,
-                                    )
-                                )
-                logging.debug(f"Linked squares to tiles for grid: {grid_uuid}")
-
-    def _on_gridsquare_metadata_detected(self, path: str, grid_uuid: str, is_new_file: bool = True):
-        logging.info(f"Gridsquare metadata {'detected' if is_new_file else 'updated'}: {path}")
-
-        gridsquare_id = EpuParser.gridsquare_dm_file_pattern.search(path).group(1)
-        assert gridsquare_id is not None, f"gridsquare_id should not be None: {gridsquare_id}"
-
-        gridsquare_metadata = EpuParser.parse_gridsquare_metadata(path, path_mapper=self.path_mapper)
-        grid = self.datastore.get_grid(grid_uuid)
-
-        # Check if this is a new gridsquare or an update to an existing one
-        gridsquare = self.datastore.find_gridsquare_by_natural_id(gridsquare_id)
-        if not gridsquare:
-            gridsquare = GridSquareData(
-                gridsquare_id=gridsquare_id,
-                metadata=gridsquare_metadata,
-                grid_uuid=grid.uuid,
-            )
-            logging.info(f"Creating new GridSquare: {gridsquare.uuid} of Grid {grid.uuid}")
-            self.datastore.create_gridsquare(gridsquare)
-        else:
-            logging.info(f"Updating existing GridSquare: {gridsquare_id} of Grid {grid.uuid}")
-            gridsquare.metadata = gridsquare_metadata
-            self.datastore.update_gridsquare(gridsquare)
-        for fh_id, fh_position in gridsquare_metadata.foilhole_positions.items():
-            fh = FoilHoleData(
-                id=str(fh_id),
-                gridsquare_id=gridsquare_id,
-                gridsquare_uuid=gridsquare.uuid,
-                x_location=fh_position.x_location,
-                y_location=fh_position.y_location,
-                x_stage_position=fh_position.x_stage_position,
-                y_stage_position=fh_position.y_stage_position,
-                diameter=fh_position.diameter,
-                is_near_grid_bar=fh_position.is_near_grid_bar,
-            )
-            self.datastore.create_foilhole(fh)
-        self.datastore.gridsquare_registered(gridsquare.uuid)
-
-    def _on_gridsquare_manifest_detected(self, path: str, grid_uuid, is_new_file: bool = True):
-        logging.info(f"Gridsquare manifest {'detected' if is_new_file else 'updated'}: {path}")
-
-        gridsquare_id = re.search(EpuParser.gridsquare_dir_pattern, str(path)).group(1)
-        assert gridsquare_id is not None, f"gridsquare_id should not be None: {gridsquare_id}"
-
-        gridsquare_manifest = EpuParser.parse_gridsquare_manifest(path)
-        grid = self.datastore.get_grid(grid_uuid)
-
-        # Check if this is a new gridsquare or an update to an existing one
-        gridsquare = self.datastore.find_gridsquare_by_natural_id(gridsquare_id)
-        if not gridsquare:
-            gridsquare = GridSquareData(
-                gridsquare_id=gridsquare_id,
-                manifest=gridsquare_manifest,
-                grid_uuid=grid.uuid,
-            )
-            logging.info(
-                f"Creating new GridSquare: {gridsquare.uuid} (ID: {gridsquare_id}) of Grid {gridsquare.grid_uuid}"
-            )
-            self.datastore.create_gridsquare(gridsquare)
-            logging.info(f"GridSquare {gridsquare.uuid} created successfully")
-        else:
-            logging.info(
-                f"Updating existing GridSquare: {gridsquare.uuid} (ID: {gridsquare_id}) of Grid {gridsquare.grid_uuid}"
-            )
-            gridsquare.manifest = gridsquare_manifest
-            self.datastore.update_gridsquare(gridsquare)
-            logging.info(f"GridSquare {gridsquare.uuid} updated successfully")
-
-        logging.debug(gridsquare)
-
-    def _on_foilhole_detected(self, path: str, grid_uuid: str, is_new_file: bool = True):
-        logging.info(f"Foilhole {'detected' if is_new_file else 'updated'}: {path}")
-        foilhole = EpuParser.parse_foilhole_manifest(path)
-
-        # Here it is intentional that any previously recorded data for given foilhole is overwritten as
-        # there are instances of multiple manifest files written to fs and in these cases
-        # only the newest (by timestamp) is relevant.
-        # TODO It is assumed that latest foilhole manifest by timestamp in filename will also be
-        #  last to be written to fs, but additional filename-based checks wouldn't hurt - resolve latest
-        #  based on timestamp found in filename.
-
-        # Use upsert method which handles all UUID management and race conditions internally
-        success = self.datastore.upsert_foilhole(foilhole)
-        if not success:
-            logging.warning(
-                f"Parent gridsquare {foilhole.gridsquare_uuid} not found for foilhole {foilhole.id}. "
-                f"This may be a race condition. Available gridsquares: {list(self.datastore.gridsquares.keys())}. "
-                f"Skipping foilhole creation."
-            )
-            return
-
-        logging.info(
-            f"Successfully upserted foilhole {foilhole.id} (UUID: {foilhole.uuid}) "
-            f"for gridsquare {foilhole.gridsquare_uuid}"
-        )
-        logging.debug(foilhole)
-
-    def _on_micrograph_detected(self, path: str, grid_uuid: str, is_new_file: bool = True):
-        logging.info(f"Micrograph {'detected' if is_new_file else 'updated'}: {path}")
-
-        match = re.search(EpuParser.micrograph_xml_file_pattern, path)
-        foilhole_id = match.group(1)
-        location_id = match.group(2)
-
-        micrograph_manifest = EpuParser.parse_micrograph_manifest(path)
-        foilholes = [fh for fh in self.datastore.foilholes.values() if fh.id == foilhole_id]
-        gridsquare_id = foilholes[0].gridsquare_id if foilholes else ""
-        foilhole = self.datastore.find_foilhole_by_natural_id(foilhole_id)
-        if not foilhole:
-            logging.warning(
-                f"Could not find foilhole by natural ID {foilhole_id}, "
-                f"skipping micrograph creation for micrograph {micrograph_manifest.unique_id}"
-            )
-            return
-
-        micrograph = MicrographData(
-            id=micrograph_manifest.unique_id,
-            foilhole_uuid=foilhole.uuid,
-            foilhole_id=foilhole_id,
-            location_id=location_id,
-            gridsquare_id=gridsquare_id,
-            high_res_path=Path(""),
-            manifest_file=Path(path),
-            manifest=micrograph_manifest,
-        )
-        success = self.datastore.upsert_micrograph(micrograph)
-        if not success:
-            logging.warning(f"Failed to upsert micrograph {micrograph.id}")
-
-    def _on_session_complete(self):
-        """
-        TODO: explore how to reliably determine when session ended
-            (and bear in mind that it could have been paused, to be resumed later)?
-            Could Athena API be queried for this?
-        """
-        pass
-
-    def _flush_events(self):
-        if not self.changed_files:
-            return
-
-        batch_log = {"timestamp": datetime.now().isoformat(), "event_count": len(self.changed_files), "events": []}
-
-        for src_path, (event, event_time, file_stat) in self.changed_files.items():
-            event_data = {
-                "timestamp": datetime.fromtimestamp(event_time).isoformat(),
-                "event_type": event.event_type,
-                "source_path": str(src_path),
-                "relative_path": str(Path(src_path).relative_to(self.watch_dir)).replace("\\", "/"),
-            }
-
-            if file_stat:
-                event_data.update(
-                    {"size": file_stat.st_size, "modified": datetime.fromtimestamp(file_stat.st_mtime).isoformat()}
-                )
-
-            if hasattr(event, "dest_path") and event.dest_path:
-                event_data["destination_path"] = str(event.dest_path)
-                try:
-                    if os.path.exists(event.dest_path):
-                        event_data["destination_size"] = os.path.getsize(event.dest_path)
-                except OSError:
-                    pass
-
-            batch_log["events"].append(event_data)
-
-        logging.info(batch_log)
-        self.changed_files.clear()
-        self.last_log_time = time.time()
-
-
-if __name__ == "__main__":
-    logging.warning("This module is not meant to be run directly. Import and use its components instead.")
-    sys.exit(1)
+        logger.info("SmartEM Watcher V2 stopped")

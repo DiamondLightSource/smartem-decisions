@@ -2,7 +2,7 @@ import time
 from dataclasses import dataclass
 from pathlib import Path
 
-from smartem_agent2.event_classifier import EntityType
+from smartem_agent.event_classifier import EntityType
 from smartem_common.utils import get_logger
 
 logger = get_logger(__name__)

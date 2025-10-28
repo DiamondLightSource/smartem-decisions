@@ -1,7 +1,7 @@
 import heapq
 import threading
 
-from smartem_agent2.event_classifier import ClassifiedEvent
+from smartem_agent.event_classifier import ClassifiedEvent
 from smartem_common.utils import get_logger
 
 logger = get_logger(__name__)

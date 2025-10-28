@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # E2E Test Runner for SmartEM Decisions
-# This script automates the e2e test execution for Test Type 2 (Pre-Acquisition Agent Setup)
+# This script automates the e2e test execution for the SmartEM Agent
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
@@ -45,7 +45,7 @@ source .venv/bin/activate
 
 echo "[3/9] Loading environment variables..."
 set -a
-source .env
+source .env.local-test-run
 set +a
 
 echo "[4/9] Resetting database..."
@@ -53,12 +53,12 @@ POSTGRES_HOST=localhost POSTGRES_PORT=30432 POSTGRES_DB=postgres \
     POSTGRES_USER=username POSTGRES_PASSWORD=password \
     python -m smartem_backend.model.database
 
-echo "[5/9] Running database migrations..."
+echo "[5/10] Running database migrations..."
 POSTGRES_HOST=localhost POSTGRES_PORT=30432 POSTGRES_DB=smartem_db \
     POSTGRES_USER=username POSTGRES_PASSWORD=password \
     python -m alembic upgrade head
 
-echo "[6/9] Checking if port 8000 is free..."
+echo "[6/10] Checking if port 8000 is free..."
 if lsof -ti:8000 >/dev/null 2>&1; then
     echo "ERROR: Port 8000 is already in use!"
     echo "Killing process on port 8000..."
@@ -87,7 +87,6 @@ sleep 2
 
 python -m smartem_agent watch \
     --api-url http://localhost:8000 \
-    --use-v1 \
     -vv \
     "$EPU_DIR" \
     > "$TEST_DIR/logs/agent.log" 2>&1 &

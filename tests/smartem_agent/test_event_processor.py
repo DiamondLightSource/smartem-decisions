@@ -5,11 +5,11 @@ from unittest.mock import Mock
 
 import pytest
 
+from smartem_agent.event_classifier import ClassifiedEvent, EntityType
+from smartem_agent.event_processor import EventProcessor, ProcessingResult
 from smartem_agent.fs_parser import EpuParser
 from smartem_agent.model.store import InMemoryDataStore
-from smartem_agent2.event_classifier import ClassifiedEvent, EntityType
-from smartem_agent2.event_processor import EventProcessor, ProcessingResult
-from smartem_agent2.orphan_manager import OrphanManager
+from smartem_agent.orphan_manager import OrphanManager
 from smartem_common.schemas import (
     AcquisitionData,
     AtlasData,
