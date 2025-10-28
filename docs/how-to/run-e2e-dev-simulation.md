@@ -19,7 +19,7 @@ For the simplest test execution, use the automated test runner scripts:
 ### Agent V1 (Original)
 
 ```bash
-# Ensure k3s is running
+# Check k3s status first (DO NOT restart if already running)
 ./tools/dev-k8s.sh status
 
 # Run automated test (Test Type 2: Pre-Acquisition Agent Setup)
@@ -35,7 +35,7 @@ For the simplest test execution, use the automated test runner scripts:
 ### Agent V2 (Rewrite)
 
 ```bash
-# Ensure k3s is running
+# Check k3s status first (DO NOT restart if already running)
 ./tools/dev-k8s.sh status
 
 # Run automated test with agent v2
@@ -81,7 +81,7 @@ For the simplest test execution, use the automated test runner scripts:
 If you've already set up once and just need to run another test:
 
 ```bash
-# 1. Ensure k3s is running
+# 1. Check k3s status (DO NOT restart if already running)
 ./tools/dev-k8s.sh status
 
 # 2. Prepare clean environment
@@ -453,7 +453,7 @@ pkill -f fsrecorder
 pkill -f uvicorn
 pkill -f fastapi
 
-# 5. Verify k3s services are running
+# 5. Verify k3s services are running (DO NOT restart if already running)
 ./tools/dev-k8s.sh status
 
 # 6. Clean RabbitMQ (restart to ensure empty queue)

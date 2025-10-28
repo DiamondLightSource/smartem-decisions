@@ -26,6 +26,8 @@ cleanup() {
     echo ""
     echo "Cleaning up background processes..."
     pkill -f "smartem_backend|smartem_agent|fsrecorder|uvicorn" || true
+    echo "Cleaning up playback data directory..."
+    rm -rf "$EPU_DIR" || true
     echo "Cleanup complete"
 }
 
@@ -35,6 +37,7 @@ trap cleanup EXIT
 echo ""
 echo "[1/9] Setting up test environment..."
 mkdir -p "$TEST_DIR/logs"
+mkdir -p "$EPU_DIR"
 rm -rf "$EPU_DIR"/*
 
 echo "[2/9] Activating virtual environment..."
@@ -50,7 +53,12 @@ POSTGRES_HOST=localhost POSTGRES_PORT=30432 POSTGRES_DB=postgres \
     POSTGRES_USER=username POSTGRES_PASSWORD=password \
     python -m smartem_backend.model.database
 
-echo "[5/9] Checking if port 8000 is free..."
+echo "[5/10] Running database migrations..."
+POSTGRES_HOST=localhost POSTGRES_PORT=30432 POSTGRES_DB=smartem_db \
+    POSTGRES_USER=username POSTGRES_PASSWORD=password \
+    python -m alembic upgrade head
+
+echo "[6/10] Checking if port 8000 is free..."
 if lsof -ti:8000 >/dev/null 2>&1; then
     echo "ERROR: Port 8000 is already in use!"
     echo "Killing process on port 8000..."
