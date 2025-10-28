@@ -73,7 +73,15 @@ class SmartEMWatcherV2(FileSystemEventHandler):
             self.datastore = PersistentDataStore(str(self.watch_dir), api_url)
 
         self.parser = EpuParser()
-        self.event_processor = EventProcessor(self.parser, self.datastore, self.orphan_manager, path_mapper)
+
+        from smartem_agent2.error_handler import ErrorHandler
+        from smartem_agent2.metrics import ProcessingMetrics
+
+        self.error_handler = ErrorHandler()
+        self.metrics = ProcessingMetrics()
+        self.event_processor = EventProcessor(
+            self.parser, self.datastore, self.orphan_manager, self.error_handler, self.metrics, path_mapper
+        )
 
         self.batch_size = batch_size
         self.processing_interval = processing_interval
@@ -255,14 +263,25 @@ class SmartEMWatcherV2(FileSystemEventHandler):
             case "agent.status.request":
                 stats = self.event_processor.get_stats()
                 orphan_stats = self.orphan_manager.get_orphan_stats()
+                metrics_summary = self.metrics.get_summary()
+                error_stats = self.error_handler.get_error_stats()
+                latency = metrics_summary["latency_percentiles"]
+
                 return (
-                    f"Agent watching {self.watch_dir}, "
-                    f"queue: {self.event_queue.size()} events, "
-                    f"processed: {stats.total_processed} ({stats.successful} success, "
-                    f"{stats.orphaned} orphaned, {stats.failed} failed), "
-                    f"orphans: {orphan_stats['total_orphans']} pending, "
+                    f"Agent watching {self.watch_dir}\n"
+                    f"Queue: {self.event_queue.size()} events\n"
+                    f"Processed: {stats.total_processed} total "
+                    f"({stats.successful} success, {stats.orphaned} orphaned, {stats.failed} failed)\n"
+                    f"Orphans: {orphan_stats['total_orphans']} pending, "
                     f"{orphan_stats['total_resolved']} resolved, "
-                    f"{orphan_stats['total_timed_out']} timed out"
+                    f"{orphan_stats['total_timed_out']} timed out\n"
+                    f"Performance: {metrics_summary['throughput_per_second']:.2f} events/sec, "
+                    f"success rate {metrics_summary['success_rate'] * 100:.1f}%\n"
+                    f"Latency (ms): p50={latency['p50']:.1f}, p95={latency['p95']:.1f}, "
+                    f"p99={latency['p99']:.1f}, max={latency['max']:.1f}\n"
+                    f"Errors: {error_stats['active_errors']} active, "
+                    f"by category: {error_stats['error_counts']}\n"
+                    f"Uptime: {metrics_summary['uptime_seconds']:.0f}s"
                 )
 
             case "agent.config.update":
@@ -275,6 +294,54 @@ class SmartEMWatcherV2(FileSystemEventHandler):
             case "agent.info.datastore":
                 grid_count = len(self.datastore.grids) if self.datastore else 0
                 return f"Datastore contains {grid_count} grids"
+
+            case "agent.info.metrics":
+                metrics_summary = self.metrics.get_summary()
+                retry_dist = metrics_summary["retry_distribution"]
+                latency = metrics_summary["latency_percentiles"]
+
+                return (
+                    f"Metrics Summary:\n"
+                    f"Successes: {metrics_summary['success_count']}, "
+                    f"Failures: {metrics_summary['failure_count']}\n"
+                    f"Success rate: {metrics_summary['success_rate'] * 100:.1f}%\n"
+                    f"Throughput: {metrics_summary['throughput_per_second']:.2f} events/sec\n"
+                    f"Latency percentiles (ms): p50={latency['p50']:.1f}, "
+                    f"p95={latency['p95']:.1f}, p99={latency['p99']:.1f}\n"
+                    f"Mean latency: {latency['mean']:.1f}ms, Max: {latency['max']:.1f}ms\n"
+                    f"Retry distribution: {retry_dist if retry_dist else 'none'}\n"
+                    f"Uptime: {metrics_summary['uptime_seconds']:.0f}s"
+                )
+
+            case "agent.info.errors":
+                error_stats = self.error_handler.get_error_stats()
+                return (
+                    f"Error Statistics:\n"
+                    f"Active errors: {error_stats['active_errors']}\n"
+                    f"Errors by category:\n"
+                    f"  Permanent corrupt: {error_stats['error_counts'].get('permanent_corrupt', 0)}\n"
+                    f"  Permanent missing: {error_stats['error_counts'].get('permanent_missing', 0)}\n"
+                    f"  Transient parser: {error_stats['error_counts'].get('transient_parser', 0)}\n"
+                    f"  Transient API: {error_stats['error_counts'].get('transient_api', 0)}\n"
+                    f"  Unknown: {error_stats['error_counts'].get('unknown', 0)}\n"
+                    f"Currently retrying:\n"
+                    f"  Transient parser: {error_stats['errors_by_category'].get('transient_parser', 0)}\n"
+                    f"  Transient API: {error_stats['errors_by_category'].get('transient_api', 0)}"
+                )
+
+            case "agent.info.orphans":
+                orphan_stats = self.orphan_manager.get_orphan_stats()
+                return (
+                    f"Orphan Statistics:\n"
+                    f"Total orphans: {orphan_stats['total_orphans']}\n"
+                    f"By type:\n"
+                    f"  GridSquares: {orphan_stats['by_type'].get('gridsquare', 0)}\n"
+                    f"  FoilHoles: {orphan_stats['by_type'].get('foilhole', 0)}\n"
+                    f"  Micrographs: {orphan_stats['by_type'].get('micrograph', 0)}\n"
+                    f"  Atlases: {orphan_stats['by_type'].get('atlas', 0)}\n"
+                    f"Total resolved: {orphan_stats['total_resolved']}\n"
+                    f"Total timed out: {orphan_stats['total_timed_out']}"
+                )
 
             case "microscope.control.move_stage":
                 stage_position = payload.get("stage_position", {})

@@ -236,8 +236,11 @@ class TestSmartEMWatcherV2:
         result = watcher._process_instruction("agent.status.request", {})
 
         assert "Agent watching" in result
-        assert "queue:" in result
-        assert "processed:" in result
+        assert "Queue:" in result
+        assert "Processed:" in result
+        assert "Performance:" in result
+        assert "Latency (ms):" in result
+        assert "Errors:" in result
 
     def test_process_instruction_config_update(self, watcher):
         old_interval = watcher.log_interval

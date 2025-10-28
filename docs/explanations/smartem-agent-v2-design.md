@@ -619,7 +619,9 @@ variables or configuration file for deployment-specific tuning.
 performance benefit outweighs the marginal increase in storage complexity.
 
 **Timeout detection**: Periodic background task (60s interval) identifies orphans exceeding age threshold (5 minutes)
-for genuinely missing parent files. This handles <1% of cases where parent files are corrupted or missing.
+for genuinely missing parent files. Timeouts generate warning logs but do NOT evict orphans from memory, supporting
+long-running production sessions (48+ hours) where parent files may arrive after extended delays. Memory footprint for
+orphans is negligible (~750 bytes per orphan, ~1.9 MB for 2,500 orphans in extreme scenarios).
 
 ## Implementation Strategy
 
@@ -656,20 +658,30 @@ development without disrupting current functionality. Migration to v2 will occur
 - Integration tests pass with zero entity loss and zero orphan leakage
 - Performance benchmarking: process 100 entities within 2 seconds (serial processing)
 
-#### Phase 3: Retry Strategy and Error Handling (Week 5-6)
+#### Phase 3: Transient Error Retry and Enhanced Observability (Week 5-6)
+
+**Context**: Production environment differs significantly from dev/test:
+- Production: Windows binary, live microscope, real-time file writes over 4-48 hours
+- Dev/Test: Linux interpreted Python, fsrecorder simulation with accelerated timing (100-1000x speed)
+- Primary goal: Address dev/test brittleness from accelerated playback whilst improving production reliability
 
 **Deliverables**:
-- Exponential backoff implementation in Orphan Manager
-- Periodic background retry mechanism (5-second interval)
-- Enhanced error handling with structured logging and metrics
-- Integration of retry statistics into SSE instruction responses
-- End-to-end tests using fsrecorder playback with full-scale datasets (100+ GridSquares)
+- Exponential backoff retry for transient parser errors (corrupted XML during write, file locks)
+- Exponential backoff retry for transient API connection failures (network timeouts, service restarts)
+- Agent log streaming to backend (via SSE or dedicated endpoint) for centralized monitoring
+- Enhanced error categorization (transient vs permanent failures)
+- Structured metrics: processing latency percentiles (p50, p95, p99), retry distributions, error counts
+- Enhanced SSE instructions: detailed statistics, orphan inspection, error reporting
+- End-to-end tests using fsrecorder playback with multiple timing modes (--fast, --dev-mode, --exact)
+- Full-scale E2E test with bi37708-42 dataset (8,389 events)
 
 **Validation**:
-- Exponential backoff correctly schedules retries across all tested scenarios
-- Permanently orphaned entities log warnings after max retry threshold
-- End-to-end tests pass with complex file ordering (GridSquares before Atlas, FoilHoles before GridSquares, etc.)
-- Orphan resolution metrics visible in logs and SSE instruction responses
+- Exponential backoff correctly retries transient errors without blocking event processing
+- Permanent errors (corrupt files, missing parents after timeout) logged appropriately without retry
+- Orphan timeout detection generates warnings but does NOT evict orphans (supports 48h+ sessions)
+- End-to-end tests pass with all fsrecorder timing modes (100x fast, 1000x dev-mode, 1x exact)
+- Agent logs successfully stream to backend for centralized monitoring
+- Processing metrics visible in logs and SSE instruction responses
 
 #### Phase 4: Performance Optimisation and Production Hardening (Week 7-8)
 
@@ -699,8 +711,8 @@ coverage with mocked dependencies. Focus areas:
 - **Event Classifier**: File path pattern matching, entity type detection, priority assignment, natural ID extraction
 - **Event Queue**: Priority ordering, batch retrieval, size limit enforcement, edge cases (empty queue, single-element
   batches)
-- **Orphan Manager**: Orphan registration, retry scheduling, exponential backoff calculation, permanent orphan
-  detection, orphan statistics
+- **Orphan Manager**: Orphan registration, event-driven resolution, timeout detection (warning-only, no eviction),
+  orphan statistics by type and age
 - **Event Processor**: Batch processing, parser delegation, parent checking, orphan registration, Data Store
   interaction
 
@@ -708,8 +720,15 @@ coverage with mocked dependencies. Focus areas:
 
 #### Integration Tests
 
-Integration tests use fsrecorder playback to simulate EPU filesystem output patterns with controlled file ordering:
+Integration tests use fsrecorder playback to simulate EPU filesystem output patterns with controlled file ordering
+and multiple timing modes:
 
+**Timing modes** (fsrecorder replay options):
+- `--fast` (100x speed, 1s max delays): Balanced mode for realistic testing, DEFAULT
+- `--dev-mode` (1000x speed, burst): Maximum acceleration for rapid iteration and stress testing
+- `--exact` (1x speed): Preserve original timing for debugging timing-dependent issues
+
+**File ordering scenarios**:
 - **Normal ordering**: Parents before children (Grid → Atlas → GridSquare → FoilHole → Micrograph)
 - **Reverse ordering**: Children before parents (Micrograph before FoilHole, FoilHole before GridSquare, etc.)
 - **Mixed ordering**: Random interleaving of parent and child files
@@ -717,23 +736,28 @@ Integration tests use fsrecorder playback to simulate EPU filesystem output patt
 - **Incomplete hierarchies**: Missing parent files (Atlas absent, GridSquare metadata missing)
 
 **Validation**:
-- Zero entity loss across all ordering scenarios
+- Zero entity loss across all ordering scenarios and timing modes
 - Orphan resolution success rate >99% for complete hierarchies
-- Permanently orphaned entities correctly identified for incomplete hierarchies
-- Processing latency <5 seconds for 95th percentile entities
+- Orphaned entities with missing parents log timeout warnings (no eviction)
+- Processing latency <5 seconds for 95th percentile entities (fast mode)
 
 #### End-to-End Tests
 
 End-to-end tests use full-scale fsrecorder datasets (100+ GridSquares, 1000+ FoilHoles) with realistic EPU output
-patterns. Tests validate:
+patterns. Primary test dataset: bi37708-42 (8,389 events). Tests validate:
 
 - Complete entity persistence to backend database
 - SSE instruction handling during active data collection
 - Agent restart recovery (orphan re-discovery)
-- API failure handling (retry logic, rollback)
-- Windows executable deployment and operation
+- Transient error retry (parser errors with file locks, API connection failures)
+- Agent log streaming to backend for centralized monitoring
+- Windows executable deployment and operation (production environment)
 
-**Target**: All existing end-to-end tests pass with v2 implementation, plus additional tests for orphan scenarios.
+**Target**: All existing end-to-end tests pass with v2 implementation, plus additional tests for:
+- Orphan timeout warning scenarios (no eviction)
+- Transient error recovery with exponential backoff
+- Long-running sessions (48+ hours simulated via extended playback)
+- All three fsrecorder timing modes (fast, dev-mode, exact)
 
 ## Open Questions and Future Considerations
 
