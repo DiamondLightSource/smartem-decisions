@@ -4,8 +4,8 @@ from pathlib import Path
 
 import pytest
 
-from smartem_agent2.event_classifier import ClassifiedEvent, EntityType
-from smartem_agent2.event_queue import EventQueue
+from smartem_agent.event_classifier import ClassifiedEvent, EntityType
+from smartem_agent.event_queue import EventQueue
 
 
 class TestEventQueue:

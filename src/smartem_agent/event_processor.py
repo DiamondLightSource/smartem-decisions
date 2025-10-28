@@ -3,12 +3,12 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
 
+from smartem_agent.error_handler import ErrorHandler
+from smartem_agent.event_classifier import ClassifiedEvent, EntityType
 from smartem_agent.fs_parser import EpuParser
+from smartem_agent.metrics import ProcessingMetrics
 from smartem_agent.model.store import InMemoryDataStore
-from smartem_agent2.error_handler import ErrorHandler
-from smartem_agent2.event_classifier import ClassifiedEvent, EntityType
-from smartem_agent2.metrics import ProcessingMetrics
-from smartem_agent2.orphan_manager import OrphanManager
+from smartem_agent.orphan_manager import OrphanManager
 from smartem_common.schemas import FoilHoleData, GridData, GridSquareData, MicrographData
 from smartem_common.utils import get_logger
 

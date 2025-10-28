@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pytest
 
-from smartem_agent2.event_classifier import ClassifiedEvent, EntityType, EventClassifier
+from smartem_agent.event_classifier import ClassifiedEvent, EntityType, EventClassifier
 
 
 class TestEventClassifier:

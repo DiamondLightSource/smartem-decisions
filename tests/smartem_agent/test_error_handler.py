@@ -1,6 +1,6 @@
 import pytest
 
-from smartem_agent2.error_handler import ErrorCategory, ErrorHandler
+from smartem_agent.error_handler import ErrorCategory, ErrorHandler
 
 
 class TestErrorHandler:

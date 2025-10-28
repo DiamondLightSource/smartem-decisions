@@ -4,8 +4,8 @@ from pathlib import Path
 
 import pytest
 
-from smartem_agent2.event_classifier import EntityType
-from smartem_agent2.orphan_manager import OrphanManager
+from smartem_agent.event_classifier import EntityType
+from smartem_agent.orphan_manager import OrphanManager
 from smartem_common.schemas import FoilHoleData, GridSquareData, MicrographData, MicrographManifest
 
 
