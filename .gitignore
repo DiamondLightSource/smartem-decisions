@@ -15,6 +15,7 @@ output.txt
 
 .env
 .env.mcp
+.env.local-test-run
 .env.k8s.development
 .env.k8s.staging
 .env.k8s.production
