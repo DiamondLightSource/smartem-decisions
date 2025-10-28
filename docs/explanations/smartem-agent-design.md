@@ -1,31 +1,34 @@
-# SmartEM Agent v2: Design Specification
+# SmartEM Agent: Design Specification
 
-**Version**: 1.0
-**Date**: 20/10/2025
-**Status**: Draft
+**Version**: 2.0
+**Date**: 28/10/2025
+**Status**: Implemented
 
 ## Executive Summary
 
-This document specifies the design for SmartEM Agent v2, a comprehensive rework of the real-time EPU filesystem
-monitoring service. The primary objective is to address non-deterministic file ordering issues that cause GridSquare
-and FoilHole processing failures in end-to-end tests. The v2 implementation will provide robust orphan handling for
-arbitrary entity relationship ordering, improved bursty write handling, and enhanced code maintainability whilst
-preserving the proven parser implementation and maintaining backwards compatibility where practical.
+This document specifies the design for the SmartEM Agent, the real-time EPU filesystem monitoring service. The
+implementation addresses non-deterministic file ordering issues that previously caused GridSquare and FoilHole
+processing failures. The agent provides robust orphan handling for arbitrary entity relationship ordering, improved
+bursty write handling, and enhanced code maintainability whilst preserving the proven parser implementation.
 
 ## Background
 
-### Current Implementation Overview
+### Implementation Overview
 
 SmartEM Agent is a Windows-deployed service that monitors EPU (cryo-electron microscopy software) output directories
-in real time, parsing XML metadata and synchronising entity data to the backend via REST API. The current architecture
-(`src/smartem_agent/`) comprises three main components:
+in real time, parsing XML metadata and synchronising entity data to the backend via REST API. The architecture
+(`src/smartem_agent/`) comprises several key components:
 
 - **Parser** (`fs_parser.py`): XML parsing of EPU session manifests, atlas data, GridSquare metadata, FoilHole
-  manifests, and micrograph metadata. This component functions reliably and requires minimal changes.
-- **Watcher** (`fs_watcher.py`): Filesystem monitoring using watchdog library with rate limiting and event processing.
-  This component contains the architectural issues requiring redesign.
+  manifests, and micrograph metadata
+- **Event Classifier** (`event_classifier.py`): Classifies file events by entity type and assigns processing priority
+- **Event Queue** (`event_queue.py`): Priority queue for buffering classified events during bursty writes
+- **Event Processor** (`event_processor.py`): Coordinates parsing, parent checking, and orphan management
+- **Orphan Manager** (`orphan_manager.py`): Manages entities awaiting parent availability with event-driven resolution
+- **Error Handler** (`error_handler.py`): Categorises and handles transient vs permanent errors with retry logic
+- **Watcher** (`fs_watcher.py`): Filesystem monitoring using watchdog library, orchestrating all components
 - **Data Store** (`model/store.py`): In-memory entity cache with optional persistent backend synchronisation via
-  `PersistentDataStore`. Provides relationship tracking and natural ID lookups for deduplication.
+  `PersistentDataStore`. Provides relationship tracking and natural ID lookups for deduplication
 
 The agent operates in two modes:
 - **Dry-run mode**: In-memory data store only, no API persistence
@@ -34,11 +37,11 @@ The agent operates in two modes:
 Deployment occurs as a Windows executable, with testing facilitated by fsrecorder playback simulation of EPU output
 patterns.
 
-### Problem Statement
+### Historical Problem Statement
 
-The current implementation exhibits critical failures when processing EPU filesystem output, manifesting primarily in
-GridSquare and FoilHole entity processing during end-to-end tests. These failures stem from three core architectural
-deficiencies:
+The original implementation exhibited critical failures when processing EPU filesystem output, manifesting primarily in
+GridSquare and FoilHole entity processing during end-to-end tests. These failures stemmed from three core architectural
+deficiencies that have now been addressed:
 
 #### 1. Insufficient Orphan Handling (Critical Priority)
 
@@ -627,8 +630,9 @@ orphans is negligible (~750 bytes per orphan, ~1.9 MB for 2,500 orphans in extre
 
 ### Phased Development Approach
 
-The implementation will occur in `src/smartem_agent2/` alongside the existing `src/smartem_agent/` to enable iterative
-development without disrupting current functionality. Migration to v2 will occur after thorough testing and validation.
+The implementation was completed in phases, initially developed in `src/smartem_agent2/` alongside the original
+implementation to enable iterative development. After thorough testing and validation, the new implementation replaced
+the original in `src/smartem_agent/`.
 
 #### Phase 1: Foundation Components (Week 1-2)
 
@@ -846,20 +850,19 @@ require validation before agent-side coordination features become relevant.
 
 ## Conclusion
 
-The SmartEM Agent v2 design addresses critical orphan handling deficiencies through systematic component separation,
-intelligent retry scheduling, and robust event buffering. The phased implementation strategy enables iterative
-development with continuous validation, whilst explicit design decisions and open questions provide clear direction
-for development and future enhancements.
+The SmartEM Agent design addresses critical orphan handling deficiencies through systematic component separation,
+intelligent error handling with retry logic, and robust event buffering. The implementation provides reliable
+entity processing across all tested scenarios.
 
-Key innovations:
-- **Orphan Manager** with exponential backoff retry scheduling
+Key innovations implemented:
+- **Orphan Manager** with event-driven resolution and timeout warnings
 - **Event Queue** priority-based buffering for bursty write handling
 - **Event Processor** orchestration with clear separation of concerns
+- **Error Handler** with categorisation and exponential backoff retry
 - **Preservation of proven components** (Parser, Data Store)
 
-The design maintains backwards compatibility where practical, supports existing deployment patterns (Windows
-executable, fsrecorder testing), and provides clear extension points for future features (Athena API integration,
-session completion detection, multi-agent coordination).
+The implementation supports existing deployment patterns (Windows executable, fsrecorder testing), and provides clear
+extension points for future features (Athena API integration, session completion detection, multi-agent coordination).
 
-Implementation will proceed in `src/smartem_agent2/` with comprehensive testing at each phase, culminating in
-production deployment after thorough validation demonstrates zero-entity-loss reliability across all tested scenarios.
+The system has been validated with comprehensive testing demonstrating zero-entity-loss reliability across all test
+scenarios including various file ordering patterns and timing modes.
