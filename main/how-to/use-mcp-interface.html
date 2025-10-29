@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Using SmartEM MCP Interface &#8212; smartem-decisions 0.1.dev386+g5c6055530.d20251028 documentation</title>
+    <title>Using SmartEM MCP Interface &#8212; smartem-decisions 0.1.dev396+g09692e932.d20251029 documentation</title>
   
   
   
@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../_static/documentation_options.js?v=b7912177"></script>
+    <script src="../_static/documentation_options.js?v=355ce415"></script>
     <script src="../_static/doctools.js?v=9bcbadda"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -495,6 +495,23 @@
 </div>
 <p>This installs the required FastMCP 2.0 framework and SmartEM MCP components.</p>
 </section>
+<section id="configuration">
+<h2>Configuration<a class="headerlink" href="#configuration" title="Link to this heading">#</a></h2>
+<p>The MCP server can be configured using environment variables. A template configuration file is provided:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Copy the example configuration</span>
+cp<span class="w"> </span>.env.example.mcp<span class="w"> </span>.env.mcp
+
+<span class="c1"># Edit .env.mcp with your settings</span>
+</pre></div>
+</div>
+<p>Available configuration options (see <code class="docutils literal notranslate"><span class="pre">.env.example.mcp</span></code> for details):</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">SMARTEM_MCP_DATA_PATH</span></code>: Path to EPU sessions directory (for filesystem adapter)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">SMARTEM_MCP_API_URL</span></code>: SmartEM backend API URL (for API adapter)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">SMARTEM_MCP_ADAPTER</span></code>: Data adapter selection (<code class="docutils literal notranslate"><span class="pre">filesystem</span></code> or <code class="docutils literal notranslate"><span class="pre">api</span></code>)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">SMARTEM_MCP_LOG_LEVEL</span></code>: Logging level (<code class="docutils literal notranslate"><span class="pre">DEBUG</span></code>, <code class="docutils literal notranslate"><span class="pre">INFO</span></code>, <code class="docutils literal notranslate"><span class="pre">WARNING</span></code>, <code class="docutils literal notranslate"><span class="pre">ERROR</span></code>)</p></li>
+</ul>
+</section>
 <section id="quick-start">
 <h2>Quick Start<a class="headerlink" href="#quick-start" title="Link to this heading">#</a></h2>
 <section id="interactive-query-mode">
@@ -826,10 +843,10 @@ claude<span class="w"> </span>mcp<span class="w"> </span>status<span class="w"> 
 </pre></div>
 </div>
 </section>
-<section id="configuration">
-<h2>Configuration<a class="headerlink" href="#configuration" title="Link to this heading">#</a></h2>
 <section id="id1">
-<h3>Environment Variables<a class="headerlink" href="#id1" title="Link to this heading">#</a></h3>
+<h2>Configuration<a class="headerlink" href="#id1" title="Link to this heading">#</a></h2>
+<section id="id2">
+<h3>Environment Variables<a class="headerlink" href="#id2" title="Link to this heading">#</a></h3>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">SMARTEM_API_URL</span></code>: Base URL for SmartEM API (default: http://localhost:30080)</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">SMARTEM_MCP_LOG_LEVEL</span></code>: Logging level (default: INFO)</p></li>
@@ -1060,6 +1077,7 @@ python<span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;i
     <ul class="visible nav section-nav flex-column">
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#overview">Overview</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#installation">Installation</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#configuration">Configuration</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#quick-start">Quick Start</a><ul class="nav section-nav flex-column">
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#interactive-query-mode">1. Interactive Query Mode</a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#command-line-usage">2. Command Line Usage</a></li>
@@ -1112,8 +1130,8 @@ python<span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;i
 </ul>
 </li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#error-handling">Error Handling</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#configuration">Configuration</a><ul class="nav section-nav flex-column">
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id1">Environment Variables</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id1">Configuration</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id2">Environment Variables</a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#api-authentication">API Authentication</a></li>
 </ul>
 </li>

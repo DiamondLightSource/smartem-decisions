@@ -7,7 +7,7 @@ This document describes the complete workflow for running repeatable end-to-end 
 For the simplest test execution, use the automated test runner script:
 
 ```bash
-# Ensure k3s is running
+# Check k3s status first (DO NOT restart if already running)
 ./tools/dev-k8s.sh status
 
 # Run automated test (Test Type 2: Pre-Acquisition Agent Setup)
@@ -27,7 +27,7 @@ For the simplest test execution, use the automated test runner script:
 
 **What the script does**:
 - Creates timestamped test results directory in `logs/e2e-tests/`
-- Activates venv and loads environment variables from `.env`
+- Activates venv and loads environment variables from `.env.local-test-run`
 - Resets database to clean state
 - Starts API server and consumer
 - Starts agent watching empty directory
@@ -52,7 +52,7 @@ For the simplest test execution, use the automated test runner script:
 If you've already set up once and just need to run another test:
 
 ```bash
-# 1. Ensure k3s is running
+# 1. Check k3s status (DO NOT restart if already running)
 ./tools/dev-k8s.sh status
 
 # 2. Prepare clean environment
@@ -135,9 +135,10 @@ logs/e2e-tests/                  # Test results root (gitignored, at repo root)
 ```
 
 ### Environment File Setup
-The `.env` file configures services to run on host OS while connecting to k3s infrastructure.
 
-**Source for initial values**: Copy from `.env.example` and configure credentials
+The `.env.local-test-run` file configures services to run on host OS whilst connecting to k3s infrastructure.
+
+**Source for initial values**: Copy from `.env.example.local-test-run` and configure credentials
 
 **Required configuration**:
 - PostgreSQL: Point to k3s NodePort `localhost:30432`
@@ -145,27 +146,31 @@ The `.env` file configures services to run on host OS while connecting to k3s in
 - Backend API: Run on host OS (typically `127.0.0.1:8000`)
 - Agent: Run on host OS
 
-**Example `.env`**:
+**Example `.env.local-test-run`**:
 ```bash
-# Database connection (k3s NodePort)
+# Database configuration (connecting to K8s NodePort)
 POSTGRES_HOST=localhost
 POSTGRES_PORT=30432
 POSTGRES_DB=smartem_db
 POSTGRES_USER=username
 POSTGRES_PASSWORD=password
 
-# RabbitMQ connection (k3s NodePort)
+# RabbitMQ configuration (connecting to K8s NodePort)
 RABBITMQ_HOST=localhost
 RABBITMQ_PORT=30672
-RABBITMQ_USER=guest
-RABBITMQ_PASSWORD=guest
+RABBITMQ_UI_PORT=15672
+RABBITMQ_USER=username
+RABBITMQ_PASSWORD=password
 
-# Backend API (host OS)
-HTTP_API_HOST=127.0.0.1
+# HTTP API configuration (running on host OS)
 HTTP_API_PORT=8000
+ADMINER_PORT=8080
+
+# CORS Configuration
+CORS_ALLOWED_ORIGINS=*
 ```
 
-**Usage**: `source .env` before starting services
+**Usage**: Automatically loaded by `./tools/run-e2e-test.sh` script
 
 ## Database Operations
 
@@ -280,6 +285,7 @@ python -m smartem_backend.consumer -vv 2>&1 | tee logs/e2e-tests/TIMESTAMP/logs/
 **Verbosity flags**: `-v` for INFO, `-vv` for DEBUG
 
 ### SmartEM Agent
+
 ```bash
 source .venv/bin/activate
 python -m smartem_agent watch \
@@ -289,6 +295,7 @@ python -m smartem_agent watch \
 ```
 
 **Verbosity flags**: `-v` for INFO, `-vv` for DEBUG
+
 **Agent options**:
 - `--agent-id TEXT`: Agent identifier for SSE connection
 - `--session-id TEXT`: Session identifier for SSE connection
@@ -370,7 +377,7 @@ pkill -f fsrecorder
 pkill -f uvicorn
 pkill -f fastapi
 
-# 5. Verify k3s services are running
+# 5. Verify k3s services are running (DO NOT restart if already running)
 ./tools/dev-k8s.sh status
 
 # 6. Clean RabbitMQ (restart to ensure empty queue)

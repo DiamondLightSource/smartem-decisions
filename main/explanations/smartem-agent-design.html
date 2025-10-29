@@ -1,0 +1,1629 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>SmartEM Agent: Design Specification &#8212; smartem-decisions 0.1.dev396+g09692e932.d20251029 documentation</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+<link href="../_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=4ae1632d" />
+    <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinx-design.min.css?v=95c83b7e" />
+  
+  <!-- So that users can add custom icons -->
+  <script src="../_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
+<link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
+
+    <script src="../_static/documentation_options.js?v=355ce415"></script>
+    <script src="../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../_static/copybutton.js?v=30646c52"></script>
+    <script src="../_static/design-tabs.js?v=f930bc37"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'explanations/smartem-agent-design';</script>
+    <script>
+        DOCUMENTATION_OPTIONS.theme_version = '0.16.1';
+        DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://DiamondLightSource.github.io/smartem-decisions/switcher.json';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = 'main';
+        DOCUMENTATION_OPTIONS.show_version_warning_banner =
+            false;
+        </script>
+    <link rel="icon" href="../_static/dls-logo.svg"/>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Technical Notes" href="technical-notes.html" />
+    <link rel="prev" title="EPU Output Directory Structure" href="epu-data-structures.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="main" />
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../_static/dls-logo.svg" class="logo__image only-light" alt=""/>
+    <img src="../_static/dls-logo.svg" class="logo__image only-dark pst-js-only" alt=""/>
+  
+  
+    <p class="title logo__title">smartem-decisions</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../tutorials.html">
+    Tutorials
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../how-to.html">
+    How-to Guides
+  </a>
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="../explanations.html">
+    Explanations
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../reference.html">
+    Reference
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/DiamondLightSource/smartem-decisions" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://pypi.org/project/smartem-decisions" title="PyPI" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fas fa-cube fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">PyPI</span></a>
+        </li>
+</ul></div>
+      
+        <div class="navbar-item">
+<div class="version-switcher__container dropdown pst-js-only">
+  <button id="pst-version-switcher-button-2"
+    type="button"
+    class="version-switcher__button btn btn-sm dropdown-toggle"
+    data-bs-toggle="dropdown"
+    aria-haspopup="listbox"
+    aria-controls="pst-version-switcher-list-2"
+    aria-label="Version switcher list"
+  >
+    Choose version  <!-- this text may get changed later by javascript -->
+    <span class="caret"></span>
+  </button>
+  <div id="pst-version-switcher-list-2"
+    class="version-switcher__menu dropdown-menu list-group-flush py-0"
+    role="listbox" aria-labelledby="pst-version-switcher-button-2">
+    <!-- dropdown will be populated by javascript on page load -->
+  </div>
+</div></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+    <button class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../tutorials.html">
+    Tutorials
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../how-to.html">
+    How-to Guides
+  </a>
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="../explanations.html">
+    Explanations
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../reference.html">
+    Reference
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/DiamondLightSource/smartem-decisions" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://pypi.org/project/smartem-decisions" title="PyPI" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fas fa-cube fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">PyPI</span></a>
+        </li>
+</ul></div>
+        
+          <div class="navbar-item">
+<div class="version-switcher__container dropdown pst-js-only">
+  <button id="pst-version-switcher-button-3"
+    type="button"
+    class="version-switcher__button btn btn-sm dropdown-toggle"
+    data-bs-toggle="dropdown"
+    aria-haspopup="listbox"
+    aria-controls="pst-version-switcher-list-3"
+    aria-label="Version switcher list"
+  >
+    Choose version  <!-- this text may get changed later by javascript -->
+    <span class="caret"></span>
+  </button>
+  <div id="pst-version-switcher-list-3"
+    class="version-switcher__menu dropdown-menu list-group-flush py-0"
+    role="listbox" aria-labelledby="pst-version-switcher-button-3">
+    <!-- dropdown will be populated by javascript on page load -->
+  </div>
+</div></div>
+        
+      </div>
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+<nav class="bd-docs-nav bd-links"
+     aria-label="Section Navigation">
+  <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
+  <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="backend-agent-communication-system-design.html">Backend-to-Agent Communication System Design</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="decisions.html">Architectural Decision Records</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="decisions/0001-record-architecture-decisions.html">1. Record architecture decisions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="decisions/0002-switched-to-python-copier-template.html">2. Adopt python-copier-template for project structure</a></li>
+<li class="toctree-l2"><a class="reference internal" href="decisions/0003-message-queue-message-grouping.html">3. Short descriptive title</a></li>
+<li class="toctree-l2"><a class="reference internal" href="decisions/0004-zocalo-dependency-free.html">3. No dependency on python-zocalo</a></li>
+<li class="toctree-l2"><a class="reference internal" href="decisions/0005-detect-secrets-for-secret-scanning.html">5. Use detect-secrets for secret scanning</a></li>
+<li class="toctree-l2"><a class="reference internal" href="decisions/0006-sealed-secrets-kubernetes-secrets-management.html">6. Use Sealed Secrets for Kubernetes secrets management</a></li>
+<li class="toctree-l2"><a class="reference internal" href="decisions/0007-eliminate-smartem-api-circular-dependency.html">7. Eliminate circular dependency between smartem_api and smartem_backend</a></li>
+<li class="toctree-l2"><a class="reference internal" href="decisions/0008-backend-to-agent-communication-architecture.html">8. Backend-to-Agent Communication Protocol Selection</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1"><a class="reference internal" href="epu-data-structures.html">EPU Output Directory Structure</a></li>
+<li class="toctree-l1 current active"><a class="current reference internal" href="#">SmartEM Agent: Design Specification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="technical-notes.html">Technical Notes</a></li>
+</ul>
+</div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="../explanations.html" class="nav-link">Explanations</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">SmartEM Agent: Design Specification</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section id="smartem-agent-design-specification">
+<h1>SmartEM Agent: Design Specification<a class="headerlink" href="#smartem-agent-design-specification" title="Link to this heading">#</a></h1>
+<p><strong>Version</strong>: 2.0
+<strong>Date</strong>: 28/10/2025
+<strong>Status</strong>: Implemented</p>
+<section id="executive-summary">
+<h2>Executive Summary<a class="headerlink" href="#executive-summary" title="Link to this heading">#</a></h2>
+<p>This document specifies the design for the SmartEM Agent, the real-time EPU filesystem monitoring service. The
+implementation addresses non-deterministic file ordering issues that previously caused GridSquare and FoilHole
+processing failures. The agent provides robust orphan handling for arbitrary entity relationship ordering, improved
+bursty write handling, and enhanced code maintainability whilst preserving the proven parser implementation.</p>
+</section>
+<section id="background">
+<h2>Background<a class="headerlink" href="#background" title="Link to this heading">#</a></h2>
+<section id="implementation-overview">
+<h3>Implementation Overview<a class="headerlink" href="#implementation-overview" title="Link to this heading">#</a></h3>
+<p>SmartEM Agent is a Windows-deployed service that monitors EPU (cryo-electron microscopy software) output directories
+in real time, parsing XML metadata and synchronising entity data to the backend via REST API. The architecture
+(<code class="docutils literal notranslate"><span class="pre">src/smartem_agent/</span></code>) comprises several key components:</p>
+<ul class="simple">
+<li><p><strong>Parser</strong> (<code class="docutils literal notranslate"><span class="pre">fs_parser.py</span></code>): XML parsing of EPU session manifests, atlas data, GridSquare metadata, FoilHole
+manifests, and micrograph metadata</p></li>
+<li><p><strong>Event Classifier</strong> (<code class="docutils literal notranslate"><span class="pre">event_classifier.py</span></code>): Classifies file events by entity type and assigns processing priority</p></li>
+<li><p><strong>Event Queue</strong> (<code class="docutils literal notranslate"><span class="pre">event_queue.py</span></code>): Priority queue for buffering classified events during bursty writes</p></li>
+<li><p><strong>Event Processor</strong> (<code class="docutils literal notranslate"><span class="pre">event_processor.py</span></code>): Coordinates parsing, parent checking, and orphan management</p></li>
+<li><p><strong>Orphan Manager</strong> (<code class="docutils literal notranslate"><span class="pre">orphan_manager.py</span></code>): Manages entities awaiting parent availability with event-driven resolution</p></li>
+<li><p><strong>Error Handler</strong> (<code class="docutils literal notranslate"><span class="pre">error_handler.py</span></code>): Categorises and handles transient vs permanent errors with retry logic</p></li>
+<li><p><strong>Watcher</strong> (<code class="docutils literal notranslate"><span class="pre">fs_watcher.py</span></code>): Filesystem monitoring using watchdog library, orchestrating all components</p></li>
+<li><p><strong>Data Store</strong> (<code class="docutils literal notranslate"><span class="pre">model/store.py</span></code>): In-memory entity cache with optional persistent backend synchronisation via
+<code class="docutils literal notranslate"><span class="pre">PersistentDataStore</span></code>. Provides relationship tracking and natural ID lookups for deduplication</p></li>
+</ul>
+<p>The agent operates in two modes:</p>
+<ul class="simple">
+<li><p><strong>Dry-run mode</strong>: In-memory data store only, no API persistence</p></li>
+<li><p><strong>Production mode</strong>: Persistent data store with REST API synchronisation and SSE instruction streaming</p></li>
+</ul>
+<p>Deployment occurs as a Windows executable, with testing facilitated by fsrecorder playback simulation of EPU output
+patterns.</p>
+</section>
+<section id="historical-problem-statement">
+<h3>Historical Problem Statement<a class="headerlink" href="#historical-problem-statement" title="Link to this heading">#</a></h3>
+<p>The original implementation exhibited critical failures when processing EPU filesystem output, manifesting primarily in
+GridSquare and FoilHole entity processing during end-to-end tests. These failures stemmed from three core architectural
+deficiencies that have now been addressed:</p>
+<section id="insufficient-orphan-handling-critical-priority">
+<h4>1. Insufficient Orphan Handling (Critical Priority)<a class="headerlink" href="#insufficient-orphan-handling-critical-priority" title="Link to this heading">#</a></h4>
+<p>EPU filesystem output exhibits completely non-deterministic ordering characteristics:</p>
+<ul class="simple">
+<li><p><strong>Child-before-parent sequences</strong>: FoilHole manifests can appear before their parent GridSquare metadata files;
+similarly, Micrographs can precede FoilHoles, and GridSquares can precede Atlas data.</p></li>
+<li><p><strong>Bursty file writes</strong>: EPU buffers and dumps hundreds of files simultaneously in unpredictable sequences.</p></li>
+<li><p><strong>No ordering guarantees</strong>: The filesystem provides no guarantees about write completion order, even for logically
+related entities.</p></li>
+</ul>
+<p>The current orphan handling implementation (<code class="docutils literal notranslate"><span class="pre">_process_orphaned_files</span></code> method, lines 527-543 in <code class="docutils literal notranslate"><span class="pre">fs_watcher.py</span></code>)
+contains several weaknesses:</p>
+<ul class="simple">
+<li><p><strong>Grid-level orphan processing only</strong>: Orphans are processed exclusively when new grids are detected. GridSquare and
+FoilHole orphans that arrive before their parents are not handled.</p></li>
+<li><p><strong>Single retry attempt</strong>: Orphaned files are processed once when a potential parent appears, with no mechanism for
+subsequent retry if the parent-child chain remains incomplete.</p></li>
+<li><p><strong>Path-based resolution</strong>: Relies on <code class="docutils literal notranslate"><span class="pre">get_grid_by_path</span></code> for orphan-to-grid matching, which fails for entities
+requiring UUID-based parent lookups (GridSquares needing Grid UUIDs, FoilHoles needing GridSquare UUIDs).</p></li>
+<li><p><strong>No persistent orphan state</strong>: Orphaned entities are stored only in the <code class="docutils literal notranslate"><span class="pre">orphaned_files</span></code> dictionary without timeout
+tracking or systematic retry scheduling.</p></li>
+</ul>
+<p>This results in silent processing failures for entities arriving in unexpected orders, particularly evident in
+end-to-end test failures where GridSquares and FoilHoles fail to persist to the database.</p>
+</section>
+<section id="inadequate-bursty-write-handling">
+<h4>2. Inadequate Bursty Write Handling<a class="headerlink" href="#inadequate-bursty-write-handling" title="Link to this heading">#</a></h4>
+<p>EPU can generate hundreds of files within seconds during data collection bursts. The current rate-limiting approach
+(<code class="docutils literal notranslate"><span class="pre">log_interval</span></code> parameter, default 10 seconds) provides only event batching for logging purposes, not processing
+control. Issues include:</p>
+<ul class="simple">
+<li><p><strong>Serial processing bottleneck</strong>: All events process sequentially in <code class="docutils literal notranslate"><span class="pre">on_any_event</span></code>, creating backlog during bursts.</p></li>
+<li><p><strong>No backpressure mechanism</strong>: High-frequency events accumulate in <code class="docutils literal notranslate"><span class="pre">changed_files</span></code> dictionary without processing
+limits.</p></li>
+<li><p><strong>Insufficient buffering strategy</strong>: Event accumulation occurs but processing remains unbounded and
+non-prioritised.</p></li>
+</ul>
+<p>The optimal processing model (serial versus concurrent) requires investigation. Entity interdependencies suggest serial
+processing within entity hierarchies (Grid → GridSquare → FoilHole → Micrograph) may be necessary to maintain
+parent-child ordering guarantees, whilst cross-hierarchy processing could potentially parallelise.</p>
+</section>
+<section id="code-maintainability-concerns">
+<h4>3. Code Maintainability Concerns<a class="headerlink" href="#code-maintainability-concerns" title="Link to this heading">#</a></h4>
+<p>The current watcher implementation exhibits technical debt that impedes modification and testing:</p>
+<ul class="simple">
+<li><p><strong>Complex conditional nesting</strong>: The <code class="docutils literal notranslate"><span class="pre">on_any_event</span></code> method (lines 441-515) contains deeply nested match/case
+statements with interleaved file pattern matching, entity type determination, and orphan handling logic.</p></li>
+<li><p><strong>Unclear separation of concerns</strong>: Orphan management, event routing, file classification, and entity processing
+are intermingled within single methods.</p></li>
+<li><p><strong>Difficult testing</strong>: Tight coupling between filesystem events, parsing, and persistence makes unit testing
+challenging without extensive mocking.</p></li>
+<li><p><strong>Hardcoded patterns</strong>: File pattern matching relies on regex patterns embedded throughout the code rather than
+centralised configuration.</p></li>
+</ul>
+<p>These maintainability issues compound the difficulty of implementing robust orphan handling, as the current structure
+resists modification without introducing regression risks.</p>
+</section>
+</section>
+</section>
+<section id="design-goals-and-principles">
+<h2>Design Goals and Principles<a class="headerlink" href="#design-goals-and-principles" title="Link to this heading">#</a></h2>
+<p>The SmartEM Agent v2 design adheres to the following principles:</p>
+<section id="primary-goals">
+<h3>Primary Goals<a class="headerlink" href="#primary-goals" title="Link to this heading">#</a></h3>
+<ol class="arabic simple">
+<li><p><strong>Robust orphan handling</strong>: Support arbitrary entity arrival ordering without assumptions about parent-child
+sequence. No entity should fail to process due to parent unavailability at initial observation time.</p></li>
+<li><p><strong>Bursty write resilience</strong>: Handle high-frequency file creation bursts (hundreds of files within seconds) without
+processing failures, dropped events, or unbound resource consumption.</p></li>
+<li><p><strong>Maintainability</strong>: Produce clear, testable code with well-separated concerns, enabling future modifications
+without architectural rework.</p></li>
+<li><p><strong>Reliability</strong>: Ensure eventual consistency between filesystem state and datastore state, with comprehensive error
+recovery mechanisms.</p></li>
+</ol>
+</section>
+<section id="design-principles">
+<h3>Design Principles<a class="headerlink" href="#design-principles" title="Link to this heading">#</a></h3>
+<ul class="simple">
+<li><p><strong>No ordering assumptions</strong>: The system must not assume any specific file arrival sequence. Parents may arrive
+after children; siblings may arrive in arbitrary order.</p></li>
+<li><p><strong>Idempotency</strong>: Entity processing operations must be safely repeatable. Re-processing a file should produce
+identical datastore state.</p></li>
+<li><p><strong>Separation of concerns</strong>: File watching, event classification, parsing, orphan management, and persistence should
+occupy distinct, loosely coupled components.</p></li>
+<li><p><strong>Testability</strong>: Components should support unit testing without filesystem dependencies or extensive mocking.</p></li>
+<li><p><strong>Incremental processing</strong>: Large batches should process incrementally to prevent resource exhaustion and enable
+progress monitoring.</p></li>
+<li><p><strong>Observability</strong>: Processing state, orphan status, and retry attempts should be visible through structured logging
+and metrics.</p></li>
+</ul>
+</section>
+<section id="constraints">
+<h3>Constraints<a class="headerlink" href="#constraints" title="Link to this heading">#</a></h3>
+<ul class="simple">
+<li><p><strong>Dual-ID system</strong>: Every entity maintains both a synthetic UUID (v4, agent-generated, database primary key) and a
+natural ID (EPU-generated, e.g. GridSquare “1”, FoilHole “2-3”). UUID generation occurs immediately when entity data
+is first created. Natural IDs are essential for parent-child relationship resolution and orphan matching. This
+dual-ID architecture is critical for the entire system and must be preserved.</p></li>
+<li><p><strong>Dual data store model</strong>: Maintain both in-memory and persistent stores. The in-memory store serves as cache for
+relationship lookups, development convenience, and architectural modularity.</p></li>
+<li><p><strong>Windows deployment compatibility</strong>: Solution must build to Windows executable for Win10/11 deployment.</p></li>
+<li><p><strong>Backwards compatibility preference</strong>: Avoid breaking changes where practical, though not a strict requirement as
+the system is not yet in production.</p></li>
+<li><p><strong>Parser preservation</strong>: <code class="docutils literal notranslate"><span class="pre">fs_parser.py</span></code> works reliably and should remain largely unchanged.</p></li>
+</ul>
+</section>
+</section>
+<section id="proposed-architecture">
+<h2>Proposed Architecture<a class="headerlink" href="#proposed-architecture" title="Link to this heading">#</a></h2>
+<section id="dual-id-system-foundation-for-orphan-resolution">
+<h3>Dual-ID System: Foundation for Orphan Resolution<a class="headerlink" href="#dual-id-system-foundation-for-orphan-resolution" title="Link to this heading">#</a></h3>
+<p>Understanding the dual-ID system is critical for comprehending the orphan handling strategy.</p>
+<section id="identity-management">
+<h4>Identity Management<a class="headerlink" href="#identity-management" title="Link to this heading">#</a></h4>
+<p>Every entity in the system maintains two identifiers:</p>
+<ol class="arabic simple">
+<li><p><strong>Synthetic UUID</strong> (Primary Key):</p>
+<ul class="simple">
+<li><p>Generated agent-side using UUID v4</p></li>
+<li><p>Created immediately when entity data structure is instantiated</p></li>
+<li><p>Database primary key and system-wide identifier</p></li>
+<li><p>Used for all parent-child relationships in Data Store and backend database</p></li>
+<li><p>Never appears in EPU files</p></li>
+</ul>
+</li>
+<li><p><strong>Natural ID</strong> (EPU Identifier):</p>
+<ul class="simple">
+<li><p>Originates from EPU software (e.g., GridSquare “1”, FoilHole “2-3”, Micrograph “2-3-1”)</p></li>
+<li><p>Found in EPU XML files and directory names</p></li>
+<li><p>Used for entity lookup during parent relationship resolution</p></li>
+<li><p>Enables deduplication (same natural ID = same entity, reuse UUID)</p></li>
+</ul>
+</li>
+</ol>
+</section>
+<section id="parent-relationship-resolution">
+<h4>Parent Relationship Resolution<a class="headerlink" href="#parent-relationship-resolution" title="Link to this heading">#</a></h4>
+<p>When parsing a FoilHole file, the process works as follows:</p>
+<ol class="arabic simple">
+<li><p><strong>Parser extracts natural IDs</strong>:</p>
+<ul class="simple">
+<li><p>FoilHole natural ID: “2-3”</p></li>
+<li><p>Parent GridSquare natural ID: “2” (extracted from file path or XML content)</p></li>
+</ul>
+</li>
+<li><p><strong>UUID lookup for parent</strong>:</p>
+<ul class="simple">
+<li><p>Call <code class="docutils literal notranslate"><span class="pre">datastore.find_gridsquare_by_natural_id(&quot;2&quot;)</span></code></p></li>
+<li><p>If found: retrieve parent’s UUID → set <code class="docutils literal notranslate"><span class="pre">foilhole.gridsquare_uuid</span> <span class="pre">=</span> <span class="pre">parent.uuid</span></code></p></li>
+<li><p>If not found: <strong>orphan detected</strong> (parent doesn’t exist yet)</p></li>
+</ul>
+</li>
+<li><p><strong>UUID management for entity</strong>:</p>
+<ul class="simple">
+<li><p>Call <code class="docutils literal notranslate"><span class="pre">datastore.find_foilhole_by_natural_id(&quot;2-3&quot;)</span></code></p></li>
+<li><p>If found (update scenario): reuse existing UUID</p></li>
+<li><p>If not found (new entity): UUID already generated during entity creation</p></li>
+</ul>
+</li>
+<li><p><strong>Persistence</strong>:</p>
+<ul class="simple">
+<li><p>With parent UUID available: persist FoilHole with complete relationship data</p></li>
+<li><p>Without parent UUID: register as orphan awaiting parent appearance</p></li>
+</ul>
+</li>
+</ol>
+</section>
+<section id="orphan-detection-mechanism">
+<h4>Orphan Detection Mechanism<a class="headerlink" href="#orphan-detection-mechanism" title="Link to this heading">#</a></h4>
+<p>An entity becomes orphaned when:</p>
+<ul class="simple">
+<li><p>Parser successfully extracts entity data from EPU file</p></li>
+<li><p>Natural ID lookup for required parent returns None</p></li>
+<li><p>Persistence attempt fails parent existence check</p></li>
+</ul>
+<p>Example orphan scenarios:</p>
+<ul class="simple">
+<li><p>FoilHole “2-3” parsed but GridSquare “2” doesn’t exist yet</p></li>
+<li><p>Micrograph “2-3-1” parsed but FoilHole “2-3” doesn’t exist yet</p></li>
+<li><p>GridSquare “5” parsed but parent Grid hasn’t been created yet (rare, handled by current implementation)</p></li>
+</ul>
+</section>
+<section id="orphan-resolution-strategy-event-driven-matching">
+<h4>Orphan Resolution Strategy: Event-Driven Matching<a class="headerlink" href="#orphan-resolution-strategy-event-driven-matching" title="Link to this heading">#</a></h4>
+<p><strong>Key insight</strong>: Orphan resolution is event-driven, not periodic retry-based.</p>
+<p>When a parent entity appears:</p>
+<ol class="arabic simple">
+<li><p><strong>Process parent normally</strong>: Parse file, generate/retrieve UUID, persist to Data Store</p></li>
+<li><p><strong>Check orphan registry</strong>: Query for orphans requiring this parent’s natural ID</p></li>
+<li><p><strong>Resolve matching orphans</strong>: For each orphan:</p>
+<ul class="simple">
+<li><p>Set orphan’s parent UUID (now available)</p></li>
+<li><p>Persist orphan to Data Store</p></li>
+<li><p>Remove from orphan registry</p></li>
+</ul>
+</li>
+</ol>
+<p>Example flow - FoilHole arrives before GridSquare:</p>
+<ol class="arabic simple">
+<li><p>FoilHole “2-3” file appears</p></li>
+<li><p>Parser extracts: natural ID “2-3”, parent GridSquare natural ID “2”</p></li>
+<li><p>Lookup GridSquare “2”: <strong>not found</strong> → orphan</p></li>
+<li><p>Register orphan: <code class="docutils literal notranslate"><span class="pre">{natural_id:</span> <span class="pre">&quot;2-3&quot;,</span> <span class="pre">parent_natural_id:</span> <span class="pre">&quot;2&quot;,</span> <span class="pre">entity_data:</span> <span class="pre">&lt;FoilHole&gt;}</span></code></p></li>
+<li><p><em>(later)</em> GridSquare “2” file appears</p></li>
+<li><p>Parse and persist GridSquare “2” (gets UUID)</p></li>
+<li><p><strong>Check orphans</strong>: “Are any orphans waiting for GridSquare ‘2’?”</p></li>
+<li><p>Find FoilHole “2-3” orphan</p></li>
+<li><p>Set <code class="docutils literal notranslate"><span class="pre">foilhole.gridsquare_uuid</span> <span class="pre">=</span> <span class="pre">gridsquare.uuid</span></code></p></li>
+<li><p>Persist FoilHole “2-3”</p></li>
+<li><p>Remove from orphan registry</p></li>
+</ol>
+<p>This event-driven approach provides immediate orphan resolution with zero polling overhead.</p>
+</section>
+</section>
+<section id="high-level-component-structure">
+<h3>High-Level Component Structure<a class="headerlink" href="#high-level-component-structure" title="Link to this heading">#</a></h3>
+<p>The v2 architecture introduces four new components whilst preserving the proven Parser and Data Store implementations:</p>
+<ul class="simple">
+<li><p><strong>Filesystem Watcher</strong> → <strong>Event Classifier</strong> → <strong>Event Queue</strong> → <strong>Event Processor</strong> → <strong>Parser</strong> / <strong>Orphan Manager</strong>
+→ <strong>Data Store</strong> → <strong>Backend REST API</strong></p></li>
+</ul>
+<p>New components (Event Classifier, Event Queue, Event Processor, Orphan Manager) handle event buffering, classification,
+and orphan resolution. Existing components (Parser, Data Store) remain unchanged.</p>
+</section>
+<section id="component-descriptions">
+<h3>Component Descriptions<a class="headerlink" href="#component-descriptions" title="Link to this heading">#</a></h3>
+<section id="filesystem-watcher-unchanged-externally">
+<h4>Filesystem Watcher (Unchanged Externally)<a class="headerlink" href="#filesystem-watcher-unchanged-externally" title="Link to this heading">#</a></h4>
+<p>Continues using watchdog’s <code class="docutils literal notranslate"><span class="pre">FileSystemEventHandler</span></code> for monitoring file creation and modification events. Interface
+remains compatible with existing deployment. Internal processing delegation changes to route events through new
+components.</p>
+<p><strong>Responsibilities</strong>:</p>
+<ul class="simple">
+<li><p>Monitor watch directory for file creation/modification events</p></li>
+<li><p>Filter events by configured file patterns</p></li>
+<li><p>Delegate event processing to Event Classifier</p></li>
+</ul>
+<p><strong>No changes</strong> to watchdog integration or SSE client management.</p>
+</section>
+<section id="event-classifier-new-component">
+<h4>Event Classifier (New Component)<a class="headerlink" href="#event-classifier-new-component" title="Link to this heading">#</a></h4>
+<p>Examines file paths and classifies events by entity type and processing priority.</p>
+<p><strong>Responsibilities</strong>:</p>
+<ul class="simple">
+<li><p>Apply regex patterns to determine entity type (Grid, Atlas, GridSquare, FoilHole, Micrograph)</p></li>
+<li><p>Extract natural IDs from file paths (GridSquare ID, FoilHole ID, etc.)</p></li>
+<li><p>Assign processing priority based on entity hierarchy (Grid &gt; Atlas &gt; GridSquare &gt; FoilHole &gt; Micrograph)</p></li>
+<li><p>Enqueue classified events to Event Queue</p></li>
+</ul>
+<p><strong>Interface</strong>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@dataclass</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">ClassifiedEvent</span><span class="p">:</span>
+    <span class="n">entity_type</span><span class="p">:</span> <span class="n">EntityType</span>  <span class="c1"># Enum: GRID, ATLAS, GRIDSQUARE, FOILHOLE, MICROGRAPH</span>
+    <span class="n">file_path</span><span class="p">:</span> <span class="n">Path</span>
+    <span class="n">natural_id</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span>  <span class="c1"># Extracted ID where applicable</span>
+    <span class="n">priority</span><span class="p">:</span> <span class="nb">int</span>  <span class="c1"># Lower number = higher priority</span>
+    <span class="n">timestamp</span><span class="p">:</span> <span class="nb">float</span>
+    <span class="n">event_type</span><span class="p">:</span> <span class="nb">str</span>  <span class="c1"># &#39;created&#39; or &#39;modified&#39;</span>
+</pre></div>
+</div>
+<p><strong>Processing Logic</strong>:</p>
+<ul class="simple">
+<li><p>Match file path against known patterns from <code class="docutils literal notranslate"><span class="pre">EpuParser</span></code></p></li>
+<li><p>Extract identifiers using existing regex patterns</p></li>
+<li><p>Priority assignment: Grid=0, Atlas=1, GridSquare=2, FoilHole=3, Micrograph=4</p></li>
+<li><p>Unknown files are logged and discarded</p></li>
+</ul>
+</section>
+<section id="event-queue-new-component">
+<h4>Event Queue (New Component)<a class="headerlink" href="#event-queue-new-component" title="Link to this heading">#</a></h4>
+<p>Buffered queue for classified events with priority ordering and batch processing support.</p>
+<p><strong>Responsibilities</strong>:</p>
+<ul class="simple">
+<li><p>Buffer incoming classified events during bursty writes</p></li>
+<li><p>Maintain priority ordering (higher-priority entities process first)</p></li>
+<li><p>Provide batch retrieval for processing</p></li>
+<li><p>Support backpressure via size limits</p></li>
+<li><p>Track queue depth metrics for monitoring</p></li>
+</ul>
+<p><strong>Interface</strong>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">class</span><span class="w"> </span><span class="nc">EventQueue</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">enqueue</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event</span><span class="p">:</span> <span class="n">ClassifiedEvent</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span> <span class="o">...</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">dequeue_batch</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">max_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">50</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">ClassifiedEvent</span><span class="p">]:</span> <span class="o">...</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">size</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span> <span class="o">...</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">clear</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span> <span class="o">...</span>
+</pre></div>
+</div>
+<p><strong>Configuration</strong>:</p>
+<ul class="simple">
+<li><p>Maximum queue size: 1000 events (configurable)</p></li>
+<li><p>Batch size: 50 events per processing cycle (configurable)</p></li>
+<li><p>Priority queue implementation using <code class="docutils literal notranslate"><span class="pre">heapq</span></code> or <code class="docutils literal notranslate"><span class="pre">queue.PriorityQueue</span></code></p></li>
+</ul>
+</section>
+<section id="event-processor-new-component-core-orchestrator">
+<h4>Event Processor (New Component - Core Orchestrator)<a class="headerlink" href="#event-processor-new-component-core-orchestrator" title="Link to this heading">#</a></h4>
+<p>Coordinates event processing, delegating to Parser and Orphan Manager based on parent availability.</p>
+<p><strong>Responsibilities</strong>:</p>
+<ul class="simple">
+<li><p>Retrieve event batches from Event Queue</p></li>
+<li><p>Delegate parsing to <code class="docutils literal notranslate"><span class="pre">EpuParser</span></code></p></li>
+<li><p>Check parent entity availability in Data Store</p></li>
+<li><p>Route successful parses to Data Store for persistence</p></li>
+<li><p>Route orphaned entities (missing parents) to Orphan Manager</p></li>
+<li><p>Handle processing errors with logging and optional retry</p></li>
+</ul>
+<p><strong>Processing Flow</strong>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>For each event in batch:
+  1. Parse file using EpuParser → entity data
+  2. Check parent exists in Data Store:
+     - If parent exists: persist entity via Data Store
+     - If parent missing: register with Orphan Manager
+  3. Trigger Orphan Manager to retry orphans (parents may now exist)
+  4. Log processing outcome (success/orphan/error)
+</pre></div>
+</div>
+<p><strong>Interface</strong>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">class</span><span class="w"> </span><span class="nc">EventProcessor</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parser</span><span class="p">:</span> <span class="n">EpuParser</span><span class="p">,</span> <span class="n">datastore</span><span class="p">:</span> <span class="n">DataStore</span><span class="p">,</span> <span class="n">orphan_mgr</span><span class="p">:</span> <span class="n">OrphanManager</span><span class="p">):</span> <span class="o">...</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">process_batch</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">events</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">ClassifiedEvent</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">ProcessingStats</span><span class="p">:</span> <span class="o">...</span>
+</pre></div>
+</div>
+</section>
+<section id="orphan-manager-new-component-critical-for-reliability">
+<h4>Orphan Manager (New Component - Critical for Reliability)<a class="headerlink" href="#orphan-manager-new-component-critical-for-reliability" title="Link to this heading">#</a></h4>
+<p>Manages entities awaiting parent availability with event-driven resolution.</p>
+<p><strong>Responsibilities</strong>:</p>
+<ul class="simple">
+<li><p>Store orphaned entities indexed by required parent natural ID</p></li>
+<li><p>Resolve orphans immediately when their parent entity appears</p></li>
+<li><p>Detect and log permanently orphaned entities (timeout-based)</p></li>
+<li><p>Provide orphan status visibility for debugging</p></li>
+</ul>
+<p><strong>Data Structures</strong>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@dataclass</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">OrphanedEntity</span><span class="p">:</span>
+    <span class="n">entity_type</span><span class="p">:</span> <span class="n">EntityType</span>
+    <span class="n">entity_data</span><span class="p">:</span> <span class="n">GridSquareData</span> <span class="o">|</span> <span class="n">FoilHoleData</span> <span class="o">|</span> <span class="n">MicrographData</span> <span class="o">|</span> <span class="o">...</span>
+    <span class="n">required_parent_type</span><span class="p">:</span> <span class="n">EntityType</span>
+    <span class="n">required_parent_natural_id</span><span class="p">:</span> <span class="nb">str</span>  <span class="c1"># Natural ID of parent (e.g., &quot;2&quot; for GridSquare)</span>
+    <span class="n">file_path</span><span class="p">:</span> <span class="n">Path</span>
+    <span class="n">first_seen</span><span class="p">:</span> <span class="nb">float</span>  <span class="c1"># Timestamp for timeout detection</span>
+</pre></div>
+</div>
+<p><strong>Orphan Storage</strong>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Index orphans by parent natural ID for fast lookup</span>
+<span class="n">orphans_by_parent</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="n">EntityType</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span> <span class="nb">list</span><span class="p">[</span><span class="n">OrphanedEntity</span><span class="p">]]</span>
+<span class="c1"># Key: (parent_entity_type, parent_natural_id)</span>
+<span class="c1"># Value: List of orphans waiting for this parent</span>
+<span class="c1"># Example: (GRIDSQUARE, &quot;2&quot;) → [FoilHole_2-3, FoilHole_2-5, Micrograph_2-1-1]</span>
+</pre></div>
+</div>
+<p><strong>Event-Driven Resolution Strategy</strong>:</p>
+<p>When Event Processor successfully persists a parent entity (e.g., GridSquare “2”):</p>
+<ol class="arabic simple">
+<li><p><strong>Trigger orphan check</strong>: Call <code class="docutils literal notranslate"><span class="pre">orphan_manager.resolve_orphans_for(GRIDSQUARE,</span> <span class="pre">&quot;2&quot;)</span></code></p></li>
+<li><p><strong>Lookup matching orphans</strong>: Retrieve all orphans waiting for <code class="docutils literal notranslate"><span class="pre">(GRIDSQUARE,</span> <span class="pre">&quot;2&quot;)</span></code></p></li>
+<li><p><strong>Resolve each orphan</strong>:</p>
+<ul class="simple">
+<li><p>Lookup parent entity in Data Store by natural ID (now guaranteed to exist)</p></li>
+<li><p>Extract parent’s UUID</p></li>
+<li><p>Set orphan’s parent UUID field (e.g., <code class="docutils literal notranslate"><span class="pre">foilhole.gridsquare_uuid</span> <span class="pre">=</span> <span class="pre">gridsquare.uuid</span></code>)</p></li>
+<li><p>Persist orphan to Data Store</p></li>
+<li><p>Remove from orphan registry</p></li>
+<li><p>Log successful resolution</p></li>
+</ul>
+</li>
+<li><p><strong>Cascading resolution</strong>: Resolving an orphan may enable resolution of its children</p>
+<ul class="simple">
+<li><p>Example: Resolving GridSquare “2” may enable FoilHole “2-3”, which may enable Micrograph “2-3-1”</p></li>
+<li><p>Event Processor recursively checks orphans after each successful persistence</p></li>
+</ul>
+</li>
+</ol>
+<p><strong>Timeout Detection</strong> (safeguard for genuinely missing files):</p>
+<ul class="simple">
+<li><p>Periodic background task (every 60 seconds) checks orphan timestamps</p></li>
+<li><p>Orphans exceeding timeout threshold (e.g., 5 minutes) logged as permanently orphaned</p></li>
+<li><p>Enables operator intervention for corrupted or incomplete EPU sessions</p></li>
+</ul>
+<p><strong>Interface</strong>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">class</span><span class="w"> </span><span class="nc">OrphanManager</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">register_orphan</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">entity_data</span><span class="p">,</span> <span class="n">required_parent_type</span><span class="p">,</span> <span class="n">required_parent_natural_id</span><span class="p">,</span> <span class="n">file_path</span><span class="p">):</span> <span class="o">...</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">resolve_orphans_for</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parent_type</span><span class="p">:</span> <span class="n">EntityType</span><span class="p">,</span> <span class="n">parent_natural_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span> <span class="o">...</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">check_timeouts</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">max_age_seconds</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">300</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">OrphanedEntity</span><span class="p">]:</span> <span class="o">...</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_orphan_stats</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="n">EntityType</span><span class="p">,</span> <span class="nb">int</span><span class="p">]:</span> <span class="o">...</span>
+</pre></div>
+</div>
+</section>
+<section id="data-store-minimal-changes">
+<h4>Data Store (Minimal Changes)<a class="headerlink" href="#data-store-minimal-changes" title="Link to this heading">#</a></h4>
+<p>Existing <code class="docutils literal notranslate"><span class="pre">InMemoryDataStore</span></code> and <code class="docutils literal notranslate"><span class="pre">PersistentDataStore</span></code> implementations remain largely unchanged. Minor enhancements:</p>
+<p><strong>Additions</strong>:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">has_parent(entity_type,</span> <span class="pre">parent_id)</span> <span class="pre">-&gt;</span> <span class="pre">bool</span></code>: Check parent existence without retrieving full entity</p></li>
+<li><p>Enhanced logging for API retry failures (already present but may need refinement)</p></li>
+</ul>
+<p><strong>No changes</strong> to UUID generation, relationship tracking, or API synchronisation logic.</p>
+</section>
+<section id="parser-no-changes">
+<h4>Parser (No Changes)<a class="headerlink" href="#parser-no-changes" title="Link to this heading">#</a></h4>
+<p><code class="docutils literal notranslate"><span class="pre">EpuParser</span></code> remains unchanged. All existing parsing methods continue functioning as designed.</p>
+</section>
+</section>
+<section id="data-flow">
+<h3>Data Flow<a class="headerlink" href="#data-flow" title="Link to this heading">#</a></h3>
+<p>The event processing flow proceeds through distinct stages:</p>
+<ol class="arabic simple">
+<li><p><strong>Event Detection</strong>: Filesystem Watcher detects file creation/modification events</p></li>
+<li><p><strong>Classification</strong>: Event Classifier determines entity type and assigns priority</p></li>
+<li><p><strong>Buffering</strong>: Event Queue stores classified events with priority ordering</p></li>
+<li><p><strong>Batch Processing</strong> (periodic, e.g. every 100ms):</p>
+<ul class="simple">
+<li><p>Event Processor dequeues batch (up to 50 events)</p></li>
+<li><p>For each event:</p>
+<ul>
+<li><p>Parser extracts entity data from file</p></li>
+<li><p>Event Processor checks parent exists in Data Store</p></li>
+<li><p>If parent exists: persist entity to Data Store → Backend API</p></li>
+<li><p>If parent missing: register with Orphan Manager</p></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p><strong>Orphan Resolution</strong> (event-driven): After successfully persisting each entity:</p>
+<ul class="simple">
+<li><p>Event Processor calls <code class="docutils literal notranslate"><span class="pre">orphan_manager.resolve_orphans_for(entity_type,</span> <span class="pre">natural_id)</span></code></p></li>
+<li><p>Orphan Manager finds all orphans waiting for this parent</p></li>
+<li><p>Resolves each orphan by completing parent relationship and persisting</p></li>
+<li><p>Cascading: Resolving an orphan triggers check for its own children orphans</p></li>
+</ul>
+</li>
+</ol>
+<p><strong>Timeout detection</strong>: Periodic background task (every 60s) identifies orphans exceeding age threshold (5 minutes) for
+operator intervention.</p>
+</section>
+<section id="orphan-resolution-strategy-detailed">
+<h3>Orphan Resolution Strategy (Detailed)<a class="headerlink" href="#orphan-resolution-strategy-detailed" title="Link to this heading">#</a></h3>
+<p>The orphan resolution strategy is the core innovation in v2, addressing the primary failure mode of v1. This section
+provides detailed rationale and implementation specifics.</p>
+<section id="why-orphans-occur">
+<h4>Why Orphans Occur<a class="headerlink" href="#why-orphans-occur" title="Link to this heading">#</a></h4>
+<p>Orphans arise from three filesystem characteristics:</p>
+<ol class="arabic simple">
+<li><p><strong>Non-atomic writes</strong>: EPU writes files individually, not as atomic transactions. A GridSquare’s FoilHole manifests
+may complete writing before the GridSquare’s own metadata file finishes writing.</p></li>
+<li><p><strong>Buffered writes</strong>: Operating system write buffering and EPU’s internal buffering can reorder file completion
+relative to logical creation order.</p></li>
+<li><p><strong>Multi-directory writes</strong>: EPU writes to multiple directories (<code class="docutils literal notranslate"><span class="pre">Metadata/</span></code>, <code class="docutils literal notranslate"><span class="pre">Images-Disc*/</span></code>, etc.) concurrently,
+with no synchronisation guarantees across directory boundaries.</p></li>
+</ol>
+</section>
+<section id="orphan-detection">
+<h4>Orphan Detection<a class="headerlink" href="#orphan-detection" title="Link to this heading">#</a></h4>
+<p>An entity is orphaned if its required parent is not present in the Data Store at processing time. Parent requirements:</p>
+<div class="pst-scrollable-table-container"><table class="table">
+<thead>
+<tr class="row-odd"><th class="head"><p>Entity Type</p></th>
+<th class="head"><p>Required Parent Type</p></th>
+<th class="head"><p>Parent Identifier</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>GridSquare</p></td>
+<td><p>Grid</p></td>
+<td><p>Grid UUID (from path lookup)</p></td>
+</tr>
+<tr class="row-odd"><td><p>FoilHole</p></td>
+<td><p>GridSquare</p></td>
+<td><p>GridSquare UUID (from ID)</p></td>
+</tr>
+<tr class="row-even"><td><p>Micrograph</p></td>
+<td><p>FoilHole</p></td>
+<td><p>FoilHole UUID (from ID)</p></td>
+</tr>
+<tr class="row-odd"><td><p>Atlas</p></td>
+<td><p>Grid</p></td>
+<td><p>Grid UUID (from path lookup)</p></td>
+</tr>
+<tr class="row-even"><td><p>AtlasTile</p></td>
+<td><p>Atlas</p></td>
+<td><p>Atlas UUID</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>Grid entities never orphan (they are root entities). Atlas and AtlasTile orphaning is theoretically possible but
+extremely rare in practice (Atlas.dm typically completes before GridSquare files).</p>
+</section>
+<section id="event-driven-resolution-rationale">
+<h4>Event-Driven Resolution Rationale<a class="headerlink" href="#event-driven-resolution-rationale" title="Link to this heading">#</a></h4>
+<p>The v2 orphan resolution strategy is event-driven, not retry-based. This fundamental design choice provides several
+advantages:</p>
+<p><strong>Zero latency resolution</strong>: When a parent entity appears and is persisted, orphan resolution occurs immediately in the
+same processing cycle. No polling intervals, no exponential backoff delays.</p>
+<p><strong>No wasted cycles</strong>: Resolution attempts only occur when new parents arrive. Traditional periodic retry systems waste
+CPU checking orphans when no new parents exist.</p>
+<p><strong>Cascading resolution</strong>: Resolving an orphan (e.g., GridSquare “2”) immediately triggers resolution checks for its
+children (FoilHoles waiting for GridSquare “2”), enabling multi-level dependency chains to resolve in a single event
+processing cycle.</p>
+<p><strong>Deterministic behavior</strong>: Resolution timing depends solely on parent arrival, not on retry scheduling parameters.
+This simplifies testing and debugging.</p>
+</section>
+<section id="resolution-mechanism">
+<h4>Resolution Mechanism<a class="headerlink" href="#resolution-mechanism" title="Link to this heading">#</a></h4>
+<p>When Event Processor successfully persists any entity:</p>
+<ol class="arabic simple">
+<li><p><strong>Extract entity identity</strong>: Determine entity type and natural ID (e.g., GRIDSQUARE, “2”)</p></li>
+<li><p><strong>Trigger resolution</strong>: Call <code class="docutils literal notranslate"><span class="pre">orphan_manager.resolve_orphans_for(GRIDSQUARE,</span> <span class="pre">&quot;2&quot;)</span></code></p></li>
+<li><p><strong>Orphan Manager executes</strong>:</p>
+<ul class="simple">
+<li><p>Lookup orphans indexed by <code class="docutils literal notranslate"><span class="pre">(GRIDSQUARE,</span> <span class="pre">&quot;2&quot;)</span></code></p></li>
+<li><p>For each matching orphan (e.g., FoilHole “2-3”):</p>
+<ul>
+<li><p>Retrieve parent entity from Data Store by natural ID</p></li>
+<li><p>Extract parent’s UUID</p></li>
+<li><p>Complete orphan’s parent relationship (set <code class="docutils literal notranslate"><span class="pre">foilhole.gridsquare_uuid</span></code>)</p></li>
+<li><p>Persist orphan to Data Store</p></li>
+<li><p>Remove from orphan registry</p></li>
+<li><p><strong>Recursively trigger resolution</strong> for this orphan’s natural ID (in case it has children)</p></li>
+</ul>
+</li>
+</ul>
+</li>
+</ol>
+<p>This cascading resolution enables arbitrarily deep dependency chains to resolve in a single processing cycle.</p>
+</section>
+<section id="orphan-storage">
+<h4>Orphan Storage<a class="headerlink" href="#orphan-storage" title="Link to this heading">#</a></h4>
+<p>Orphans persist in memory within <code class="docutils literal notranslate"><span class="pre">OrphanManager</span></code> using a dictionary indexed by required parent:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">orphans_by_parent</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="n">EntityType</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span> <span class="nb">list</span><span class="p">[</span><span class="n">OrphanedEntity</span><span class="p">]]</span>
+<span class="c1"># Key: (required_parent_type, required_parent_natural_id)</span>
+<span class="c1"># Value: List of orphans waiting for this parent</span>
+<span class="c1"># Example: (GRIDSQUARE, &quot;2&quot;) → [FoilHole &quot;2-3&quot;, FoilHole &quot;2-5&quot;, Micrograph &quot;2-1-1&quot;]</span>
+</pre></div>
+</div>
+<p>This indexing structure enables:</p>
+<ul class="simple">
+<li><p>O(1) lookup of all orphans waiting for a specific parent</p></li>
+<li><p>Efficient bulk resolution when parent appears</p></li>
+<li><p>Natural support for one-to-many parent-child relationships</p></li>
+</ul>
+<p>Orphans do not persist across agent restarts. Upon restart, filesystem re-scanning will re-discover orphaned files,
+re-triggering orphan registration. This design trades restart recovery complexity for implementation simplicity,
+acceptable given infrequent agent restarts during active data collection.</p>
+</section>
+<section id="timeout-detection">
+<h4>Timeout Detection<a class="headerlink" href="#timeout-detection" title="Link to this heading">#</a></h4>
+<p>Event-driven resolution handles &gt;99% of orphan scenarios. For genuinely missing parent files (corrupted EPU sessions,
+incomplete transfers):</p>
+<ul class="simple">
+<li><p>Periodic background task (every 60 seconds) scans all orphans</p></li>
+<li><p>Orphans exceeding age threshold (default: 5 minutes) logged as permanently orphaned</p></li>
+<li><p>Logs include: entity type, natural ID, required parent, first seen timestamp, file path</p></li>
+<li><p>Enables operator intervention for data recovery or session debugging</p></li>
+</ul>
+</section>
+</section>
+</section>
+<section id="key-design-decisions">
+<h2>Key Design Decisions<a class="headerlink" href="#key-design-decisions" title="Link to this heading">#</a></h2>
+<section id="decision-1-serial-vs-concurrent-event-processing">
+<h3>Decision 1: Serial vs Concurrent Event Processing<a class="headerlink" href="#decision-1-serial-vs-concurrent-event-processing" title="Link to this heading">#</a></h3>
+<p><strong>Question</strong>: Should events process serially (one at a time) or concurrently (parallel processing)?</p>
+<p><strong>Analysis</strong>:</p>
+<p><strong>Serial Processing</strong>:</p>
+<ul class="simple">
+<li><p><strong>Pros</strong>: Maintains strict entity hierarchy ordering; simplifies parent dependency checking; avoids race conditions
+in Data Store access; straightforward implementation</p></li>
+<li><p><strong>Cons</strong>: Potentially slower throughput during extreme bursts (hundreds of files); single-threaded processing
+bottleneck</p></li>
+</ul>
+<p><strong>Concurrent Processing</strong>:</p>
+<ul class="simple">
+<li><p><strong>Pros</strong>: Higher throughput potential; better CPU utilisation on multi-core systems; reduced processing latency
+during bursts</p></li>
+<li><p><strong>Cons</strong>: Complex parent dependency coordination; requires Data Store locking/synchronisation; race conditions
+between orphan registration and parent creation; significantly increased implementation complexity</p></li>
+</ul>
+<p><strong>Decision</strong>: <strong>Serial processing</strong> within the Event Processor.</p>
+<p><strong>Rationale</strong>:</p>
+<ol class="arabic simple">
+<li><p><strong>Entity interdependencies</strong>: Parent entities must exist before children can persist. Concurrent processing risks
+child processing completing before parent processing, artificially creating orphans.</p></li>
+<li><p><strong>Throughput sufficiency</strong>: Parsing and persisting a single entity takes &lt;10ms in typical cases. Serial processing
+sustains ~100 entities/second, far exceeding typical EPU output rates (10-20 entities/second during active
+collection).</p></li>
+<li><p><strong>Simplicity</strong>: Serial processing eliminates concurrency bugs, Data Store locking requirements, and orphan
+registration race conditions.</p></li>
+<li><p><strong>Burst handling</strong>: Event Queue buffering and batch processing (50 events/batch) provide sufficient burst
+absorption. Processing 50 events serially takes ~500ms, acceptable latency.</p></li>
+</ol>
+<p><strong>Future consideration</strong>: If profiling reveals serial processing bottlenecks, investigate hierarchical parallelism
+(concurrent processing across independent Grid hierarchies, serial within each hierarchy).</p>
+</section>
+<section id="decision-2-orphan-storage-location">
+<h3>Decision 2: Orphan Storage Location<a class="headerlink" href="#decision-2-orphan-storage-location" title="Link to this heading">#</a></h3>
+<p><strong>Question</strong>: Should orphans store in-memory, in persistent Data Store, or in separate storage?</p>
+<p><strong>Decision</strong>: <strong>In-memory storage</strong> within <code class="docutils literal notranslate"><span class="pre">OrphanManager</span></code>.</p>
+<p><strong>Rationale</strong>:</p>
+<ol class="arabic simple">
+<li><p><strong>Lifecycle</strong>: Orphans are transient processing state, not domain entities. They should not pollute the Data Store
+entity collections.</p></li>
+<li><p><strong>Persistence unnecessary</strong>: Orphans resolve within seconds to minutes. Persistence across agent restarts provides
+minimal value given filesystem re-scanning automatically re-discovers orphaned files.</p></li>
+<li><p><strong>Simplicity</strong>: In-memory storage avoids Data Store schema changes, API synchronisation complexity, and database
+migrations.</p></li>
+<li><p><strong>Performance</strong>: In-memory lookups are faster than database queries, beneficial for high-frequency retry attempts.</p></li>
+</ol>
+<p><strong>Trade-off</strong>: Orphan state loss on agent restart. Acceptable given infrequent restarts during active data collection
+and automatic re-discovery upon restart.</p>
+</section>
+<section id="decision-3-event-queue-implementation">
+<h3>Decision 3: Event Queue Implementation<a class="headerlink" href="#decision-3-event-queue-implementation" title="Link to this heading">#</a></h3>
+<p><strong>Question</strong>: What data structure and size limits should the Event Queue use?</p>
+<p><strong>Decision</strong>: <strong>Priority queue</strong> with <strong>1000 event maximum size</strong> and <strong>50 event batch size</strong>.</p>
+<p><strong>Rationale</strong>:</p>
+<ol class="arabic simple">
+<li><p><strong>Priority queue</strong>: Ensures higher-priority entities (Grids, Atlases) process before lower-priority entities
+(Micrographs), reducing orphan occurrence by processing parents first when possible.</p></li>
+<li><p><strong>1000 event limit</strong>: Accommodates extreme bursts (EPU rarely exceeds 500 files/burst) whilst preventing unbounded
+memory growth. Exceeding limit triggers warning logging and oldest event eviction.</p></li>
+<li><p><strong>50 event batch size</strong>: Balances processing latency (500ms at 10ms/entity) with orphan resolution responsiveness.
+Smaller batches increase orphan resolution frequency but reduce throughput; larger batches improve throughput but
+delay orphan resolution (orphans resolve when their parent is persisted).</p></li>
+</ol>
+<p><strong>Configuration</strong>: All parameters (queue size, batch size, priorities) should be configurable via environment
+variables or configuration file for deployment-specific tuning.</p>
+</section>
+<section id="decision-4-event-driven-vs-periodic-retry-orphan-resolution">
+<h3>Decision 4: Event-Driven vs Periodic Retry Orphan Resolution<a class="headerlink" href="#decision-4-event-driven-vs-periodic-retry-orphan-resolution" title="Link to this heading">#</a></h3>
+<p><strong>Question</strong>: Should orphan resolution use event-driven triggers or periodic retry with backoff?</p>
+<p><strong>Decision</strong>: <strong>Event-driven resolution</strong> triggered when parent entities are persisted.</p>
+<p><strong>Rationale</strong>:</p>
+<ol class="arabic simple">
+<li><p><strong>Zero latency</strong>: Orphans resolve immediately when their parent appears, not on next retry cycle. Typical resolution
+time: &lt;1ms after parent persistence.</p></li>
+<li><p><strong>No wasted cycles</strong>: Resolution attempts only occur when new parents arrive. Periodic retry wastes CPU checking
+orphans during quiet periods.</p></li>
+<li><p><strong>Cascading resolution</strong>: Resolving an orphan (e.g., GridSquare) immediately enables resolution of its children
+(FoilHoles), allowing multi-level dependency chains to resolve in a single processing cycle.</p></li>
+<li><p><strong>Deterministic testing</strong>: Resolution timing depends solely on parent arrival order, not on retry intervals or
+backoff parameters. Simplifies test case design and debugging.</p></li>
+<li><p><strong>Simpler implementation</strong>: No retry scheduling, no exponential backoff calculations, no retry count tracking.</p></li>
+</ol>
+<p><strong>Trade-off</strong>: Requires indexing orphans by required parent natural ID rather than simple list storage. The O(1) lookup
+performance benefit outweighs the marginal increase in storage complexity.</p>
+<p><strong>Timeout detection</strong>: Periodic background task (60s interval) identifies orphans exceeding age threshold (5 minutes)
+for genuinely missing parent files. Timeouts generate warning logs but do NOT evict orphans from memory, supporting
+long-running production sessions (48+ hours) where parent files may arrive after extended delays. Memory footprint for
+orphans is negligible (~750 bytes per orphan, ~1.9 MB for 2,500 orphans in extreme scenarios).</p>
+</section>
+</section>
+<section id="implementation-strategy">
+<h2>Implementation Strategy<a class="headerlink" href="#implementation-strategy" title="Link to this heading">#</a></h2>
+<section id="phased-development-approach">
+<h3>Phased Development Approach<a class="headerlink" href="#phased-development-approach" title="Link to this heading">#</a></h3>
+<p>The implementation was completed in phases, initially developed in <code class="docutils literal notranslate"><span class="pre">src/smartem_agent2/</span></code> alongside the original
+implementation to enable iterative development. After thorough testing and validation, the new implementation replaced
+the original in <code class="docutils literal notranslate"><span class="pre">src/smartem_agent/</span></code>.</p>
+<section id="phase-1-foundation-components-week-1-2">
+<h4>Phase 1: Foundation Components (Week 1-2)<a class="headerlink" href="#phase-1-foundation-components-week-1-2" title="Link to this heading">#</a></h4>
+<p><strong>Deliverables</strong>:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">event_classifier.py</span></code>: Event classification with entity type detection and priority assignment</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">event_queue.py</span></code>: Priority queue implementation with configurable size limits</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">orphan_manager.py</span></code>: Orphan storage and basic retry scheduling (without exponential backoff initially)</p></li>
+<li><p>Unit tests for all three components using synthetic events (no filesystem dependencies)</p></li>
+</ul>
+<p><strong>Validation</strong>:</p>
+<ul class="simple">
+<li><p>Unit test coverage &gt;90% for new components</p></li>
+<li><p>Event classification correctly identifies all EPU entity types from sample file paths</p></li>
+<li><p>Event queue maintains priority ordering under random insertion</p></li>
+<li><p>Orphan manager stores and retrieves orphans by entity type and natural ID</p></li>
+</ul>
+</section>
+<section id="phase-2-event-processor-and-integration-week-3-4">
+<h4>Phase 2: Event Processor and Integration (Week 3-4)<a class="headerlink" href="#phase-2-event-processor-and-integration-week-3-4" title="Link to this heading">#</a></h4>
+<p><strong>Deliverables</strong>:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">event_processor.py</span></code>: Batch processing orchestration with Parser and Data Store integration</p></li>
+<li><p>Integration of Event Classifier, Event Queue, Event Processor, and Orphan Manager</p></li>
+<li><p>Adaptation of <code class="docutils literal notranslate"><span class="pre">fs_watcher.py</span></code> to delegate events to Event Classifier (minimal changes to existing class)</p></li>
+<li><p>Integration tests using fsrecorder playback with small datasets (10-20 GridSquares)</p></li>
+</ul>
+<p><strong>Validation</strong>:</p>
+<ul class="simple">
+<li><p>Event Processor correctly processes batches with known file sets</p></li>
+<li><p>Orphan Manager successfully resolves GridSquare and FoilHole orphans in test datasets</p></li>
+<li><p>Integration tests pass with zero entity loss and zero orphan leakage</p></li>
+<li><p>Performance benchmarking: process 100 entities within 2 seconds (serial processing)</p></li>
+</ul>
+</section>
+<section id="phase-3-transient-error-retry-and-enhanced-observability-week-5-6">
+<h4>Phase 3: Transient Error Retry and Enhanced Observability (Week 5-6)<a class="headerlink" href="#phase-3-transient-error-retry-and-enhanced-observability-week-5-6" title="Link to this heading">#</a></h4>
+<p><strong>Context</strong>: Production environment differs significantly from dev/test:</p>
+<ul class="simple">
+<li><p>Production: Windows binary, live microscope, real-time file writes over 4-48 hours</p></li>
+<li><p>Dev/Test: Linux interpreted Python, fsrecorder simulation with accelerated timing (100-1000x speed)</p></li>
+<li><p>Primary goal: Address dev/test brittleness from accelerated playback whilst improving production reliability</p></li>
+</ul>
+<p><strong>Deliverables</strong>:</p>
+<ul class="simple">
+<li><p>Exponential backoff retry for transient parser errors (corrupted XML during write, file locks)</p></li>
+<li><p>Exponential backoff retry for transient API connection failures (network timeouts, service restarts)</p></li>
+<li><p>Agent log streaming to backend (via SSE or dedicated endpoint) for centralized monitoring</p></li>
+<li><p>Enhanced error categorization (transient vs permanent failures)</p></li>
+<li><p>Structured metrics: processing latency percentiles (p50, p95, p99), retry distributions, error counts</p></li>
+<li><p>Enhanced SSE instructions: detailed statistics, orphan inspection, error reporting</p></li>
+<li><p>End-to-end tests using fsrecorder playback with multiple timing modes (–fast, –dev-mode, –exact)</p></li>
+<li><p>Full-scale E2E test with bi37708-42 dataset (8,389 events)</p></li>
+</ul>
+<p><strong>Validation</strong>:</p>
+<ul class="simple">
+<li><p>Exponential backoff correctly retries transient errors without blocking event processing</p></li>
+<li><p>Permanent errors (corrupt files, missing parents after timeout) logged appropriately without retry</p></li>
+<li><p>Orphan timeout detection generates warnings but does NOT evict orphans (supports 48h+ sessions)</p></li>
+<li><p>End-to-end tests pass with all fsrecorder timing modes (100x fast, 1000x dev-mode, 1x exact)</p></li>
+<li><p>Agent logs successfully stream to backend for centralized monitoring</p></li>
+<li><p>Processing metrics visible in logs and SSE instruction responses</p></li>
+</ul>
+</section>
+<section id="phase-4-performance-optimisation-and-production-hardening-week-7-8">
+<h4>Phase 4: Performance Optimisation and Production Hardening (Week 7-8)<a class="headerlink" href="#phase-4-performance-optimisation-and-production-hardening-week-7-8" title="Link to this heading">#</a></h4>
+<p><strong>Deliverables</strong>:</p>
+<ul class="simple">
+<li><p>Performance profiling and optimisation based on fsrecorder playback results</p></li>
+<li><p>Configuration externalisation (queue sizes, retry parameters, batch sizes)</p></li>
+<li><p>Comprehensive error recovery testing (API failures, parser errors, corrupted files)</p></li>
+<li><p>Documentation updates (README, API documentation, deployment guides)</p></li>
+<li><p>Windows executable build and deployment testing</p></li>
+</ul>
+<p><strong>Validation</strong>:</p>
+<ul class="simple">
+<li><p>Performance targets met: process 200 entities/second (serial), orphan resolution within 5 seconds for 95th
+percentile</p></li>
+<li><p>Configuration changes apply without code modification</p></li>
+<li><p>Error recovery scenarios handled gracefully without data loss</p></li>
+<li><p>Windows executable deploys and operates correctly on Win10/11 test systems</p></li>
+</ul>
+</section>
+</section>
+<section id="testing-strategy">
+<h3>Testing Strategy<a class="headerlink" href="#testing-strategy" title="Link to this heading">#</a></h3>
+<p>Testing employs a multi-layered approach progressing from unit tests to full end-to-end validation:</p>
+<section id="unit-tests">
+<h4>Unit Tests<a class="headerlink" href="#unit-tests" title="Link to this heading">#</a></h4>
+<p>Each component (<code class="docutils literal notranslate"><span class="pre">EventClassifier</span></code>, <code class="docutils literal notranslate"><span class="pre">EventQueue</span></code>, <code class="docutils literal notranslate"><span class="pre">OrphanManager</span></code>, <code class="docutils literal notranslate"><span class="pre">EventProcessor</span></code>) receives dedicated unit test
+coverage with mocked dependencies. Focus areas:</p>
+<ul class="simple">
+<li><p><strong>Event Classifier</strong>: File path pattern matching, entity type detection, priority assignment, natural ID extraction</p></li>
+<li><p><strong>Event Queue</strong>: Priority ordering, batch retrieval, size limit enforcement, edge cases (empty queue, single-element
+batches)</p></li>
+<li><p><strong>Orphan Manager</strong>: Orphan registration, event-driven resolution, timeout detection (warning-only, no eviction),
+orphan statistics by type and age</p></li>
+<li><p><strong>Event Processor</strong>: Batch processing, parser delegation, parent checking, orphan registration, Data Store
+interaction</p></li>
+</ul>
+<p><strong>Target</strong>: &gt;90% code coverage across new components.</p>
+</section>
+<section id="integration-tests">
+<h4>Integration Tests<a class="headerlink" href="#integration-tests" title="Link to this heading">#</a></h4>
+<p>Integration tests use fsrecorder playback to simulate EPU filesystem output patterns with controlled file ordering
+and multiple timing modes:</p>
+<p><strong>Timing modes</strong> (fsrecorder replay options):</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">--fast</span></code> (100x speed, 1s max delays): Balanced mode for realistic testing, DEFAULT</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--dev-mode</span></code> (1000x speed, burst): Maximum acceleration for rapid iteration and stress testing</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--exact</span></code> (1x speed): Preserve original timing for debugging timing-dependent issues</p></li>
+</ul>
+<p><strong>File ordering scenarios</strong>:</p>
+<ul class="simple">
+<li><p><strong>Normal ordering</strong>: Parents before children (Grid → Atlas → GridSquare → FoilHole → Micrograph)</p></li>
+<li><p><strong>Reverse ordering</strong>: Children before parents (Micrograph before FoilHole, FoilHole before GridSquare, etc.)</p></li>
+<li><p><strong>Mixed ordering</strong>: Random interleaving of parent and child files</p></li>
+<li><p><strong>Bursty writes</strong>: Hundreds of files appearing simultaneously</p></li>
+<li><p><strong>Incomplete hierarchies</strong>: Missing parent files (Atlas absent, GridSquare metadata missing)</p></li>
+</ul>
+<p><strong>Validation</strong>:</p>
+<ul class="simple">
+<li><p>Zero entity loss across all ordering scenarios and timing modes</p></li>
+<li><p>Orphan resolution success rate &gt;99% for complete hierarchies</p></li>
+<li><p>Orphaned entities with missing parents log timeout warnings (no eviction)</p></li>
+<li><p>Processing latency &lt;5 seconds for 95th percentile entities (fast mode)</p></li>
+</ul>
+</section>
+<section id="end-to-end-tests">
+<h4>End-to-End Tests<a class="headerlink" href="#end-to-end-tests" title="Link to this heading">#</a></h4>
+<p>End-to-end tests use full-scale fsrecorder datasets (100+ GridSquares, 1000+ FoilHoles) with realistic EPU output
+patterns. Primary test dataset: bi37708-42 (8,389 events). Tests validate:</p>
+<ul class="simple">
+<li><p>Complete entity persistence to backend database</p></li>
+<li><p>SSE instruction handling during active data collection</p></li>
+<li><p>Agent restart recovery (orphan re-discovery)</p></li>
+<li><p>Transient error retry (parser errors with file locks, API connection failures)</p></li>
+<li><p>Agent log streaming to backend for centralized monitoring</p></li>
+<li><p>Windows executable deployment and operation (production environment)</p></li>
+</ul>
+<p><strong>Target</strong>: All existing end-to-end tests pass with v2 implementation, plus additional tests for:</p>
+<ul class="simple">
+<li><p>Orphan timeout warning scenarios (no eviction)</p></li>
+<li><p>Transient error recovery with exponential backoff</p></li>
+<li><p>Long-running sessions (48+ hours simulated via extended playback)</p></li>
+<li><p>All three fsrecorder timing modes (fast, dev-mode, exact)</p></li>
+</ul>
+</section>
+</section>
+</section>
+<section id="open-questions-and-future-considerations">
+<h2>Open Questions and Future Considerations<a class="headerlink" href="#open-questions-and-future-considerations" title="Link to this heading">#</a></h2>
+<section id="open-questions-for-investigation">
+<h3>Open Questions for Investigation<a class="headerlink" href="#open-questions-for-investigation" title="Link to this heading">#</a></h3>
+<section id="optimal-batch-size">
+<h4>1. Optimal Batch Size<a class="headerlink" href="#optimal-batch-size" title="Link to this heading">#</a></h4>
+<p><strong>Question</strong>: Is 50 events/batch optimal for throughput and orphan resolution trade-off?</p>
+<p><strong>Investigation Plan</strong>: Benchmark processing latency and orphan resolution time across batch sizes: 10, 25, 50, 100,
+200 events/batch using fsrecorder playback with large datasets. Measure:</p>
+<ul class="simple">
+<li><p>Total processing time for complete dataset</p></li>
+<li><p>95th percentile orphan resolution time</p></li>
+<li><p>Memory consumption during processing</p></li>
+</ul>
+<p><strong>Decision Criteria</strong>: Select batch size minimising orphan resolution time whilst maintaining total processing time
+&lt;10% above minimum observed (to avoid sacrificing throughput for marginal resolution improvements).</p>
+</section>
+<section id="persistent-orphan-storage">
+<h4>2. Persistent Orphan Storage<a class="headerlink" href="#persistent-orphan-storage" title="Link to this heading">#</a></h4>
+<p><strong>Question</strong>: Should orphans persist across agent restarts for long-running orphan scenarios?</p>
+<p><strong>Current Decision</strong>: No persistent storage (in-memory only).</p>
+<p><strong>Reconsideration Triggers</strong>:</p>
+<ul class="simple">
+<li><p>If operational data reveals orphans persisting beyond 5 minutes (indicating parent files genuinely missing rather
+than delayed)</p></li>
+<li><p>If agent restarts during active data collection prove common in production</p></li>
+<li><p>If filesystem re-scanning performance becomes problematic for large datasets</p></li>
+</ul>
+<p><strong>Implementation Path</strong>: If persistence becomes necessary, store orphans in SQLite database co-located with agent,
+avoiding backend API dependency for transient processing state.</p>
+</section>
+<section id="hierarchical-parallelism">
+<h4>3. Hierarchical Parallelism<a class="headerlink" href="#hierarchical-parallelism" title="Link to this heading">#</a></h4>
+<p><strong>Question</strong>: Could concurrent processing across independent Grid hierarchies improve throughput without introducing
+parent-child race conditions?</p>
+<p><strong>Current Decision</strong>: Serial processing (see Decision 1).</p>
+<p><strong>Future Investigation</strong>: If performance profiling reveals serial processing bottlenecks (unlikely based on
+preliminary analysis), investigate:</p>
+<ul class="simple">
+<li><p>Processing batches grouped by Grid UUID (parallel across Grids, serial within Grid)</p></li>
+<li><p>Thread pool or async/await implementation for Grid-level concurrency</p></li>
+<li><p>Lock-free Data Store design for concurrent Grid insertion</p></li>
+</ul>
+<p><strong>Decision Criteria</strong>: Pursue only if serial processing demonstrably fails to meet throughput requirements (&gt;200
+entities/second sustained).</p>
+</section>
+</section>
+<section id="future-enhancements-out-of-scope-for-v2">
+<h3>Future Enhancements (Out of Scope for v2)<a class="headerlink" href="#future-enhancements-out-of-scope-for-v2" title="Link to this heading">#</a></h3>
+<p>The following features are explicitly deferred to future iterations:</p>
+<section id="athena-api-integration-modes">
+<h4>Athena API Integration Modes<a class="headerlink" href="#athena-api-integration-modes" title="Link to this heading">#</a></h4>
+<p><strong>Description</strong>: Three-mode operation for microscope control:</p>
+<ul class="simple">
+<li><p><strong>Dry-run mode</strong>: Data ingestion only, no microscope control</p></li>
+<li><p><strong>Semi-automatic mode</strong>: Athena API generates recommendations, operator approves</p></li>
+<li><p><strong>Fully automatic mode</strong>: Athena API directly controls microscope via SSE instructions</p></li>
+</ul>
+<p><strong>Deferral Rationale</strong>: Core orphan handling and event processing must stabilise before introducing complex microscope
+control workflows. Athena API integration builds upon reliable data ingestion foundation.</p>
+</section>
+<section id="data-intake-only-mode">
+<h4>Data Intake Only Mode<a class="headerlink" href="#data-intake-only-mode" title="Link to this heading">#</a></h4>
+<p><strong>Description</strong>: Disable SSE instruction streaming, operate purely as data ingestion service for offline analysis.</p>
+<p><strong>Deferral Rationale</strong>: Current SSE implementation is stable and non-invasive. Disabling SSE provides minimal value
+until specific use cases emerge requiring intake-only operation.</p>
+</section>
+<section id="session-completion-detection">
+<h4>Session Completion Detection<a class="headerlink" href="#session-completion-detection" title="Link to this heading">#</a></h4>
+<p><strong>Description</strong>: Automatically detect EPU session completion (no new files for threshold duration, session manifest
+indicates completion, etc.) and trigger finalisation workflows.</p>
+<p><strong>Deferral Rationale</strong>: Session completion detection requires understanding EPU’s session lifecycle signals, which
+remain partially undocumented. Reliable detection mechanisms require field observation across multiple sessions.</p>
+</section>
+<section id="multi-agent-coordination">
+<h4>Multi-Agent Coordination<a class="headerlink" href="#multi-agent-coordination" title="Link to this heading">#</a></h4>
+<p><strong>Description</strong>: Support multiple agents monitoring different microscopes within single backend instance, with
+session-based isolation and cross-agent coordination.</p>
+<p><strong>Deferral Rationale</strong>: Multi-agent scenarios are not yet tested in production. Backend session isolation mechanisms
+require validation before agent-side coordination features become relevant.</p>
+</section>
+</section>
+</section>
+<section id="conclusion">
+<h2>Conclusion<a class="headerlink" href="#conclusion" title="Link to this heading">#</a></h2>
+<p>The SmartEM Agent design addresses critical orphan handling deficiencies through systematic component separation,
+intelligent error handling with retry logic, and robust event buffering. The implementation provides reliable
+entity processing across all tested scenarios.</p>
+<p>Key innovations implemented:</p>
+<ul class="simple">
+<li><p><strong>Orphan Manager</strong> with event-driven resolution and timeout warnings</p></li>
+<li><p><strong>Event Queue</strong> priority-based buffering for bursty write handling</p></li>
+<li><p><strong>Event Processor</strong> orchestration with clear separation of concerns</p></li>
+<li><p><strong>Error Handler</strong> with categorisation and exponential backoff retry</p></li>
+<li><p><strong>Preservation of proven components</strong> (Parser, Data Store)</p></li>
+</ul>
+<p>The implementation supports existing deployment patterns (Windows executable, fsrecorder testing), and provides clear
+extension points for future features (Athena API integration, session completion detection, multi-agent coordination).</p>
+<p>The system has been validated with comprehensive testing demonstrating zero-entity-loss reliability across all test
+scenarios including various file ordering patterns and timing modes.</p>
+</section>
+</section>
+
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="epu-data-structures.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">EPU Output Directory Structure</p>
+      </div>
+    </a>
+    <a class="right-next"
+       href="technical-notes.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">Technical Notes</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#executive-summary">Executive Summary</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#background">Background</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#implementation-overview">Implementation Overview</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#historical-problem-statement">Historical Problem Statement</a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#insufficient-orphan-handling-critical-priority">1. Insufficient Orphan Handling (Critical Priority)</a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#inadequate-bursty-write-handling">2. Inadequate Bursty Write Handling</a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#code-maintainability-concerns">3. Code Maintainability Concerns</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#design-goals-and-principles">Design Goals and Principles</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#primary-goals">Primary Goals</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#design-principles">Design Principles</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#constraints">Constraints</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#proposed-architecture">Proposed Architecture</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#dual-id-system-foundation-for-orphan-resolution">Dual-ID System: Foundation for Orphan Resolution</a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#identity-management">Identity Management</a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#parent-relationship-resolution">Parent Relationship Resolution</a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#orphan-detection-mechanism">Orphan Detection Mechanism</a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#orphan-resolution-strategy-event-driven-matching">Orphan Resolution Strategy: Event-Driven Matching</a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#high-level-component-structure">High-Level Component Structure</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#component-descriptions">Component Descriptions</a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#filesystem-watcher-unchanged-externally">Filesystem Watcher (Unchanged Externally)</a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#event-classifier-new-component">Event Classifier (New Component)</a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#event-queue-new-component">Event Queue (New Component)</a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#event-processor-new-component-core-orchestrator">Event Processor (New Component - Core Orchestrator)</a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#orphan-manager-new-component-critical-for-reliability">Orphan Manager (New Component - Critical for Reliability)</a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#data-store-minimal-changes">Data Store (Minimal Changes)</a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#parser-no-changes">Parser (No Changes)</a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#data-flow">Data Flow</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#orphan-resolution-strategy-detailed">Orphan Resolution Strategy (Detailed)</a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#why-orphans-occur">Why Orphans Occur</a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#orphan-detection">Orphan Detection</a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#event-driven-resolution-rationale">Event-Driven Resolution Rationale</a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#resolution-mechanism">Resolution Mechanism</a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#orphan-storage">Orphan Storage</a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#timeout-detection">Timeout Detection</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#key-design-decisions">Key Design Decisions</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#decision-1-serial-vs-concurrent-event-processing">Decision 1: Serial vs Concurrent Event Processing</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#decision-2-orphan-storage-location">Decision 2: Orphan Storage Location</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#decision-3-event-queue-implementation">Decision 3: Event Queue Implementation</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#decision-4-event-driven-vs-periodic-retry-orphan-resolution">Decision 4: Event-Driven vs Periodic Retry Orphan Resolution</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#implementation-strategy">Implementation Strategy</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#phased-development-approach">Phased Development Approach</a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#phase-1-foundation-components-week-1-2">Phase 1: Foundation Components (Week 1-2)</a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#phase-2-event-processor-and-integration-week-3-4">Phase 2: Event Processor and Integration (Week 3-4)</a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#phase-3-transient-error-retry-and-enhanced-observability-week-5-6">Phase 3: Transient Error Retry and Enhanced Observability (Week 5-6)</a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#phase-4-performance-optimisation-and-production-hardening-week-7-8">Phase 4: Performance Optimisation and Production Hardening (Week 7-8)</a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#testing-strategy">Testing Strategy</a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#unit-tests">Unit Tests</a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#integration-tests">Integration Tests</a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#end-to-end-tests">End-to-End Tests</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#open-questions-and-future-considerations">Open Questions and Future Considerations</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#open-questions-for-investigation">Open Questions for Investigation</a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#optimal-batch-size">1. Optimal Batch Size</a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#persistent-orphan-storage">2. Persistent Orphan Storage</a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#hierarchical-parallelism">3. Hierarchical Parallelism</a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#future-enhancements-out-of-scope-for-v2">Future Enhancements (Out of Scope for v2)</a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#athena-api-integration-modes">Athena API Integration Modes</a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#data-intake-only-mode">Data Intake Only Mode</a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#session-completion-detection">Session Completion Detection</a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#multi-agent-coordination">Multi-Agent Coordination</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#conclusion">Conclusion</a></li>
+</ul>
+  </nav></div>
+
+  <div class="sidebar-secondary-item">
+
+  
+  <div class="tocsection editthispage">
+    <a href="https://github.com/DiamondLightSource/smartem-decisions/edit/main/docs/explanations/smartem-agent-design.md">
+      <i class="fa-solid fa-pencil"></i>
+      
+      
+        
+          Edit on GitHub
+        
+      
+    </a>
+  </div>
+</div>
+
+  <div class="sidebar-secondary-item">
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/explanations/smartem-agent-design.md.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div></div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf"></script>
+<script defer src="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.16.1.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>
