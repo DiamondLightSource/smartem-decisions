@@ -175,10 +175,11 @@ def check_for_new_migrations(db_url: str) -> bool:
         content = content.replace("driver://user:pass@localhost/dbname", db_url)
         f.write(content)
 
+    migration_file = None
     try:
-        # Run autogenerate in dry-run mode to see what would be generated
+        # Run autogenerate to create a test migration file
         result = subprocess.run(
-            ["alembic", "-c", alembic_ini_path, "revision", "--autogenerate", "-m", "test_drift_check", "--sql"],
+            ["alembic", "-c", alembic_ini_path, "revision", "--autogenerate", "-m", "test_drift_check"],
             cwd=project_root,
             env=env,
             capture_output=True,
@@ -190,26 +191,36 @@ def check_for_new_migrations(db_url: str) -> bool:
             print(result.stderr, file=sys.stderr)
             return True  # Treat errors as potential drift
 
-        # Check if any actual changes would be generated
-        # Look for SQL operations that aren't just comments
-        output_lines = result.stdout.split("\n")
-        has_operations = False
-
-        for line in output_lines:
-            line = line.strip()
-            # Skip empty lines and comments
-            if not line or line.startswith("--"):
-                continue
-            # Look for actual SQL operations
-            if any(keyword in line.upper() for keyword in ["CREATE", "ALTER", "DROP", "ADD", "MODIFY"]):
-                has_operations = True
+        # Find the generated migration file
+        for line in result.stdout.split("\n"):
+            if "Generating" in line and ".py" in line:
+                migration_file = line.split()[1].replace("...", "")
                 break
+
+        if not migration_file:
+            print("Warning: Could not find generated migration file", file=sys.stderr)
+            return True
+
+        # Check if the migration file contains any operations
+        with open(migration_file) as f:
+            migration_content = f.read()
+
+        # Check if upgrade() contains only 'pass' (no operations)
+        has_operations = "pass" not in migration_content or (
+            "op.create" in migration_content
+            or "op.drop" in migration_content
+            or "op.alter" in migration_content
+            or "op.add" in migration_content
+        )
 
         return has_operations
 
     finally:
         # Clean up temporary alembic.ini
         os.unlink(alembic_ini_path)
+        # Clean up generated migration file if it exists
+        if migration_file and Path(migration_file).exists():
+            os.unlink(migration_file)
 
 
 def main() -> None:
