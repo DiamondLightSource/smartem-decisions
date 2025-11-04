@@ -81,7 +81,7 @@ class AthenaClient:
         self,
         method: str,
         endpoint: str,
-        request_model: BaseModel | None = None,
+        request_model: BaseModel | list[BaseModel] | None = None,
         response_cls=None,
     ):
         """
@@ -90,7 +90,7 @@ class AthenaClient:
         Args:
             method: HTTP method (get, post, put, delete)
             endpoint: API endpoint path
-            request_model: Optional request data model
+            request_model: Optional request data model or list of models
             response_cls: Optional response class to parse the response
 
         Returns:
@@ -106,7 +106,10 @@ class AthenaClient:
         json_data = None
 
         if request_model:
-            if hasattr(request_model, "model_dump"):
+            if isinstance(request_model, list):
+                # It's a list of Pydantic models
+                json_data = [m.model_dump(mode="json", exclude_none=True) for m in request_model]
+            elif hasattr(request_model, "model_dump"):
                 # It's a Pydantic model
                 json_data = request_model.model_dump(mode="json", exclude_none=True)
             else:
@@ -312,6 +315,10 @@ class AthenaClient:
     def record_decision(self, decision: DecisionRecord) -> DecisionRecord:
         """Record a decision."""
         return self._request("post", "api/v1/Decision", decision, DecisionRecord)
+
+    def record_decisions(self, decisions: list[DecisionRecord]) -> list[DecisionRecord]:
+        """Record multiple decisions."""
+        return self._request("post", "api/v1/Decisions", decisions, DecisionRecord)
 
     # Session endpoints
     def register_session(self, session: Session) -> Session:
