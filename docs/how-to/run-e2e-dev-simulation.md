@@ -98,6 +98,112 @@ python -m smartem_agent watch --api-url http://localhost:8000 -vv ../epu-test-di
 
 ---
 
+## Multi-Microscope Test (Concurrent Sessions)
+
+For testing multiple concurrent microscopes and acquisition sessions simultaneously, use the multi-microscope test runner:
+
+```bash
+# Check k3s status first (DO NOT restart if already running)
+./tools/dev-k8s.sh status
+
+# Run multi-microscope test with 3 microscopes (default)
+./tools/run-e2e-test-multi-microscope.sh
+
+# With custom parameters
+./tools/run-e2e-test-multi-microscope.sh \
+  3 \
+  ~/dev/DLS/smartem-decisions-test-recordings/bi37708-42_fsrecord.tar.gz \
+  /home/username/dev/DLS/epu-test-dir \
+  0.1
+```
+
+**Script parameters** (all optional):
+1. Number of microscopes (default: `3`)
+2. Recording file path (default: `~/dev/DLS/smartem-decisions-test-recordings/bi37708-42_fsrecord.tar.gz`)
+3. EPU base directory (default: `/home/username/dev/DLS/epu-test-dir`)
+   - Each microscope gets a separate directory: `epu-test-dir-microscope-1`, `epu-test-dir-microscope-2`, etc.
+4. Max delay in seconds (default: `0.1`)
+
+**What the script does**:
+- Creates timestamped test results directory in `logs/e2e-tests/`
+- Activates venv and loads environment variables from `.env.local-test-run`
+- Resets database to clean state
+- Starts single API server and consumer (shared by all microscopes)
+- Starts N agent instances, each with unique:
+  - Agent ID (e.g., `microscope-titan-01`, `microscope-titan-02`, `microscope-titan-03`)
+  - Session ID (e.g., `session-20250110-001`, `session-20250110-002`, `session-20250110-003`)
+  - EPU directory for playback isolation
+- Runs N concurrent playback instances to separate directories
+- Collects and verifies:
+  - Filesystem statistics per microscope
+  - Database counts per acquisition
+  - Agent session associations
+  - Data separation between acquisitions
+- Saves all logs to test results directory (N agent logs, N playback logs, 1 API log, 1 consumer log)
+- Cleans up background processes and directories on exit
+
+**When to use**:
+- Testing multi-microscope facility scenarios
+- Validating data isolation in the database
+- Testing SSE routing correctness (each agent receives only its own instructions)
+- Identifying race conditions and resource contention
+- Testing concurrent agent/backend operations
+- Verifying no data leakage between acquisitions
+
+**Success criteria**:
+- Each agent creates a separate acquisition in the database
+- All acquisitions have completely separate data (no shared grids/gridsquares/foilholes)
+- Each agent receives SSE instructions only for its own session
+- Database counts match filesystem counts for each microscope
+- No errors in any service logs
+- Data separation verification passes
+
+**Example output**:
+```
+===== Test Results =====
+
+Filesystem Counts:
+  Microscope 1 (microscope-titan-01):
+    EPU Sessions: 1
+    GridSquare directories: 42
+  Microscope 2 (microscope-titan-02):
+    EPU Sessions: 1
+    GridSquare directories: 42
+  Microscope 3 (microscope-titan-03):
+    EPU Sessions: 1
+    GridSquare directories: 42
+
+Database Counts (per acquisition):
+  Total acquisitions: 3
+
+  Acquisition 1 (TK-01):
+    UUID: abc-123...
+    Grids: 1
+    Grid Squares: 42
+    Foil Holes: 156
+
+  Acquisition 2 (TK-02):
+    UUID: def-456...
+    Grids: 1
+    Grid Squares: 42
+    Foil Holes: 156
+
+  Acquisition 3 (TK-03):
+    UUID: ghi-789...
+    Grids: 1
+    Grid Squares: 42
+    Foil Holes: 156
+
+===== Data Separation Verification =====
+
+  Found 3 acquisitions.
+
+  SUCCESS: All acquisitions have completely separate data.
+  No grid UUID overlaps detected between acquisitions.
+```
+
+---
+
 ## Overview
 
 The test setup simulates a complete SmartEM workflow:
