@@ -13,6 +13,10 @@ spec:
       labels:
         app: adminer
     spec:
+      tolerations:
+      - key: node.kubernetes.io/disk-pressure
+        operator: Exists
+        effect: NoSchedule
       containers:
       - name: adminer
         image: adminer:latest

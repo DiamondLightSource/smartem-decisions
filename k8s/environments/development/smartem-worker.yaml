@@ -15,6 +15,10 @@ spec:
       labels:
         app: smartem-worker
     spec:
+      tolerations:
+      - key: node.kubernetes.io/disk-pressure
+        operator: Exists
+        effect: NoSchedule
       containers:
       - name: smartem-worker
         image: smartem-decisions:latest

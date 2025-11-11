@@ -13,6 +13,10 @@ spec:
       labels:
         app: rabbitmq
     spec:
+      tolerations:
+      - key: node.kubernetes.io/disk-pressure
+        operator: Exists
+        effect: NoSchedule
       containers:
       - name: rabbitmq
         image: rabbitmq:management
