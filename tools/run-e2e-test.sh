@@ -6,11 +6,19 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+WORKSPACE_ROOT="$(cd "$PROJECT_ROOT/../.." && pwd)"
 cd "$PROJECT_ROOT"
 
-# Configuration
-RECORDING="${1:-/home/vredchenko/dev/DLS/smartem-decisions-test-recordings/bi37708-42_fsrecord.tar.gz}"
-EPU_DIR="${2:-/home/vredchenko/dev/DLS/epu-test-dir}"
+# Defaults assume multi-repo workspace structure:
+#   <workspace>/DiamondLightSource/smartem-decisions/  (this repo)
+#   <workspace>/testdata/recordings/                   (test recordings)
+#   <workspace>/tmp/                                   (scratch space)
+# Override with env vars: SMARTEM_TEST_RECORDING, SMARTEM_EPU_DIR
+DEFAULT_RECORDING="$WORKSPACE_ROOT/testdata/recordings/bi37708-42_fsrecord.tar.gz"
+DEFAULT_EPU_DIR="$WORKSPACE_ROOT/tmp/epu-test-dir"
+
+RECORDING="${1:-${SMARTEM_TEST_RECORDING:-$DEFAULT_RECORDING}}"
+EPU_DIR="${2:-${SMARTEM_EPU_DIR:-$DEFAULT_EPU_DIR}}"
 MAX_DELAY="${3:-0.1}"  # Default to 0.1s max delay (slower than no limit)
 TEST_DIR="$PROJECT_ROOT/logs/e2e-tests/$(date +%Y-%m-%d_%H%M%S)_pre-acquisition-test"
 

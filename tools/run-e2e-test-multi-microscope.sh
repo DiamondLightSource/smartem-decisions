@@ -3,11 +3,20 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+WORKSPACE_ROOT="$(cd "$PROJECT_ROOT/../.." && pwd)"
 cd "$PROJECT_ROOT"
 
+# Defaults assume multi-repo workspace structure:
+#   <workspace>/DiamondLightSource/smartem-decisions/  (this repo)
+#   <workspace>/testdata/recordings/                   (test recordings)
+#   <workspace>/tmp/                                   (scratch space)
+# Override with env vars: SMARTEM_TEST_RECORDING, SMARTEM_EPU_DIR
+DEFAULT_RECORDING="$WORKSPACE_ROOT/testdata/recordings/bi37708-42_fsrecord.tar.gz"
+DEFAULT_EPU_DIR="$WORKSPACE_ROOT/tmp/epu-test-dir"
+
 NUM_MICROSCOPES="${1:-3}"
-RECORDING="${2:-/home/vredchenko/dev/DLS/smartem-decisions-test-recordings/bi37708-42_fsrecord.tar.gz}"
-EPU_BASE_DIR="${3:-/home/vredchenko/dev/DLS/epu-test-dir}"
+RECORDING="${2:-${SMARTEM_TEST_RECORDING:-$DEFAULT_RECORDING}}"
+EPU_BASE_DIR="${3:-${SMARTEM_EPU_DIR:-$DEFAULT_EPU_DIR}}"
 MAX_DELAY="${4:-0.1}"
 TEST_DIR="$PROJECT_ROOT/logs/e2e-tests/$(date +%Y-%m-%d_%H%M%S)_multi-microscope-test"
 
