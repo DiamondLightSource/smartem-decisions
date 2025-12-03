@@ -18,8 +18,6 @@ from dotenv import load_dotenv
 from pydantic import ValidationError
 from sqlmodel import Session, select
 
-from athena_api.client import AthenaClient
-from athena_api.model.request import DecisionRecord, DecisionType, PluginType
 from smartem_backend.cli.initialise_prediction_model_weights import initialise_all_models_for_grid
 from smartem_backend.cli.random_model_predictions import (
     generate_predictions_for_foilhole,
@@ -88,113 +86,6 @@ logger = log_manager.configure(LogConfig(level=logging.ERROR, console=True))
 
 # Get singleton database engine for reuse across all event handlers
 db_engine = get_db_engine()
-
-# Initialize Athena client if URL is configured
-athena_client: AthenaClient | None = None
-athena_url = conf.get("athena_url")
-if athena_url:
-    try:
-        athena_client = AthenaClient(base_url=athena_url, logger=logger)
-        logger.info(f"Athena client initialized with URL: {athena_url}")
-    except Exception as e:
-        logger.warning(f"Failed to initialize Athena client: {e}. Decisions will not be sent to Athena.")
-
-
-def get_athena_session_id() -> str:
-    """
-    Get Athena session ID for decision submission.
-    For now, returns a dummy UUID. In production, this should retrieve
-    the actual session ID from the database (Acquisition.athena_session_id).
-    """
-    dummy_session_id = "00000000-0000-0000-0000-000000000000"
-    return dummy_session_id
-
-
-def send_decision_to_athena(
-    session_id: str,
-    area_id: int,
-    decision_type: DecisionType,
-    decision_value: str,
-    details: str | None = None,
-) -> None:
-    """
-    Send a single decision to Athena Decision Service.
-
-    Args:
-        session_id: UUID of the Athena session
-        area_id: Athena area ID (gridsquare or foilhole)
-        decision_type: Type of decision
-        decision_value: Value of the decision
-        details: Optional details about the decision
-    """
-    if not athena_client:
-        logger.debug("Athena client not configured, skipping decision submission")
-        return
-
-    try:
-        decision = DecisionRecord(
-            id=uuid.uuid4(),
-            sessionId=uuid.UUID(session_id),
-            areaId=area_id,
-            decisionType=decision_type,
-            pluginType=PluginType.CUSTOM,
-            decisionValue=decision_value,
-            decidedBy="smartem_ml_model",
-            details=details,
-            timestamp=datetime.now(),
-        )
-        logger.info(
-            f"[ATHENA DECISION] Would POST to Athena: "
-            f"sessionId={decision.sessionId}, areaId={decision.areaId}, "
-            f"type={decision.decisionType.value}, value={decision.decisionValue}, "
-            f"details={decision.details}"
-        )
-    except Exception as e:
-        logger.error(f"Failed to prepare decision for Athena: {e}")
-
-
-def send_decisions_to_athena(
-    session_id: str,
-    decisions_data: list[tuple[int, DecisionType, str, str | None]],
-) -> None:
-    """
-    Send multiple decisions to Athena Decision Service in a single request.
-
-    Args:
-        session_id: UUID of the Athena session
-        decisions_data: List of tuples (area_id, decision_type, decision_value, details)
-    """
-    if not athena_client:
-        logger.debug("Athena client not configured, skipping decision submission")
-        return
-
-    if not decisions_data:
-        logger.debug("No decisions to send to Athena")
-        return
-
-    try:
-        decisions = [
-            DecisionRecord(
-                id=uuid.uuid4(),
-                sessionId=uuid.UUID(session_id),
-                areaId=area_id,
-                decisionType=decision_type,
-                pluginType=PluginType.CUSTOM,
-                decisionValue=decision_value,
-                decidedBy="smartem_ml_model",
-                details=details,
-                timestamp=datetime.now(),
-            )
-            for area_id, decision_type, decision_value, details in decisions_data
-        ]
-        logger.info(f"[ATHENA DECISIONS] Would POST {len(decisions)} decisions to Athena:")
-        for dec in decisions:
-            logger.info(
-                f"  - sessionId={dec.sessionId}, areaId={dec.areaId}, "
-                f"type={dec.decisionType.value}, value={dec.decisionValue}"
-            )
-    except Exception as e:
-        logger.error(f"Failed to prepare decisions for Athena: {e}")
 
 
 def handle_acquisition_created(event_data: dict[str, Any]) -> None:
@@ -814,7 +705,6 @@ def handle_ctf_estimation_complete(event_data: dict[str, Any]) -> None:
 def handle_gridsquare_model_prediction(event_data: dict[str, Any]) -> None:
     """
     Handle grid square model prediction event by inserting the result into the database
-    and sending acquisition decision to Athena API.
 
     Args:
         event_data: Event data for grid square model prediction
@@ -835,10 +725,12 @@ def handle_gridsquare_model_prediction(event_data: dict[str, Any]) -> None:
                 .where(CurrentQualityPrediction.prediction_model_name == event.prediction_model_name)
                 .where(CurrentQualityPrediction.metric_name == event.metric)
             ).first()
-            gridsquare = session.exec(select(GridSquare).where(GridSquare.uuid == event.gridsquare_uuid)).one()
             if current_quality_prediction is None:
+                grid_uuid = (
+                    session.exec(select(GridSquare).where(GridSquare.uuid == event.gridsquare_uuid)).one().grid_uuid
+                )
                 current_quality_prediction = CurrentQualityPrediction(
-                    grid_uuid=gridsquare.grid_uuid,
+                    grid_uuid=grid_uuid,
                     gridsquare_uuid=event.gridsquare_uuid,
                     prediction_model_name=event.prediction_model_name,
                     value=event.prediction_value,
@@ -849,16 +741,6 @@ def handle_gridsquare_model_prediction(event_data: dict[str, Any]) -> None:
             session.add(current_quality_prediction)
             session.commit()
 
-            athena_session_id = get_athena_session_id()
-            area_id = int(gridsquare.gridsquare_id)
-            send_decision_to_athena(
-                session_id=athena_session_id,
-                area_id=area_id,
-                decision_type=DecisionType.GRID_SQUARE_SELECTION,
-                decision_value="true" if event.prediction_value > 0.5 else "false",
-                details=f"ML prediction: {event.prediction_value:.3f} ({event.prediction_model_name})",
-            )
-
     except ValidationError as e:
         logger.error(f"Validation error processing grid square model prediction event: {e}")
     except Exception as e:
@@ -868,7 +750,6 @@ def handle_gridsquare_model_prediction(event_data: dict[str, Any]) -> None:
 def handle_foilhole_model_prediction(event_data: dict[str, Any]) -> None:
     """
     Handle foil hole model prediction event by inserting the result into the database
-    and sending foilhole selection decision to Athena API.
 
     Args:
         event_data: Event data for foil hole model prediction
@@ -889,9 +770,12 @@ def handle_foilhole_model_prediction(event_data: dict[str, Any]) -> None:
                 .where(CurrentQualityPrediction.prediction_model_name == event.prediction_model_name)
                 .where(CurrentQualityPrediction.metric_name == event.metric)
             ).first()
-            foilhole = session.exec(select(FoilHole).where(FoilHole.uuid == event.foilhole_uuid)).one()
             if current_quality_prediction is None:
-                square = session.exec(select(GridSquare).where(GridSquare.uuid == foilhole.gridsquare_uuid)).one()
+                square = session.exec(
+                    select(GridSquare, FoilHole)
+                    .where(GridSquare.uuid == FoilHole.gridsquare_uuid)
+                    .where(FoilHole.uuid == event.foilhole_uuid)
+                ).one()[0]
                 current_quality_prediction = CurrentQualityPrediction(
                     grid_uuid=square.grid_uuid,
                     gridsquare_uuid=square.uuid,
@@ -905,16 +789,6 @@ def handle_foilhole_model_prediction(event_data: dict[str, Any]) -> None:
             session.add(current_quality_prediction)
             session.commit()
 
-            athena_session_id = get_athena_session_id()
-            area_id = int(foilhole.id)
-            send_decision_to_athena(
-                session_id=athena_session_id,
-                area_id=area_id,
-                decision_type=DecisionType.FOIL_HOLE_SELECTION,
-                decision_value="true" if event.prediction_value > 0.5 else "false",
-                details=f"ML prediction: {event.prediction_value:.3f} ({event.prediction_model_name})",
-            )
-
     except ValidationError as e:
         logger.error(f"Validation error processing foil hole model prediction event: {e}")
     except Exception as e:
@@ -924,7 +798,6 @@ def handle_foilhole_model_prediction(event_data: dict[str, Any]) -> None:
 def handle_multi_foilhole_model_prediction(event_data: dict[str, Any]) -> None:
     """
     Handle multiple foil hole model predictions event by inserting the result into the database
-    and sending multiple foilhole selection decisions to Athena API in a single request.
 
     Args:
         event_data: Event data for foil hole model predictions
@@ -949,8 +822,11 @@ def handle_multi_foilhole_model_prediction(event_data: dict[str, Any]) -> None:
                 .where(CurrentQualityPrediction.metric_name == event.metric)
             ).all()
             if not current_quality_predictions:
-                foilhole = session.exec(select(FoilHole).where(FoilHole.uuid == event.foilhole_uuids[0])).one()
-                square = session.exec(select(GridSquare).where(GridSquare.uuid == foilhole.gridsquare_uuid)).one()
+                square = session.exec(
+                    select(GridSquare, FoilHole)
+                    .where(GridSquare.uuid == FoilHole.gridsquare_uuid)
+                    .where(FoilHole.uuid == event.foilhole_uuids[0])
+                ).one()[0]
                 current_quality_predictions = [
                     CurrentQualityPrediction(
                         grid_uuid=square.grid_uuid,
@@ -967,19 +843,6 @@ def handle_multi_foilhole_model_prediction(event_data: dict[str, Any]) -> None:
                     pred.value = event.prediction_value
             session.add_all(current_quality_predictions)
             session.commit()
-
-            athena_session_id = get_athena_session_id()
-            foilholes = session.exec(select(FoilHole).where(FoilHole.uuid.in_(event.foilhole_uuids))).all()
-            decisions_data = [
-                (
-                    int(fh.id),
-                    DecisionType.FOIL_HOLE_SELECTION,
-                    "true" if event.prediction_value > 0.5 else "false",
-                    f"ML prediction: {event.prediction_value:.3f} ({event.prediction_model_name})",
-                )
-                for fh in foilholes
-            ]
-            send_decisions_to_athena(athena_session_id, decisions_data)
 
     except ValidationError as e:
         logger.error(f"Validation error processing multiple foil hole model prediction event: {e}")
