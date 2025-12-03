@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>End-to-End Development Test Runs &#8212; smartem-decisions 0.1.dev401+g65200e496.d20251202 documentation</title>
+    <title>End-to-End Development Test Runs &#8212; smartem-decisions 0.1.dev403+gda5e9f844.d20251203 documentation</title>
   
   
   
@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../_static/documentation_options.js?v=1c42cfe6"></script>
+    <script src="../_static/documentation_options.js?v=0eb7f6e3"></script>
     <script src="../_static/doctools.js?v=9bcbadda"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -487,19 +487,30 @@
 <span class="c1"># Run automated test (Test Type 2: Pre-Acquisition Agent Setup)</span>
 ./tools/run-e2e-test.sh
 
-<span class="c1"># With custom parameters</span>
+<span class="c1"># With custom parameters (paths relative to workspace root)</span>
 ./tools/run-e2e-test.sh<span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>~/dev/DLS/smartem-decisions-test-recordings/bi37708-42_fsrecord.tar.gz<span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>/home/username/dev/DLS/epu-test-dir<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>../../testdata/recordings/bi37708-42_fsrecord.tar.gz<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>../../tmp/epu-test-dir<span class="w"> </span><span class="se">\</span>
 <span class="w">  </span><span class="m">0</span>.1
+
+<span class="c1"># Or override via environment variables</span>
+<span class="nv">SMARTEM_TEST_RECORDING</span><span class="o">=</span>/path/to/recording.tar.gz<span class="w"> </span><span class="se">\</span>
+<span class="nv">SMARTEM_EPU_DIR</span><span class="o">=</span>/path/to/epu-dir<span class="w"> </span><span class="se">\</span>
+./tools/run-e2e-test.sh
 </pre></div>
 </div>
 <p><strong>Script parameters</strong> (all optional):</p>
 <ol class="arabic simple">
-<li><p>Recording file path (default: <code class="docutils literal notranslate"><span class="pre">~/dev/DLS/smartem-decisions-test-recordings/bi37708-42_fsrecord.tar.gz</span></code>)</p></li>
-<li><p>EPU output directory (default: <code class="docutils literal notranslate"><span class="pre">~/dev/DLS/epu-test-dir</span></code>)</p></li>
+<li><p>Recording file path (default: <code class="docutils literal notranslate"><span class="pre">&lt;workspace&gt;/testdata/recordings/bi37708-42_fsrecord.tar.gz</span></code>)</p></li>
+<li><p>EPU output directory (default: <code class="docutils literal notranslate"><span class="pre">&lt;workspace&gt;/tmp/epu-test-dir</span></code>)</p></li>
 <li><p>Max delay in seconds (default: <code class="docutils literal notranslate"><span class="pre">0.1</span></code>)</p></li>
 </ol>
+<p><strong>Environment variable overrides</strong>:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">SMARTEM_TEST_RECORDING</span></code>: Override default recording path</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">SMARTEM_EPU_DIR</span></code>: Override default EPU directory</p></li>
+</ul>
+<p><strong>Workspace structure</strong>: Scripts assume a multi-repo workspace layout where this repo lives at <code class="docutils literal notranslate"><span class="pre">&lt;workspace&gt;/DiamondLightSource/smartem-decisions/</span></code>.</p>
 <p><strong>What the script does</strong>:</p>
 <ul class="simple">
 <li><p>Creates timestamped test results directory in <code class="docutils literal notranslate"><span class="pre">logs/e2e-tests/</span></code></p></li>
@@ -564,7 +575,7 @@ sleep<span class="w"> </span><span class="m">3</span>
 
 <span class="c1"># Run playback (default is --fast mode, no flag needed)</span>
 python<span class="w"> </span>./tools/fsrecorder/fsrecorder.py<span class="w"> </span>replay<span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>~/dev/DLS/smartem-decisions-test-recordings/bi37708-42_fsrecord.tar.gz<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>../../testdata/recordings/bi37708-42_fsrecord.tar.gz<span class="w"> </span><span class="se">\</span>
 <span class="w">  </span>../epu-test-dir<span class="w"> </span><span class="m">2</span>&gt;<span class="p">&amp;</span><span class="m">1</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>tee<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$TEST_DIR</span><span class="s2">/logs/playback.log&quot;</span>
 
 <span class="c1"># Start agent after playback completes</span>
@@ -572,6 +583,133 @@ python<span class="w"> </span>-m<span class="w"> </span>smartem_agent<span class
 </pre></div>
 </div>
 <p><strong>For detailed explanations, first-time setup, or different test scenarios, see sections below.</strong></p>
+</section>
+<hr class="docutils" />
+<section id="multi-microscope-test-concurrent-sessions">
+<h2>Multi-Microscope Test (Concurrent Sessions)<a class="headerlink" href="#multi-microscope-test-concurrent-sessions" title="Link to this heading">#</a></h2>
+<p>For testing multiple concurrent microscopes and acquisition sessions simultaneously, use the multi-microscope test runner:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Check k3s status first (DO NOT restart if already running)</span>
+./tools/dev-k8s.sh<span class="w"> </span>status
+
+<span class="c1"># Run multi-microscope test with 3 microscopes (default)</span>
+./tools/run-e2e-test-multi-microscope.sh
+
+<span class="c1"># With custom parameters (paths relative to workspace root)</span>
+./tools/run-e2e-test-multi-microscope.sh<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span><span class="m">3</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>../../testdata/recordings/bi37708-42_fsrecord.tar.gz<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>../../tmp/epu-test-dir<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span><span class="m">0</span>.1
+
+<span class="c1"># Or override via environment variables</span>
+<span class="nv">SMARTEM_TEST_RECORDING</span><span class="o">=</span>/path/to/recording.tar.gz<span class="w"> </span><span class="se">\</span>
+<span class="nv">SMARTEM_EPU_DIR</span><span class="o">=</span>/path/to/epu-dir<span class="w"> </span><span class="se">\</span>
+./tools/run-e2e-test-multi-microscope.sh<span class="w"> </span><span class="m">3</span>
+</pre></div>
+</div>
+<p><strong>Script parameters</strong> (all optional):</p>
+<ol class="arabic simple">
+<li><p>Number of microscopes (default: <code class="docutils literal notranslate"><span class="pre">3</span></code>)</p></li>
+<li><p>Recording file path (default: <code class="docutils literal notranslate"><span class="pre">&lt;workspace&gt;/testdata/recordings/bi37708-42_fsrecord.tar.gz</span></code>)</p></li>
+<li><p>EPU base directory (default: <code class="docutils literal notranslate"><span class="pre">&lt;workspace&gt;/tmp/epu-test-dir</span></code>)</p>
+<ul class="simple">
+<li><p>Each microscope gets a separate directory: <code class="docutils literal notranslate"><span class="pre">epu-test-dir-microscope-1</span></code>, <code class="docutils literal notranslate"><span class="pre">epu-test-dir-microscope-2</span></code>, etc.</p></li>
+</ul>
+</li>
+<li><p>Max delay in seconds (default: <code class="docutils literal notranslate"><span class="pre">0.1</span></code>)</p></li>
+</ol>
+<p><strong>Environment variable overrides</strong>:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">SMARTEM_TEST_RECORDING</span></code>: Override default recording path</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">SMARTEM_EPU_DIR</span></code>: Override default EPU directory</p></li>
+</ul>
+<p><strong>Workspace structure</strong>: Scripts assume a multi-repo workspace layout where this repo lives at <code class="docutils literal notranslate"><span class="pre">&lt;workspace&gt;/DiamondLightSource/smartem-decisions/</span></code>.</p>
+<p><strong>What the script does</strong>:</p>
+<ul class="simple">
+<li><p>Creates timestamped test results directory in <code class="docutils literal notranslate"><span class="pre">logs/e2e-tests/</span></code></p></li>
+<li><p>Activates venv and loads environment variables from <code class="docutils literal notranslate"><span class="pre">.env.local-test-run</span></code></p></li>
+<li><p>Resets database to clean state</p></li>
+<li><p>Starts single API server and consumer (shared by all microscopes)</p></li>
+<li><p>Starts N agent instances, each with unique:</p>
+<ul>
+<li><p>Agent ID (e.g., <code class="docutils literal notranslate"><span class="pre">microscope-titan-01</span></code>, <code class="docutils literal notranslate"><span class="pre">microscope-titan-02</span></code>, <code class="docutils literal notranslate"><span class="pre">microscope-titan-03</span></code>)</p></li>
+<li><p>Session ID (e.g., <code class="docutils literal notranslate"><span class="pre">session-20250110-001</span></code>, <code class="docutils literal notranslate"><span class="pre">session-20250110-002</span></code>, <code class="docutils literal notranslate"><span class="pre">session-20250110-003</span></code>)</p></li>
+<li><p>EPU directory for playback isolation</p></li>
+</ul>
+</li>
+<li><p>Runs N concurrent playback instances to separate directories</p></li>
+<li><p>Collects and verifies:</p>
+<ul>
+<li><p>Filesystem statistics per microscope</p></li>
+<li><p>Database counts per acquisition</p></li>
+<li><p>Agent session associations</p></li>
+<li><p>Data separation between acquisitions</p></li>
+</ul>
+</li>
+<li><p>Saves all logs to test results directory (N agent logs, N playback logs, 1 API log, 1 consumer log)</p></li>
+<li><p>Cleans up background processes and directories on exit</p></li>
+</ul>
+<p><strong>When to use</strong>:</p>
+<ul class="simple">
+<li><p>Testing multi-microscope facility scenarios</p></li>
+<li><p>Validating data isolation in the database</p></li>
+<li><p>Testing SSE routing correctness (each agent receives only its own instructions)</p></li>
+<li><p>Identifying race conditions and resource contention</p></li>
+<li><p>Testing concurrent agent/backend operations</p></li>
+<li><p>Verifying no data leakage between acquisitions</p></li>
+</ul>
+<p><strong>Success criteria</strong>:</p>
+<ul class="simple">
+<li><p>Each agent creates a separate acquisition in the database</p></li>
+<li><p>All acquisitions have completely separate data (no shared grids/gridsquares/foilholes)</p></li>
+<li><p>Each agent receives SSE instructions only for its own session</p></li>
+<li><p>Database counts match filesystem counts for each microscope</p></li>
+<li><p>No errors in any service logs</p></li>
+<li><p>Data separation verification passes</p></li>
+</ul>
+<p><strong>Example output</strong>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">=====</span> <span class="n">Test</span> <span class="n">Results</span> <span class="o">=====</span>
+
+<span class="n">Filesystem</span> <span class="n">Counts</span><span class="p">:</span>
+  <span class="n">Microscope</span> <span class="mi">1</span> <span class="p">(</span><span class="n">microscope</span><span class="o">-</span><span class="n">titan</span><span class="o">-</span><span class="mi">01</span><span class="p">):</span>
+    <span class="n">EPU</span> <span class="n">Sessions</span><span class="p">:</span> <span class="mi">1</span>
+    <span class="n">GridSquare</span> <span class="n">directories</span><span class="p">:</span> <span class="mi">42</span>
+  <span class="n">Microscope</span> <span class="mi">2</span> <span class="p">(</span><span class="n">microscope</span><span class="o">-</span><span class="n">titan</span><span class="o">-</span><span class="mi">02</span><span class="p">):</span>
+    <span class="n">EPU</span> <span class="n">Sessions</span><span class="p">:</span> <span class="mi">1</span>
+    <span class="n">GridSquare</span> <span class="n">directories</span><span class="p">:</span> <span class="mi">42</span>
+  <span class="n">Microscope</span> <span class="mi">3</span> <span class="p">(</span><span class="n">microscope</span><span class="o">-</span><span class="n">titan</span><span class="o">-</span><span class="mi">03</span><span class="p">):</span>
+    <span class="n">EPU</span> <span class="n">Sessions</span><span class="p">:</span> <span class="mi">1</span>
+    <span class="n">GridSquare</span> <span class="n">directories</span><span class="p">:</span> <span class="mi">42</span>
+
+<span class="n">Database</span> <span class="n">Counts</span> <span class="p">(</span><span class="n">per</span> <span class="n">acquisition</span><span class="p">):</span>
+  <span class="n">Total</span> <span class="n">acquisitions</span><span class="p">:</span> <span class="mi">3</span>
+
+  <span class="n">Acquisition</span> <span class="mi">1</span> <span class="p">(</span><span class="n">TK</span><span class="o">-</span><span class="mi">01</span><span class="p">):</span>
+    <span class="n">UUID</span><span class="p">:</span> <span class="n">abc</span><span class="o">-</span><span class="mf">123.</span><span class="o">..</span>
+    <span class="n">Grids</span><span class="p">:</span> <span class="mi">1</span>
+    <span class="n">Grid</span> <span class="n">Squares</span><span class="p">:</span> <span class="mi">42</span>
+    <span class="n">Foil</span> <span class="n">Holes</span><span class="p">:</span> <span class="mi">156</span>
+
+  <span class="n">Acquisition</span> <span class="mi">2</span> <span class="p">(</span><span class="n">TK</span><span class="o">-</span><span class="mi">02</span><span class="p">):</span>
+    <span class="n">UUID</span><span class="p">:</span> <span class="n">def</span><span class="o">-</span><span class="mf">456.</span><span class="o">..</span>
+    <span class="n">Grids</span><span class="p">:</span> <span class="mi">1</span>
+    <span class="n">Grid</span> <span class="n">Squares</span><span class="p">:</span> <span class="mi">42</span>
+    <span class="n">Foil</span> <span class="n">Holes</span><span class="p">:</span> <span class="mi">156</span>
+
+  <span class="n">Acquisition</span> <span class="mi">3</span> <span class="p">(</span><span class="n">TK</span><span class="o">-</span><span class="mi">03</span><span class="p">):</span>
+    <span class="n">UUID</span><span class="p">:</span> <span class="n">ghi</span><span class="o">-</span><span class="mf">789.</span><span class="o">..</span>
+    <span class="n">Grids</span><span class="p">:</span> <span class="mi">1</span>
+    <span class="n">Grid</span> <span class="n">Squares</span><span class="p">:</span> <span class="mi">42</span>
+    <span class="n">Foil</span> <span class="n">Holes</span><span class="p">:</span> <span class="mi">156</span>
+
+<span class="o">=====</span> <span class="n">Data</span> <span class="n">Separation</span> <span class="n">Verification</span> <span class="o">=====</span>
+
+  <span class="n">Found</span> <span class="mi">3</span> <span class="n">acquisitions</span><span class="o">.</span>
+
+  <span class="n">SUCCESS</span><span class="p">:</span> <span class="n">All</span> <span class="n">acquisitions</span> <span class="n">have</span> <span class="n">completely</span> <span class="n">separate</span> <span class="n">data</span><span class="o">.</span>
+  <span class="n">No</span> <span class="n">grid</span> <span class="n">UUID</span> <span class="n">overlaps</span> <span class="n">detected</span> <span class="n">between</span> <span class="n">acquisitions</span><span class="o">.</span>
+</pre></div>
+</div>
 </section>
 <hr class="docutils" />
 <section id="overview">
@@ -597,12 +735,12 @@ python<span class="w"> </span>-m<span class="w"> </span>smartem_agent<span class
 </section>
 <section id="test-data">
 <h3>Test Data<a class="headerlink" href="#test-data" title="Link to this heading">#</a></h3>
-<p>Pre-recorded microscope sessions are stored in <code class="docutils literal notranslate"><span class="pre">~/dev/DLS/smartem-decisions-test-recordings/</span></code>:</p>
+<p>Pre-recorded microscope sessions are stored in <code class="docutils literal notranslate"><span class="pre">&lt;workspace&gt;/testdata/recordings/</span></code>:</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">bi37600-29_fsrecord.tar.gz</span></code></p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">bi37708-42_fsrecord.tar.gz</span></code> (recommended for testing, 8389 events)</p></li>
 </ul>
-<p><strong>Note</strong>: Path should be absolute or relative to working directory (<code class="docutils literal notranslate"><span class="pre">smartem-decisions/</span></code>)</p>
+<p><strong>Note</strong>: Scripts auto-detect workspace structure. Override with <code class="docutils literal notranslate"><span class="pre">SMARTEM_TEST_RECORDING</span></code> env var if needed.</p>
 </section>
 <section id="directory-structure">
 <h3>Directory Structure<a class="headerlink" href="#directory-structure" title="Link to this heading">#</a></h3>
@@ -801,7 +939,7 @@ python<span class="w"> </span>-m<span class="w"> </span>smartem_agent<span class
 <p><strong>Command syntax</strong>:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">source</span><span class="w"> </span>.venv/bin/activate
 python<span class="w"> </span>./tools/fsrecorder/fsrecorder.py<span class="w"> </span>replay<span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>~/dev/DLS/smartem-decisions-test-recordings/bi37708-42_fsrecord.tar.gz<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>../../testdata/recordings/bi37708-42_fsrecord.tar.gz<span class="w"> </span><span class="se">\</span>
 <span class="w">  </span>../epu-test-dir<span class="w"> </span><span class="m">2</span>&gt;<span class="p">&amp;</span><span class="m">1</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>tee<span class="w"> </span>logs/e2e-tests/TIMESTAMP/logs/playback.log
 </pre></div>
 </div>
@@ -810,7 +948,7 @@ python<span class="w"> </span>./tools/fsrecorder/fsrecorder.py<span class="w"> <
 <li><p>Use <code class="docutils literal notranslate"><span class="pre">replay</span></code> subcommand (NOT <code class="docutils literal notranslate"><span class="pre">--mode</span> <span class="pre">replay</span></code> or <code class="docutils literal notranslate"><span class="pre">--mode</span> <span class="pre">player</span></code>)</p></li>
 <li><p>First positional argument is the recording file (<code class="docutils literal notranslate"><span class="pre">.tar.gz</span></code>, not <code class="docutils literal notranslate"><span class="pre">.events</span></code>)</p></li>
 <li><p>Second positional argument is the target directory (no trailing slash needed)</p></li>
-<li><p>Recording file path should be absolute (<code class="docutils literal notranslate"><span class="pre">~/dev/DLS/...</span></code>) or relative to current directory</p></li>
+<li><p>Recording file path can be absolute or relative to current directory (e.g., <code class="docutils literal notranslate"><span class="pre">../../testdata/recordings/...</span></code>)</p></li>
 </ul>
 <p><strong>Speed control options</strong> (from <code class="docutils literal notranslate"><span class="pre">--help</span></code>):</p>
 <ul class="simple">
@@ -892,8 +1030,8 @@ mkdir<span class="w"> </span>-p<span class="w"> </span>../epu-test-dir
 </section>
 <section id="verify-prerequisites">
 <h3>3. Verify Prerequisites<a class="headerlink" href="#verify-prerequisites" title="Link to this heading">#</a></h3>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Check test recordings exist</span>
-ls<span class="w"> </span>-lh<span class="w"> </span>~/dev/DLS/smartem-decisions-test-recordings/
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Check test recordings exist (workspace structure)</span>
+ls<span class="w"> </span>-lh<span class="w"> </span>../../testdata/recordings/
 
 <span class="c1"># Verify k3s services accessible</span>
 curl<span class="w"> </span>-s<span class="w"> </span>http://localhost:30080/status<span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;API not ready yet&quot;</span>
@@ -920,7 +1058,7 @@ sleep<span class="w"> </span><span class="m">3</span>
 <span class="c1"># 2. Run playback to completion (no agent watching yet)</span>
 <span class="c1"># NOTE: Recording must be a .tar.gz file (e.g., bi37708-42_fsrecord.tar.gz)</span>
 python<span class="w"> </span>./tools/fsrecorder/fsrecorder.py<span class="w"> </span>replay<span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>~/dev/DLS/smartem-decisions-test-recordings/bi37708-42_fsrecord.tar.gz<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>../../testdata/recordings/bi37708-42_fsrecord.tar.gz<span class="w"> </span><span class="se">\</span>
 <span class="w">  </span>../epu-test-dir<span class="w"> </span><span class="m">2</span>&gt;<span class="p">&amp;</span><span class="m">1</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>tee<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$TEST_DIR</span><span class="s2">/logs/playback.log&quot;</span>
 
 <span class="c1"># 3. Wait for playback to finish, then start agent</span>
@@ -952,7 +1090,7 @@ python<span class="w"> </span>-m<span class="w"> </span>smartem_agent<span class
 <span class="c1"># 3. Begin playback after agent is watching</span>
 <span class="c1"># NOTE: Recording must be a .tar.gz file (e.g., bi37708-42_fsrecord.tar.gz)</span>
 python<span class="w"> </span>./tools/fsrecorder/fsrecorder.py<span class="w"> </span>replay<span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>~/dev/DLS/smartem-decisions-test-recordings/bi37708-42_fsrecord.tar.gz<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>../../testdata/recordings/bi37708-42_fsrecord.tar.gz<span class="w"> </span><span class="se">\</span>
 <span class="w">  </span>../epu-test-dir<span class="w"> </span><span class="m">2</span>&gt;<span class="p">&amp;</span><span class="m">1</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>tee<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$TEST_DIR</span><span class="s2">/logs/playback.log&quot;</span>
 </pre></div>
 </div>
@@ -977,7 +1115,7 @@ sleep<span class="w"> </span><span class="m">3</span>
 <span class="c1"># 2. Start playback first</span>
 <span class="c1"># NOTE: Recording must be a .tar.gz file (e.g., bi37708-42_fsrecord.tar.gz)</span>
 python<span class="w"> </span>./tools/fsrecorder/fsrecorder.py<span class="w"> </span>replay<span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>~/dev/DLS/smartem-decisions-test-recordings/bi37708-42_fsrecord.tar.gz<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>../../testdata/recordings/bi37708-42_fsrecord.tar.gz<span class="w"> </span><span class="se">\</span>
 <span class="w">  </span>../epu-test-dir<span class="w"> </span><span class="m">2</span>&gt;<span class="p">&amp;</span><span class="m">1</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>tee<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$TEST_DIR</span><span class="s2">/logs/playback.log&quot;</span><span class="w"> </span><span class="p">&amp;</span>
 
 <span class="c1"># 3. Monitor file creation to choose optimal start time</span>
@@ -1013,8 +1151,8 @@ python<span class="w"> </span>-m<span class="w"> </span>smartem_agent<span class
 </li>
 <li><p><strong>Wrong recording path</strong>: Must use .tar.gz file, NOT directory:</p>
 <ul class="simple">
-<li><p>❌ <code class="docutils literal notranslate"><span class="pre">~/dev/DLS/smartem-decisions-test-recordings/pre-acquisition</span></code></p></li>
-<li><p>✅ <code class="docutils literal notranslate"><span class="pre">~/dev/DLS/smartem-decisions-test-recordings/bi37708-42_fsrecord.tar.gz</span></code></p></li>
+<li><p>❌ <code class="docutils literal notranslate"><span class="pre">../../testdata/recordings/pre-acquisition</span></code></p></li>
+<li><p>✅ <code class="docutils literal notranslate"><span class="pre">../../testdata/recordings/bi37708-42_fsrecord.tar.gz</span></code></p></li>
 </ul>
 </li>
 <li><p><strong>FastAPI dev server</strong>: Use uvicorn for e2e tests, NOT <code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">-m</span> <span class="pre">fastapi</span> <span class="pre">dev</span></code>:</p>
@@ -1276,6 +1414,7 @@ curl<span class="w"> </span>-u<span class="w"> </span>guest:guest<span class="w"
     <ul class="visible nav section-nav flex-column">
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#quick-start-automated-test-runner">Quick Start (Automated Test Runner)</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#quick-start-manual-execution">Quick Start (Manual Execution)</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#multi-microscope-test-concurrent-sessions">Multi-Microscope Test (Concurrent Sessions)</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#overview">Overview</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#prerequisites">Prerequisites</a><ul class="nav section-nav flex-column">
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#environment-setup">Environment Setup</a></li>
