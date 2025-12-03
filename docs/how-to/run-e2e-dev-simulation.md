@@ -13,17 +13,28 @@ For the simplest test execution, use the automated test runner script:
 # Run automated test (Test Type 2: Pre-Acquisition Agent Setup)
 ./tools/run-e2e-test.sh
 
-# With custom parameters
+# With custom parameters (paths relative to workspace root)
 ./tools/run-e2e-test.sh \
-  ~/dev/DLS/smartem-decisions-test-recordings/bi37708-42_fsrecord.tar.gz \
-  /home/username/dev/DLS/epu-test-dir \
+  ../../testdata/recordings/bi37708-42_fsrecord.tar.gz \
+  ../../tmp/epu-test-dir \
   0.1
+
+# Or override via environment variables
+SMARTEM_TEST_RECORDING=/path/to/recording.tar.gz \
+SMARTEM_EPU_DIR=/path/to/epu-dir \
+./tools/run-e2e-test.sh
 ```
 
 **Script parameters** (all optional):
-1. Recording file path (default: `~/dev/DLS/smartem-decisions-test-recordings/bi37708-42_fsrecord.tar.gz`)
-2. EPU output directory (default: `~/dev/DLS/epu-test-dir`)
+1. Recording file path (default: `<workspace>/testdata/recordings/bi37708-42_fsrecord.tar.gz`)
+2. EPU output directory (default: `<workspace>/tmp/epu-test-dir`)
 3. Max delay in seconds (default: `0.1`)
+
+**Environment variable overrides**:
+- `SMARTEM_TEST_RECORDING`: Override default recording path
+- `SMARTEM_EPU_DIR`: Override default EPU directory
+
+**Workspace structure**: Scripts assume a multi-repo workspace layout where this repo lives at `<workspace>/DiamondLightSource/smartem-decisions/`.
 
 **What the script does**:
 - Creates timestamped test results directory in `logs/e2e-tests/`
@@ -87,7 +98,7 @@ sleep 3
 
 # Run playback (default is --fast mode, no flag needed)
 python ./tools/fsrecorder/fsrecorder.py replay \
-  ~/dev/DLS/smartem-decisions-test-recordings/bi37708-42_fsrecord.tar.gz \
+  ../../testdata/recordings/bi37708-42_fsrecord.tar.gz \
   ../epu-test-dir 2>&1 | tee "$TEST_DIR/logs/playback.log"
 
 # Start agent after playback completes
@@ -109,20 +120,31 @@ For testing multiple concurrent microscopes and acquisition sessions simultaneou
 # Run multi-microscope test with 3 microscopes (default)
 ./tools/run-e2e-test-multi-microscope.sh
 
-# With custom parameters
+# With custom parameters (paths relative to workspace root)
 ./tools/run-e2e-test-multi-microscope.sh \
   3 \
-  ~/dev/DLS/smartem-decisions-test-recordings/bi37708-42_fsrecord.tar.gz \
-  /home/username/dev/DLS/epu-test-dir \
+  ../../testdata/recordings/bi37708-42_fsrecord.tar.gz \
+  ../../tmp/epu-test-dir \
   0.1
+
+# Or override via environment variables
+SMARTEM_TEST_RECORDING=/path/to/recording.tar.gz \
+SMARTEM_EPU_DIR=/path/to/epu-dir \
+./tools/run-e2e-test-multi-microscope.sh 3
 ```
 
 **Script parameters** (all optional):
 1. Number of microscopes (default: `3`)
-2. Recording file path (default: `~/dev/DLS/smartem-decisions-test-recordings/bi37708-42_fsrecord.tar.gz`)
-3. EPU base directory (default: `/home/username/dev/DLS/epu-test-dir`)
+2. Recording file path (default: `<workspace>/testdata/recordings/bi37708-42_fsrecord.tar.gz`)
+3. EPU base directory (default: `<workspace>/tmp/epu-test-dir`)
    - Each microscope gets a separate directory: `epu-test-dir-microscope-1`, `epu-test-dir-microscope-2`, etc.
 4. Max delay in seconds (default: `0.1`)
+
+**Environment variable overrides**:
+- `SMARTEM_TEST_RECORDING`: Override default recording path
+- `SMARTEM_EPU_DIR`: Override default EPU directory
+
+**Workspace structure**: Scripts assume a multi-repo workspace layout where this repo lives at `<workspace>/DiamondLightSource/smartem-decisions/`.
 
 **What the script does**:
 - Creates timestamped test results directory in `logs/e2e-tests/`
@@ -221,11 +243,11 @@ The test setup simulates a complete SmartEM workflow:
 - Environment file: `.env` (created from `.env.example` - see Environment File Setup below)
 
 ### Test Data
-Pre-recorded microscope sessions are stored in `~/dev/DLS/smartem-decisions-test-recordings/`:
+Pre-recorded microscope sessions are stored in `<workspace>/testdata/recordings/`:
 - `bi37600-29_fsrecord.tar.gz`
 - `bi37708-42_fsrecord.tar.gz` (recommended for testing, 8389 events)
 
-**Note**: Path should be absolute or relative to working directory (`smartem-decisions/`)
+**Note**: Scripts auto-detect workspace structure. Override with `SMARTEM_TEST_RECORDING` env var if needed.
 
 ### Directory Structure
 ```
@@ -416,7 +438,7 @@ python -m smartem_agent watch \
 ```bash
 source .venv/bin/activate
 python ./tools/fsrecorder/fsrecorder.py replay \
-  ~/dev/DLS/smartem-decisions-test-recordings/bi37708-42_fsrecord.tar.gz \
+  ../../testdata/recordings/bi37708-42_fsrecord.tar.gz \
   ../epu-test-dir 2>&1 | tee logs/e2e-tests/TIMESTAMP/logs/playback.log
 ```
 
@@ -424,7 +446,7 @@ python ./tools/fsrecorder/fsrecorder.py replay \
 - Use `replay` subcommand (NOT `--mode replay` or `--mode player`)
 - First positional argument is the recording file (`.tar.gz`, not `.events`)
 - Second positional argument is the target directory (no trailing slash needed)
-- Recording file path should be absolute (`~/dev/DLS/...`) or relative to current directory
+- Recording file path can be absolute or relative to current directory (e.g., `../../testdata/recordings/...`)
 
 **Speed control options** (from `--help`):
 - Default behavior: `--fast` mode (100x speed, 1s max delays) - **enabled by default**
@@ -501,8 +523,8 @@ mkdir -p ../epu-test-dir
 
 ### 3. Verify Prerequisites
 ```bash
-# Check test recordings exist
-ls -lh ~/dev/DLS/smartem-decisions-test-recordings/
+# Check test recordings exist (workspace structure)
+ls -lh ../../testdata/recordings/
 
 # Verify k3s services accessible
 curl -s http://localhost:30080/status || echo "API not ready yet"
@@ -529,7 +551,7 @@ sleep 3
 # 2. Run playback to completion (no agent watching yet)
 # NOTE: Recording must be a .tar.gz file (e.g., bi37708-42_fsrecord.tar.gz)
 python ./tools/fsrecorder/fsrecorder.py replay \
-  ~/dev/DLS/smartem-decisions-test-recordings/bi37708-42_fsrecord.tar.gz \
+  ../../testdata/recordings/bi37708-42_fsrecord.tar.gz \
   ../epu-test-dir 2>&1 | tee "$TEST_DIR/logs/playback.log"
 
 # 3. Wait for playback to finish, then start agent
@@ -561,7 +583,7 @@ python -m smartem_agent watch \
 # 3. Begin playback after agent is watching
 # NOTE: Recording must be a .tar.gz file (e.g., bi37708-42_fsrecord.tar.gz)
 python ./tools/fsrecorder/fsrecorder.py replay \
-  ~/dev/DLS/smartem-decisions-test-recordings/bi37708-42_fsrecord.tar.gz \
+  ../../testdata/recordings/bi37708-42_fsrecord.tar.gz \
   ../epu-test-dir 2>&1 | tee "$TEST_DIR/logs/playback.log"
 ```
 
@@ -585,7 +607,7 @@ sleep 3
 # 2. Start playback first
 # NOTE: Recording must be a .tar.gz file (e.g., bi37708-42_fsrecord.tar.gz)
 python ./tools/fsrecorder/fsrecorder.py replay \
-  ~/dev/DLS/smartem-decisions-test-recordings/bi37708-42_fsrecord.tar.gz \
+  ../../testdata/recordings/bi37708-42_fsrecord.tar.gz \
   ../epu-test-dir 2>&1 | tee "$TEST_DIR/logs/playback.log" &
 
 # 3. Monitor file creation to choose optimal start time
@@ -616,8 +638,8 @@ python -m smartem_agent watch \
    - ✅ `python -m smartem_agent watch`
 
 2. **Wrong recording path**: Must use .tar.gz file, NOT directory:
-   - ❌ `~/dev/DLS/smartem-decisions-test-recordings/pre-acquisition`
-   - ✅ `~/dev/DLS/smartem-decisions-test-recordings/bi37708-42_fsrecord.tar.gz`
+   - ❌ `../../testdata/recordings/pre-acquisition`
+   - ✅ `../../testdata/recordings/bi37708-42_fsrecord.tar.gz`
 
 3. **FastAPI dev server**: Use uvicorn for e2e tests, NOT `python -m fastapi dev`:
    - ❌ `python -m fastapi dev src/smartem_backend/api_server.py`
