@@ -95,11 +95,6 @@ agent = [
     "watchdog>=4.0.0,<7.0.0",
 ]
 
-# FSRecorder tool dependencies
-fsrecorder = [
-    "watchdog>=4.0.0,<7.0.0",
-]
-
 # Athena API mock server dependencies (optional)
 mock = [
     "smartem-decisions[client]",
@@ -109,7 +104,7 @@ mock = [
 
 # Combined dependencies (for convenience)
 all = [
-    "smartem-decisions[dev,common,client,cli,backend,agent,fsrecorder,mock,images]",
+    "smartem-decisions[dev,common,client,cli,backend,agent,mock,images]",
 ]
 
 [project.scripts]
