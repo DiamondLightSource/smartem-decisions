@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Configure Environment Variables &#8212; smartem-decisions 0.1.dev405+g5967ec7fd.d20251203 documentation</title>
+    <title>Configure Environment Variables &#8212; smartem-decisions 0.1.dev406+ge5e17f760.d20251210 documentation</title>
   
   
   
@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../_static/documentation_options.js?v=dcc5f19c"></script>
+    <script src="../_static/documentation_options.js?v=8c2c005d"></script>
     <script src="../_static/doctools.js?v=9bcbadda"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -414,7 +414,6 @@
 <li class="toctree-l1"><a class="reference internal" href="run-e2e-dev-simulation.html">End-to-End Development Test Runs</a></li>
 <li class="toctree-l1"><a class="reference internal" href="troubleshoot-cli.html">SmartEM CLI Troubleshooting Guide</a></li>
 <li class="toctree-l1"><a class="reference internal" href="use-core-http-api-client.html">How to Use the SmartEM API Client</a></li>
-<li class="toctree-l1"><a class="reference internal" href="use-mcp-interface.html">Using SmartEM MCP Interface</a></li>
 </ul>
 </div>
 </nav></div>
@@ -529,16 +528,6 @@
 <td><p>K8s production cluster config</p></td>
 <td><p>Yes</p></td>
 <td><p>Copy from <code class="docutils literal notranslate"><span class="pre">.env.example.k8s.production</span></code></p></td>
-</tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">.env.example.mcp</span></code></p></td>
-<td><p>Template for MCP configuration</p></td>
-<td><p>No (committed)</p></td>
-<td><p>N/A</p></td>
-</tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">.env.mcp</span></code></p></td>
-<td><p>MCP server configuration</p></td>
-<td><p>Yes</p></td>
-<td><p>Copy from <code class="docutils literal notranslate"><span class="pre">.env.example.mcp</span></code></p></td>
 </tr>
 </tbody>
 </table>
@@ -656,27 +645,6 @@
 <ul class="simple">
 <li><p>Production CI/CD pipelines</p></li>
 <li><p>Production deployment automation</p></li>
-</ul>
-</section>
-<section id="mcp-configuration-env-mcp">
-<h3>5. MCP Configuration: <code class="docutils literal notranslate"><span class="pre">.env.mcp</span></code><a class="headerlink" href="#mcp-configuration-env-mcp" title="Link to this heading">#</a></h3>
-<p><strong>Use Case</strong>: Configuring Model Context Protocol (MCP) server for Claude Code integration.</p>
-<p><strong>Setup</strong>:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>cp<span class="w"> </span>.env.example.mcp<span class="w"> </span>.env.mcp
-<span class="c1"># Configure paths and adapter settings</span>
-</pre></div>
-</div>
-<p><strong>Key Configuration</strong>:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nv">SMARTEM_MCP_DATA_PATH</span><span class="o">=</span>/path/to/epu/sessions<span class="w">    </span><span class="c1"># Filesystem adapter</span>
-<span class="nv">SMARTEM_MCP_API_URL</span><span class="o">=</span>http://backend:8000<span class="w">        </span><span class="c1"># API adapter</span>
-<span class="nv">SMARTEM_MCP_ADAPTER</span><span class="o">=</span>filesystem<span class="w">                 </span><span class="c1"># Adapter selection</span>
-<span class="nv">SMARTEM_MCP_LOG_LEVEL</span><span class="o">=</span>INFO
-</pre></div>
-</div>
-<p><strong>Used By</strong>:</p>
-<ul class="simple">
-<li><p>MCP server when run via Claude Code</p></li>
-<li><p>See <a class="reference internal" href="use-mcp-interface.html"><span class="std std-doc">Use MCP Interface</span></a> for details</p></li>
 </ul>
 </section>
 </section>
@@ -870,7 +838,6 @@ env<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<
 <li><p><a class="reference internal" href="deploy-kubernetes.html"><span class="std std-doc">Deploy to Kubernetes</span></a> - K8s deployment guide</p></li>
 <li><p><a class="reference internal" href="manage-kubernetes-secrets.html"><span class="std std-doc">Manage Kubernetes Secrets</span></a> - Sealed Secrets and security</p></li>
 <li><p><a class="reference internal" href="database-migrations.html"><span class="std std-doc">Database Migrations</span></a> - Alembic migration workflow</p></li>
-<li><p><a class="reference internal" href="use-mcp-interface.html"><span class="std std-doc">Use MCP Interface</span></a> - Claude Code MCP integration</p></li>
 </ul>
 </section>
 </section>
@@ -928,7 +895,6 @@ env<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#kubernetes-development-env-k8s-development">2. Kubernetes Development: <code class="docutils literal notranslate"><span class="pre">.env.k8s.development</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#kubernetes-staging-env-k8s-staging">3. Kubernetes Staging: <code class="docutils literal notranslate"><span class="pre">.env.k8s.staging</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#kubernetes-production-env-k8s-production">4. Kubernetes Production: <code class="docutils literal notranslate"><span class="pre">.env.k8s.production</span></code></a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#mcp-configuration-env-mcp">5. MCP Configuration: <code class="docutils literal notranslate"><span class="pre">.env.mcp</span></code></a></li>
 </ul>
 </li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#quick-start-first-time-setup">Quick Start: First-Time Setup</a></li>

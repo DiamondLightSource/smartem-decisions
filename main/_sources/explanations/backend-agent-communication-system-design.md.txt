@@ -35,10 +35,6 @@ graph TB
             subgraph athena["athena_api"]
                 athena_client["client.py<br/>External API Integration"]
             end
-
-            subgraph mcp["smartem_mcp"]
-                mcp_server["server.py<br/>Model Context Protocol"]
-            end
         end
 
         subgraph infra["Infrastructure Services"]
@@ -119,7 +115,7 @@ graph TB
     classDef equipment fill:#e8f5e8,stroke:#2e7d32,stroke-width:2px
     classDef communication fill:#fff8e1,stroke:#f57f17,stroke-width:2px
 
-    class k8s,packages,backend,common,athena,mcp,infra k8s
+    class k8s,packages,backend,common,athena,infra k8s
     class boundary,agents,agent_pkg,equipment boundary
     class db,mq database
     class scope1,scope2,scopeN,epu1,epu2,epuN,em1,em2,emN,gpfs1,gpfs2,gpfsN equipment

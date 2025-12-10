@@ -16,8 +16,6 @@ The project uses multiple environment configuration patterns for different deplo
 | `.env.k8s.staging` | K8s staging cluster config | Yes | Copy from `.env.example.k8s.staging` |
 | `.env.example.k8s.production` | Template for K8s production | No (committed) | N/A |
 | `.env.k8s.production` | K8s production cluster config | Yes | Copy from `.env.example.k8s.production` |
-| `.env.example.mcp` | Template for MCP configuration | No (committed) | N/A |
-| `.env.mcp` | MCP server configuration | Yes | Copy from `.env.example.mcp` |
 
 ## Environment File Types
 
@@ -130,28 +128,6 @@ cp .env.example.k8s.production .env.k8s.production
 **Used By**:
 - Production CI/CD pipelines
 - Production deployment automation
-
-### 5. MCP Configuration: `.env.mcp`
-
-**Use Case**: Configuring Model Context Protocol (MCP) server for Claude Code integration.
-
-**Setup**:
-```bash
-cp .env.example.mcp .env.mcp
-# Configure paths and adapter settings
-```
-
-**Key Configuration**:
-```bash
-SMARTEM_MCP_DATA_PATH=/path/to/epu/sessions    # Filesystem adapter
-SMARTEM_MCP_API_URL=http://backend:8000        # API adapter
-SMARTEM_MCP_ADAPTER=filesystem                 # Adapter selection
-SMARTEM_MCP_LOG_LEVEL=INFO
-```
-
-**Used By**:
-- MCP server when run via Claude Code
-- See [Use MCP Interface](use-mcp-interface.md) for details
 
 ## Quick Start: First-Time Setup
 
@@ -344,4 +320,3 @@ env | grep POSTGRES
 - [Deploy to Kubernetes](deploy-kubernetes.md) - K8s deployment guide
 - [Manage Kubernetes Secrets](manage-kubernetes-secrets.md) - Sealed Secrets and security
 - [Database Migrations](database-migrations.md) - Alembic migration workflow
-- [Use MCP Interface](use-mcp-interface.md) - Claude Code MCP integration
