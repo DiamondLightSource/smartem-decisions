@@ -196,7 +196,6 @@ After installation with `pip install -e .[all]`, the following command-line util
 ### Development and Integration Tools
 
 - **`smartem_agent_tools`** - Agent development and debugging utilities
-- **`smartem-mcp`** - Model Context Protocol (MCP) integration tools
 
 ### Data Retention Policies
 

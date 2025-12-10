@@ -22,7 +22,6 @@ def copy_version_files():
         Path("src/smartem_agent/_version.py"),
         Path("src/smartem_common/_version.py"),
         Path("src/smartem_api/_version.py"),
-        Path("src/smartem_mcp/_version.py"),
     ]
 
     # Make sure target directories exist

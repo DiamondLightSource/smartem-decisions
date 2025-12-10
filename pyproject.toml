@@ -107,15 +107,9 @@ mock = [
     "uvicorn[standard]>=0.30.0,<1.0.0",
 ]
 
-# MCP server and client dependencies (optional)
-mcp = [
-    "smartem-decisions[common,client,cli,agent]",
-    "fastmcp>=2.0.0",
-]
-
 # Combined dependencies (for convenience)
 all = [
-    "smartem-decisions[dev,common,client,cli,backend,agent,fsrecorder,mock,mcp,images]",
+    "smartem-decisions[dev,common,client,cli,backend,agent,fsrecorder,mock,images]",
 ]
 
 [project.scripts]
@@ -128,9 +122,6 @@ smartem_agent_tools = "smartem_agent.__main__:main"
 "smartem.init-model-weight" = "smartem_backend.cli.initialise_prediction_model_weights:run"
 "smartem.random-model-predictions" = "smartem_backend.cli.random_model_predictions:run"
 "smartem.random-prior-updates" = "smartem_backend.cli.random_prior_updates:run"
-
-# Additional services
-"smartem-mcp" = "smartem_mcp.__main__:main"
 
 [project.urls]
 GitHub = "https://github.com/DiamondLightSource/smartem-decisions"
@@ -149,7 +140,6 @@ packages = [
     "smartem_agent",
     "smartem_common",
     "athena_api",
-    "smartem_mcp"
 ]
 package-dir = {"" = "src"}
 
