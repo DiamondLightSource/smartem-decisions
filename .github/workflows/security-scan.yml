@@ -150,7 +150,7 @@ jobs:
     
     # Upload results
     - name: Upload scan results (CI mode)
-      uses: actions/upload-artifact@v5
+      uses: actions/upload-artifact@v6
       if: failure() && github.event_name != 'schedule'
       with:
         name: secrets-scan-results
@@ -159,7 +159,7 @@ jobs:
         retention-days: 30
     
     - name: Upload scan report (Comprehensive mode)
-      uses: actions/upload-artifact@v5
+      uses: actions/upload-artifact@v6
       if: github.event_name == 'schedule'
       with:
         name: security-scan-report
@@ -215,7 +215,7 @@ jobs:
     
     - name: Create maintenance PR
       if: steps.check_changes.outputs.changes == 'true'
-      uses: peter-evans/create-pull-request@v7
+      uses: peter-evans/create-pull-request@v8
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
         commit-message: "🔐 Update secrets baseline (automated maintenance)"
