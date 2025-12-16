@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, field_serializer
 
 from smartem_common.entity_status import (
     AcquisitionStatus,
@@ -44,7 +44,13 @@ class AtlasResponse(BaseModel):
     name: str
     tiles: list[AtlasTileResponse] | None = []
 
-    model_config = ConfigDict(from_attributes=True, json_encoders={datetime: lambda v: v.isoformat() if v else None})
+    model_config = ConfigDict(from_attributes=True)
+
+    @field_serializer("*", when_used="json")
+    def serialize_datetime_fields(self, v, _info):
+        if isinstance(v, datetime):
+            return v.isoformat()
+        return v
 
 
 class AcquisitionResponse(BaseModel):
@@ -62,9 +68,13 @@ class AcquisitionResponse(BaseModel):
     instrument_id: str | None
     computer_name: str | None
 
-    model_config = ConfigDict(
-        from_attributes=True, use_enum_values=True, json_encoders={datetime: lambda v: v.isoformat() if v else None}
-    )
+    model_config = ConfigDict(from_attributes=True, use_enum_values=True)
+
+    @field_serializer("*", when_used="json")
+    def serialize_datetime_fields(self, v, _info):
+        if isinstance(v, datetime):
+            return v.isoformat()
+        return v
 
 
 class GridResponse(BaseModel):
@@ -77,9 +87,13 @@ class GridResponse(BaseModel):
     scan_start_time: datetime | None
     scan_end_time: datetime | None
 
-    model_config = ConfigDict(
-        from_attributes=True, use_enum_values=True, json_encoders={datetime: lambda v: v.isoformat() if v else None}
-    )
+    model_config = ConfigDict(from_attributes=True, use_enum_values=True)
+
+    @field_serializer("*", when_used="json")
+    def serialize_datetime_fields(self, v, _info):
+        if isinstance(v, datetime):
+            return v.isoformat()
+        return v
 
 
 class GridSquareResponse(BaseModel):
@@ -110,9 +124,13 @@ class GridSquareResponse(BaseModel):
     detector_name: str | None
     applied_defocus: float | None
 
-    model_config = ConfigDict(
-        from_attributes=True, use_enum_values=True, json_encoders={datetime: lambda v: v.isoformat() if v else None}
-    )
+    model_config = ConfigDict(from_attributes=True, use_enum_values=True)
+
+    @field_serializer("*", when_used="json")
+    def serialize_datetime_fields(self, v, _info):
+        if isinstance(v, datetime):
+            return v.isoformat()
+        return v
 
 
 class FoilHoleResponse(BaseModel):
@@ -163,9 +181,13 @@ class MicrographResponse(BaseModel):
     number_of_particles_picked: int | None = None
     pick_distribution: str | None = None
 
-    model_config = ConfigDict(
-        from_attributes=True, use_enum_values=True, json_encoders={datetime: lambda v: v.isoformat() if v else None}
-    )
+    model_config = ConfigDict(from_attributes=True, use_enum_values=True)
+
+    @field_serializer("*", when_used="json")
+    def serialize_datetime_fields(self, v, _info):
+        if isinstance(v, datetime):
+            return v.isoformat()
+        return v
 
 
 # ============ Quality Prediction Response Models ============
@@ -186,7 +208,13 @@ class QualityPredictionResponse(BaseModel):
     gridsquare_uuid: str | None = None
     foilhole_uuid: str | None = None
 
-    model_config = ConfigDict(from_attributes=True, json_encoders={datetime: lambda v: v.isoformat() if v else None})
+    model_config = ConfigDict(from_attributes=True)
+
+    @field_serializer("*", when_used="json")
+    def serialize_datetime_fields(self, v, _info):
+        if isinstance(v, datetime):
+            return v.isoformat()
+        return v
 
 
 class QualityPredictionModelParameterResponse(BaseModel):
@@ -198,7 +226,13 @@ class QualityPredictionModelParameterResponse(BaseModel):
     value: float
     group: str
 
-    model_config = ConfigDict(from_attributes=True, json_encoders={datetime: lambda v: v.isoformat() if v else None})
+    model_config = ConfigDict(from_attributes=True)
+
+    @field_serializer("*", when_used="json")
+    def serialize_datetime_fields(self, v, _info):
+        if isinstance(v, datetime):
+            return v.isoformat()
+        return v
 
 
 class QualityPredictionModelWeightResponse(BaseModel):
@@ -211,7 +245,13 @@ class QualityPredictionModelWeightResponse(BaseModel):
     prediction_model_name: str
     weight: float
 
-    model_config = ConfigDict(from_attributes=True, json_encoders={datetime: lambda v: v.isoformat() if v else None})
+    model_config = ConfigDict(from_attributes=True)
+
+    @field_serializer("*", when_used="json")
+    def serialize_datetime_fields(self, v, _info):
+        if isinstance(v, datetime):
+            return v.isoformat()
+        return v
 
 
 class QualityMetricsResponse(BaseModel):

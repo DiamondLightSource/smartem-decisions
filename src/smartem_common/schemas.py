@@ -1,7 +1,7 @@
 from datetime import datetime
 from pathlib import Path
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_serializer
 
 from smartem_common.utils import generate_uuid
 
@@ -18,7 +18,13 @@ class MicrographManifest(BaseModel):
     binning_x: int
     binning_y: int
 
-    model_config = ConfigDict(json_encoders={datetime: lambda v: v.isoformat() if v else None}, from_attributes=True)
+    model_config = ConfigDict(from_attributes=True)
+
+    @field_serializer("*", when_used="json")
+    def serialize_datetime_fields(self, v, _info):
+        if isinstance(v, datetime):
+            return v.isoformat()
+        return v
 
     def validate_natural_numbers(self):
         for natural_num in ["image_size_x", "image_size_y", "binning_x", "binning_y"]:
@@ -71,10 +77,15 @@ class GridSquareManifest(BaseModel):
     applied_defocus: float | None
     data_dir: Path | None = None
 
-    model_config = ConfigDict(
-        json_encoders={datetime: lambda v: v.isoformat() if v else None, Path: lambda v: str(v) if v else None},
-        from_attributes=True,
-    )
+    model_config = ConfigDict(from_attributes=True)
+
+    @field_serializer("*", when_used="json")
+    def serialize_special_fields(self, v, _info):
+        if isinstance(v, datetime):
+            return v.isoformat()
+        if isinstance(v, Path):
+            return str(v)
+        return v
 
 
 class GridSquareStagePosition(BaseModel):
@@ -115,7 +126,13 @@ class GridSquareMetadata(BaseModel):
     unusable: bool
     foilhole_positions: dict[int, FoilHolePosition] | None = {}
 
-    model_config = ConfigDict(json_encoders={Path: lambda v: str(v) if v else None}, from_attributes=True)
+    model_config = ConfigDict(from_attributes=True)
+
+    @field_serializer("*", when_used="json")
+    def serialize_path_fields(self, v, _info):
+        if isinstance(v, Path):
+            return str(v)
+        return v
 
 
 class GridSquareData(BaseModel):
@@ -131,7 +148,13 @@ class GridSquareData(BaseModel):
     registered: bool = False
     uuid: str = Field(default_factory=generate_uuid)
 
-    model_config = ConfigDict(json_encoders={Path: lambda v: str(v) if v else None}, from_attributes=True)
+    model_config = ConfigDict(from_attributes=True)
+
+    @field_serializer("*", when_used="json")
+    def serialize_path_fields(self, v, _info):
+        if isinstance(v, Path):
+            return str(v)
+        return v
 
 
 class AtlasTilePosition(BaseModel):
@@ -180,7 +203,13 @@ class AtlasData(BaseModel):
     grid_uuid: str
     uuid: str = Field(default_factory=generate_uuid)
 
-    model_config = ConfigDict(json_encoders={datetime: lambda v: v.isoformat() if v else None}, from_attributes=True)
+    model_config = ConfigDict(from_attributes=True)
+
+    @field_serializer("*", when_used="json")
+    def serialize_datetime_fields(self, v, _info):
+        if isinstance(v, datetime):
+            return v.isoformat()
+        return v
 
 
 class MicroscopeData(BaseModel):
@@ -202,7 +231,13 @@ class AcquisitionData(BaseModel):
     instrument: MicroscopeData | None = None
     uuid: str = Field(default_factory=generate_uuid)
 
-    model_config = ConfigDict(json_encoders={datetime: lambda v: v.isoformat() if v else None}, from_attributes=True)
+    model_config = ConfigDict(from_attributes=True)
+
+    @field_serializer("*", when_used="json")
+    def serialize_datetime_fields(self, v, _info):
+        if isinstance(v, datetime):
+            return v.isoformat()
+        return v
 
 
 class GridData(BaseModel):
@@ -212,7 +247,13 @@ class GridData(BaseModel):
     atlas_data: AtlasData | None = None
     uuid: str = Field(default_factory=generate_uuid)
 
-    model_config = ConfigDict(json_encoders={Path: lambda v: str(v) if v else None}, from_attributes=True)
+    model_config = ConfigDict(from_attributes=True)
+
+    @field_serializer("*", when_used="json")
+    def serialize_path_fields(self, v, _info):
+        if isinstance(v, Path):
+            return str(v)
+        return v
 
     def model_post_init(self, __context__):
         if isinstance(self.data_dir, str):

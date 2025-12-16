@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, field_serializer
 
 from smartem_common.entity_status import (
     AcquisitionStatus,
@@ -28,12 +28,13 @@ class AcquisitionBaseFields(BaseModel):
     instrument_id: str | None = None
     computer_name: str | None = None
 
-    model_config = {
-        "use_enum_values": True,
-        "json_encoders": {
-            datetime: lambda v: v.isoformat(),
-        },
-    }
+    model_config = ConfigDict(use_enum_values=True)
+
+    @field_serializer("*", when_used="json")
+    def serialize_datetime_fields(self, v, _info):
+        if isinstance(v, datetime):
+            return v.isoformat()
+        return v
 
 
 class AcquisitionBaseRequest(AcquisitionBaseFields):
@@ -58,11 +59,11 @@ class AtlasBaseFields(BaseModel):
     description: str | None = None
     name: str | None = None
 
-    model_config = {
-        "json_encoders": {
-            datetime: lambda v: v.isoformat(),
-        }
-    }
+    @field_serializer("*", when_used="json")
+    def serialize_datetime_fields(self, v, _info):
+        if isinstance(v, datetime):
+            return v.isoformat()
+        return v
 
 
 class AtlasTileBaseFields(BaseModel):
@@ -114,12 +115,13 @@ class GridBaseFields(BaseModel):
     scan_start_time: datetime | None = None
     scan_end_time: datetime | None = None
 
-    model_config = {
-        "use_enum_values": True,
-        "json_encoders": {
-            datetime: lambda v: v.isoformat(),
-        },
-    }
+    model_config = ConfigDict(use_enum_values=True)
+
+    @field_serializer("*", when_used="json")
+    def serialize_datetime_fields(self, v, _info):
+        if isinstance(v, datetime):
+            return v.isoformat()
+        return v
 
 
 class GridBaseRequest(GridBaseFields):
@@ -173,9 +175,13 @@ class GridSquareBaseFields(BaseModel):
     applied_defocus: float | None = None
     status: GridSquareStatus | None = None
 
-    model_config = ConfigDict(
-        use_enum_values=True, json_encoders={datetime: lambda v: v.isoformat() if v else None}, from_attributes=True
-    )
+    model_config = ConfigDict(use_enum_values=True, from_attributes=True)
+
+    @field_serializer("*", when_used="json")
+    def serialize_datetime_fields(self, v, _info):
+        if isinstance(v, datetime):
+            return v.isoformat()
+        return v
 
 
 class GridSquareBaseRequest(GridSquareBaseFields):
@@ -261,12 +267,13 @@ class MicrographBaseFields(BaseModel):
     pick_distribution: str | None = None
     status: MicrographStatus = MicrographStatus.NONE  # Default to NONE
 
-    model_config = {
-        "use_enum_values": True,
-        "json_encoders": {
-            datetime: lambda v: v.isoformat() if v else None,
-        },
-    }
+    model_config = ConfigDict(use_enum_values=True)
+
+    @field_serializer("*", when_used="json")
+    def serialize_datetime_fields(self, v, _info):
+        if isinstance(v, datetime):
+            return v.isoformat()
+        return v
 
 
 class MicrographBaseRequest(MicrographBaseFields):
