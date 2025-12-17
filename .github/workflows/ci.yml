@@ -70,11 +70,6 @@ jobs:
       contents: read
       packages: write
 
-  docs:
-    needs: check
-    if: needs.check.outputs.branch-pr == ''
-    uses: ./.github/workflows/_docs.yml
-
   dist:
     needs: check
     if: needs.check.outputs.branch-pr == ''
@@ -83,7 +78,7 @@ jobs:
 # TODO restore or remove
 #  release:
 #    if: github.ref_type == 'tag'
-#    needs: [dist, docs]
+#    needs: [dist]
 #    uses: ./.github/workflows/_release.yml
 #    permissions:
 #      contents: write
