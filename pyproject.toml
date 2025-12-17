@@ -21,17 +21,12 @@ requires-python = ">=3.12"
 dev = [
     "copier",
     "detect-secrets",
-    "myst-parser",
     "pipdeptree",
     "pre-commit",
-    "pydata-sphinx-theme>=0.12",
     "pyright",
     "pytest",
     "pytest-cov",
     "ruff",
-    "sphinx-autobuild",
-    "sphinx-copybutton",
-    "sphinx-design",
     "tox-direct",
     "types-mock",
     "types-requests",
@@ -148,12 +143,12 @@ reportMissingImports = false # Ignore missing stubs in imported modules
 [tool.pytest.ini_options]
 # Run pytest with all our checkers, and don't spam us with massive tracebacks on error
 addopts = """
-    --tb=native -vv --doctest-modules --doctest-glob="*.rst"
+    --tb=native -vv --doctest-modules
     """
 # https://iscinumpy.gitlab.io/post/bound-version-constraints/#watch-for-warnings
 filterwarnings = ["error"]
-# Doctest python code in docs, python code in src docstrings, test functions in tests
-testpaths = "docs src tests"
+# Doctest python code in src docstrings, test functions in tests
+testpaths = "src tests"
 # Exclude Alembic migration files from pytest collection (they're not meant to be imported directly)
 norecursedirs = "src/smartem_backend/migrations"
 
@@ -173,11 +168,9 @@ skipsdist=False
 # Add setuptools to the build requirements
 requires = setuptools>=64.0.0
 
-[testenv:{pre-commit,type-checking,tests,docs}]
-exclude = docs/assets/
+[testenv:{pre-commit,type-checking,tests}]
 extras =
     tests: dev
-    docs: dev
     pre-commit: dev
     type-checking: dev
 commands_pre =
@@ -187,16 +180,12 @@ allowlist_externals =
     pytest
     pre-commit
     pyright
-    sphinx-build
-    sphinx-autobuild
     pip
 commands =
     pre-commit: pre-commit run --all-files --show-diff-on-failure {posargs}
     type-checking: pyright src tests {posargs}
     tests: pytest {posargs}
-    docs: sphinx-{posargs:build -E --keep-going} -T docs build/html
 """
-# To treat warnings as errors: `docs: sphinx-{posargs:build -EW --keep-going} -T docs build/html`
 
 [tool.ruff]
 src = ["src", "tests"]
