@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>smartem_decisions.utils &#8212; smartem-decisions 0.1.dev176+gb825b791e documentation</title>
+    <title>smartem_decisions.utils &#8212; smartem-decisions 0.1.dev220+g5b499478d documentation</title>
   
   
   
@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../_static/documentation_options.js?v=32f98a03"></script>
+    <script src="../_static/documentation_options.js?v=ed6598ba"></script>
     <script src="../_static/doctools.js?v=9bcbadda"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -405,6 +405,7 @@
 <li class="toctree-l3"><a class="reference internal" href="smartem_decisions.cli.register_quality_prediction_model.html"><code class="docutils literal notranslate"><span class="pre">smartem_decisions.cli.register_quality_prediction_model</span></code></a></li>
 </ul>
 </details></li>
+<li class="toctree-l2"><a class="reference internal" href="smartem_decisions.consumer.html"><code class="docutils literal notranslate"><span class="pre">smartem_decisions.consumer</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="smartem_decisions.log_manager.html"><code class="docutils literal notranslate"><span class="pre">smartem_decisions.log_manager</span></code></a></li>
 <li class="toctree-l2 has-children"><a class="reference internal" href="smartem_decisions.model.html"><code class="docutils literal notranslate"><span class="pre">smartem_decisions.model</span></code></a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
 <li class="toctree-l3"><a class="reference internal" href="smartem_decisions.model.database.html"><code class="docutils literal notranslate"><span class="pre">smartem_decisions.model.database</span></code></a></li>
@@ -414,7 +415,6 @@
 <li class="toctree-l3"><a class="reference internal" href="smartem_decisions.model.mq_event.html"><code class="docutils literal notranslate"><span class="pre">smartem_decisions.model.mq_event</span></code></a></li>
 </ul>
 </details></li>
-<li class="toctree-l2"><a class="reference internal" href="smartem_decisions.mq_consumer.html"><code class="docutils literal notranslate"><span class="pre">smartem_decisions.mq_consumer</span></code></a></li>
 <li class="toctree-l2 has-children"><a class="reference internal" href="smartem_decisions.predictions.html"><code class="docutils literal notranslate"><span class="pre">smartem_decisions.predictions</span></code></a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
 <li class="toctree-l3"><a class="reference internal" href="smartem_decisions.predictions.update.html"><code class="docutils literal notranslate"><span class="pre">smartem_decisions.predictions.update</span></code></a></li>
 </ul>
@@ -494,18 +494,49 @@
 <p class="rubric">Members</p>
 <div class="pst-scrollable-table-container"><table class="autosummary longtable table">
 <tbody>
-<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">load_conf</span></code></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#smartem_decisions.utils.get_db_engine" title="smartem_decisions.utils.get_db_engine"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_db_engine</span></code></a></p></td>
+<td><p>Get the singleton database engine.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">load_conf</span></code></p></td>
 <td><p></p></td>
 </tr>
-<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">setup_postgres_connection</span></code></p></td>
-<td><p></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#smartem_decisions.utils.setup_postgres_connection" title="smartem_decisions.utils.setup_postgres_connection"><code class="xref py py-obj docutils literal notranslate"><span class="pre">setup_postgres_connection</span></code></a></p></td>
+<td><p>Get or create a singleton database engine with connection pooling.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#smartem_decisions.utils.setup_rabbitmq" title="smartem_decisions.utils.setup_rabbitmq"><code class="xref py py-obj docutils literal notranslate"><span class="pre">setup_rabbitmq</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#smartem_decisions.utils.setup_rabbitmq" title="smartem_decisions.utils.setup_rabbitmq"><code class="xref py py-obj docutils literal notranslate"><span class="pre">setup_rabbitmq</span></code></a></p></td>
 <td><p>Create RabbitMQ publisher and consumer instances using configuration settings</p></td>
 </tr>
 </tbody>
 </table>
 </div>
+<dl class="py function">
+<dt class="sig sig-object py" id="smartem_decisions.utils.setup_postgres_connection">
+<span class="sig-prename descclassname"><span class="pre">smartem_decisions.utils.</span></span><span class="sig-name descname"><span class="pre">setup_postgres_connection</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">echo</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">force_new</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Engine</span></span></span><a class="reference internal" href="../_modules/smartem_decisions/utils.html#setup_postgres_connection"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#smartem_decisions.utils.setup_postgres_connection" title="Link to this definition">#</a></dt>
+<dd><p>Get or create a singleton database engine with connection pooling.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>echo</strong> – Enable SQL logging</p></li>
+<li><p><strong>force_new</strong> – Force creation of new engine (for testing)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>SQLAlchemy Engine instance</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="smartem_decisions.utils.get_db_engine">
+<span class="sig-prename descclassname"><span class="pre">smartem_decisions.utils.</span></span><span class="sig-name descname"><span class="pre">get_db_engine</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Engine</span></span></span><a class="reference internal" href="../_modules/smartem_decisions/utils.html#get_db_engine"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#smartem_decisions.utils.get_db_engine" title="Link to this definition">#</a></dt>
+<dd><p>Get the singleton database engine. Creates it if it doesn’t exist.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>SQLAlchemy Engine instance</p>
+</dd>
+</dl>
+</dd></dl>
+
 <dl class="py function">
 <dt class="sig sig-object py" id="smartem_decisions.utils.setup_rabbitmq">
 <span class="sig-prename descclassname"><span class="pre">smartem_decisions.utils.</span></span><span class="sig-name descname"><span class="pre">setup_rabbitmq</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">queue_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">exchange</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/smartem_decisions/utils.html#setup_rabbitmq"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#smartem_decisions.utils.setup_rabbitmq" title="Link to this definition">#</a></dt>
@@ -575,6 +606,8 @@
   </div>
   <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
     <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#smartem_decisions.utils.setup_postgres_connection"><code class="docutils literal notranslate"><span class="pre">setup_postgres_connection()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#smartem_decisions.utils.get_db_engine"><code class="docutils literal notranslate"><span class="pre">get_db_engine()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#smartem_decisions.utils.setup_rabbitmq"><code class="docutils literal notranslate"><span class="pre">setup_rabbitmq()</span></code></a></li>
 </ul>
   </nav></div>

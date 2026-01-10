@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Run in a container &#8212; smartem-decisions 0.1.dev176+gb825b791e documentation</title>
+    <title>Run in a container &#8212; smartem-decisions 0.1.dev220+g5b499478d documentation</title>
   
   
   
@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../_static/documentation_options.js?v=32f98a03"></script>
+    <script src="../_static/documentation_options.js?v=ed6598ba"></script>
     <script src="../_static/doctools.js?v=9bcbadda"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -467,10 +467,74 @@ installed are available on <a class="reference external" href="https://ghcr.io/D
 <section id="starting-the-container">
 <h2>Starting the container<a class="headerlink" href="#starting-the-container" title="Link to this heading">#</a></h2>
 <p>To pull the container from github container registry and run:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ docker run ghcr.io/DiamondLightSource/smartem-decisions:latest --version
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Check version</span>
+$<span class="w"> </span>docker<span class="w"> </span>run<span class="w"> </span>ghcr.io/DiamondLightSource/smartem-decisions:latest<span class="w"> </span>--version
 </pre></div>
 </div>
 <p>To get a released version, use a numbered release instead of <code class="docutils literal notranslate"><span class="pre">latest</span></code>.</p>
+</section>
+<section id="running-services">
+<h2>Running services<a class="headerlink" href="#running-services" title="Link to this heading">#</a></h2>
+<p>The container can run in different modes controlled by the <code class="docutils literal notranslate"><span class="pre">ROLE</span></code> environment variable:</p>
+<section id="http-api-service">
+<h3>HTTP API Service<a class="headerlink" href="#http-api-service" title="Link to this heading">#</a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Run API with default ERROR logging</span>
+$<span class="w"> </span>docker<span class="w"> </span>run<span class="w"> </span>-p<span class="w"> </span><span class="m">8000</span>:8000<span class="w"> </span>-e<span class="w"> </span><span class="nv">ROLE</span><span class="o">=</span>api<span class="w"> </span>ghcr.io/DiamondLightSource/smartem-decisions:latest
+
+<span class="c1"># Run API with INFO logging (equivalent to -v flag)</span>
+$<span class="w"> </span>docker<span class="w"> </span>run<span class="w"> </span>-p<span class="w"> </span><span class="m">8000</span>:8000<span class="w"> </span>-e<span class="w"> </span><span class="nv">ROLE</span><span class="o">=</span>api<span class="w"> </span>-e<span class="w"> </span><span class="nv">SMARTEM_LOG_LEVEL</span><span class="o">=</span>INFO<span class="w"> </span>ghcr.io/DiamondLightSource/smartem-decisions:latest
+
+<span class="c1"># Run API with DEBUG logging (equivalent to -vv flag)</span>
+$<span class="w"> </span>docker<span class="w"> </span>run<span class="w"> </span>-p<span class="w"> </span><span class="m">8000</span>:8000<span class="w"> </span>-e<span class="w"> </span><span class="nv">ROLE</span><span class="o">=</span>api<span class="w"> </span>-e<span class="w"> </span><span class="nv">SMARTEM_LOG_LEVEL</span><span class="o">=</span>DEBUG<span class="w"> </span>ghcr.io/DiamondLightSource/smartem-decisions:latest
+
+<span class="c1"># Custom port</span>
+$<span class="w"> </span>docker<span class="w"> </span>run<span class="w"> </span>-p<span class="w"> </span><span class="m">9000</span>:9000<span class="w"> </span>-e<span class="w"> </span><span class="nv">ROLE</span><span class="o">=</span>api<span class="w"> </span>-e<span class="w"> </span><span class="nv">HTTP_API_PORT</span><span class="o">=</span><span class="m">9000</span><span class="w"> </span>ghcr.io/DiamondLightSource/smartem-decisions:latest
+</pre></div>
+</div>
+</section>
+<section id="message-queue-worker">
+<h3>Message Queue Worker<a class="headerlink" href="#message-queue-worker" title="Link to this heading">#</a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Run worker with default ERROR logging</span>
+$<span class="w"> </span>docker<span class="w"> </span>run<span class="w"> </span>-e<span class="w"> </span><span class="nv">ROLE</span><span class="o">=</span>worker<span class="w"> </span>ghcr.io/DiamondLightSource/smartem-decisions:latest
+
+<span class="c1"># Run worker with INFO logging</span>
+$<span class="w"> </span>docker<span class="w"> </span>run<span class="w"> </span>-e<span class="w"> </span><span class="nv">ROLE</span><span class="o">=</span>worker<span class="w"> </span>-e<span class="w"> </span><span class="nv">SMARTEM_LOG_LEVEL</span><span class="o">=</span>INFO<span class="w"> </span>ghcr.io/DiamondLightSource/smartem-decisions:latest
+
+<span class="c1"># Run worker with DEBUG logging</span>
+$<span class="w"> </span>docker<span class="w"> </span>run<span class="w"> </span>-e<span class="w"> </span><span class="nv">ROLE</span><span class="o">=</span>worker<span class="w"> </span>-e<span class="w"> </span><span class="nv">SMARTEM_LOG_LEVEL</span><span class="o">=</span>DEBUG<span class="w"> </span>ghcr.io/DiamondLightSource/smartem-decisions:latest
+</pre></div>
+</div>
+</section>
+</section>
+<section id="environment-variables">
+<h2>Environment Variables<a class="headerlink" href="#environment-variables" title="Link to this heading">#</a></h2>
+<div class="pst-scrollable-table-container"><table class="table">
+<thead>
+<tr class="row-odd"><th class="head"><p>Variable</p></th>
+<th class="head"><p>Default</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">ROLE</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">api</span></code></p></td>
+<td><p>Service role: <code class="docutils literal notranslate"><span class="pre">api</span></code> or <code class="docutils literal notranslate"><span class="pre">worker</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">HTTP_API_PORT</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">8000</span></code></p></td>
+<td><p>Port for HTTP API service</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">SMARTEM_LOG_LEVEL</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">ERROR</span></code></p></td>
+<td><p>Log level: <code class="docutils literal notranslate"><span class="pre">ERROR</span></code>, <code class="docutils literal notranslate"><span class="pre">INFO</span></code>, or <code class="docutils literal notranslate"><span class="pre">DEBUG</span></code></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="complete-development-stack">
+<h2>Complete Development Stack<a class="headerlink" href="#complete-development-stack" title="Link to this heading">#</a></h2>
+<p>For a complete development environment with database and message queue, see the <span class="xref myst">Kubernetes deployment guide</span> which provides a docker-compose-like experience.</p>
 </section>
 </section>
 
@@ -522,6 +586,13 @@ installed are available on <a class="reference external" href="https://ghcr.io/D
   <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
     <ul class="visible nav section-nav flex-column">
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#starting-the-container">Starting the container</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#running-services">Running services</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#http-api-service">HTTP API Service</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#message-queue-worker">Message Queue Worker</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#environment-variables">Environment Variables</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#complete-development-stack">Complete Development Stack</a></li>
 </ul>
   </nav></div>
 

@@ -7,7 +7,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>smartem_decisions.utils &#8212; smartem-decisions 0.1.dev176+gb825b791e documentation</title>
+    <title>smartem_decisions.utils &#8212; smartem-decisions 0.1.dev220+g5b499478d documentation</title>
   
   
   
@@ -40,7 +40,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../../_static/documentation_options.js?v=32f98a03"></script>
+    <script src="../../_static/documentation_options.js?v=ed6598ba"></script>
     <script src="../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -446,6 +446,7 @@
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">yaml</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">dotenv</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_dotenv</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sqlalchemy.engine</span><span class="w"> </span><span class="kn">import</span> <span class="n">Engine</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">sqlmodel</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_engine</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">smartem_decisions.log_manager</span><span class="w"> </span><span class="kn">import</span> <span class="n">logger</span>
@@ -453,7 +454,7 @@
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">load_conf</span><span class="p">():</span>
-    <span class="n">config_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="vm">__file__</span><span class="p">),</span> <span class="s2">&quot;config.yaml&quot;</span><span class="p">)</span>
+    <span class="n">config_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="vm">__file__</span><span class="p">),</span> <span class="s2">&quot;appconfig.yml&quot;</span><span class="p">)</span>
     <span class="k">try</span><span class="p">:</span>
         <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">config_path</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
             <span class="n">conf</span> <span class="o">=</span> <span class="n">yaml</span><span class="o">.</span><span class="n">safe_load</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
@@ -467,7 +468,29 @@
     <span class="k">return</span> <span class="kc">None</span>
 
 
-<span class="k">def</span><span class="w"> </span><span class="nf">setup_postgres_connection</span><span class="p">():</span>
+<span class="c1"># Global singleton engine instance</span>
+<span class="n">_db_engine</span><span class="p">:</span> <span class="n">Engine</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+
+
+<div class="viewcode-block" id="setup_postgres_connection">
+<a class="viewcode-back" href="../../_api/smartem_decisions.utils.html#smartem_decisions.utils.setup_postgres_connection">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">setup_postgres_connection</span><span class="p">(</span><span class="n">echo</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">force_new</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Engine</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Get or create a singleton database engine with connection pooling.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        echo: Enable SQL logging</span>
+<span class="sd">        force_new: Force creation of new engine (for testing)</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        SQLAlchemy Engine instance</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">global</span> <span class="n">_db_engine</span>
+
+    <span class="c1"># Return existing engine unless forced to create new one</span>
+    <span class="k">if</span> <span class="n">_db_engine</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">force_new</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">_db_engine</span>
+
     <span class="n">load_dotenv</span><span class="p">(</span><span class="n">override</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>  <span class="c1"># Don&#39;t override existing env vars as these might be coming from k8s</span>
     <span class="n">required_env_vars</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;POSTGRES_USER&quot;</span><span class="p">,</span> <span class="s2">&quot;POSTGRES_PASSWORD&quot;</span><span class="p">,</span> <span class="s2">&quot;POSTGRES_HOST&quot;</span><span class="p">,</span> <span class="s2">&quot;POSTGRES_PORT&quot;</span><span class="p">,</span> <span class="s2">&quot;POSTGRES_DB&quot;</span><span class="p">]</span>
 
@@ -479,12 +502,45 @@
             <span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
         <span class="n">env_vars</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
 
-    <span class="n">engine</span> <span class="o">=</span> <span class="n">create_engine</span><span class="p">(</span>
+    <span class="c1"># Load database configuration from appconfig.yml with defaults</span>
+    <span class="n">config</span> <span class="o">=</span> <span class="n">load_conf</span><span class="p">()</span>
+    <span class="n">db_config</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;database&quot;</span><span class="p">,</span> <span class="p">{})</span> <span class="k">if</span> <span class="n">config</span> <span class="k">else</span> <span class="p">{}</span>
+
+    <span class="n">pool_size</span> <span class="o">=</span> <span class="n">db_config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;pool_size&quot;</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
+    <span class="n">max_overflow</span> <span class="o">=</span> <span class="n">db_config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;max_overflow&quot;</span><span class="p">,</span> <span class="mi">20</span><span class="p">)</span>
+    <span class="n">pool_timeout</span> <span class="o">=</span> <span class="n">db_config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;pool_timeout&quot;</span><span class="p">,</span> <span class="mi">30</span><span class="p">)</span>
+    <span class="n">pool_recycle</span> <span class="o">=</span> <span class="n">db_config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;pool_recycle&quot;</span><span class="p">,</span> <span class="mi">3600</span><span class="p">)</span>
+    <span class="n">pool_pre_ping</span> <span class="o">=</span> <span class="n">db_config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;pool_pre_ping&quot;</span><span class="p">,</span> <span class="kc">True</span><span class="p">)</span>
+
+    <span class="c1"># Create engine with connection pooling</span>
+    <span class="n">_db_engine</span> <span class="o">=</span> <span class="n">create_engine</span><span class="p">(</span>
         <span class="sa">f</span><span class="s2">&quot;postgresql+psycopg2://</span><span class="si">{</span><span class="n">env_vars</span><span class="p">[</span><span class="s1">&#39;POSTGRES_USER&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="n">env_vars</span><span class="p">[</span><span class="s1">&#39;POSTGRES_PASSWORD&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">@&quot;</span>
         <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">env_vars</span><span class="p">[</span><span class="s1">&#39;POSTGRES_HOST&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="n">env_vars</span><span class="p">[</span><span class="s1">&#39;POSTGRES_PORT&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">env_vars</span><span class="p">[</span><span class="s1">&#39;POSTGRES_DB&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
-        <span class="n">echo</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>  <span class="c1"># TODO test if possible to feed this output through our logger</span>
+        <span class="n">echo</span><span class="o">=</span><span class="n">echo</span><span class="p">,</span>
+        <span class="c1"># Connection pool settings from config</span>
+        <span class="n">pool_size</span><span class="o">=</span><span class="n">pool_size</span><span class="p">,</span>  <span class="c1"># Number of connections to maintain in pool</span>
+        <span class="n">max_overflow</span><span class="o">=</span><span class="n">max_overflow</span><span class="p">,</span>  <span class="c1"># Additional connections beyond pool_size</span>
+        <span class="n">pool_timeout</span><span class="o">=</span><span class="n">pool_timeout</span><span class="p">,</span>  <span class="c1"># Seconds to wait for connection from pool</span>
+        <span class="n">pool_recycle</span><span class="o">=</span><span class="n">pool_recycle</span><span class="p">,</span>  <span class="c1"># Seconds after which connection is recreated</span>
+        <span class="n">pool_pre_ping</span><span class="o">=</span><span class="n">pool_pre_ping</span><span class="p">,</span>  <span class="c1"># Validate connections before use</span>
     <span class="p">)</span>
-    <span class="k">return</span> <span class="n">engine</span>
+
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Created database engine with pool_size=</span><span class="si">{</span><span class="n">pool_size</span><span class="si">}</span><span class="s2">, max_overflow=</span><span class="si">{</span><span class="n">max_overflow</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">_db_engine</span></div>
+
+
+
+<div class="viewcode-block" id="get_db_engine">
+<a class="viewcode-back" href="../../_api/smartem_decisions.utils.html#smartem_decisions.utils.get_db_engine">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_db_engine</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Engine</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Get the singleton database engine. Creates it if it doesn&#39;t exist.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        SQLAlchemy Engine instance</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">setup_postgres_connection</span><span class="p">()</span></div>
+
 
 
 <div class="viewcode-block" id="setup_rabbitmq">
