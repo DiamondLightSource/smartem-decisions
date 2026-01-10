@@ -1,0 +1,23 @@
+``smartem_decisions.cli.initialise_prediction_model_weights``
+=============================================================
+        
+        
+
+.. automodule:: smartem_decisions.cli.initialise_prediction_model_weights
+    :members:
+
+    
+    
+    
+
+    
+    
+    .. rubric:: Members
+
+    .. autosummary::
+        :nosignatures:
+    
+        initialise
+        run
+    
+    

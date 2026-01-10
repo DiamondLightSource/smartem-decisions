@@ -1,0 +1,25 @@
+``smartem_decisions.rabbitmq``
+==============================
+        
+        
+        
+
+.. automodule:: smartem_decisions.rabbitmq
+    :members:
+
+    
+    
+    
+
+    
+    
+    .. rubric:: Members
+
+    .. autosummary::
+        :nosignatures:
+    
+        RabbitMQConnection
+        RabbitMQConsumer
+        RabbitMQPublisher
+    
+    

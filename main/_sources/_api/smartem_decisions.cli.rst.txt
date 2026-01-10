@@ -1,0 +1,25 @@
+``smartem_decisions.cli``
+=========================
+
+.. automodule:: smartem_decisions.cli
+    :members:
+
+    
+    
+    .. rubric:: Submodules
+
+    .. autosummary::
+        :toctree:
+        :template: custom-module-template.rst
+        :recursive:
+    
+        initialise_prediction_model_weights
+        random_model_predictions
+        random_prior_updates
+        register_quality_prediction_model
+    
+    
+
+    
+    
+    

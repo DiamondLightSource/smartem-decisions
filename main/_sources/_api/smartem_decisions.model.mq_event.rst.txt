@@ -1,0 +1,97 @@
+``smartem_decisions.model.mq_event``
+====================================
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+
+.. automodule:: smartem_decisions.model.mq_event
+    :members:
+
+    
+    
+    
+
+    
+    
+    .. rubric:: Members
+
+    .. autosummary::
+        :nosignatures:
+    
+        AcquisitionCreatedEvent
+        AcquisitionDeletedEvent
+        AcquisitionEventBase
+        AcquisitionUpdatedEvent
+        AtlasCreatedEvent
+        AtlasDeletedEvent
+        AtlasEventBase
+        AtlasTileCreatedEvent
+        AtlasTileDeletedEvent
+        AtlasTileEventBase
+        AtlasTileUpdatedEvent
+        AtlasUpdatedEvent
+        CtfCompleteBody
+        CtfStartBody
+        FoilHoleCreatedEvent
+        FoilHoleDeletedEvent
+        FoilHoleEventBase
+        FoilHoleUpdatedEvent
+        GenericEventMessageBody
+        GridCreatedEvent
+        GridDeletedEvent
+        GridEventBase
+        GridSquareCreatedEvent
+        GridSquareDeletedEvent
+        GridSquareEventBase
+        GridSquareUpdatedEvent
+        GridUpdatedEvent
+        MessageQueueEventType
+        MicrographCreatedEvent
+        MicrographDeletedEvent
+        MicrographEventBase
+        MicrographUpdatedEvent
+        MotionCorrectionCompleteBody
+        MotionCorrectionStartBody
+        ParticlePickingCompleteBody
+        ParticlePickingStartBody
+        ParticleSelectionCompleteBody
+        ParticleSelectionStartBody
+        non_negative_float
+    
+    

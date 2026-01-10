@@ -1,0 +1,21 @@
+``smartem_decisions.run_api``
+=============================
+        
+
+.. automodule:: smartem_decisions.run_api
+    :members:
+
+    
+    
+    
+
+    
+    
+    .. rubric:: Members
+
+    .. autosummary::
+        :nosignatures:
+    
+        main
+    
+    

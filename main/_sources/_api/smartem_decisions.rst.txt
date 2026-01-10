@@ -1,0 +1,31 @@
+﻿``smartem_decisions``
+=====================
+
+.. automodule:: smartem_decisions
+    :members:
+
+    
+    
+    .. rubric:: Submodules
+
+    .. autosummary::
+        :toctree:
+        :template: custom-module-template.rst
+        :recursive:
+    
+        cli
+        http_api
+        log_manager
+        model
+        mq_consumer
+        mq_publisher
+        predictions
+        rabbitmq
+        run_api
+        utils
+    
+    
+
+    
+    
+    

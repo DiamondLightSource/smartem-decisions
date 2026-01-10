@@ -1,0 +1,23 @@
+``smartem_decisions.cli.random_model_predictions``
+==================================================
+        
+        
+
+.. automodule:: smartem_decisions.cli.random_model_predictions
+    :members:
+
+    
+    
+    
+
+    
+    
+    .. rubric:: Members
+
+    .. autosummary::
+        :nosignatures:
+    
+        generate_random_predictions
+        run
+    
+    

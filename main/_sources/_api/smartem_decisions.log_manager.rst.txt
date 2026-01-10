@@ -1,0 +1,25 @@
+``smartem_decisions.log_manager``
+=================================
+        
+        
+        
+
+.. automodule:: smartem_decisions.log_manager
+    :members:
+
+    
+    
+    
+
+    
+    
+    .. rubric:: Members
+
+    .. autosummary::
+        :nosignatures:
+    
+        LogConfig
+        LogManager
+        setup_logger
+    
+    

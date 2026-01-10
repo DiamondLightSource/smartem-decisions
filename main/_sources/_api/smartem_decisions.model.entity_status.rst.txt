@@ -1,0 +1,39 @@
+``smartem_decisions.model.entity_status``
+=========================================
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+
+.. automodule:: smartem_decisions.model.entity_status
+    :members:
+
+    
+    
+    
+
+    
+    
+    .. rubric:: Members
+
+    .. autosummary::
+        :nosignatures:
+    
+        AcquisitionStatus
+        AcquisitionStatusType
+        FoilHoleStatus
+        FoilHoleStatusType
+        GridSquareStatus
+        GridSquareStatusType
+        GridStatus
+        GridStatusType
+        MicrographStatus
+        MicrographStatusType
+    
+    
