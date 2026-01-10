@@ -14,10 +14,10 @@
         :recursive:
     
         cli
-        consumer
         http_api
         log_manager
         model
+        mq_consumer
         mq_publisher
         predictions
         rabbitmq
