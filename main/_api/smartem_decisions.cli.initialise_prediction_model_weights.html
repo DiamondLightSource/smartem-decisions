@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>smartem_decisions.cli.initialise_prediction_model_weights &#8212; smartem-decisions 0.1.dev183+g51dea6033 documentation</title>
+    <title>smartem_decisions.cli.initialise_prediction_model_weights &#8212; smartem-decisions 0.1.dev200+g028d19721 documentation</title>
   
   
   
@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../_static/documentation_options.js?v=5157f895"></script>
+    <script src="../_static/documentation_options.js?v=d7a1c6c4"></script>
     <script src="../_static/doctools.js?v=9bcbadda"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -405,6 +405,7 @@
 <li class="toctree-l3"><a class="reference internal" href="smartem_decisions.cli.register_quality_prediction_model.html"><code class="docutils literal notranslate"><span class="pre">smartem_decisions.cli.register_quality_prediction_model</span></code></a></li>
 </ul>
 </details></li>
+<li class="toctree-l2"><a class="reference internal" href="smartem_decisions.consumer.html"><code class="docutils literal notranslate"><span class="pre">smartem_decisions.consumer</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="smartem_decisions.log_manager.html"><code class="docutils literal notranslate"><span class="pre">smartem_decisions.log_manager</span></code></a></li>
 <li class="toctree-l2 has-children"><a class="reference internal" href="smartem_decisions.model.html"><code class="docutils literal notranslate"><span class="pre">smartem_decisions.model</span></code></a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
 <li class="toctree-l3"><a class="reference internal" href="smartem_decisions.model.database.html"><code class="docutils literal notranslate"><span class="pre">smartem_decisions.model.database</span></code></a></li>
@@ -414,7 +415,6 @@
 <li class="toctree-l3"><a class="reference internal" href="smartem_decisions.model.mq_event.html"><code class="docutils literal notranslate"><span class="pre">smartem_decisions.model.mq_event</span></code></a></li>
 </ul>
 </details></li>
-<li class="toctree-l2"><a class="reference internal" href="smartem_decisions.mq_consumer.html"><code class="docutils literal notranslate"><span class="pre">smartem_decisions.mq_consumer</span></code></a></li>
 <li class="toctree-l2 has-children"><a class="reference internal" href="smartem_decisions.predictions.html"><code class="docutils literal notranslate"><span class="pre">smartem_decisions.predictions</span></code></a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
 <li class="toctree-l3"><a class="reference internal" href="smartem_decisions.predictions.update.html"><code class="docutils literal notranslate"><span class="pre">smartem_decisions.predictions.update</span></code></a></li>
 </ul>
@@ -497,15 +497,47 @@
 <p class="rubric">Members</p>
 <div class="pst-scrollable-table-container"><table class="autosummary longtable table">
 <tbody>
-<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">initialise</span></code></p></td>
-<td><p></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#smartem_decisions.cli.initialise_prediction_model_weights.initialise_all_models_for_grid" title="smartem_decisions.cli.initialise_prediction_model_weights.initialise_all_models_for_grid"><code class="xref py py-obj docutils literal notranslate"><span class="pre">initialise_all_models_for_grid</span></code></a></p></td>
+<td><p>Initialise prediction model weights for all available models for a specific grid.</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">run</span></code></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#smartem_decisions.cli.initialise_prediction_model_weights.initialise_prediction_model_for_grid" title="smartem_decisions.cli.initialise_prediction_model_weights.initialise_prediction_model_for_grid"><code class="xref py py-obj docutils literal notranslate"><span class="pre">initialise_prediction_model_for_grid</span></code></a></p></td>
+<td><p>Initialise a single prediction model weight for a grid (CLI interface).</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">run</span></code></p></td>
 <td><p></p></td>
 </tr>
 </tbody>
 </table>
 </div>
+<dl class="py function">
+<dt class="sig sig-object py" id="smartem_decisions.cli.initialise_prediction_model_weights.initialise_all_models_for_grid">
+<span class="sig-prename descclassname"><span class="pre">smartem_decisions.cli.initialise_prediction_model_weights.</span></span><span class="sig-name descname"><span class="pre">initialise_all_models_for_grid</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">grid_uuid</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../_modules/smartem_decisions/cli/initialise_prediction_model_weights.html#initialise_all_models_for_grid"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#smartem_decisions.cli.initialise_prediction_model_weights.initialise_all_models_for_grid" title="Link to this definition">#</a></dt>
+<dd><p>Initialise prediction model weights for all available models for a specific grid.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>grid_uuid</strong> – UUID of the grid to initialise weights for</p></li>
+<li><p><strong>default_weight</strong> – Default weight value to assign (default: DEFAULT_PREDICTION_MODEL_WEIGHT)</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="smartem_decisions.cli.initialise_prediction_model_weights.initialise_prediction_model_for_grid">
+<span class="sig-prename descclassname"><span class="pre">smartem_decisions.cli.initialise_prediction_model_weights.</span></span><span class="sig-name descname"><span class="pre">initialise_prediction_model_for_grid</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">weight</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">grid_uuid</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../_modules/smartem_decisions/cli/initialise_prediction_model_weights.html#initialise_prediction_model_for_grid"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#smartem_decisions.cli.initialise_prediction_model_weights.initialise_prediction_model_for_grid" title="Link to this definition">#</a></dt>
+<dd><p>Initialise a single prediction model weight for a grid (CLI interface).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> – Prediction model name</p></li>
+<li><p><strong>weight</strong> – Weight value to assign</p></li>
+<li><p><strong>grid_uuid</strong> – Grid UUID (if None, uses first available grid)</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
 </section>
 
 
@@ -546,6 +578,19 @@
                 <dialog id="pst-secondary-sidebar-modal"></dialog>
                 <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
 
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#smartem_decisions.cli.initialise_prediction_model_weights.initialise_all_models_for_grid"><code class="docutils literal notranslate"><span class="pre">initialise_all_models_for_grid()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#smartem_decisions.cli.initialise_prediction_model_weights.initialise_prediction_model_for_grid"><code class="docutils literal notranslate"><span class="pre">initialise_prediction_model_for_grid()</span></code></a></li>
+</ul>
+  </nav></div>
 
   <div class="sidebar-secondary-item">
 

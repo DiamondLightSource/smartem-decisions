@@ -1,0 +1,63 @@
+``smartem_decisions.consumer``
+==============================
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+
+.. automodule:: smartem_decisions.consumer
+    :members:
+
+    
+    
+    
+
+    
+    
+    .. rubric:: Members
+
+    .. autosummary::
+        :nosignatures:
+    
+        get_event_handlers
+        handle_acquisition_created
+        handle_acquisition_deleted
+        handle_acquisition_updated
+        handle_atlas_created
+        handle_atlas_deleted
+        handle_atlas_updated
+        handle_foilhole_created
+        handle_foilhole_deleted
+        handle_foilhole_updated
+        handle_grid_created
+        handle_grid_deleted
+        handle_grid_updated
+        handle_gridsquare_created
+        handle_gridsquare_deleted
+        handle_gridsquare_updated
+        handle_micrograph_created
+        handle_micrograph_deleted
+        handle_micrograph_updated
+        main
+        on_message
+        signal_handler
+    
+    
