@@ -2,8 +2,6 @@
 ==============================================
         
         
-        
-        
 
 .. automodule:: smartem_decisions.cli.random_prior_updates
     :members:
@@ -21,7 +19,5 @@
     
         perform_random_updates
         run
-        simulate_processing_pipeline
-        simulate_processing_pipeline_async
     
     
