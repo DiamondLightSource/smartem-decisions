@@ -7,7 +7,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Index &#8212; smartem-decisions 0.1.dev176+gb825b791e documentation</title>
+    <title>Index &#8212; smartem-decisions 0.1.dev200+g028d19721 documentation</title>
   
   
   
@@ -40,7 +40,7 @@
   <link rel="preload" as="script" href="_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="_static/documentation_options.js?v=32f98a03"></script>
+    <script src="_static/documentation_options.js?v=d7a1c6c4"></script>
     <script src="_static/doctools.js?v=9bcbadda"></script>
     <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/clipboard.min.js?v=a7894cd8"></script>
@@ -398,6 +398,7 @@
 <li class="toctree-l3"><a class="reference internal" href="_api/smartem_decisions.cli.register_quality_prediction_model.html"><code class="docutils literal notranslate"><span class="pre">smartem_decisions.cli.register_quality_prediction_model</span></code></a></li>
 </ul>
 </details></li>
+<li class="toctree-l2"><a class="reference internal" href="_api/smartem_decisions.consumer.html"><code class="docutils literal notranslate"><span class="pre">smartem_decisions.consumer</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="_api/smartem_decisions.log_manager.html"><code class="docutils literal notranslate"><span class="pre">smartem_decisions.log_manager</span></code></a></li>
 <li class="toctree-l2 has-children"><a class="reference internal" href="_api/smartem_decisions.model.html"><code class="docutils literal notranslate"><span class="pre">smartem_decisions.model</span></code></a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
 <li class="toctree-l3"><a class="reference internal" href="_api/smartem_decisions.model.database.html"><code class="docutils literal notranslate"><span class="pre">smartem_decisions.model.database</span></code></a></li>
@@ -407,7 +408,6 @@
 <li class="toctree-l3"><a class="reference internal" href="_api/smartem_decisions.model.mq_event.html"><code class="docutils literal notranslate"><span class="pre">smartem_decisions.model.mq_event</span></code></a></li>
 </ul>
 </details></li>
-<li class="toctree-l2"><a class="reference internal" href="_api/smartem_decisions.mq_consumer.html"><code class="docutils literal notranslate"><span class="pre">smartem_decisions.mq_consumer</span></code></a></li>
 <li class="toctree-l2 has-children"><a class="reference internal" href="_api/smartem_decisions.predictions.html"><code class="docutils literal notranslate"><span class="pre">smartem_decisions.predictions</span></code></a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
 <li class="toctree-l3"><a class="reference internal" href="_api/smartem_decisions.predictions.update.html"><code class="docutils literal notranslate"><span class="pre">smartem_decisions.predictions.update</span></code></a></li>
 </ul>
@@ -461,6 +461,7 @@
  | <a href="#F"><strong>F</strong></a>
  | <a href="#G"><strong>G</strong></a>
  | <a href="#H"><strong>H</strong></a>
+ | <a href="#I"><strong>I</strong></a>
  | <a href="#L"><strong>L</strong></a>
  | <a href="#M"><strong>M</strong></a>
  | <a href="#O"><strong>O</strong></a>
@@ -536,16 +537,20 @@
 <h2 id="G">G</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="_api/smartem_decisions.mq_consumer.html#smartem_decisions.mq_consumer.get_event_handlers">get_event_handlers() (in module smartem_decisions.mq_consumer)</a>
+      <li><a href="_api/smartem_decisions.cli.random_model_predictions.html#smartem_decisions.cli.random_model_predictions.generate_predictions_for_foilhole">generate_predictions_for_foilhole() (in module smartem_decisions.cli.random_model_predictions)</a>
+</li>
+      <li><a href="_api/smartem_decisions.cli.random_model_predictions.html#smartem_decisions.cli.random_model_predictions.generate_predictions_for_gridsquare">generate_predictions_for_gridsquare() (in module smartem_decisions.cli.random_model_predictions)</a>
+</li>
+      <li><a href="_api/smartem_decisions.consumer.html#smartem_decisions.consumer.get_event_handlers">get_event_handlers() (in module smartem_decisions.consumer)</a>
 </li>
       <li><a href="_api/smartem_decisions.model.mq_event.html#smartem_decisions.model.mq_event.GridCreatedEvent">GridCreatedEvent (class in smartem_decisions.model.mq_event)</a>
 </li>
       <li><a href="_api/smartem_decisions.model.mq_event.html#smartem_decisions.model.mq_event.GridDeletedEvent">GridDeletedEvent (class in smartem_decisions.model.mq_event)</a>
 </li>
-      <li><a href="_api/smartem_decisions.model.mq_event.html#smartem_decisions.model.mq_event.GridEventBase">GridEventBase (class in smartem_decisions.model.mq_event)</a>
-</li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="_api/smartem_decisions.model.mq_event.html#smartem_decisions.model.mq_event.GridEventBase">GridEventBase (class in smartem_decisions.model.mq_event)</a>
+</li>
       <li><a href="_api/smartem_decisions.model.mq_event.html#smartem_decisions.model.mq_event.GridSquareCreatedEvent">GridSquareCreatedEvent (class in smartem_decisions.model.mq_event)</a>
 </li>
       <li><a href="_api/smartem_decisions.model.mq_event.html#smartem_decisions.model.mq_event.GridSquareDeletedEvent">GridSquareDeletedEvent (class in smartem_decisions.model.mq_event)</a>
@@ -562,21 +567,55 @@
 <h2 id="H">H</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="_api/smartem_decisions.mq_consumer.html#smartem_decisions.mq_consumer.handle_acquisition_created">handle_acquisition_created() (in module smartem_decisions.mq_consumer)</a>
+      <li><a href="_api/smartem_decisions.consumer.html#smartem_decisions.consumer.handle_acquisition_created">handle_acquisition_created() (in module smartem_decisions.consumer)</a>
 </li>
-      <li><a href="_api/smartem_decisions.mq_consumer.html#smartem_decisions.mq_consumer.handle_acquisition_deleted">handle_acquisition_deleted() (in module smartem_decisions.mq_consumer)</a>
+      <li><a href="_api/smartem_decisions.consumer.html#smartem_decisions.consumer.handle_acquisition_deleted">handle_acquisition_deleted() (in module smartem_decisions.consumer)</a>
 </li>
-      <li><a href="_api/smartem_decisions.mq_consumer.html#smartem_decisions.mq_consumer.handle_acquisition_updated">handle_acquisition_updated() (in module smartem_decisions.mq_consumer)</a>
+      <li><a href="_api/smartem_decisions.consumer.html#smartem_decisions.consumer.handle_acquisition_updated">handle_acquisition_updated() (in module smartem_decisions.consumer)</a>
+</li>
+      <li><a href="_api/smartem_decisions.consumer.html#smartem_decisions.consumer.handle_atlas_created">handle_atlas_created() (in module smartem_decisions.consumer)</a>
+</li>
+      <li><a href="_api/smartem_decisions.consumer.html#smartem_decisions.consumer.handle_atlas_deleted">handle_atlas_deleted() (in module smartem_decisions.consumer)</a>
+</li>
+      <li><a href="_api/smartem_decisions.consumer.html#smartem_decisions.consumer.handle_atlas_updated">handle_atlas_updated() (in module smartem_decisions.consumer)</a>
+</li>
+      <li><a href="_api/smartem_decisions.consumer.html#smartem_decisions.consumer.handle_foilhole_created">handle_foilhole_created() (in module smartem_decisions.consumer)</a>
+</li>
+      <li><a href="_api/smartem_decisions.consumer.html#smartem_decisions.consumer.handle_foilhole_deleted">handle_foilhole_deleted() (in module smartem_decisions.consumer)</a>
+</li>
+      <li><a href="_api/smartem_decisions.consumer.html#smartem_decisions.consumer.handle_foilhole_updated">handle_foilhole_updated() (in module smartem_decisions.consumer)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="_api/smartem_decisions.mq_consumer.html#smartem_decisions.mq_consumer.handle_atlas_created">handle_atlas_created() (in module smartem_decisions.mq_consumer)</a>
+      <li><a href="_api/smartem_decisions.consumer.html#smartem_decisions.consumer.handle_grid_created">handle_grid_created() (in module smartem_decisions.consumer)</a>
 </li>
-      <li><a href="_api/smartem_decisions.mq_consumer.html#smartem_decisions.mq_consumer.handle_atlas_deleted">handle_atlas_deleted() (in module smartem_decisions.mq_consumer)</a>
+      <li><a href="_api/smartem_decisions.consumer.html#smartem_decisions.consumer.handle_grid_deleted">handle_grid_deleted() (in module smartem_decisions.consumer)</a>
 </li>
-      <li><a href="_api/smartem_decisions.mq_consumer.html#smartem_decisions.mq_consumer.handle_atlas_updated">handle_atlas_updated() (in module smartem_decisions.mq_consumer)</a>
+      <li><a href="_api/smartem_decisions.consumer.html#smartem_decisions.consumer.handle_grid_updated">handle_grid_updated() (in module smartem_decisions.consumer)</a>
 </li>
-      <li><a href="_api/smartem_decisions.mq_consumer.html#smartem_decisions.mq_consumer.handle_grid_created">handle_grid_created() (in module smartem_decisions.mq_consumer)</a>
+      <li><a href="_api/smartem_decisions.consumer.html#smartem_decisions.consumer.handle_gridsquare_created">handle_gridsquare_created() (in module smartem_decisions.consumer)</a>
+</li>
+      <li><a href="_api/smartem_decisions.consumer.html#smartem_decisions.consumer.handle_gridsquare_deleted">handle_gridsquare_deleted() (in module smartem_decisions.consumer)</a>
+</li>
+      <li><a href="_api/smartem_decisions.consumer.html#smartem_decisions.consumer.handle_gridsquare_updated">handle_gridsquare_updated() (in module smartem_decisions.consumer)</a>
+</li>
+      <li><a href="_api/smartem_decisions.consumer.html#smartem_decisions.consumer.handle_micrograph_created">handle_micrograph_created() (in module smartem_decisions.consumer)</a>
+</li>
+      <li><a href="_api/smartem_decisions.consumer.html#smartem_decisions.consumer.handle_micrograph_deleted">handle_micrograph_deleted() (in module smartem_decisions.consumer)</a>
+</li>
+      <li><a href="_api/smartem_decisions.consumer.html#smartem_decisions.consumer.handle_micrograph_updated">handle_micrograph_updated() (in module smartem_decisions.consumer)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="I">I</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="_api/smartem_decisions.cli.initialise_prediction_model_weights.html#smartem_decisions.cli.initialise_prediction_model_weights.initialise_all_models_for_grid">initialise_all_models_for_grid() (in module smartem_decisions.cli.initialise_prediction_model_weights)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="_api/smartem_decisions.cli.initialise_prediction_model_weights.html#smartem_decisions.cli.initialise_prediction_model_weights.initialise_prediction_model_for_grid">initialise_prediction_model_for_grid() (in module smartem_decisions.cli.initialise_prediction_model_weights)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -592,7 +631,7 @@
 <h2 id="M">M</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="_api/smartem_decisions.mq_consumer.html#smartem_decisions.mq_consumer.main">main() (in module smartem_decisions.mq_consumer)</a>
+      <li><a href="_api/smartem_decisions.consumer.html#smartem_decisions.consumer.main">main() (in module smartem_decisions.consumer)</a>
 </li>
       <li><a href="_api/smartem_decisions.model.mq_event.html#smartem_decisions.model.mq_event.MessageQueueEventType">MessageQueueEventType (class in smartem_decisions.model.mq_event)</a>
 </li>
@@ -620,6 +659,8 @@
 </li>
         <li><a href="_api/smartem_decisions.cli.register_quality_prediction_model.html#module-smartem_decisions.cli.register_quality_prediction_model">smartem_decisions.cli.register_quality_prediction_model</a>
 </li>
+        <li><a href="_api/smartem_decisions.consumer.html#module-smartem_decisions.consumer">smartem_decisions.consumer</a>
+</li>
         <li><a href="_api/smartem_decisions.log_manager.html#module-smartem_decisions.log_manager">smartem_decisions.log_manager</a>
 </li>
         <li><a href="_api/smartem_decisions.model.html#module-smartem_decisions.model">smartem_decisions.model</a>
@@ -633,8 +674,6 @@
         <li><a href="_api/smartem_decisions.model.http_response.html#module-smartem_decisions.model.http_response">smartem_decisions.model.http_response</a>
 </li>
         <li><a href="_api/smartem_decisions.model.mq_event.html#module-smartem_decisions.model.mq_event">smartem_decisions.model.mq_event</a>
-</li>
-        <li><a href="_api/smartem_decisions.mq_consumer.html#module-smartem_decisions.mq_consumer">smartem_decisions.mq_consumer</a>
 </li>
         <li><a href="_api/smartem_decisions.predictions.html#module-smartem_decisions.predictions">smartem_decisions.predictions</a>
 </li>
@@ -653,7 +692,7 @@
 <h2 id="O">O</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="_api/smartem_decisions.mq_consumer.html#smartem_decisions.mq_consumer.on_message">on_message() (in module smartem_decisions.mq_consumer)</a>
+      <li><a href="_api/smartem_decisions.consumer.html#smartem_decisions.consumer.on_message">on_message() (in module smartem_decisions.consumer)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -689,7 +728,11 @@
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="_api/smartem_decisions.utils.html#smartem_decisions.utils.setup_rabbitmq">setup_rabbitmq() (in module smartem_decisions.utils)</a>
 </li>
-      <li><a href="_api/smartem_decisions.mq_consumer.html#smartem_decisions.mq_consumer.signal_handler">signal_handler() (in module smartem_decisions.mq_consumer)</a>
+      <li><a href="_api/smartem_decisions.consumer.html#smartem_decisions.consumer.signal_handler">signal_handler() (in module smartem_decisions.consumer)</a>
+</li>
+      <li><a href="_api/smartem_decisions.cli.random_prior_updates.html#smartem_decisions.cli.random_prior_updates.simulate_processing_pipeline">simulate_processing_pipeline() (in module smartem_decisions.cli.random_prior_updates)</a>
+</li>
+      <li><a href="_api/smartem_decisions.cli.random_prior_updates.html#smartem_decisions.cli.random_prior_updates.simulate_processing_pipeline_async">simulate_processing_pipeline_async() (in module smartem_decisions.cli.random_prior_updates)</a>
 </li>
       <li>
     smartem_decisions
@@ -734,6 +777,13 @@
 </li>
       </ul></li>
       <li>
+    smartem_decisions.consumer
+
+      <ul>
+        <li><a href="_api/smartem_decisions.consumer.html#module-smartem_decisions.consumer">module</a>
+</li>
+      </ul></li>
+      <li>
     smartem_decisions.log_manager
 
       <ul>
@@ -747,6 +797,8 @@
         <li><a href="_api/smartem_decisions.model.html#module-smartem_decisions.model">module</a>
 </li>
       </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li>
     smartem_decisions.model.database
 
@@ -754,8 +806,6 @@
         <li><a href="_api/smartem_decisions.model.database.html#module-smartem_decisions.model.database">module</a>
 </li>
       </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li>
     smartem_decisions.model.entity_status
 
@@ -782,13 +832,6 @@
 
       <ul>
         <li><a href="_api/smartem_decisions.model.mq_event.html#module-smartem_decisions.model.mq_event">module</a>
-</li>
-      </ul></li>
-      <li>
-    smartem_decisions.mq_consumer
-
-      <ul>
-        <li><a href="_api/smartem_decisions.mq_consumer.html#module-smartem_decisions.mq_consumer">module</a>
 </li>
       </ul></li>
       <li>

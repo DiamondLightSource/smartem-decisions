@@ -2,6 +2,8 @@
 ==================================================
         
         
+        
+        
 
 .. automodule:: smartem_decisions.cli.random_model_predictions
     :members:
@@ -17,6 +19,8 @@
     .. autosummary::
         :nosignatures:
     
+        generate_predictions_for_foilhole
+        generate_predictions_for_gridsquare
         generate_random_predictions
         run
     

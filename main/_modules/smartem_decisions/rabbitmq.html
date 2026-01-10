@@ -7,7 +7,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>smartem_decisions.rabbitmq &#8212; smartem-decisions 0.1.dev176+gb825b791e documentation</title>
+    <title>smartem_decisions.rabbitmq &#8212; smartem-decisions 0.1.dev200+g028d19721 documentation</title>
   
   
   
@@ -40,7 +40,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../../_static/documentation_options.js?v=32f98a03"></script>
+    <script src="../../_static/documentation_options.js?v=d7a1c6c4"></script>
     <script src="../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -514,7 +514,7 @@
             <span class="k">try</span><span class="p">:</span>
                 <span class="c1"># Extract credentials from connection_params to create proper credential object</span>
                 <span class="k">if</span> <span class="s2">&quot;credentials&quot;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">connection_params</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">connection_params</span><span class="p">[</span><span class="s2">&quot;credentials&quot;</span><span class="p">],</span> <span class="nb">dict</span><span class="p">):</span>
-                    <span class="n">credentials_dict</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">connection_params</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;credentials&quot;</span><span class="p">)</span>
+                    <span class="n">credentials_dict</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">connection_params</span><span class="p">[</span><span class="s2">&quot;credentials&quot;</span><span class="p">]</span>
                     <span class="n">credentials</span> <span class="o">=</span> <span class="n">pika</span><span class="o">.</span><span class="n">PlainCredentials</span><span class="p">(</span>
                         <span class="n">username</span><span class="o">=</span><span class="n">credentials_dict</span><span class="p">[</span><span class="s2">&quot;username&quot;</span><span class="p">],</span> <span class="n">password</span><span class="o">=</span><span class="n">credentials_dict</span><span class="p">[</span><span class="s2">&quot;password&quot;</span><span class="p">]</span>
                     <span class="p">)</span>

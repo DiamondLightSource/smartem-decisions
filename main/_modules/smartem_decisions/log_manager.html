@@ -7,7 +7,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>smartem_decisions.log_manager &#8212; smartem-decisions 0.1.dev176+gb825b791e documentation</title>
+    <title>smartem_decisions.log_manager &#8212; smartem-decisions 0.1.dev200+g028d19721 documentation</title>
   
   
   
@@ -40,7 +40,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../../_static/documentation_options.js?v=32f98a03"></script>
+    <script src="../../_static/documentation_options.js?v=d7a1c6c4"></script>
     <script src="../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -518,8 +518,13 @@
 <span class="k">def</span><span class="w"> </span><span class="nf">setup_logger</span><span class="p">():</span>
     <span class="c1"># Don&#39;t create file handlers in test environment to avoid resource warnings</span>
     <span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
-    <span class="n">file_path</span> <span class="o">=</span> <span class="kc">None</span> <span class="k">if</span> <span class="s2">&quot;pytest&quot;</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;_&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">&quot;PYTEST_CURRENT_TEST&quot;</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span> <span class="k">else</span> <span class="s2">&quot;smartem_decisions-core.log&quot;</span>
-    
+
+    <span class="n">file_path</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="kc">None</span>
+        <span class="k">if</span> <span class="s2">&quot;pytest&quot;</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;_&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">&quot;PYTEST_CURRENT_TEST&quot;</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span>
+        <span class="k">else</span> <span class="s2">&quot;smartem_decisions-core.log&quot;</span>
+    <span class="p">)</span>
+
     <span class="k">return</span> <span class="n">LogManager</span><span class="o">.</span><span class="n">get_instance</span><span class="p">(</span><span class="s2">&quot;smartem_decisions&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">configure</span><span class="p">(</span>
         <span class="n">LogConfig</span><span class="p">(</span>
             <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">,</span>
