@@ -3,7 +3,6 @@
         
         
         
-        
 
 .. automodule:: smartem_decisions.utils
     :members:
@@ -19,7 +18,6 @@
     .. autosummary::
         :nosignatures:
     
-        get_db_engine
         load_conf
         setup_postgres_connection
         setup_rabbitmq

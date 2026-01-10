@@ -12,7 +12,6 @@
         
         
         
-        
 
 .. automodule:: smartem_decisions.model.database
     :members:
@@ -31,7 +30,6 @@
         Acquisition
         Atlas
         AtlasTile
-        AtlasTileGridSquarePosition
         FoilHole
         Grid
         GridSquare

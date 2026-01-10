@@ -28,7 +28,6 @@
         
         
         
-        
 
 .. automodule:: smartem_decisions.model.http_request
     :members:
@@ -66,7 +65,6 @@
         GridSquareBaseFields
         GridSquareBaseRequest
         GridSquareCreateRequest
-        GridSquarePositionRequest
         GridSquareUpdateRequest
         GridUpdateRequest
         MicrographBaseFields

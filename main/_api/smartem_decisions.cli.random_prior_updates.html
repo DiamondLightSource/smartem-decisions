@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>smartem_decisions.cli.random_prior_updates &#8212; smartem-decisions 0.1.dev220+g5b499478d documentation</title>
+    <title>smartem_decisions.cli.random_prior_updates &#8212; smartem-decisions 0.1.dev196+gd11a987b5 documentation</title>
   
   
   
@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../_static/documentation_options.js?v=ed6598ba"></script>
+    <script src="../_static/documentation_options.js?v=d4d468a2"></script>
     <script src="../_static/doctools.js?v=9bcbadda"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -514,29 +514,23 @@
 </div>
 <dl class="py function">
 <dt class="sig sig-object py" id="smartem_decisions.cli.random_prior_updates.simulate_processing_pipeline">
-<span class="sig-prename descclassname"><span class="pre">smartem_decisions.cli.random_prior_updates.</span></span><span class="sig-name descname"><span class="pre">simulate_processing_pipeline</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">micrograph_uuid</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">engine</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Engine</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../_modules/smartem_decisions/cli/random_prior_updates.html#simulate_processing_pipeline"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#smartem_decisions.cli.random_prior_updates.simulate_processing_pipeline" title="Link to this definition">#</a></dt>
+<span class="sig-prename descclassname"><span class="pre">smartem_decisions.cli.random_prior_updates.</span></span><span class="sig-name descname"><span class="pre">simulate_processing_pipeline</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">micrograph_uuid</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../_modules/smartem_decisions/cli/random_prior_updates.html#simulate_processing_pipeline"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#smartem_decisions.cli.random_prior_updates.simulate_processing_pipeline" title="Link to this definition">#</a></dt>
 <dd><p>Simulate the data processing pipeline for a micrograph with random delays.</p>
 <p>Pipeline: motion correction → ctf → particle picking → particle selection</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>micrograph_uuid</strong> – UUID of the micrograph to process</p></li>
-<li><p><strong>engine</strong> – Optional database engine (uses singleton if not provided)</p></li>
-</ul>
+<dd class="field-odd"><p><strong>micrograph_uuid</strong> – UUID of the micrograph to process</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="smartem_decisions.cli.random_prior_updates.simulate_processing_pipeline_async">
-<span class="sig-prename descclassname"><span class="pre">smartem_decisions.cli.random_prior_updates.</span></span><span class="sig-name descname"><span class="pre">simulate_processing_pipeline_async</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">micrograph_uuid</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">engine</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Engine</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../_modules/smartem_decisions/cli/random_prior_updates.html#simulate_processing_pipeline_async"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#smartem_decisions.cli.random_prior_updates.simulate_processing_pipeline_async" title="Link to this definition">#</a></dt>
+<span class="sig-prename descclassname"><span class="pre">smartem_decisions.cli.random_prior_updates.</span></span><span class="sig-name descname"><span class="pre">simulate_processing_pipeline_async</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">micrograph_uuid</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../_modules/smartem_decisions/cli/random_prior_updates.html#simulate_processing_pipeline_async"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#smartem_decisions.cli.random_prior_updates.simulate_processing_pipeline_async" title="Link to this definition">#</a></dt>
 <dd><p>Start the processing pipeline simulation in a background thread.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>micrograph_uuid</strong> – UUID of the micrograph to process</p></li>
-<li><p><strong>engine</strong> – Optional database engine (uses singleton if not provided)</p></li>
-</ul>
+<dd class="field-odd"><p><strong>micrograph_uuid</strong> – UUID of the micrograph to process</p>
 </dd>
 </dl>
 </dd></dl>
