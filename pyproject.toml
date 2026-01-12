@@ -51,7 +51,7 @@ client = [
     "sqlmodel>=0.0.24,<1.0.0",
     "alembic>=1.13.0,<2.0.0",
     "numpy>=2.0.0,<2.5.0",
-    "scipy>=1.0.0,<1.17.0",
+    "scipy>=1.0.0,<1.18.0",
 ]
 
 # CLI and general utilities
@@ -59,7 +59,7 @@ cli = [
     "python-dotenv==1.2.1",
     "pyyaml",
     "rich",
-    "typer==0.21.0",
+    "typer==0.21.1",
 ]
 
 # Backend system component dependencies (database, messaging, API server/client)
