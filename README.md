@@ -40,15 +40,13 @@ python -m smartem_backend.consumer -v     # Message queue consumer
 
 Full documentation: <https://DiamondLightSource.github.io/smartem-devtools>
 
-- [Backend API Server](https://diamondlightsource.github.io/smartem-devtools/backend/api-server)
-- [Agent Deployment](https://diamondlightsource.github.io/smartem-devtools/agent/deployment)
-- [Admin Utilities](https://diamondlightsource.github.io/smartem-devtools/backend/admin-utilities)
-- [Data Retention Policies](https://diamondlightsource.github.io/smartem-devtools/operations/data-retention)
-- [Kubernetes Deployment](https://diamondlightsource.github.io/smartem-devtools/operations/kubernetes)
+- [Backend API Server](https://diamondlightsource.github.io/smartem-devtools/docs/backend/api-server)
+- [Agent Deployment](https://diamondlightsource.github.io/smartem-devtools/docs/agent/deployment)
+- [Kubernetes Deployment](https://diamondlightsource.github.io/smartem-devtools/docs/operations/kubernetes)
 
 ## Contributing
 
-See the [contribution guide](https://diamondlightsource.github.io/smartem-devtools/development/contributing) for development workflow and code standards.
+See the [contribution guide](https://diamondlightsource.github.io/smartem-devtools/docs/development/contributing) for development workflow and code standards.
 
 ## Licence
 
