@@ -1,0 +1,432 @@
+name: Release smartem-agent
+
+on:
+  push:
+    branches: [main]
+    tags: ['smartem-agent-v*']
+    paths:
+      - 'src/smartem_agent/**'
+      - 'src/smartem_common/**'
+      - 'src/smartem_backend/api_client.py'
+      - '.github/workflows/release-smartem-agent.yml'
+  pull_request:
+    paths:
+      - 'src/smartem_agent/**'
+      - 'src/smartem_common/**'
+      - 'src/smartem_backend/api_client.py'
+      - '.github/workflows/release-smartem-agent.yml'
+  workflow_dispatch:
+    inputs:
+      release_type:
+        description: 'Release type'
+        required: true
+        default: 'rc'
+        type: choice
+        options:
+          - rc
+          - stable
+
+permissions:
+  contents: read
+
+jobs:
+  version:
+    name: Determine version
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      is_stable: ${{ steps.version.outputs.is_stable }}
+      is_rc: ${{ steps.version.outputs.is_rc }}
+      should_release: ${{ steps.version.outputs.should_release }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+
+      - name: Set up Python
+        run: uv python install 3.12
+
+      - name: Determine version
+        id: version
+        run: |
+          # Get version from setuptools_scm via uv
+          BASE_VERSION=$(uvx --with setuptools_scm python -c "from setuptools_scm import get_version; print(get_version())")
+          echo "Base version from setuptools_scm: $BASE_VERSION"
+
+          # Extract clean version (without local part like +gXXXXXX)
+          CLEAN_VERSION=$(echo "$BASE_VERSION" | sed 's/+.*//' | sed 's/\.dev.*//')
+          echo "Clean version: $CLEAN_VERSION"
+
+          IS_STABLE="false"
+          IS_RC="false"
+          SHOULD_RELEASE="false"
+
+          if [[ "$GITHUB_REF" == refs/tags/smartem-agent-v* ]]; then
+            # Stable release from tag
+            TAG_VERSION="${GITHUB_REF#refs/tags/smartem-agent-v}"
+            VERSION="$TAG_VERSION"
+            IS_STABLE="true"
+            SHOULD_RELEASE="true"
+          elif [[ "$GITHUB_REF" == refs/heads/main ]]; then
+            # Check if stable tag already exists for this version
+            STABLE_TAG="smartem-agent-v${CLEAN_VERSION}"
+            if git tag -l "$STABLE_TAG" | grep -q "$STABLE_TAG"; then
+              echo "Stable tag $STABLE_TAG already exists. Skipping RC release."
+              VERSION="$CLEAN_VERSION"
+              IS_RC="false"
+              IS_STABLE="false"
+              SHOULD_RELEASE="false"
+            else
+              # RC release on push to main
+              VERSION="${CLEAN_VERSION}rc${{ github.run_number }}"
+              IS_RC="true"
+              SHOULD_RELEASE="true"
+            fi
+          elif [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            if [[ "${{ inputs.release_type }}" == "stable" ]]; then
+              VERSION="$CLEAN_VERSION"
+              IS_STABLE="true"
+              SHOULD_RELEASE="true"
+            else
+              VERSION="${CLEAN_VERSION}rc${{ github.run_number }}"
+              IS_RC="true"
+              SHOULD_RELEASE="true"
+            fi
+          else
+            # PR or other - just use base version for testing
+            VERSION="$CLEAN_VERSION"
+            SHOULD_RELEASE="false"
+          fi
+
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "is_stable=$IS_STABLE" >> $GITHUB_OUTPUT
+          echo "is_rc=$IS_RC" >> $GITHUB_OUTPUT
+          echo "should_release=$SHOULD_RELEASE" >> $GITHUB_OUTPUT
+
+          echo "Version: $VERSION"
+          echo "Is stable: $IS_STABLE"
+          echo "Is RC: $IS_RC"
+          echo "Should release: $SHOULD_RELEASE"
+
+  test-linux:
+    name: Test (Linux)
+    runs-on: ubuntu-latest
+    needs: version
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+
+      - name: Set up Python
+        run: uv python install 3.12
+
+      - name: Install dependencies
+        run: uv sync --extra agent --extra dev
+
+      - name: Run agent tests
+        run: uv run pytest tests/smartem_agent -v
+
+  test-windows:
+    name: Test (Windows)
+    runs-on: windows-latest
+    needs: version
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+
+      - name: Set up Python
+        run: uv python install 3.12
+
+      - name: Install dependencies
+        run: uv sync --extra agent --extra dev
+
+      - name: Run agent tests
+        run: uv run pytest tests/smartem_agent -v
+
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    needs: version
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+
+      - name: Set up Python
+        run: uv python install 3.12
+
+      - name: Install dependencies
+        run: uv sync --extra dev
+
+      - name: Ruff check
+        run: uv run ruff check src/smartem_agent src/smartem_common
+
+      - name: Pyright check
+        run: uv run pyright src/smartem_agent src/smartem_common
+
+  build-wheel:
+    name: Build Python package
+    runs-on: ubuntu-latest
+    needs: [test-linux, test-windows, lint, version]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+
+      - name: Set up Python
+        run: uv python install 3.12
+
+      - name: Build package
+        run: uv build
+
+      - name: Check package metadata
+        run: uvx twine check dist/*
+
+      - name: List build artifacts
+        run: ls -lh dist/
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v6
+        with:
+          name: python-dist
+          path: dist/*
+          retention-days: 7
+
+  build-windows:
+    name: Build Windows executable
+    runs-on: windows-latest
+    needs: [test-linux, test-windows, lint, version]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pyinstaller
+          pip install .[agent]
+
+      - name: Build with PyInstaller
+        run: >-
+          pyinstaller --onefile
+          --name smartem-agent
+          --paths src
+          --hidden-import watchdog.observers.polling
+          --hidden-import watchdog.observers.winapi
+          --hidden-import smartem_common.schemas
+          --hidden-import smartem_backend.api_client
+          src/smartem_agent/__main__.py
+
+      - name: Rename executable with version
+        run: |
+          $VERSION = "${{ needs.version.outputs.version }}"
+          Move-Item dist/smartem-agent.exe "dist/smartem-agent-windows-v${VERSION}.exe"
+
+      - name: Upload Windows executable
+        uses: actions/upload-artifact@v6
+        with:
+          name: windows-exe
+          path: dist/smartem-agent-windows-v*.exe
+          retention-days: 7
+
+  smoke-test-windows:
+    name: Smoke test Windows executable
+    runs-on: windows-latest
+    needs: [build-windows, version]
+
+    steps:
+      - name: Download Windows executable
+        uses: actions/download-artifact@v7
+        with:
+          name: windows-exe
+          path: dist/
+
+      - name: Smoke test - help
+        run: |
+          $VERSION = "${{ needs.version.outputs.version }}"
+          $EXE = "dist/smartem-agent-windows-v${VERSION}.exe"
+          & $EXE --help
+          if ($LASTEXITCODE -ne 0) { throw "Help command failed" }
+
+      - name: Smoke test - watch help
+        run: |
+          $VERSION = "${{ needs.version.outputs.version }}"
+          $EXE = "dist/smartem-agent-windows-v${VERSION}.exe"
+          & $EXE watch --help
+          if ($LASTEXITCODE -ne 0) { throw "Watch help command failed" }
+
+  publish-pypi:
+    name: Publish to PyPI
+    runs-on: ubuntu-latest
+    needs: [build-wheel, smoke-test-windows, version]
+    if: needs.version.outputs.is_stable == 'true'
+    environment:
+      name: pypi
+      url: https://pypi.org/p/smartem-decisions
+    permissions:
+      id-token: write
+
+    steps:
+      - name: Download build artifacts
+        uses: actions/download-artifact@v7
+        with:
+          name: python-dist
+          path: dist/
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+
+  create-release:
+    name: Create GitHub Release
+    runs-on: ubuntu-latest
+    needs: [build-wheel, build-windows, smoke-test-windows, version]
+    if: needs.version.outputs.should_release == 'true'
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Download Python dist
+        uses: actions/download-artifact@v7
+        with:
+          name: python-dist
+          path: dist/
+
+      - name: Download Windows executable
+        uses: actions/download-artifact@v7
+        with:
+          name: windows-exe
+          path: dist/
+
+      - name: List all artifacts
+        run: ls -la dist/
+
+      - name: Generate release notes
+        id: release_notes
+        run: |
+          VERSION="${{ needs.version.outputs.version }}"
+          IS_STABLE="${{ needs.version.outputs.is_stable }}"
+          IS_RC="${{ needs.version.outputs.is_rc }}"
+
+          # Get previous tag for changelog
+          if [[ "$IS_STABLE" == "true" ]]; then
+            PREV_TAG=$(git tag -l 'smartem-agent-v*' | grep -v "$VERSION" | sort -V | tail -1 || echo "")
+          else
+            PREV_TAG=$(git tag -l 'smartem-agent-v*' | sort -V | tail -1 || echo "")
+          fi
+
+          echo "Previous tag: $PREV_TAG"
+
+          # Generate changelog
+          {
+            if [[ "$IS_RC" == "true" ]]; then
+              echo "## SmartEM Agent v$VERSION (Release Candidate)"
+              echo ""
+              echo "> This is a pre-release for testing. For production use, please use the latest stable release."
+              echo ""
+            else
+              echo "## SmartEM Agent v$VERSION"
+              echo ""
+            fi
+
+            echo "### Installation"
+            echo ""
+            echo "**Python package:**"
+            echo "\`\`\`bash"
+            if [[ "$IS_STABLE" == "true" ]]; then
+              echo "pip install smartem-decisions[agent]"
+              echo "# or with uv"
+              echo "uv pip install smartem-decisions[agent]"
+            else
+              echo "# RC releases are only available from GitHub"
+              echo "pip install dist/smartem_decisions-*.whl"
+            fi
+            echo "\`\`\`"
+            echo ""
+            echo "**Windows executable:**"
+            echo "Download \`smartem-agent-windows-v$VERSION.exe\` from the assets below."
+            echo ""
+            echo "**Run with uvx (no installation):**"
+            echo "\`\`\`bash"
+            if [[ "$IS_STABLE" == "true" ]]; then
+              echo "uvx --with smartem-decisions[agent] smartem-agent --help"
+            else
+              echo "# uvx requires stable PyPI releases"
+            fi
+            echo "\`\`\`"
+            echo ""
+
+            if [[ -n "$PREV_TAG" ]]; then
+              echo "### Changes since $PREV_TAG"
+              echo ""
+
+              # Get PRs with component:agent label
+              gh pr list \
+                --state merged \
+                --label "component:agent" \
+                --search "merged:>=$(git log -1 --format=%ci $PREV_TAG 2>/dev/null | cut -d' ' -f1 || echo '2024-01-01')" \
+                --json number,title,author \
+                --jq '.[] | "- #\(.number) \(.title) (@\(.author.login))"' 2>/dev/null || true
+
+              echo ""
+
+              # Fallback: commits to the agent directories
+              echo "### Commits"
+              echo ""
+              git log ${PREV_TAG}..HEAD --oneline -- src/smartem_agent/ src/smartem_common/ | head -20 || echo "No commits found"
+            fi
+          } > release_notes.md
+
+          echo "Release notes:"
+          cat release_notes.md
+
+          # Set output (escape for GitHub Actions)
+          {
+            echo 'notes<<EOF'
+            cat release_notes.md
+            echo 'EOF'
+          } >> $GITHUB_OUTPUT
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@c95fe1489396fe8a9eb87c0abf8aa5b2ef267fda # v2.2.1
+        with:
+          tag_name: smartem-agent-v${{ needs.version.outputs.version }}
+          name: SmartEM Agent v${{ needs.version.outputs.version }}
+          body: ${{ steps.release_notes.outputs.notes }}
+          prerelease: ${{ needs.version.outputs.is_rc == 'true' }}
+          files: dist/*
+          generate_release_notes: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

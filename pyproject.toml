@@ -89,21 +89,14 @@ agent = [
     "watchdog>=4.0.0,<7.0.0",
 ]
 
-# Athena API mock server dependencies (optional)
-mock = [
-    "smartem-decisions[client]",
-    "fastapi>=0.116.1,<1.0.0",
-    "uvicorn[standard]>=0.30.0,<1.0.0",
-]
-
 # Combined dependencies (for convenience)
 all = [
-    "smartem-decisions[dev,common,client,cli,backend,agent,mock,images]",
+    "smartem-decisions[dev,common,client,cli,backend,agent,images]",
 ]
 
 [project.scripts]
-# Agent tools and communication
-smartem_agent_tools = "smartem_agent.__main__:main"
+# Agent CLI
+smartem-agent = "smartem_agent.__main__:epu_data_intake_cli"
 "smartem.agent-cleanup" = "smartem_backend.agent_data_cleanup:main"
 
 # ML model and prediction management
@@ -128,7 +121,6 @@ packages = [
     "smartem_backend",
     "smartem_agent",
     "smartem_common",
-    "athena_api",
 ]
 package-dir = {"" = "src"}
 
