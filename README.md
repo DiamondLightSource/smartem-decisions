@@ -14,7 +14,7 @@ Source          | <https://github.com/DiamondLightSource/smartem-decisions>
 Docker          | `docker run ghcr.io/DiamondLightSource/smartem-backend:latest`
 Documentation   | <https://DiamondLightSource.github.io/smartem-devtools>
 Releases        | <https://github.com/DiamondLightSource/smartem-decisions/releases>
-Project Board   | <https://github.com/orgs/DiamondLightSource/projects/33/views/1>
+Project Board   | <https://github.com/orgs/DiamondLightSource/projects/51/views/1>
 
 ## System Components
 
