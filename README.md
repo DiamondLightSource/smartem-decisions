@@ -21,7 +21,6 @@ Project Board   | <https://github.com/orgs/DiamondLightSource/projects/33/views/
 - **`smartem_common`**: Shared schemas, types, and utilities used across all components
 - **`smartem_backend`**: Core backend service with HTTP API, database operations, and message queue processing
 - **`smartem_agent`**: Data collection agent that monitors EPU output and communicates with backend
-- **`athena_api`**: Athena HTTP API server integration
 
 ## Quick Start
 
