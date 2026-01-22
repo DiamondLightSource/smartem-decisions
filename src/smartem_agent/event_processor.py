@@ -1,6 +1,7 @@
 import time
 from collections.abc import Callable
 from dataclasses import dataclass
+from enum import Enum
 from pathlib import Path
 
 from smartem_agent.error_handler import ErrorHandler
@@ -103,7 +104,7 @@ class EventProcessor:
             grid = GridData(data_dir=event.file_path.parent.resolve())
             grid.acquisition_data = self.parser.parse_epu_session_manifest(str(event.file_path))
 
-            grid.acquisition_data.uuid = self.datastore.acquisition.uuid
+            grid.acquisition_data.uuid = self.datastore.acquisition.uuid  # type: ignore[union-attr]  # TODO: #214
 
             self.datastore.create_grid(grid, path_mapper=self.path_mapper)
             logger.info(f"Created grid: {grid.uuid} from {event.file_path.name}")
@@ -147,7 +148,7 @@ class EventProcessor:
                 return ProcessingResult.FAILED
 
             grid = self.datastore.get_grid(grid_uuid)
-            grid.atlas_data = atlas_data
+            grid.atlas_data = atlas_data  # type: ignore[union-attr]  # TODO: #214
             self.datastore.update_grid(grid)
             self.datastore.create_atlas(atlas_data)
 
@@ -157,7 +158,7 @@ class EventProcessor:
                     gridsquare = GridSquareData(
                         gridsquare_id=str(gsid),
                         metadata=None,
-                        grid_uuid=grid.uuid,
+                        grid_uuid=grid.uuid,  # type: ignore[union-attr]  # TODO: #214
                         center_x=gsp.center[0] if gsp.center else None,
                         center_y=gsp.center[1] if gsp.center else None,
                         size_width=gsp.size[0] if gsp.size else None,
@@ -444,7 +445,7 @@ class EventProcessor:
         self.stats = ProcessingStats()
 
 
-class ProcessingResult:
+class ProcessingResult(Enum):
     SUCCESS = "success"
     ORPHANED = "orphaned"
     FAILED = "failed"

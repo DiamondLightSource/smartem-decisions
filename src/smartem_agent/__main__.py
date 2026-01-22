@@ -13,6 +13,7 @@ from smartem_agent.fs_parser import EpuParser
 from smartem_agent.fs_watcher import DEFAULT_PATTERNS, SmartEMWatcherV2
 from smartem_agent.model.store import InMemoryDataStore
 from smartem_backend.api_client import SmartEMAPIClient as APIClient
+from smartem_common.utils import generate_uuid
 
 epu_data_intake_cli = typer.Typer(help="EPU Data Intake Tools")
 parse_cli = typer.Typer(help="Commands for parsing EPU data")
@@ -88,7 +89,9 @@ def parse_atlas(
     verbose: int = 0,  # Used by Typer for CLI context, do not remove
 ):
     """Parse an atlas manifest file."""
-    atlas_data = EpuParser.parse_atlas_manifest(path)
+    # CLI parsing operates outside acquisition session context - generate placeholder grid_uuid
+    placeholder_grid_uuid = generate_uuid()
+    atlas_data = EpuParser.parse_atlas_manifest(path, placeholder_grid_uuid)
     logging.info(atlas_data)
 
 
@@ -239,7 +242,7 @@ def watch_directory(
 
     signal.signal(signal.SIGINT, handle_exit)
     if platform.system() == "Windows":
-        signal.signal(signal.SIGBREAK, handle_exit)
+        signal.signal(signal.SIGBREAK, handle_exit)  # type: ignore[attr-defined]
 
     observer.start()
 
