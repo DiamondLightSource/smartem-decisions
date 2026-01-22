@@ -1,0 +1,3 @@
+[[IgnoredVulns]]
+id = "CVE-2022-42969"
+reason = "py is a transitive dev dependency from pytest. The vulnerability requires parsing Subversion repository data, which SmartEM does not interact with. Attack vector not applicable."
