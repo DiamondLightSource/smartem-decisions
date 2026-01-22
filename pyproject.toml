@@ -13,7 +13,7 @@ description = "A proof of concept for a decision engine to automate CryoEM workf
 dependencies = [] # Note: this section is empty by design, use `pip install -e .[all]`
 dynamic = ["version"]
 license.file = "LICENSE"
-readme = "README.md"
+readme = "README_PYPI.md"
 requires-python = ">=3.12"
 
 [project.optional-dependencies]

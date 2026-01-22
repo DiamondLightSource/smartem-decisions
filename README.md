@@ -1,6 +1,5 @@
 [![Built with Claude Code](https://img.shields.io/badge/Built%20with-Claude%20Code-6366f1?logo=claude)](https://claude.ai/code)
 [![CI](https://github.com/DiamondLightSource/smartem-decisions/actions/workflows/ci.yml/badge.svg)](https://github.com/DiamondLightSource/smartem-decisions/actions/workflows/ci.yml)
-[![Coverage](https://codecov.io/gh/DiamondLightSource/smartem-decisions/branch/main/graph/badge.svg)](https://codecov.io/gh/DiamondLightSource/smartem-decisions)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
 # SmartEM Decisions
