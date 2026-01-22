@@ -329,7 +329,7 @@ class InMemoryDataStore:
     def __str__(self):
         store_info = {
             "type": self.__class__.__name__,
-            "root_dir": str(self.root_dir),
+            "root_dir": self.root_dir.as_posix(),
             "acquisition": {
                 "uuid": self.acquisition.uuid,
                 "name": self.acquisition.name,

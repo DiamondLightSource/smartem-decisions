@@ -34,10 +34,10 @@ class EpuParser:
     METADATA_DIR = "Metadata"
     EPU_SESSION_FILENAME = "EpuSession.dm"
     session_dm_pattern = re.compile(rf"{EPU_SESSION_FILENAME}$")
-    atlas_dm_pattern = re.compile(r"Atlas/Atlas\.dm$")
+    atlas_dm_pattern = re.compile(r"Atlas[/\\]Atlas\.dm$")
     gridsquare_dm_file_pattern = re.compile(r"GridSquare_(\d+)\.dm$")  # under "Metadata/"
     gridsquare_xml_file_pattern = re.compile(r"GridSquare_(\d+)_(\d+).xml$")
-    images_disc_dir_pattern = re.compile(r"/Images-Disc(\d+)$")
+    images_disc_dir_pattern = re.compile(r"[/\\]Images-Disc(\d+)$")
     gridsquare_dir_pattern = re.compile(r"[/\\]GridSquare_(\d+)[/\\]")  # under Images-Disc*/
     foilhole_xml_file_pattern = re.compile(r"FoilHole_(\d+)_(\d+)_(\d+)\.xml$")
     micrograph_xml_file_pattern = re.compile(r"FoilHole_(\d+)_Data_(\d+)_(\d+)_(\d+)_(\d+)\.xml$")
