@@ -3,7 +3,7 @@
 [![PyPI version](https://img.shields.io/pypi/v/smartem-decisions)](https://pypi.org/project/smartem-decisions/)
 [![Python Versions](https://img.shields.io/pypi/pyversions/smartem-decisions)](https://pypi.org/project/smartem-decisions/)
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
-[![CI](https://github.com/DiamondLightSource/smartem-decisions/actions/workflows/ci.yml/badge.svg)](https://github.com/DiamondLightSource/smartem-decisions/actions/workflows/ci.yml)
+[![CI](https://github.com/DiamondLightSource/smartem-decisions/actions/workflows/release-smartem-decisions.yml/badge.svg)](https://github.com/DiamondLightSource/smartem-decisions/actions/workflows/release-smartem-decisions.yml)
 
 Smart data collection system for cryo-electron microscopy at Diamond Light Source.
 
