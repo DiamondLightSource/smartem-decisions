@@ -25,18 +25,10 @@ repos:
           '--exclude-files', '.*migrations/versions/.*\.py$'
         ]
 
-  - repo: local
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.8.6
     hooks:
       - id: ruff
-        name: lint with ruff
-        language: system
-        entry: ruff check --force-exclude
-        types: [python]
-        require_serial: true
-
+        args: [--force-exclude]
       - id: ruff-format
-        name: format with ruff
-        language: system
-        entry: ruff format --force-exclude
-        types: [python]
-        require_serial: true
+        args: [--force-exclude]

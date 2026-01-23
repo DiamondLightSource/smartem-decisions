@@ -6,8 +6,6 @@ on:
 #    # Run weekly to check URL links still resolve
 #    - cron: "0 8 * * WED"
 
-jobs:
-  linkcheck:
-    uses: ./.github/workflows/_tox.yml
-    with:
-      tox: docs build -- -b linkcheck
+# Note: linkcheck job removed - docs are now in smartem-devtools repo
+# See https://github.com/DiamondLightSource/smartem-devtools for documentation
+jobs: {}
