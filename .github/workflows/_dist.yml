@@ -31,8 +31,8 @@ jobs:
 
       - name: Install produced wheel
         run: |
-          uv python install 3.12
-          uv pip install --system dist/*.whl
+          uv venv
+          uv pip install dist/*.whl
 
 #      - name: Test module --version works using the installed wheel
 #        run: >
