@@ -28,30 +28,14 @@ jobs:
           # Need this to get version number from last tag
           fetch-depth: 0
 
-#      - if: inputs.python-version == 'dev'
-#        name: Install dev versions of python packages
-#        uses: ./.github/actions/install_requirements
-#
-#      - if: inputs.python-version == 'dev'
-#        name: Write the requirements as an artifact
-#        run: pip freeze --exclude-editable > /tmp/dev-requirements.txt
-#
-#      - if: inputs.python-version == 'dev'
-#        name: Upload dev-requirements.txt
-#        uses: actions/upload-artifact@v4
-#        with:
-#          name: dev-requirements
-#          path: /tmp/dev-requirements.txt
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
 
-      - if: inputs.python-version != 'dev'
-        name: Install latest versions of python packages
-        uses: ./.github/actions/install_requirements
-        with:
-          python-version: ${{ inputs.python-version }}
-          pip-install: "-e .[all]"
+      - name: Set up Python
+        run: uv python install ${{ inputs.python-version }}
 
-      - name: Install tox
-        run: pip install tox tox-direct
+      - name: Install dependencies
+        run: uv sync --extra all
 
       - name: Run tests
-        run: tox -e tests
+        run: uv run pytest --cov --cov-report=xml

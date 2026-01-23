@@ -26,7 +26,6 @@ dev = [
     "pytest",
     "pytest-cov",
     "ruff",
-    "tox-direct",
     "types-mock",
     "types-requests",
     "types-pyyaml",
@@ -149,34 +148,6 @@ data_file = "/tmp/core.coverage"
 [tool.coverage.paths]
 # Tests are run from installed location, map back to the src directory
 source = ["src", "**/site-packages/"]
-
-# tox must currently be configured via an embedded ini string
-# See: https://github.com/tox-dev/tox/issues/999
-[tool.tox]
-legacy_tox_ini = """
-[tox]
-skipsdist=False
-# Add setuptools to the build requirements
-requires = setuptools>=64.0.0
-
-[testenv:{pre-commit,type-checking,tests}]
-extras =
-    tests: dev
-    pre-commit: dev
-    type-checking: dev
-commands_pre =
-    pip install -e .[all]
-passenv = *
-allowlist_externals =
-    pytest
-    pre-commit
-    pyright
-    pip
-commands =
-    pre-commit: pre-commit run --all-files --show-diff-on-failure {posargs}
-    type-checking: pyright src tests {posargs}
-    tests: pytest {posargs}
-"""
 
 [tool.ruff]
 src = ["src", "tests"]
