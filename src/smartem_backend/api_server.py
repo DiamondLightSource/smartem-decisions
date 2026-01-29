@@ -2366,7 +2366,7 @@ def get_square_latent_rep(prediction_model_name: str, gridsquare_uuid: str, db: 
     return [LatentRepresentationResponse(foilhole_uuid=k, x=v.x, y=v.y, index=v.index) for k, v in rep.items() if v]
 
 
-@app.get("/grids/{grid_uuid}/atlas_image")
+@app.get("/grids/{grid_uuid}/atlas_image", responses={200: {"content": {"image/png": {}}}})
 def get_grid_atlas_image(
     grid_uuid: str,
     x: int | None = None,
@@ -2393,7 +2393,7 @@ def get_grid_atlas_image(
     return Response(im_bytes, media_type="image/png")
 
 
-@app.get("/gridsquares/{gridsquare_uuid}/gridsquare_image")
+@app.get("/gridsquares/{gridsquare_uuid}/gridsquare_image", responses={200: {"content": {"image/png": {}}}})
 def get_gridsquare_image(
     gridsquare_uuid: str,
     db: SqlAlchemySession = DB_DEPENDENCY,
