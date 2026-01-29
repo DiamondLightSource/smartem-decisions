@@ -71,7 +71,7 @@ class MessageQueueEventType(str, Enum):
     GRIDSQUARE_MODEL_PREDICTION = "gridsquare.model_prediction"
     FOILHOLE_MODEL_PREDICTION = "foilhole.model_prediction"
     MULTI_FOILHOLE_MODEL_PREDICTION = "foilhole.model_multi_prediction"
-    MODEL_PARAMETER_UPDATE = "gridsquare.model_parameter_update"
+    MODEL_PARAMETER_UPDATE = "grid.model_parameter_update"
 
     REFRESH_PREDICTIONS = "refresh.predictions"
 
@@ -441,6 +441,7 @@ class ModelParameterUpdateEvent(GenericEventMessageBody):
     prediction_model_name: str
     key: str
     value: float
+    group: str = ""
     metric: str | None = None
 
 
