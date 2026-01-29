@@ -239,7 +239,7 @@ def overall_predictions_update(grid_uuid: str, session: Session) -> None:
                         .order_by(gridsquare_alias.uuid)
                     )
                     preds = session.exec(preds_query).all()
-                ctotal = 0.5
+                ctotal = 0
                 for p, c in zip(preds, grid_square_counts, strict=True):
                     sub_values = np.ndarray(c[1])
                     sub_values[:] = (
