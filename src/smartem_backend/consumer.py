@@ -74,6 +74,7 @@ from smartem_backend.mq_publisher import (
     publish_ctf_estimation_registered,
     publish_motion_correction_registered,
 )
+from smartem_backend.predictions.acquisition import ordered_holes
 from smartem_backend.predictions.update import overall_predictions_update, prior_update
 from smartem_backend.utils import get_db_engine, load_conf, rmq_consumer, setup_logger
 
@@ -685,7 +686,9 @@ def handle_ctf_estimation_complete(event_data: dict[str, Any]) -> None:
                 )
             else:
                 updated_metric_stats = metric_stats[0]
-                old_diff = event.total_motion - (updated_metric_stats.value_sum / updated_metric_stats.count)
+                old_diff = event.ctf_max_resolution_estimate - (
+                    updated_metric_stats.value_sum / updated_metric_stats.count
+                )
                 updated_metric_stats.count += 1
                 updated_metric_stats.value_sum += event.ctf_max_resolution_estimate
                 updated_metric_stats.squared_value_sum += old_diff * (
@@ -822,15 +825,16 @@ def handle_multi_foilhole_model_prediction(event_data: dict[str, Any]) -> None:
                 .where(CurrentQualityPrediction.metric_name == event.metric)
             ).all()
             if not current_quality_predictions:
-                square = session.exec(
+                squares = session.exec(
                     select(GridSquare, FoilHole)
                     .where(GridSquare.uuid == FoilHole.gridsquare_uuid)
-                    .where(FoilHole.uuid == event.foilhole_uuids[0])
-                ).one()[0]
+                    .where(FoilHole.uuid.in_(event.foilhole_uuids))
+                ).all()
+                square_lookup = {s[1].uuid: s[0] for s in squares}
                 current_quality_predictions = [
                     CurrentQualityPrediction(
-                        grid_uuid=square.grid_uuid,
-                        gridsquare_uuid=square.uuid,
+                        grid_uuid=square_lookup[fhuuid].grid_uuid,
+                        gridsquare_uuid=square_lookup[fhuuid].uuid,
                         foilhole_uuid=fhuuid,
                         prediction_model_name=event.prediction_model_name,
                         value=event.prediction_value,
@@ -862,6 +866,7 @@ def handle_refresh_predictions(event_data: dict[str, Any]) -> None:
         event = RefreshPredictionsEvent(**event_data)
         with Session(db_engine) as session:
             overall_predictions_update(event.grid_uuid, session)
+            ordered_holes(event.grid_uuid, session)
 
     except ValidationError as e:
         logger.error(f"Validation error processing refresh predictions event: {e}")
