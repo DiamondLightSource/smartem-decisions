@@ -28,7 +28,7 @@ jobs:
   security:
     needs: check
     if: needs.check.outputs.branch-pr == ''
-    uses: ./.github/workflows/security-scan.yml
+    uses: ./.github/workflows/leaked-secrets-scan.yml
 
   schema-drift:
     needs: check
