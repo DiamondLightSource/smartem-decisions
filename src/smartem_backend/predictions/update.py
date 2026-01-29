@@ -88,7 +88,7 @@ def prior_update(
         # need to check this is a legitimate thing to do
         # hopefully you still converge to the same answer as the log is monotonic
         updated_value = pred[1].weight * (quality * pred[0].value + (1 - quality) * (1 - pred[0].value))
-        pred[1].weigth = updated_value
+        pred[1].weight = updated_value
         updates.append(pred[1])
         updates.append(
             QualityPredictionModelWeight(
