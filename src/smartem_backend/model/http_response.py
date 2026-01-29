@@ -137,7 +137,7 @@ class FoilHoleResponse(BaseModel):
     uuid: str
     gridsquare_id: str | None
     foilhole_id: str
-    status: FoilHoleStatus
+    status: FoilHoleStatus | None
     center_x: float | None
     center_y: float | None
     quality: float | None
