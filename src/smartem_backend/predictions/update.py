@@ -257,12 +257,14 @@ def overall_predictions_update(grid_uuid: str, session: Session) -> None:
     ).all()
     if not overall_preds:
         ids = session.exec(
-            select(OverallQualityPrediction)
-            .where(OverallQualityPrediction.grid_uuid == grid_uuid)
-            .order_by(OverallQualityPrediction.gridsquare_uuid, OverallQualityPrediction.foilhole_uuid)
+            select(GridSquare.uuid, FoilHole.uuid)
+            .where(GridSquare.uuid == FoilHole.gridsquare_uuid)
+            .where(FoilHole.x_location != None)  # noqa: E711
+            .where(GridSquare.uuid == grid_uuid)
+            .order_by(GridSquare.uuid, FoilHole.uuid)
         ).all()
         overall_preds = [
-            OverallQualityPrediction(grid_uuid == grid_uuid, gridsquare_uuid=i[0], foilhole_uuid=i[1], value=float(v))
+            OverallQualityPrediction(grid_uuid=grid_uuid, gridsquare_uuid=i[0], foilhole_uuid=i[1], value=float(v))
             for v, i in zip(results, ids, strict=True)
         ]
     else:
