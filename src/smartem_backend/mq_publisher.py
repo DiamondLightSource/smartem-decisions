@@ -338,7 +338,9 @@ def publish_motion_correction_registered(micrograph_uuid: str, quality: bool, me
 def publish_ctf_estimation_completed(micrograph_uuid: str, ctf_max_res: float):
     """Publish CTF estimation completed event to RabbitMQ"""
     event = CtfCompleteBody(
-        event_type=MessageQueueEventType.CTF_COMPLETE, micrograph_uuid=micrograph_uuid, ctf_max_res=ctf_max_res
+        event_type=MessageQueueEventType.CTF_COMPLETE,
+        micrograph_uuid=micrograph_uuid,
+        ctf_max_resolution_estimate=ctf_max_res,
     )
     return rmq_publisher.publish_event(MessageQueueEventType.CTF_COMPLETE, event)
 
