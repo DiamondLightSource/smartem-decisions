@@ -2,7 +2,13 @@ import typer
 from sqlalchemy.engine import Engine
 from sqlmodel import Session, select
 
-from smartem_backend.model.database import Grid, QualityMetric, QualityPredictionModel, QualityPredictionModelWeight
+from smartem_backend.model.database import (
+    CurrentQualityPredictionModelWeight,
+    Grid,
+    QualityMetric,
+    QualityPredictionModel,
+    QualityPredictionModelWeight,
+)
 from smartem_backend.utils import get_db_engine, logger
 
 
@@ -48,7 +54,13 @@ def initialise_all_models_for_grid(grid_uuid: str, engine: Engine = None) -> Non
                         weight=default_weight,
                         metric_name=metric.name,
                     )
+                    current_weight_entry = CurrentQualityPredictionModelWeight(
+                        grid_uuid=grid_uuid,
+                        prediction_model_name=model.name,
+                        weight=default_weight,
+                    )
                     sess.add(weight_entry)
+                    sess.add(current_weight_entry)
                     logger.info(f"Initialised weight {default_weight} for model '{model.name}' on grid {grid_uuid}")
                 else:
                     logger.debug(f"Weight already exists for model '{model.name}' on grid {grid_uuid}")
