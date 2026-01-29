@@ -347,6 +347,7 @@ class OverallQualityPrediction(SQLModel, table=True):
     __table_args__ = {"extend_existing": True}
     id: int | None = Field(default=None, primary_key=True)
     value: float
+    suggested_acquisition_index: int
     foilhole_uuid: str = Field(foreign_key="foilhole.uuid")
     grid_uuid: str = Field(foreign_key="grid.uuid")
     gridsquare_uuid: str = Field(foreign_key="gridsquare.uuid")
