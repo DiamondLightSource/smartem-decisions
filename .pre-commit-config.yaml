@@ -11,19 +11,11 @@ repos:
         exclude: ^docs/assets/
       - id: end-of-file-fixer
 
-  - repo: https://github.com/Yelp/detect-secrets
-    rev: v1.5.0
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.30.0
     hooks:
-      - id: detect-secrets
-        name: detect secrets
-        args: [
-          '--baseline', '.secrets.baseline',
-          '--exclude-files', '^docs/assets/',
-          '--exclude-files', '^build/',
-          '--exclude-files', '^dist/',
-          '--exclude-files', '.*\.lock$',
-          '--exclude-files', '.*migrations/versions/.*\.py$'
-        ]
+      - id: gitleaks
+        stages: [pre-push]
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.14.14
