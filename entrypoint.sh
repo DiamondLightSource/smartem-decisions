@@ -4,8 +4,10 @@ set -e
 cd /app
 # Only source .env if not in Kubernetes
 if [ -z "$KUBERNETES_SERVICE_HOST" ]; then
-    echo "Sourcing .env file for local development"
-    source .env
+    if [ -f .env ]; then
+        echo "Sourcing .env file for local development"
+        source .env
+    fi
 else
     echo "Running in Kubernetes - using environment variables from ConfigMap/Secrets"
 fi
