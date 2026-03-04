@@ -7,7 +7,7 @@ from smartem_backend.model.mq_event import (
     AgentInstructionUpdatedEvent,
     AtlasCreatedEvent,
     AtlasDeletedEvent,
-    AtlasModelPredictionEvent,
+    AtlasPredictionEvent,
     AtlasTileCreatedEvent,
     AtlasTileDeletedEvent,
     AtlasTileUpdatedEvent,
@@ -258,7 +258,7 @@ def publish_micrograph_deleted(uuid):
 
 def publish_atlas_model_prediction(atlas_uuid: str, prediction_value: float):
     """Publish quality prediction event for a whole atlas to RabbitMQ"""
-    event = AtlasModelPredictionEvent(
+    event = AtlasPredictionEvent(
         event_type=MessageQueueEventType.ATLAS_MODEL_PREDICTION, uuid=atlas_uuid, prediction_value=prediction_value
     )
     return rmq_publisher.publish_event(MessageQueueEventType.ATLAS_MODEL_PREDICTION, event)
