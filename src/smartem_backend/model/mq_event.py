@@ -68,6 +68,7 @@ class MessageQueueEventType(str, Enum):
     # PARTICLE_SELECTION_START = "particle_selection.started"
     PARTICLE_SELECTION_COMPLETE = "particle_selection.completed"
 
+    ATLAS_MODEL_PREDICTION = "atlas.model_prediction"
     GRIDSQUARE_MODEL_PREDICTION = "gridsquare.model_prediction"
     FOILHOLE_MODEL_PREDICTION = "foilhole.model_prediction"
     MULTI_FOILHOLE_MODEL_PREDICTION = "foilhole.model_multi_prediction"
@@ -413,6 +414,11 @@ class ParticleSelectionCompleteBody(GenericEventMessageBody):
         if self.number_of_particles_rejected < 0:
             raise ValueError("Number of Particles Rejected should be a non-negative int")
         return self
+
+
+class AtlasPredictionEvent(GenericEventMessageBody):
+    uuid: str
+    prediction_value: float
 
 
 class GridSquareModelPredictionEvent(GenericEventMessageBody):
