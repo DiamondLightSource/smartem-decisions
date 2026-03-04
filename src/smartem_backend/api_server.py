@@ -2053,13 +2053,6 @@ async def create_test_session(session_data: dict, db: SqlAlchemySession = DB_DEP
     }
 
 
-if __name__ == "__main__":
-    import uvicorn
-
-    port = int(os.getenv("HTTP_API_PORT", "8000"))
-    host = os.getenv("HTTP_API_HOST", "127.0.0.1")
-
-    uvicorn.run("smartem_backend.api_server:app", host=host, port=port, reload=False, log_level="info")
 # ============ Quality Prediction Model CRUD Operations ============
 
 
@@ -2417,3 +2410,12 @@ def get_gridsquare_image(
         im.save(buf, format="PNG")
         im_bytes = buf.getvalue()
     return Response(im_bytes, media_type="image/png")
+
+
+if __name__ == "__main__":
+    import uvicorn
+
+    port = int(os.getenv("HTTP_API_PORT", "8000"))
+    host = os.getenv("HTTP_API_HOST", "127.0.0.1")
+
+    uvicorn.run("smartem_backend.api_server:app", host=host, port=port, reload=False, log_level="info")
