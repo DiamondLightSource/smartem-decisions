@@ -207,7 +207,7 @@ jobs:
         run: ls -lh dist/
 
       - name: Upload build artifacts
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: python-dist
           path: dist/*
@@ -250,7 +250,7 @@ jobs:
           Move-Item dist/smartem-agent.exe "dist/smartem-agent-windows-v${VERSION}.exe"
 
       - name: Upload Windows executable
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: windows-exe
           path: dist/smartem-agent-windows-v*.exe
@@ -263,7 +263,7 @@ jobs:
 
     steps:
       - name: Download Windows executable
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: windows-exe
           path: dist/
@@ -295,7 +295,7 @@ jobs:
 
     steps:
       - name: Download build artifacts
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: python-dist
           path: dist/
@@ -318,13 +318,13 @@ jobs:
           fetch-depth: 0
 
       - name: Download Python dist
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: python-dist
           path: dist/
 
       - name: Download Windows executable
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: windows-exe
           path: dist/
