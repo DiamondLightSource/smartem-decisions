@@ -29,6 +29,7 @@ jobs:
     needs: check
     if: needs.check.outputs.branch-pr == ''
     uses: ./.github/workflows/leaked-secrets-scan.yml
+    secrets: inherit
 
   schema-drift:
     needs: check
