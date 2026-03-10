@@ -32,20 +32,20 @@ jobs:
     secrets: inherit
 
   schema-drift:
-    needs: check
+    needs: security
     if: needs.check.outputs.branch-pr == ''
     uses: ./.github/workflows/_schema_drift.yml
 
 # TODO restore
 #  lint:
-#    needs: check
+#    needs: security
 #    if: needs.check.outputs.branch-pr == ''
 #    uses: ./.github/workflows/_tox.yml
 #    with:
 #      tox: pre-commit,type-checking
 
   test:
-    needs: check
+    needs: security
     if: needs.check.outputs.branch-pr == ''
     strategy:
       matrix:
@@ -64,7 +64,7 @@ jobs:
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
   dist:
-    needs: check
+    needs: [test, schema-drift]
     if: needs.check.outputs.branch-pr == ''
     uses: ./.github/workflows/_dist.yml
 
