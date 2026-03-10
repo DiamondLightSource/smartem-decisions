@@ -31,6 +31,12 @@ repos:
       - id: gitleaks
         stages: [pre-push]
 
+  - repo: https://github.com/trufflesecurity/trufflehog
+    rev: v3.93.8
+    hooks:
+      - id: trufflehog
+        stages: [pre-push]
+
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.14.14
     hooks:
