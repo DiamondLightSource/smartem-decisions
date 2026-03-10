@@ -1,0 +1,5 @@
+[allowlist]
+  paths = [
+    '''alembic\.ini''',
+    '''k8s/secret\.example\.yaml''',
+  ]
