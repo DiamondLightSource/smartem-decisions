@@ -102,9 +102,13 @@ class EventProcessor:
     def _process_grid(self, event: ClassifiedEvent) -> "ProcessingResult":
         try:
             grid = GridData(data_dir=event.file_path.parent.resolve())
-            grid.acquisition_data = self.parser.parse_epu_session_manifest(str(event.file_path))
+            acquisition_data = self.parser.parse_epu_session_manifest(str(event.file_path))
+            if not acquisition_data:
+                logger.error(f"Failed to parse session manifest: {event.file_path}")
+                return ProcessingResult.FAILED
 
-            grid.acquisition_data.uuid = self.datastore.acquisition.uuid  # type: ignore[union-attr]  # TODO: #214
+            acquisition_data.uuid = self.datastore.acquisition.uuid
+            grid.acquisition_data = acquisition_data
 
             self.datastore.create_grid(grid, path_mapper=self.path_mapper)
             logger.info(f"Created grid: {grid.uuid} from {event.file_path.name}")
@@ -148,7 +152,11 @@ class EventProcessor:
                 return ProcessingResult.FAILED
 
             grid = self.datastore.get_grid(grid_uuid)
-            grid.atlas_data = atlas_data  # type: ignore[union-attr]  # TODO: #214
+            if not grid:
+                logger.error(f"Grid {grid_uuid} not found in datastore")
+                return ProcessingResult.FAILED
+
+            grid.atlas_data = atlas_data
             self.datastore.update_grid(grid)
             self.datastore.create_atlas(atlas_data)
 
@@ -158,7 +166,7 @@ class EventProcessor:
                     gridsquare = GridSquareData(
                         gridsquare_id=str(gsid),
                         metadata=None,
-                        grid_uuid=grid.uuid,  # type: ignore[union-attr]  # TODO: #214
+                        grid_uuid=grid.uuid,
                         center_x=gsp.center[0] if gsp.center else None,
                         center_y=gsp.center[1] if gsp.center else None,
                         size_width=gsp.size[0] if gsp.size else None,
@@ -283,6 +291,10 @@ class EventProcessor:
                 logger.error(f"Failed to parse foilhole manifest: {event.file_path}")
                 return ProcessingResult.FAILED
 
+            if not foilhole.gridsquare_id:
+                logger.error(f"Foilhole {foilhole.id} has no gridsquare_id in manifest: {event.file_path}")
+                return ProcessingResult.FAILED
+
             gridsquare = self.datastore.find_gridsquare_by_natural_id(foilhole.gridsquare_id)
             if not gridsquare:
                 logger.info(
@@ -342,11 +354,13 @@ class EventProcessor:
                 logger.info(f"Micrograph {micrograph_manifest.unique_id} waiting for foilhole {foilhole_id}")
                 return ProcessingResult.ORPHANED
 
-            gridsquare_id = foilhole.gridsquare_id
+            if not foilhole.gridsquare_id:
+                logger.error(f"Foilhole {foilhole_id} has no gridsquare_id")
+                return ProcessingResult.FAILED
 
             micrograph = MicrographData(
                 id=micrograph_manifest.unique_id,
-                gridsquare_id=gridsquare_id,
+                gridsquare_id=foilhole.gridsquare_id,
                 foilhole_uuid=foilhole.uuid,
                 foilhole_id=foilhole_id,
                 location_id=location_id,
@@ -398,6 +412,10 @@ class EventProcessor:
 
     def _resolve_orphan_foilhole(self, orphan) -> None:
         foilhole: FoilHoleData = orphan.entity_data
+        if not foilhole.gridsquare_id:
+            logger.error(f"Cannot resolve foilhole orphan {foilhole.id}: no gridsquare_id")
+            return
+
         gridsquare = self.datastore.find_gridsquare_by_natural_id(foilhole.gridsquare_id)
         if not gridsquare:
             logger.error(f"Cannot resolve foilhole orphan {foilhole.id}: gridsquare {foilhole.gridsquare_id} not found")
