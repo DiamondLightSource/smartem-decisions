@@ -36,7 +36,7 @@ def retry_with_backoff(
 
     def decorator(func):
         def wrapper(*args, **kwargs):
-            last_exception = None
+            last_exception: Exception | None = None
             for attempt in range(max_retries):
                 try:
                     return func(*args, **kwargs)
@@ -61,7 +61,9 @@ def retry_with_backoff(
                     else:
                         raise
 
-            raise last_exception
+            if last_exception:
+                raise last_exception
+            raise RuntimeError(f"Retry exhausted after {max_retries} attempts with no exception captured")
 
         return wrapper
 
@@ -102,11 +104,11 @@ class InMemoryDataStore:
         Returns:
             The matching grid entity or None if no match is found
         """
-        path = Path(path)
+        path_obj = Path(path)
 
         for grid_uuid, grid in self.grids.items():
-            if (grid.data_dir and path.is_relative_to(grid.data_dir)) or (
-                grid.atlas_dir and path.is_relative_to(grid.atlas_dir)
+            if (grid.data_dir and path_obj.is_relative_to(grid.data_dir)) or (
+                grid.atlas_dir and path_obj.is_relative_to(grid.atlas_dir)
             ):
                 return grid_uuid
 
@@ -226,9 +228,10 @@ class InMemoryDataStore:
 
     def create_foilhole(self, foilhole: FoilHoleData):
         self.foilholes[foilhole.uuid] = foilhole
-        if foilhole.gridsquare_uuid not in self.gridsquare_rels:
-            self.gridsquare_rels[foilhole.gridsquare_uuid] = set()
-        self.gridsquare_rels[foilhole.gridsquare_uuid].add(foilhole.uuid)
+        if foilhole.gridsquare_uuid:
+            if foilhole.gridsquare_uuid not in self.gridsquare_rels:
+                self.gridsquare_rels[foilhole.gridsquare_uuid] = set()
+            self.gridsquare_rels[foilhole.gridsquare_uuid].add(foilhole.uuid)
         self.foilhole_rels[foilhole.uuid] = set()
 
     def create_foilholes(self, gridsquare_uuid: str, foilholes: list[FoilHoleData]):
@@ -343,8 +346,8 @@ class InMemoryDataStore:
             },
         }
 
-        if hasattr(self, "api_client"):
-            store_info["api_url"] = self.api_client.base_url
+        if api_client := getattr(self, "api_client", None):
+            store_info["api_url"] = api_client.base_url
 
         return json.dumps(store_info, indent=2)
 
@@ -581,6 +584,8 @@ class PersistentDataStore(InMemoryDataStore):
     @retry_with_backoff()
     def _create_foilhole_with_retry(self, foilhole: FoilHoleData):
         """Create foilhole with retry logic for handling race conditions"""
+        if not foilhole.gridsquare_uuid:
+            raise ValueError(f"Cannot create foilhole {foilhole.uuid} without gridsquare_uuid")
         return self.api_client.create_gridsquare_foilholes(foilhole.gridsquare_uuid, [foilhole])
 
     def update_foilhole(self, foilhole: FoilHoleData):
