@@ -6,7 +6,7 @@ from collections.abc import Callable
 from datetime import datetime
 from pathlib import Path
 
-from lxml import etree
+from lxml import etree  # type: ignore[import-untyped]
 
 from smartem_agent.model.store import InMemoryDataStore
 from smartem_common.schemas import (
@@ -28,6 +28,44 @@ from smartem_common.schemas import (
     MicrographManifest,
     MicroscopeData,
 )
+
+logger = logging.getLogger(__name__)
+
+
+def _get_text(element: etree._Element | None, default: str = "") -> str:
+    """Safely extract text from an XML element."""
+    if element is None:
+        return default
+    return element.text or default
+
+
+def _get_attr(element: etree._Element | None, attr: str, default: str = "") -> str:
+    """Safely extract an attribute from an XML element."""
+    if element is None:
+        return default
+    return element.attrib.get(attr, default)
+
+
+def _get_float(element: etree._Element | None, default: float | None = None) -> float | None:
+    """Safely extract a float from an XML element's text."""
+    text = _get_text(element)
+    if not text:
+        return default
+    try:
+        return float(text)
+    except ValueError:
+        return default
+
+
+def _get_int(element: etree._Element | None, default: int | None = None) -> int | None:
+    """Safely extract an int from an XML element's text."""
+    text = _get_text(element)
+    if not text:
+        return default
+    try:
+        return int(text)
+    except ValueError:
+        return default
 
 
 class EpuParser:
@@ -185,7 +223,7 @@ class EpuParser:
             tree = etree.parse(manifest_path)
             root = tree.getroot()
 
-            def get_element_text(xpath):
+            def get_element_text(xpath) -> str | None:
                 elements = root.xpath(xpath, namespaces=namespaces)
                 return elements[0].text if elements else None
 
@@ -194,17 +232,18 @@ class EpuParser:
 
             if atlas_id and storage_path and atlas_id.startswith(storage_path):
                 atlas_id = atlas_id[len(storage_path) :].replace("\\", "/")
-            if atlas_id.startswith("/"):  # remove leading forward slash
+            if atlas_id and atlas_id.startswith("/"):
                 atlas_id = atlas_id.lstrip("/")
 
             start_time_str = get_element_text("./ns:StartDateTime")
+            name = get_element_text("./ns:Name")
+            acq_id = get_element_text("./common:Id")
 
-            # Parse instrument information
             instrument_data = EpuParser._parse_microscope_data(root, namespaces)
 
             return AcquisitionData(
-                name=get_element_text("./ns:Name"),
-                id=get_element_text("./common:Id"),
+                name=name or "",
+                id=acq_id,
                 start_time=datetime.fromisoformat(start_time_str.rstrip("Z")) if start_time_str else None,
                 atlas_path=atlas_id,
                 storage_path=EpuParser.to_cygwin_path(storage_path) if storage_path else None,
@@ -214,7 +253,7 @@ class EpuParser:
             )
 
         except Exception as e:
-            logging.error(f"Failed to parse EPU session manifest: {str(e)}")
+            logger.error(f"Failed to parse EPU session manifest: {str(e)}")
             return None
 
     @staticmethod
@@ -267,7 +306,7 @@ class EpuParser:
         return None
 
     @staticmethod
-    def parse_atlas_manifest(atlas_path: str, grid_uuid: str):
+    def parse_atlas_manifest(atlas_path: str, grid_uuid: str) -> AtlasData | None:
         try:
             namespaces = {
                 "ns": "http://schemas.datacontract.org/2004/07/Applications.SciencesAppsShared.GridAtlas.Persistence",
@@ -276,47 +315,59 @@ class EpuParser:
                 "z": "http://schemas.microsoft.com/2003/10/Serialization/",
             }
 
+            atlas_data: AtlasData | None = None
+
             for event, element in etree.iterparse(
                 atlas_path,
                 tag="{http://schemas.datacontract.org/2004/07/Applications.SciencesAppsShared.GridAtlas.Persistence}AtlasSessionXml",
             ):
                 if event == "end":
 
-                    def get_element_text(xpath, el=element):
+                    def get_element_text(xpath, el=element) -> str | None:
                         elements = el.xpath(xpath, namespaces=namespaces)
                         return elements[-1].text if elements else None
 
                     acquisition_date_str = get_element_text(".//ns:Atlas/ns:AcquisitionDateTime")
+                    atlas_id = get_element_text(".//common:Id")
+                    storage_folder = get_element_text(".//ns:StorageFolder")
+                    name = get_element_text(".//ns:Name")
+
+                    if not atlas_id:
+                        logger.error(f"Atlas manifest missing required Id field: {atlas_path}")
+                        return None
 
                     atlas_data = AtlasData(
-                        id=get_element_text(".//common:Id"),
+                        id=atlas_id,
                         acquisition_date=datetime.fromisoformat(acquisition_date_str.replace("Z", "+00:00"))
                         if acquisition_date_str
-                        else None,
-                        storage_folder=get_element_text(".//ns:StorageFolder"),
+                        else datetime.now(),
+                        storage_folder=storage_folder or "",
                         description=get_element_text(".//ns:Description"),
-                        name=get_element_text(".//ns:Name"),
+                        name=name or "",
                         grid_uuid=grid_uuid,
                         tiles=[],
                         gridsquare_positions=EpuParser._parse_gridsquare_positions(element),
                     )
-                    atlas_data.tiles = [
-                        EpuParser._parse_atlas_tile(tile, atlas_data.uuid)
-                        for tile in element.xpath(
-                            ".//ns:Atlas/ns:TilesEfficient/ns:_items/ns:TileXml", namespaces=namespaces
-                        )
-                        if tile.xpath(".//common:Id", namespaces=namespaces)
-                    ]
-                return atlas_data
+                    tile_list: list[AtlasTileData] = []
+                    for tile in element.xpath(
+                        ".//ns:Atlas/ns:TilesEfficient/ns:_items/ns:TileXml", namespaces=namespaces
+                    ):
+                        if tile.xpath(".//common:Id", namespaces=namespaces):
+                            parsed_tile = EpuParser._parse_atlas_tile(tile, atlas_data.uuid)
+                            if parsed_tile:
+                                tile_list.append(parsed_tile)
+                    atlas_data.tiles = tile_list
+
+            return atlas_data
 
         except Exception as e:
-            logging.error(f"Failed to parse Atlas manifest: {str(e)}")
+            logger.error(f"Failed to parse Atlas manifest: {str(e)}")
             return None
 
     @staticmethod
-    def _parse_gridsquare_positions(atlas_xml):
+    def _parse_gridsquare_positions(atlas_xml) -> dict[int, GridSquarePosition]:
         """Parse grid square positions from Atlas XML."""
-        gridsquare_positions = {}
+        gridsquare_positions: dict[int, GridSquarePosition] = {}
 
         namespaces = {
             "ns": "http://schemas.datacontract.org/2004/07/Applications.SciencesAppsShared.GridAtlas.Persistence",
@@ -332,7 +383,6 @@ class EpuParser:
             if (nodes := tile.find(".//ns:Nodes", namespaces=namespaces)) is None:
                 continue
 
-            # Get key-value pairs using local-name() to match the node-naming pattern
             pairs = nodes.xpath(
                 ".//gen:*[starts-with(local-name(), 'KeyValuePairOfintNodeXml')]", namespaces=namespaces
             )
@@ -346,42 +396,44 @@ class EpuParser:
                     if (value := pair.find("gen:value", namespaces=namespaces)) is None:
                         continue
 
-                    if (position := value.xpath(".//b:PositionOnTheAtlas", namespaces=namespaces)[0]) is None:
+                    position_list = value.xpath(".//b:PositionOnTheAtlas", namespaces=namespaces)
+                    if not position_list:
                         continue
+                    position = position_list[0]
 
                     center = position.find("c:Center", namespaces=namespaces)
-                    center_tuple = None
+                    center_tuple: tuple[int, int] | None = None
                     if center is not None:
                         x_elem = center.find("d:x", namespaces=namespaces)
                         y_elem = center.find("d:y", namespaces=namespaces)
-                        if x_elem is not None and y_elem is not None:
+                        if x_elem is not None and y_elem is not None and x_elem.text and y_elem.text:
                             center_tuple = (int(float(x_elem.text)), int(float(y_elem.text)))
 
                     physical = position.find("c:Physical", namespaces=namespaces)
-                    physical_tuple = None
+                    physical_tuple: tuple[float, float] | None = None
                     if physical is not None:
                         x_elem = physical.find("d:x", namespaces=namespaces)
                         y_elem = physical.find("d:y", namespaces=namespaces)
-                        if x_elem is not None and y_elem is not None:
+                        if x_elem is not None and y_elem is not None and x_elem.text and y_elem.text:
                             physical_tuple = (float(x_elem.text) * 1e9, float(y_elem.text) * 1e9)
 
                     size = position.find("c:Size", namespaces=namespaces)
-                    size_tuple = None
+                    size_tuple: tuple[int, int] | None = None
                     if size is not None:
                         width_elem = size.find("d:width", namespaces=namespaces)
                         height_elem = size.find("d:height", namespaces=namespaces)
-                        if width_elem is not None and height_elem is not None:
+                        if width_elem is not None and height_elem is not None and width_elem.text and height_elem.text:
                             size_tuple = (int(float(width_elem.text)), int(float(height_elem.text)))
 
                     rotation_elem = position.find("c:Rotation", namespaces=namespaces)
-                    rotation = float(rotation_elem.text) if rotation_elem is not None else None
+                    rotation = float(rotation_elem.text) if rotation_elem is not None and rotation_elem.text else None
 
                     gridsquare_positions[gs_id] = GridSquarePosition(
                         center=center_tuple, physical=physical_tuple, size=size_tuple, rotation=rotation
                     )
 
                 except (AttributeError, IndexError, ValueError, TypeError) as e:
-                    logging.error(f"Failed to parse grid square position: {str(e)}")
+                    logger.error(f"Failed to parse grid square position: {str(e)}")
                     continue
 
         return gridsquare_positions
@@ -397,9 +449,17 @@ class EpuParser:
                 "model": "http://schemas.datacontract.org/2004/07/Applications.SciencesAppsShared.GridAtlas.Datamodel",
             }
 
-            def get_element_text(xpath, xml=tile_xml):
+            def get_element_text(xpath, xml=tile_xml) -> str | None:
                 elements = xml.xpath(xpath, namespaces=namespaces)
                 return elements[0].text if elements else None
+
+            def safe_int(text: str | None, default: int = 0) -> int:
+                if not text:
+                    return default
+                try:
+                    return int(float(text))
+                except (ValueError, TypeError):
+                    return default
 
             tile_id = get_element_text(".//common:Id")
             if not tile_id:
@@ -407,11 +467,11 @@ class EpuParser:
 
             x_text = get_element_text("./ns:AtlasPixelPosition/draw:x")
             y_text = get_element_text("./ns:AtlasPixelPosition/draw:y")
-            position_tuple = (int(x_text), int(y_text)) if x_text and y_text else None
+            position_tuple = (safe_int(x_text), safe_int(y_text)) if x_text and y_text else None
 
             width_text = get_element_text("./ns:AtlasPixelPosition/draw:width")
             height_text = get_element_text("./ns:AtlasPixelPosition/draw:height")
-            size_tuple = (int(width_text), int(height_text)) if width_text and height_text else None
+            size_tuple = (safe_int(width_text), safe_int(height_text)) if width_text and height_text else None
 
             atlastile_data = AtlasTileData(
                 id=tile_id,
@@ -425,41 +485,41 @@ class EpuParser:
             )
 
             def _get_gridsquare_position_data(tile_positions) -> list[AtlasTileGridSquarePosition]:
-                result = []
+                result: list[AtlasTileGridSquarePosition] = []
                 for t in tile_positions:
                     if get_element_text("./ns:TileId", xml=t) == tile_id and t.xpath(
                         "./ns:NodePosition", namespaces=namespaces
                     ):
                         n = t.xpath("./ns:NodePosition", namespaces=namespaces)[0]
-                        result.append(
-                            AtlasTileGridSquarePosition(
-                                position=(
-                                    int(float(get_element_text("./model:Center/draw:x", xml=n))),
-                                    int(float(get_element_text("./model:Center/draw:y", xml=n))),
-                                ),
-                                size=(
-                                    int(float(get_element_text("./model:Size/draw:width", xml=n))),
-                                    int(float(get_element_text("./model:Size/draw:height", xml=n))),
-                                ),
+                        center_x = get_element_text("./model:Center/draw:x", xml=n)
+                        center_y = get_element_text("./model:Center/draw:y", xml=n)
+                        size_w = get_element_text("./model:Size/draw:width", xml=n)
+                        size_h = get_element_text("./model:Size/draw:height", xml=n)
+                        if center_x and center_y and size_w and size_h:
+                            result.append(
+                                AtlasTileGridSquarePosition(
+                                    position=(safe_int(center_x), safe_int(center_y)),
+                                    size=(safe_int(size_w), safe_int(size_h)),
+                                )
                             )
-                        )
                 return result
 
-            gridsquare_positions = {}
+            gridsquare_positions: dict[str, list[AtlasTileGridSquarePosition]] = {}
             for gs in tile_xml.xpath(
                 "./ns:Nodes/KeyValuePairs/*[starts-with(local-name(), 'KeyValuePairOfintNodeXml')]",
                 namespaces=namespaces,
             ):
                 gs_id = get_element_text("./generic:key", xml=gs)
-                gridsquare_positions[gs_id] = _get_gridsquare_position_data(
-                    gs.xpath("./generic:value/ns:TilePositions/ns:_items/ns:TilePositionXml", namespaces=namespaces)
-                )
+                if gs_id:
+                    gridsquare_positions[gs_id] = _get_gridsquare_position_data(
+                        gs.xpath("./generic:value/ns:TilePositions/ns:_items/ns:TilePositionXml", namespaces=namespaces)
+                    )
 
             atlastile_data.gridsquare_positions = gridsquare_positions
             return atlastile_data
 
         except Exception as e:
-            logging.error(f"Failed to parse tile: {str(e)}")
+            logger.error(f"Failed to parse tile: {str(e)}")
             return None
 
     @staticmethod
@@ -658,13 +718,31 @@ class EpuParser:
             ):
                 if event == "end":
 
-                    def get_element_text(xpath, el=element):
+                    def get_element_text(xpath, el=element) -> str | None:
                         elements = el.xpath(xpath, namespaces=namespaces)
                         return elements[0].text if elements else None
 
-                    def get_custom_value(key):
+                    def get_float(xpath) -> float | None:
+                        text = get_element_text(xpath)
+                        if text:
+                            try:
+                                return float(text)
+                            except ValueError:
+                                return None
+                        return None
+
+                    def get_custom_value(key) -> str | None:
                         xpath = f".//ms:CustomData//arr:KeyValueOfstringanyType[arr:Key='{key}']/arr:Value"
                         return get_element_text(xpath)
+
+                    def get_custom_float(key) -> float | None:
+                        text = get_custom_value(key)
+                        if text:
+                            try:
+                                return float(text)
+                            except ValueError:
+                                return None
+                        return None
 
                     acquisition_date_str = get_element_text(
                         ".//ms:microscopeData/ms:acquisition/ms:acquisitionDateTime"
@@ -674,32 +752,20 @@ class EpuParser:
                         acquisition_datetime=datetime.fromisoformat(acquisition_date_str.replace("Z", "+00:00"))
                         if acquisition_date_str
                         else None,
-                        defocus=float(get_element_text(".//ms:microscopeData/ms:optics/ms:Defocus"))
-                        if get_element_text(".//ms:microscopeData/ms:optics/ms:Defocus")
-                        else None,
-                        magnification=float(
-                            get_element_text(
-                                ".//ms:microscopeData/ms:optics/ms:TemMagnification/ms:NominalMagnification"
-                            )
-                        )
-                        if get_element_text(
+                        defocus=get_float(".//ms:microscopeData/ms:optics/ms:Defocus"),
+                        magnification=get_float(
                             ".//ms:microscopeData/ms:optics/ms:TemMagnification/ms:NominalMagnification"
-                        )
-                        else None,
-                        pixel_size=float(get_element_text(".//ms:SpatialScale/ms:pixelSize/ms:x/ms:numericValue"))
-                        if get_element_text(".//ms:SpatialScale/ms:pixelSize/ms:x/ms:numericValue")
-                        else None,
-                        detector_name=get_custom_value("DetectorCommercialName")
-                        if get_custom_value("DetectorCommercialName")
-                        else None,
-                        applied_defocus=float(get_custom_value("AppliedDefocus"))
-                        if get_custom_value("AppliedDefocus")
-                        else None,
+                        ),
+                        pixel_size=get_float(".//ms:SpatialScale/ms:pixelSize/ms:x/ms:numericValue"),
+                        detector_name=get_custom_value("DetectorCommercialName"),
+                        applied_defocus=get_custom_float("AppliedDefocus"),
                         data_dir=Path(manifest_path).parent,
                     )
 
+            return None
+
         except Exception as e:
-            logging.error(f"Failed to parse grid square manifest: {str(e)}")
+            logger.error(f"Failed to parse grid square manifest: {str(e)}")
             return None
 
     @staticmethod
@@ -718,9 +784,18 @@ class EpuParser:
             ):
                 if event == "end":
 
-                    def get_element_text(xpath, elem=element):
+                    def get_element_text(xpath, elem=element) -> str | None:
                         elements = elem.xpath(xpath, namespaces=namespaces)
                         return elements[0].text if elements else None
+
+                    def get_float(xpath) -> float | None:
+                        text = get_element_text(xpath)
+                        if text:
+                            try:
+                                return float(text)
+                            except ValueError:
+                                return None
+                        return None
 
                     filename = Path(manifest_path).name
 
@@ -732,67 +807,23 @@ class EpuParser:
                         return None
                     gridsquare_id = match.group(1)
 
+                    base_xpath = ".//arr:KeyValueOfstringanyType[arr:Key='FindFoilHoleCenterResults']/arr:Value"
+
                     return FoilHoleData(
                         id=foilhole_id,
                         gridsquare_id=gridsquare_id,
-                        center_x=float(
-                            get_element_text(
-                                ".//arr:KeyValueOfstringanyType[arr:Key='FindFoilHoleCenterResults']/arr:Value/b:Center/c:x"
-                            )
-                        )
-                        if get_element_text(
-                            ".//arr:KeyValueOfstringanyType[arr:Key='FindFoilHoleCenterResults']/arr:Value/b:Center/c:x"
-                        )
-                        else None,
-                        center_y=float(
-                            get_element_text(
-                                ".//arr:KeyValueOfstringanyType[arr:Key='FindFoilHoleCenterResults']/arr:Value/b:Center/c:y"
-                            )
-                        )
-                        if get_element_text(
-                            ".//arr:KeyValueOfstringanyType[arr:Key='FindFoilHoleCenterResults']/arr:Value/b:Center/c:y"
-                        )
-                        else None,
-                        quality=float(
-                            get_element_text(
-                                ".//arr:KeyValueOfstringanyType[arr:Key='FindFoilHoleCenterResults']/arr:Value/b:Quality"
-                            )
-                        )
-                        if get_element_text(
-                            ".//arr:KeyValueOfstringanyType[arr:Key='FindFoilHoleCenterResults']/arr:Value/b:Quality"
-                        )
-                        else None,
-                        rotation=float(
-                            get_element_text(
-                                ".//arr:KeyValueOfstringanyType[arr:Key='FindFoilHoleCenterResults']/arr:Value/b:Rotation"
-                            )
-                        )
-                        if get_element_text(
-                            ".//arr:KeyValueOfstringanyType[arr:Key='FindFoilHoleCenterResults']/arr:Value/b:Rotation"
-                        )
-                        else None,
-                        size_width=float(
-                            get_element_text(
-                                ".//arr:KeyValueOfstringanyType[arr:Key='FindFoilHoleCenterResults']/arr:Value/b:Size/c:width"
-                            )
-                        )
-                        if get_element_text(
-                            ".//arr:KeyValueOfstringanyType[arr:Key='FindFoilHoleCenterResults']/arr:Value/b:Size/c:width"
-                        )
-                        else None,
-                        size_height=float(
-                            get_element_text(
-                                ".//arr:KeyValueOfstringanyType[arr:Key='FindFoilHoleCenterResults']/arr:Value/b:Size/c:height"
-                            )
-                        )
-                        if get_element_text(
-                            ".//arr:KeyValueOfstringanyType[arr:Key='FindFoilHoleCenterResults']/arr:Value/b:Size/c:height"
-                        )
-                        else None,
+                        center_x=get_float(f"{base_xpath}/b:Center/c:x"),
+                        center_y=get_float(f"{base_xpath}/b:Center/c:y"),
+                        quality=get_float(f"{base_xpath}/b:Quality"),
+                        rotation=get_float(f"{base_xpath}/b:Rotation"),
+                        size_width=get_float(f"{base_xpath}/b:Size/c:width"),
+                        size_height=get_float(f"{base_xpath}/b:Size/c:height"),
                     )
 
+            return None
+
         except Exception as e:
-            logging.error(f"Failed to parse foil hole manifest: {str(e)}")
+            logger.error(f"Failed to parse foil hole manifest: {str(e)}")
             return None
 
     @staticmethod
@@ -861,43 +892,68 @@ class EpuParser:
             ):
                 if event == "end":
 
-                    def get_element_text(xpath, el=element):
+                    def get_element_text(xpath, el=element) -> str | None:
                         elements = el.xpath(xpath, namespaces=namespaces)
                         return elements[0].text if elements else None
 
-                    def get_custom_value(key):
+                    def get_float(xpath) -> float | None:
+                        text = get_element_text(xpath)
+                        if text:
+                            try:
+                                return float(text)
+                            except ValueError:
+                                return None
+                        return None
+
+                    def get_int(xpath, el=element, default: int | None = None) -> int | None:
+                        elements = el.xpath(xpath, namespaces=namespaces)
+                        if elements and elements[0].text:
+                            try:
+                                return int(elements[0].text)
+                            except ValueError:
+                                return default
+                        return default
+
+                    def get_custom_value(key) -> str | None:
                         xpath = f".//ms:CustomData//arr:KeyValueOfstringanyType[arr:Key='{key}']/arr:Value"
                         return get_element_text(xpath)
 
-                    camera = element.xpath(".//ms:microscopeData/ms:acquisition/ms:camera", namespaces=namespaces)[0]
-                    readout_area = camera.xpath(".//ms:ReadoutArea", namespaces=namespaces)[0]
-                    binning = camera.xpath(".//ms:Binning", namespaces=namespaces)[0]
+                    unique_id = get_element_text(".//ms:uniqueID")
+                    if not unique_id:
+                        logger.error(f"Micrograph manifest missing uniqueID: {manifest_path}")
+                        return None
+
+                    acq_datetime_str = get_element_text(".//ms:microscopeData/ms:acquisition/ms:acquisitionDateTime")
+                    if not acq_datetime_str:
+                        logger.error(f"Micrograph manifest missing acquisitionDateTime: {manifest_path}")
+                        return None
+
+                    camera_list = element.xpath(".//ms:microscopeData/ms:acquisition/ms:camera", namespaces=namespaces)
+                    if not camera_list:
+                        logger.error(f"Micrograph manifest missing camera data: {manifest_path}")
+                        return None
+                    camera = camera_list[0]
+
+                    readout_area_list = camera.xpath(".//ms:ReadoutArea", namespaces=namespaces)
+                    binning_list = camera.xpath(".//ms:Binning", namespaces=namespaces)
 
                     return MicrographManifest(
-                        unique_id=get_element_text(".//ms:uniqueID"),
-                        acquisition_datetime=datetime.fromisoformat(
-                            get_element_text(".//ms:microscopeData/ms:acquisition/ms:acquisitionDateTime").replace(
-                                "Z", "+00:00"
-                            )
-                        ),
-                        defocus=float(get_element_text(".//ms:microscopeData/ms:optics/ms:Defocus"))
-                        if get_element_text(".//ms:microscopeData/ms:optics/ms:Defocus")
-                        else None,
+                        unique_id=unique_id,
+                        acquisition_datetime=datetime.fromisoformat(acq_datetime_str.replace("Z", "+00:00")),
+                        defocus=get_float(".//ms:microscopeData/ms:optics/ms:Defocus"),
                         detector_name=get_custom_value("DetectorCommercialName") or "Unknown",
                         energy_filter=get_element_text(".//ms:microscopeData/ms:optics/ms:EFTEMOn") == "true",
                         phase_plate=get_custom_value("PhasePlateUsed") == "true",
-                        image_size_x=int(readout_area.xpath(".//draw:width", namespaces=namespaces)[0].text)
-                        if readout_area.xpath(".//draw:width", namespaces=namespaces)
-                        else None,
-                        image_size_y=int(readout_area.xpath(".//draw:height", namespaces=namespaces)[0].text)
-                        if readout_area.xpath(".//draw:height", namespaces=namespaces)
-                        else None,
-                        binning_x=int(binning.xpath(".//draw:x", namespaces=namespaces)[0].text or 1),
-                        binning_y=int(binning.xpath(".//draw:y", namespaces=namespaces)[0].text or 1),
+                        image_size_x=get_int(".//draw:width", el=readout_area_list[0]) if readout_area_list else None,
+                        image_size_y=get_int(".//draw:height", el=readout_area_list[0]) if readout_area_list else None,
+                        binning_x=get_int(".//draw:x", el=binning_list[0], default=1) if binning_list else 1,
+                        binning_y=get_int(".//draw:y", el=binning_list[0], default=1) if binning_list else 1,
                     )
 
+            return None
+
         except Exception as e:
-            logging.error(f"Failed to parse micrograph manifest: {str(e)}")
+            logger.error(f"Failed to parse micrograph manifest: {str(e)}")
             return None
 
     @staticmethod
