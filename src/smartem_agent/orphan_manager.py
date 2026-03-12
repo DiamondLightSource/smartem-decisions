@@ -102,7 +102,7 @@ class OrphanManager:
 
         return timed_out_orphans
 
-    def get_orphan_stats(self) -> dict[str, int | dict[EntityType, int]]:
+    def get_orphan_stats(self) -> dict[str, int | dict[str, int]]:
         stats_by_type: dict[EntityType, int] = {}
         total_count = 0
 
