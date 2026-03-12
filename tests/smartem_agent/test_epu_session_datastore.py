@@ -67,7 +67,7 @@ class TestInMemoryDataStore(unittest.TestCase):
         path = "/temp/nonexistent/path"
         result = self.store.get_grid_by_path(path)
         self.assertIsNone(result)
-        self.mock_logger.debug.assert_called_once_with(f"No grid found for path: {Path(path)}")
+        self.mock_logger.debug.assert_called_once_with(f"No grid found for path: {path}")
 
     def test_create_grid(self):
         # Create a new grid
