@@ -74,6 +74,8 @@ class SmartEMWatcherV2(FileSystemEventHandler):
         if dry_run:
             self.datastore = InMemoryDataStore(str(self.watch_dir))
         else:
+            if not api_url:
+                raise ValueError("api_url is required when dry_run is False")
             self.datastore = PersistentDataStore(str(self.watch_dir), api_url)
 
         self.parser = EpuParser()
@@ -178,6 +180,10 @@ class SmartEMWatcherV2(FileSystemEventHandler):
             self.sse_thread.start()
 
     def _run_sse_stream(self):
+        if not self.sse_client:
+            logger.error("SSE client not initialized, cannot start SSE stream")
+            return
+
         retry_count = 0
         max_retries = 5
         retry_delay = 10
@@ -235,6 +241,14 @@ class SmartEMWatcherV2(FileSystemEventHandler):
         instruction_id = instruction_data.get("instruction_id")
         instruction_type = instruction_data.get("instruction_type")
         payload = instruction_data.get("payload", {})
+
+        if not instruction_id or not instruction_type:
+            logger.error(f"Invalid instruction data: missing instruction_id or instruction_type: {instruction_data}")
+            return
+
+        if not self.sse_client:
+            logger.error(f"SSE client not available to acknowledge instruction {instruction_id}")
+            return
 
         logger.info(f"SSE Instruction - ID: {instruction_id}, Type: {instruction_type}, Payload: {payload}")
 
@@ -337,14 +351,16 @@ class SmartEMWatcherV2(FileSystemEventHandler):
 
             case "agent.info.orphans":
                 orphan_stats = self.orphan_manager.get_orphan_stats()
+                by_type = orphan_stats["by_type"]
+                by_type_dict = by_type if isinstance(by_type, dict) else {}
                 return (
                     f"Orphan Statistics:\n"
                     f"Total orphans: {orphan_stats['total_orphans']}\n"
                     f"By type:\n"
-                    f"  GridSquares: {orphan_stats['by_type'].get('gridsquare', 0)}\n"
-                    f"  FoilHoles: {orphan_stats['by_type'].get('foilhole', 0)}\n"
-                    f"  Micrographs: {orphan_stats['by_type'].get('micrograph', 0)}\n"
-                    f"  Atlases: {orphan_stats['by_type'].get('atlas', 0)}\n"
+                    f"  GridSquares: {by_type_dict.get('gridsquare', 0)}\n"
+                    f"  FoilHoles: {by_type_dict.get('foilhole', 0)}\n"
+                    f"  Micrographs: {by_type_dict.get('micrograph', 0)}\n"
+                    f"  Atlases: {by_type_dict.get('atlas', 0)}\n"
                     f"Total resolved: {orphan_stats['total_resolved']}\n"
                     f"Total timed out: {orphan_stats['total_timed_out']}"
                 )
@@ -410,22 +426,24 @@ class SmartEMWatcherV2(FileSystemEventHandler):
             return False
 
     def on_any_event(self, event):
-        if event.is_directory or not self.matches_pattern(event.src_path):
+        src_path = event.src_path if isinstance(event.src_path, str) else event.src_path.decode("utf-8")
+
+        if event.is_directory or not self.matches_pattern(src_path):
             return
 
         if event.event_type not in self.watched_event_types:
             return
 
         try:
-            if not os.path.exists(event.src_path):
+            if not os.path.exists(src_path):
                 return
         except (FileNotFoundError, PermissionError) as e:
-            logger.warning(f"Error accessing file {event.src_path}: {str(e)}")
+            logger.warning(f"Error accessing file {src_path}: {str(e)}")
             return
 
         current_time = time.time()
 
-        classified_event = self.event_classifier.classify(event.src_path, event.event_type, current_time)
+        classified_event = self.event_classifier.classify(src_path, event.event_type, current_time)
 
         self.event_queue.enqueue(classified_event)
 
