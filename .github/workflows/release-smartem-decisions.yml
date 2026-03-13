@@ -58,8 +58,8 @@ jobs:
           BASE_VERSION=$(uvx --with setuptools_scm python -c "from setuptools_scm import get_version; print(get_version())")
           echo "Base version from setuptools_scm: $BASE_VERSION"
 
-          # Extract clean version (without local part like +gXXXXXX)
-          CLEAN_VERSION=$(echo "$BASE_VERSION" | sed 's/+.*//' | sed 's/\.dev.*//')
+          # Extract clean version (without local part like +gXXXXXX, .devN, or rcN)
+          CLEAN_VERSION=$(echo "$BASE_VERSION" | sed 's/+.*//' | sed 's/\.dev.*//' | sed 's/rc[0-9]*//')
           echo "Clean version: $CLEAN_VERSION"
 
           IS_STABLE="false"
