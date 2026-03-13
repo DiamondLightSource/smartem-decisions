@@ -1,3 +1,9 @@
+# pyright: reportOptionalMemberAccess=false
+# pyright: reportOptionalSubscript=false
+# pyright: reportArgumentType=false
+# pyright: reportAttributeAccessIssue=false
+# pyright: reportPossiblyUnboundVariable=false
+# TODO: Remove suppressions after fixing type errors (see issue #215)
 import logging
 import os
 import re

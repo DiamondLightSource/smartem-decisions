@@ -29,20 +29,12 @@ jobs:
     needs: check
     if: needs.check.outputs.branch-pr == ''
     uses: ./.github/workflows/leaked-secrets-scan.yml
-    secrets: inherit
+    secrets: inherit  # pragma: allowlist secret
 
   schema-drift:
     needs: security
     if: needs.check.outputs.branch-pr == ''
     uses: ./.github/workflows/_schema_drift.yml
-
-# TODO restore
-#  lint:
-#    needs: security
-#    if: needs.check.outputs.branch-pr == ''
-#    uses: ./.github/workflows/_tox.yml
-#    with:
-#      tox: pre-commit,type-checking
 
   test:
     needs: security
@@ -67,4 +59,3 @@ jobs:
     needs: [test, schema-drift]
     if: needs.check.outputs.branch-pr == ''
     uses: ./.github/workflows/_dist.yml
-
