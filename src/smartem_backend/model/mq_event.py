@@ -72,6 +72,8 @@ class MessageQueueEventType(str, Enum):
     GRIDSQUARE_MODEL_PREDICTION = "gridsquare.model_prediction"
     FOILHOLE_MODEL_PREDICTION = "foilhole.model_prediction"
     MULTI_FOILHOLE_MODEL_PREDICTION = "foilhole.model_multi_prediction"
+    CREATE_FOILHOLE_GROUP = "foilhole.group_create"
+    FOILHOLE_GROUP_MODEL_PREDICTION = "foilhole.group_model_prediction"
     MODEL_PARAMETER_UPDATE = "grid.model_parameter_update"
 
     REFRESH_PREDICTIONS = "refresh.predictions"
@@ -438,6 +440,20 @@ class FoilHoleModelPredictionEvent(GenericEventMessageBody):
 
 class MultiFoilHoleModelPredictionEvent(GenericEventMessageBody):
     foilhole_uuids: list[str]
+    prediction_model_name: str
+    prediction_value: float
+    metric: str | None = None
+
+
+class CreateFoilHoleGroupEvent(GenericEventMessageBody):
+    grid_uuid: str
+    foilhole_uuids: list[str]
+    group_uuid: str
+    name: str | None = None
+
+
+class FoilHoleGroupModelPredictionEvent(GenericEventMessageBody):
+    group_uuid: str
     prediction_model_name: str
     prediction_value: float
     metric: str | None = None

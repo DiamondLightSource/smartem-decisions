@@ -6,9 +6,11 @@ from sqlalchemy.orm import aliased
 from sqlmodel import Session, and_, or_, select
 
 from smartem_backend.model.database import (
+    CurrentQualityGroupPrediction,
     CurrentQualityPrediction,
     CurrentQualityPredictionModelWeight,
     FoilHole,
+    FoilHoleGroupMembership,
     Grid,
     GridSquare,
     Micrograph,
@@ -38,65 +40,74 @@ def prior_update(
     square_uuid = hierarchy_response[2].uuid
     hole_uuid = hierarchy_response[1].uuid
 
-    # seems easier to just collect the model names for future use here
-    model_names = [n.name for n in session.exec(select(QualityPredictionModel)).all()]
+    model_names = [(n.name, n.level) for n in session.exec(select(QualityPredictionModel)).all()]
 
     # main prior update logic
     posterior = 0
     delta_missing = 1
     updates = []
-    for m in model_names:
-        # predictions are attached to either the foil hole or the grid square
-        # whereas model weights are attached to grids
-        pred = session.exec(
-            select(CurrentQualityPrediction, CurrentQualityPredictionModelWeight)
-            .where(
-                or_(
-                    and_(
-                        CurrentQualityPrediction.foilhole_uuid == hole_uuid,
-                        CurrentQualityPrediction.gridsquare_uuid == square_uuid,
-                    ),
-                    and_(
-                        CurrentQualityPrediction.foilhole_uuid == None,  # noqa: E711
-                        CurrentQualityPrediction.gridsquare_uuid == square_uuid,
-                    ),
-                )
-            )
+    for m, model_level in model_names:
+        weight_row = session.exec(
+            select(CurrentQualityPredictionModelWeight)
             .where(CurrentQualityPredictionModelWeight.grid_uuid == grid_uuid)
-            .where(
-                CurrentQualityPrediction.prediction_model_name
-                == CurrentQualityPredictionModelWeight.prediction_model_name
-            )
             .where(CurrentQualityPredictionModelWeight.prediction_model_name == m)
             .where(CurrentQualityPredictionModelWeight.metric_name == metric)
-            .where(or_(CurrentQualityPrediction.metric_name == metric, CurrentQualityPrediction.metric_name == None))  # noqa: E711
-        ).first()
-        if pred is None:
-            weight = (
-                session.exec(
-                    select(CurrentQualityPredictionModelWeight)
-                    .where(CurrentQualityPredictionModelWeight.grid_uuid == grid_uuid)
-                    .where(CurrentQualityPredictionModelWeight.prediction_model_name == m)
-                    .where(CurrentQualityPredictionModelWeight.metric_name == metric)
+        ).one()
+
+        if model_level == ModelLevel.FOILHOLEGROUP:
+            # predictions are stored once per group; look up via group membership
+            pred_value = session.exec(
+                select(CurrentQualityGroupPrediction.value)
+                .where(CurrentQualityGroupPrediction.group_uuid == FoilHoleGroupMembership.group_uuid)
+                .where(FoilHoleGroupMembership.foilhole_uuid == hole_uuid)
+                .where(CurrentQualityGroupPrediction.prediction_model_name == m)
+                .where(
+                    or_(
+                        CurrentQualityGroupPrediction.metric_name == metric,
+                        CurrentQualityGroupPrediction.metric_name == None,  # noqa: E711
+                    )
                 )
-                .one()
-                .weight
-            )
-            delta_missing -= weight
+            ).first()
+        else:
+            # FOILHOLE and GRIDSQUARE predictions stored in CurrentQualityPrediction
+            pred_row = session.exec(
+                select(CurrentQualityPrediction)
+                .where(
+                    or_(
+                        and_(
+                            CurrentQualityPrediction.foilhole_uuid == hole_uuid,
+                            CurrentQualityPrediction.gridsquare_uuid == square_uuid,
+                        ),
+                        and_(
+                            CurrentQualityPrediction.foilhole_uuid == None,  # noqa: E711
+                            CurrentQualityPrediction.gridsquare_uuid == square_uuid,
+                        ),
+                    )
+                )
+                .where(CurrentQualityPrediction.prediction_model_name == m)
+                .where(
+                    or_(CurrentQualityPrediction.metric_name == metric, CurrentQualityPrediction.metric_name == None)  # noqa: E711
+                )
+            ).first()
+            pred_value = pred_row.value if pred_row is not None else None
+
+        if pred_value is None:
+            delta_missing -= weight_row.weight
             continue
+
         # logging here to make the results less swingy
         # need to check this is a legitimate thing to do
         # hopefully you still converge to the same answer as the log is monotonic
-        updated_value = pred[1].weight * (quality * pred[0].value + (1 - quality) * (1 - pred[0].value))
-        pred[1].weight = updated_value
-        updates.append(pred[1])
+        updated_value = weight_row.weight * (quality * pred_value + (1 - quality) * (1 - pred_value))
+        weight_row.weight = updated_value
+        updates.append(weight_row)
         updates.append(
             QualityPredictionModelWeight(
-                grid_uuid=pred[1].grid_uuid,
+                grid_uuid=weight_row.grid_uuid,
                 micrograph_uuid=micrograph_uuid,
                 micrograph_quality=quality >= 0.5,
                 metric_name=metric,
-                prediction_model_name=pred[1].prediction_model_name,
+                prediction_model_name=weight_row.prediction_model_name,
                 weight=updated_value,
             )
         )
@@ -140,30 +151,32 @@ def overall_predictions_update(grid_uuid: str, session: Session) -> None:
     num_foil_holes = np.sum([gc[1] for gc in grid_square_counts])
     value_matrix = np.zeros((len(metric_names), len(model_names), num_foil_holes))
 
+    # Ordered list of (gridsquare_uuid, foilhole_uuid) matching the value_matrix column order
+    ordered_foilhole_ids = session.exec(
+        select(GridSquare.uuid, FoilHole.uuid)
+        .where(GridSquare.uuid == FoilHole.gridsquare_uuid)
+        .where(FoilHole.x_location != None)  # noqa: E711
+        .where(GridSquare.grid_uuid == grid_uuid)
+        .order_by(GridSquare.uuid, FoilHole.uuid)
+    ).all()
+
     for imet, metric in enumerate(metric_names):
         for imod, (model, model_level) in enumerate(model_names):
-            foil_hole_level = model_level == ModelLevel.FOILHOLE
-            if foil_hole_level:
+            metric_filter = or_(
+                CurrentQualityPrediction.metric_name == metric,
+                CurrentQualityPrediction.metric_name == None,  # noqa: E711
+            )
+            if model_level == ModelLevel.FOILHOLE:
                 pred_query = (
                     select(CurrentQualityPrediction)
-                    .where(
-                        or_(
-                            CurrentQualityPrediction.metric_name == metric,
-                            CurrentQualityPrediction.metric_name == None,  # noqa: E711
-                        )
-                    )
+                    .where(metric_filter)
                     .where(CurrentQualityPrediction.grid_uuid == grid_uuid)
                     .where(CurrentQualityPrediction.prediction_model_name == model)
                 )
                 if (
                     session.exec(
                         select(func.count(CurrentQualityPrediction.id))
-                        .where(
-                            or_(
-                                CurrentQualityPrediction.metric_name == metric,
-                                CurrentQualityPrediction.metric_name == None,  # noqa: E711
-                            )
-                        )
+                        .where(metric_filter)
                         .where(CurrentQualityPrediction.grid_uuid == grid_uuid)
                         .where(CurrentQualityPrediction.prediction_model_name == model)
                     ).one()
@@ -197,27 +210,17 @@ def overall_predictions_update(grid_uuid: str, session: Session) -> None:
                         for p in preds
                     ]
                 )
-            else:
+            elif model_level == ModelLevel.GRIDSQUARE:
                 pred_query = (
                     select(CurrentQualityPrediction)
-                    .where(
-                        or_(
-                            CurrentQualityPrediction.metric_name == metric,
-                            CurrentQualityPrediction.metric_name == None,  # noqa: E711
-                        )
-                    )
+                    .where(metric_filter)
                     .where(CurrentQualityPrediction.gridsquare_uuid.in_([gc[0] for gc in grid_square_counts]))
                     .where(CurrentQualityPrediction.grid_uuid == grid_uuid)
                     .where(CurrentQualityPrediction.prediction_model_name == model)
                 )
                 if session.exec(
                     select(func.count(CurrentQualityPrediction.id))
-                    .where(
-                        or_(
-                            CurrentQualityPrediction.metric_name == metric,
-                            CurrentQualityPrediction.metric_name == None,  # noqa: E711
-                        )
-                    )
+                    .where(metric_filter)
                     .where(CurrentQualityPrediction.gridsquare_uuid.in_([gc[0] for gc in grid_square_counts]))
                     .where(CurrentQualityPrediction.grid_uuid == grid_uuid)
                     .where(CurrentQualityPrediction.prediction_model_name == model)
@@ -247,6 +250,27 @@ def overall_predictions_update(grid_uuid: str, session: Session) -> None:
                     )
                     value_matrix[imet, imod, ctotal : ctotal + c[1]] = sub_values
                     ctotal += c[1]
+            elif model_level == ModelLevel.FOILHOLEGROUP:
+                # Build a foilhole_uuid -> value map from group predictions for this model/metric
+                group_preds = session.exec(
+                    select(FoilHoleGroupMembership.foilhole_uuid, CurrentQualityGroupPrediction.value)
+                    .where(CurrentQualityGroupPrediction.grid_uuid == grid_uuid)
+                    .where(CurrentQualityGroupPrediction.prediction_model_name == model)
+                    .where(
+                        or_(
+                            CurrentQualityGroupPrediction.metric_name == metric,
+                            CurrentQualityGroupPrediction.metric_name == None,  # noqa: E711
+                        )
+                    )
+                    .where(FoilHoleGroupMembership.group_uuid == CurrentQualityGroupPrediction.group_uuid)
+                ).all()
+                group_value_by_fh = dict(group_preds)
+                value_matrix[imet, imod] = np.array(
+                    [
+                        weights[(metric, model)] * group_value_by_fh.get(fh_uuid, 0.5)
+                        for _, fh_uuid in ordered_foilhole_ids
+                    ]
+                )
 
     summed = np.sum(value_matrix, axis=1)
     results = np.prod(summed, axis=0) ** (1 / len(summed))
