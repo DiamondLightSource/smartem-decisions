@@ -12,10 +12,12 @@ from smartem_backend.model.mq_event import (
     AtlasTileDeletedEvent,
     AtlasTileUpdatedEvent,
     AtlasUpdatedEvent,
+    CreateFoilHoleGroupEvent,
     CtfCompleteBody,
     CtfRegisteredBody,
     FoilHoleCreatedEvent,
     FoilHoleDeletedEvent,
+    FoilHoleGroupModelPredictionEvent,
     FoilHoleModelPredictionEvent,
     FoilHoleUpdatedEvent,
     GridCreatedEvent,
@@ -307,6 +309,32 @@ def publish_multi_foilhole_model_prediction(
         metric=metric,
     )
     return rmq_publisher.publish_event(MessageQueueEventType.MULTI_FOILHOLE_MODEL_PREDICTION, event)
+
+
+def publish_create_foilhole_group(grid_uuid: str, foilhole_uuids: list[str], group_uuid: str, name: str | None = None):
+    """Publish event to create a named foil hole group"""
+    event = CreateFoilHoleGroupEvent(
+        event_type=MessageQueueEventType.CREATE_FOILHOLE_GROUP,
+        grid_uuid=grid_uuid,
+        foilhole_uuids=foilhole_uuids,
+        group_uuid=group_uuid,
+        name=name,
+    )
+    return rmq_publisher.publish_event(MessageQueueEventType.CREATE_FOILHOLE_GROUP, event)
+
+
+def publish_foilhole_group_model_prediction(
+    group_uuid: str, model_name: str, prediction_value: float, metric: str | None = None
+):
+    """Publish a single model prediction for an entire foil hole group"""
+    event = FoilHoleGroupModelPredictionEvent(
+        event_type=MessageQueueEventType.FOILHOLE_GROUP_MODEL_PREDICTION,
+        group_uuid=group_uuid,
+        prediction_model_name=model_name,
+        prediction_value=prediction_value,
+        metric=metric,
+    )
+    return rmq_publisher.publish_event(MessageQueueEventType.FOILHOLE_GROUP_MODEL_PREDICTION, event)
 
 
 def publish_model_parameter_update(

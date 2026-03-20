@@ -44,3 +44,4 @@ class MicrographStatus(str, Enum):
 class ModelLevel(str, Enum):
     GRIDSQUARE = "gridsquare"
     FOILHOLE = "foilhole"
+    FOILHOLEGROUP = "foilholegroup"
