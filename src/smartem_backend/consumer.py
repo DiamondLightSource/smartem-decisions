@@ -28,8 +28,11 @@ from smartem_backend.log_manager import LogConfig, LogManager
 from smartem_backend.model.database import (
     AgentInstruction,
     AgentSession,
+    CurrentQualityGroupPrediction,
     CurrentQualityPrediction,
     FoilHole,
+    FoilHoleGroup,
+    FoilHoleGroupMembership,
     GridSquare,
     Micrograph,
     QualityMetricStatistics,
@@ -46,9 +49,11 @@ from smartem_backend.model.mq_event import (
     AtlasCreatedEvent,
     AtlasDeletedEvent,
     AtlasUpdatedEvent,
+    CreateFoilHoleGroupEvent,
     CtfCompleteBody,
     FoilHoleCreatedEvent,
     FoilHoleDeletedEvent,
+    FoilHoleGroupModelPredictionEvent,
     FoilHoleModelPredictionEvent,
     FoilHoleUpdatedEvent,
     GridCreatedEvent,
@@ -854,6 +859,77 @@ def handle_multi_foilhole_model_prediction(event_data: dict[str, Any]) -> None:
         logger.error(f"Error processing multiple foil hole model prediction event: {e}")
 
 
+def handle_create_foilhole_group(event_data: dict[str, Any]) -> None:
+    """
+    Handle foil hole group creation event by persisting the group and its memberships.
+
+    Args:
+        event_data: Event data for foil hole group creation
+    """
+    try:
+        event = CreateFoilHoleGroupEvent(**event_data)
+        with Session(db_engine) as session:
+            group = session.exec(select(FoilHoleGroup).where(FoilHoleGroup.uuid == event.group_uuid)).first()
+            if group is None:
+                group = FoilHoleGroup(
+                    uuid=event.group_uuid,
+                    grid_uuid=event.grid_uuid,
+                    name=event.name,
+                )
+                session.add(group)
+                memberships = [
+                    FoilHoleGroupMembership(group_uuid=event.group_uuid, foilhole_uuid=fhuuid)
+                    for fhuuid in event.foilhole_uuids
+                ]
+                session.add_all(memberships)
+            else:
+                group.name = event.name
+            session.commit()
+
+    except ValidationError as e:
+        logger.error(f"Validation error processing create foil hole group event: {e}")
+    except Exception as e:
+        logger.error(f"Error processing create foil hole group event: {e}")
+
+
+def handle_foilhole_group_model_prediction(event_data: dict[str, Any]) -> None:
+    """
+    Handle a group-level model prediction event by inserting a single prediction record
+    for the group rather than one record per foil hole.
+
+    Args:
+        event_data: Event data for foil hole group model prediction
+    """
+    try:
+        event = FoilHoleGroupModelPredictionEvent(**event_data)
+        with Session(db_engine) as session:
+            group = session.exec(select(FoilHoleGroup).where(FoilHoleGroup.uuid == event.group_uuid)).one()
+            existing = session.exec(
+                select(CurrentQualityGroupPrediction)
+                .where(CurrentQualityGroupPrediction.group_uuid == event.group_uuid)
+                .where(CurrentQualityGroupPrediction.prediction_model_name == event.prediction_model_name)
+                .where(CurrentQualityGroupPrediction.metric_name == event.metric)
+            ).first()
+            if existing is None:
+                session.add(
+                    CurrentQualityGroupPrediction(
+                        group_uuid=event.group_uuid,
+                        grid_uuid=group.grid_uuid,
+                        value=event.prediction_value,
+                        prediction_model_name=event.prediction_model_name,
+                        metric_name=event.metric,
+                    )
+                )
+            else:
+                existing.value = event.prediction_value
+            session.commit()
+
+    except ValidationError as e:
+        logger.error(f"Validation error processing foil hole group model prediction event: {e}")
+    except Exception as e:
+        logger.error(f"Error processing foil hole group model prediction event: {e}")
+
+
 def handle_refresh_predictions(event_data: dict[str, Any]) -> None:
     """
     Handle refresh predictions event by calculating the updated values
@@ -1191,6 +1267,8 @@ def get_event_handlers() -> dict[str, Callable]:
         MessageQueueEventType.GRIDSQUARE_MODEL_PREDICTION.value: handle_gridsquare_model_prediction,
         MessageQueueEventType.FOILHOLE_MODEL_PREDICTION.value: handle_foilhole_model_prediction,
         MessageQueueEventType.MULTI_FOILHOLE_MODEL_PREDICTION.value: handle_multi_foilhole_model_prediction,
+        MessageQueueEventType.CREATE_FOILHOLE_GROUP.value: handle_create_foilhole_group,
+        MessageQueueEventType.FOILHOLE_GROUP_MODEL_PREDICTION.value: handle_foilhole_group_model_prediction,
         MessageQueueEventType.MODEL_PARAMETER_UPDATE.value: handle_model_parameter_update,
         MessageQueueEventType.REFRESH_PREDICTIONS.value: handle_refresh_predictions,
         # TODO: Add handlers for all other event types as needed
