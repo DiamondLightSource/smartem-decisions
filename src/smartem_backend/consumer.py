@@ -35,6 +35,7 @@ from smartem_backend.model.database import (
     FoilHoleGroupMembership,
     GridSquare,
     Micrograph,
+    QualityGroupPrediction,
     QualityMetricStatistics,
     QualityPrediction,
     QualityPredictionModelParameter,
@@ -904,6 +905,15 @@ def handle_foilhole_group_model_prediction(event_data: dict[str, Any]) -> None:
         event = FoilHoleGroupModelPredictionEvent(**event_data)
         with Session(db_engine) as session:
             group = session.exec(select(FoilHoleGroup).where(FoilHoleGroup.uuid == event.group_uuid)).one()
+            session.add(
+                QualityGroupPrediction(
+                    group_uuid=event.group_uuid,
+                    grid_uuid=group.grid_uuid,
+                    value=event.prediction_value,
+                    prediction_model_name=event.prediction_model_name,
+                    metric_name=event.metric,
+                )
+            )
             existing = session.exec(
                 select(CurrentQualityGroupPrediction)
                 .where(CurrentQualityGroupPrediction.group_uuid == event.group_uuid)
