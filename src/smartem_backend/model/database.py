@@ -370,6 +370,7 @@ class FoilHoleGroup(SQLModel, table=True, table_name="foilholegroup"):
     name: str | None = Field(default=None)
     grid: Grid | None = Relationship(back_populates="foilhole_groups")
     memberships: list["FoilHoleGroupMembership"] = Relationship(back_populates="group", cascade_delete=True)
+    predictions: list["QualityGroupPrediction"] = Relationship(back_populates="group", cascade_delete=True)
     current_predictions: list["CurrentQualityGroupPrediction"] = Relationship(
         back_populates="group", cascade_delete=True
     )
@@ -383,6 +384,23 @@ class FoilHoleGroupMembership(SQLModel, table=True, table_name="foilholegroupmem
     foilhole_uuid: str = Field(foreign_key="foilhole.uuid", primary_key=True)
     group: FoilHoleGroup | None = Relationship(back_populates="memberships")
     foilhole: FoilHole | None = Relationship(back_populates="group_memberships")
+
+
+class QualityGroupPrediction(SQLModel, table=True, table_name="qualitygroupprediction"):
+    """Timestamped history of every prediction issued for a FoilHoleGroup."""
+
+    __table_args__ = {"extend_existing": True}
+    id: int | None = Field(default=None, primary_key=True)
+    timestamp: datetime = Field(default_factory=datetime.now)
+    group_uuid: str = Field(foreign_key="foilholegroup.uuid")
+    grid_uuid: str = Field(foreign_key="grid.uuid")
+    value: float
+    prediction_model_name: str = Field(foreign_key="qualitypredictionmodel.name")
+    metric_name: str | None = Field(foreign_key="qualitymetric.name", default=None)
+    group: FoilHoleGroup | None = Relationship(back_populates="predictions")
+    grid: Grid | None = Relationship()
+    model: QualityPredictionModel | None = Relationship()
+    metric: QualityMetric | None = Relationship()
 
 
 class CurrentQualityGroupPrediction(SQLModel, table=True, table_name="currentqualitygroupprediction"):
