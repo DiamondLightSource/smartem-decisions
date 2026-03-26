@@ -95,9 +95,6 @@ def prior_update(
             delta_missing -= weight_row.weight
             continue
 
-        # logging here to make the results less swingy
-        # need to check this is a legitimate thing to do
-        # hopefully you still converge to the same answer as the log is monotonic
         updated_value = weight_row.weight * (quality * pred_value + (1 - quality) * (1 - pred_value))
         weight_row.weight = updated_value
         updates.append(weight_row)
