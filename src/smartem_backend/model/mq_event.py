@@ -419,6 +419,7 @@ class ParticleSelectionCompleteBody(GenericEventMessageBody):
 class AtlasPredictionEvent(GenericEventMessageBody):
     uuid: str
     prediction_value: float
+    model_name: str = ""
 
 
 class GridSquareModelPredictionEvent(GenericEventMessageBody):
