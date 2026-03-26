@@ -649,7 +649,7 @@ def create_grid_atlas(grid_uuid: str, atlas: AtlasCreateRequest, db: SqlAlchemyS
     db.commit()
     db.refresh(db_atlas)
 
-    success = publish_atlas_created(uuid=db_atlas.uuid, id=db_atlas.atlas_id, grid_uuid=db_atlas.grid_uuid)
+    success = publish_atlas_created(uuid=db_atlas.uuid, id=db_atlas.name, grid_uuid=db_atlas.grid_uuid)
     if not success:
         logger.error(f"Failed to publish atlas created event for UUID: {db_atlas.uuid}")
 
@@ -2372,7 +2372,11 @@ def get_grid_atlas_image(
     grid = db.query(Grid).filter(Grid.uuid == grid_uuid).first()
     if not grid:
         raise HTTPException(status_code=404, detail="Grid not found")
-    atlas_img_path = list(Path(grid.atlas_dir).parent.glob("Atlas*.mrc"))[0]
+    atlas_img_path_candidates = list(Path(grid.atlas_dir).parent.glob("Atlas*.mrc"))
+    if atlas_img_path_candidates:
+        atlas_img_path = atlas_img_path_candidates[0]
+    else:
+        atlas_img_path = Path(grid.atlas_dir)
     mrc = mrcfile.read(atlas_img_path)
     mrc = mrc - mrc.min()
     mrc = mrc * (255 / mrc.max())
