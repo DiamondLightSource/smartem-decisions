@@ -256,10 +256,13 @@ def publish_micrograph_deleted(uuid):
     return rmq_publisher.publish_event(MessageQueueEventType.MICROGRAPH_DELETED, event)
 
 
-def publish_atlas_model_prediction(atlas_uuid: str, prediction_value: float):
+def publish_atlas_model_prediction(atlas_uuid: str, prediction_value: float, model_name: str = ""):
     """Publish quality prediction event for a whole atlas to RabbitMQ"""
     event = AtlasPredictionEvent(
-        event_type=MessageQueueEventType.ATLAS_MODEL_PREDICTION, uuid=atlas_uuid, prediction_value=prediction_value
+        event_type=MessageQueueEventType.ATLAS_MODEL_PREDICTION,
+        uuid=atlas_uuid,
+        prediction_value=prediction_value,
+        model_name=model_name,
     )
     return rmq_publisher.publish_event(MessageQueueEventType.ATLAS_MODEL_PREDICTION, event)
 
