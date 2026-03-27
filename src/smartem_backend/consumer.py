@@ -717,7 +717,7 @@ def handle_particle_picking_complete(event_data: dict[str, Any]) -> None:
     try:
         event = ParticlePickingCompleteBody(**event_data)
         quality = _check_against_statistics(
-            "particlespicked", event.micrograph_uuid, event.number_of_particles_picked, larger_better=True
+            "numparticles", event.micrograph_uuid, event.number_of_particles_picked, larger_better=True
         )
         with Session(db_engine) as session:
             grid_uuid = (
@@ -733,12 +733,12 @@ def handle_particle_picking_complete(event_data: dict[str, Any]) -> None:
             metric_stats = session.exec(
                 select(QualityMetricStatistics)
                 .where(QualityMetricStatistics.grid_uuid == grid_uuid)
-                .where(QualityMetricStatistics.name == "particlespicked")
+                .where(QualityMetricStatistics.name == "numparticles")
             ).all()
             if not metric_stats:
                 updated_metric_stats = QualityMetricStatistics(
                     grid_uuid=grid_uuid,
-                    name="particlespicked",
+                    name="numparticles",
                     count=1,
                     value_sum=event.number_of_particles_picked,
                     squared_value_sum=0,
@@ -755,8 +755,8 @@ def handle_particle_picking_complete(event_data: dict[str, Any]) -> None:
                 )
             session.add(updated_metric_stats)
             session.commit()
-            prior_update(quality, event.micrograph_uuid, "particlespicked", session)
-        publish_particle_picking_registered(event.micrograph_uuid, quality >= 0.5, metric_name="particlespicked")
+            prior_update(quality, event.micrograph_uuid, "numparticles", session)
+        publish_particle_picking_registered(event.micrograph_uuid, quality >= 0.5, metric_name="numparticles")
     except ValidationError as e:
         logger.error(f"Validation error processing particle picking event: {e}")
     except Exception as e:
