@@ -65,6 +65,7 @@ class MessageQueueEventType(str, Enum):
     CTF_REGISTERED = "ctf.registered"
     # PARTICLE_PICKING_START = "particle_picking.started"
     PARTICLE_PICKING_COMPLETE = "particle_picking.completed"
+    PARTICLE_PICKING_REGISTERED = "particle_picking.registered"
     # PARTICLE_SELECTION_START = "particle_selection.started"
     PARTICLE_SELECTION_COMPLETE = "particle_selection.completed"
 
@@ -374,14 +375,18 @@ class ParticlePickingStartBody(GenericEventMessageBody):
 class ParticlePickingCompleteBody(GenericEventMessageBody):
     micrograph_uuid: str
     number_of_particles_picked: int
-    pick_distribution: dict
 
     @model_validator(mode="after")
     def check_model(self):
         if self.number_of_particles_picked < 0:
             raise ValueError("Number of Particles Picked should be a non-negative int")
-        # TODO validate that number of particles picked equals to the size of pick distribution
         return self
+
+
+class ParticlePickingRegisteredBody(GenericEventMessageBody):
+    micrograph_uuid: str
+    quality: bool
+    metric_name: str | None = "particlespicked"
 
 
 class ParticleSelectionStartBody(GenericEventMessageBody):
