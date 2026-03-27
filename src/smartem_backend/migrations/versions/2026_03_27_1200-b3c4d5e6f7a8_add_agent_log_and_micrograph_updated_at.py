@@ -23,28 +23,28 @@ def upgrade() -> None:
         sa.Column("session_id", sa.String(), nullable=False),
         sa.Column("timestamp", sa.DateTime(), nullable=False),
         sa.Column("level", sa.String(), nullable=False),
-        sa.Column("logger_name", sa.String(), nullable=False, server_default=""),
-        sa.Column("message", sa.String(), nullable=False, server_default=""),
-        sa.Column("created_at", sa.DateTime(), nullable=False, server_default=sa.func.now()),
+        sa.Column("logger_name", sa.String(), nullable=False),
+        sa.Column("message", sa.String(), nullable=False),
+        sa.Column("created_at", sa.DateTime(), nullable=False),
         sa.PrimaryKeyConstraint("id"),
     )
-    op.create_index("idx_agent_log_agent_id", "agentlog", ["agent_id"])
-    op.create_index("idx_agent_log_session_id", "agentlog", ["session_id"])
-    op.create_index("idx_agent_log_timestamp", "agentlog", ["timestamp"])
-    op.create_index("idx_agent_log_level", "agentlog", ["level"])
-    op.create_index("idx_agent_log_agent_id_id", "agentlog", ["agent_id", "id"])
+    op.create_index("ix_agentlog_agent_id", "agentlog", ["agent_id"])
+    op.create_index("ix_agentlog_session_id", "agentlog", ["session_id"])
+    op.create_index("ix_agentlog_timestamp", "agentlog", ["timestamp"])
+    op.create_index("ix_agentlog_level", "agentlog", ["level"])
+    op.create_index("ix_agentlog_agent_id_id", "agentlog", ["agent_id", "id"])
 
     op.add_column("micrograph", sa.Column("updated_at", sa.DateTime(), nullable=True))
-    op.create_index("idx_micrograph_updated_at", "micrograph", ["updated_at"])
+    op.create_index("ix_micrograph_updated_at", "micrograph", ["updated_at"])
 
 
 def downgrade() -> None:
-    op.drop_index("idx_micrograph_updated_at", table_name="micrograph")
+    op.drop_index("ix_micrograph_updated_at", table_name="micrograph")
     op.drop_column("micrograph", "updated_at")
 
-    op.drop_index("idx_agent_log_agent_id_id", table_name="agentlog")
-    op.drop_index("idx_agent_log_level", table_name="agentlog")
-    op.drop_index("idx_agent_log_timestamp", table_name="agentlog")
-    op.drop_index("idx_agent_log_session_id", table_name="agentlog")
-    op.drop_index("idx_agent_log_agent_id", table_name="agentlog")
+    op.drop_index("ix_agentlog_agent_id_id", table_name="agentlog")
+    op.drop_index("ix_agentlog_level", table_name="agentlog")
+    op.drop_index("ix_agentlog_timestamp", table_name="agentlog")
+    op.drop_index("ix_agentlog_session_id", table_name="agentlog")
+    op.drop_index("ix_agentlog_agent_id", table_name="agentlog")
     op.drop_table("agentlog")
