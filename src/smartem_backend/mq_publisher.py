@@ -37,6 +37,8 @@ from smartem_backend.model.mq_event import (
     MotionCorrectionCompleteBody,
     MotionCorrectionRegisteredBody,
     MultiFoilHoleModelPredictionEvent,
+    ParticlePickingCompleteBody,
+    ParticlePickingRegisteredBody,
     RefreshPredictionsEvent,
 )
 from smartem_backend.utils import rmq_publisher
@@ -394,6 +396,27 @@ def publish_ctf_estimation_registered(micrograph_uuid: str, quality: bool, metri
         metric_name=metric_name,
     )
     return rmq_publisher.publish_event(MessageQueueEventType.CTF_REGISTERED, event)
+
+
+def publish_particle_picking_completed(micrograph_uuid: str, number_of_particles_picked: int):
+    """Publish particle picking completed event to RabbitMQ"""
+    event = ParticlePickingCompleteBody(
+        event_type=MessageQueueEventType.PARTICLE_PICKING_COMPLETE,
+        micrograph_uuid=micrograph_uuid,
+        number_of_particles_picked=number_of_particles_picked,
+    )
+    return rmq_publisher.publish_event(MessageQueueEventType.PARTICLE_PICKING_COMPLETE, event)
+
+
+def publish_particle_picking_registered(micrograph_uuid: str, quality: bool, metric_name: str | None = None):
+    """Publish particle picking registered event to RabbitMQ"""
+    event = ParticlePickingRegisteredBody(
+        event_type=MessageQueueEventType.PARTICLE_PICKING_REGISTERED,
+        micrograph_uuid=micrograph_uuid,
+        quality=quality,
+        metric_name=metric_name,
+    )
+    return rmq_publisher.publish_event(MessageQueueEventType.PARTICLE_PICKING_REGISTERED, event)
 
 
 def publish_refresh_predictions(grid_uuid: str):
