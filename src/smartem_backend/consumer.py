@@ -448,6 +448,12 @@ async def handle_motion_correction_complete(event_data: dict[str, Any]) -> None:
             session.add(updated_metric_stats)
             await session.commit()
             await prior_update(quality, event.micrograph_uuid, "motioncorrection", session)
+            micrograph = (
+                await session.execute(select(Micrograph).where(Micrograph.uuid == event.micrograph_uuid))
+            ).scalars().first()
+            if micrograph:
+                micrograph.updated_at = datetime.now()
+                await session.commit()
         await publish_motion_correction_registered(
             event.micrograph_uuid, quality >= 0.5, metric_name="motioncorrection"
         )
@@ -505,6 +511,12 @@ async def handle_ctf_estimation_complete(event_data: dict[str, Any]) -> None:
             session.add(updated_metric_stats)
             await session.commit()
             await prior_update(quality, event.micrograph_uuid, "ctfmaxresolution", session)
+            micrograph = (
+                await session.execute(select(Micrograph).where(Micrograph.uuid == event.micrograph_uuid))
+            ).scalars().first()
+            if micrograph:
+                micrograph.updated_at = datetime.now()
+                await session.commit()
         await publish_ctf_estimation_registered(event.micrograph_uuid, quality >= 0.5, metric_name="ctfmaxresolution")
     except ValidationError as e:
         logger.error(f"Validation error processing ctf event: {e}")

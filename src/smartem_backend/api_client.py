@@ -361,6 +361,15 @@ class SmartEMAPIClient:
 
     # Entity-specific methods
 
+    # Agent log shipping
+    def send_logs(self, agent_id: str, session_id: str, logs: list[dict]) -> bool:
+        try:
+            self._request("post", f"agent/{agent_id}/session/{session_id}/logs", {"logs": logs})
+            return True
+        except Exception as e:
+            self._logger.debug(f"Failed to ship logs: {e}")
+            return False
+
     # Status and Health
     def get_status(self) -> dict[str, object]:
         """Get API status information"""
