@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Optional
 
-from sqlalchemy import Column, text
+from sqlalchemy import Column, Index, text
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlmodel import Field, Relationship, SQLModel
 from sqlmodel import Session as SQLModelSession
@@ -474,7 +474,10 @@ class AgentInstructionAcknowledgement(SQLModel, table=True):
 
 
 class AgentLog(SQLModel, table=True):
-    __table_args__ = {"extend_existing": True}
+    __table_args__ = (
+        Index("ix_agentlog_agent_id_id", "agent_id", "id"),
+        {"extend_existing": True},
+    )
     id: int | None = Field(default=None, primary_key=True)
     agent_id: str = Field(index=True)
     session_id: str = Field(index=True)
@@ -785,14 +788,14 @@ def _create_db_and_tables(engine):
             )
 
             # Agent log indexes
-            sess.execute(text("CREATE INDEX IF NOT EXISTS idx_agent_log_agent_id ON agentlog (agent_id);"))
-            sess.execute(text("CREATE INDEX IF NOT EXISTS idx_agent_log_session_id ON agentlog (session_id);"))
-            sess.execute(text("CREATE INDEX IF NOT EXISTS idx_agent_log_timestamp ON agentlog (timestamp);"))
-            sess.execute(text("CREATE INDEX IF NOT EXISTS idx_agent_log_level ON agentlog (level);"))
-            sess.execute(text("CREATE INDEX IF NOT EXISTS idx_agent_log_agent_id_id ON agentlog (agent_id, id);"))
+            sess.execute(text("CREATE INDEX IF NOT EXISTS ix_agentlog_agent_id ON agentlog (agent_id);"))
+            sess.execute(text("CREATE INDEX IF NOT EXISTS ix_agentlog_session_id ON agentlog (session_id);"))
+            sess.execute(text("CREATE INDEX IF NOT EXISTS ix_agentlog_timestamp ON agentlog (timestamp);"))
+            sess.execute(text("CREATE INDEX IF NOT EXISTS ix_agentlog_level ON agentlog (level);"))
+            sess.execute(text("CREATE INDEX IF NOT EXISTS ix_agentlog_agent_id_id ON agentlog (agent_id, id);"))
 
             # Micrograph updated_at index
-            sess.execute(text("CREATE INDEX IF NOT EXISTS idx_micrograph_updated_at ON micrograph (updated_at);"))
+            sess.execute(text("CREATE INDEX IF NOT EXISTS ix_micrograph_updated_at ON micrograph (updated_at);"))
 
             sess.commit()
         except Exception as e:
