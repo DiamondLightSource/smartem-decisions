@@ -15,7 +15,7 @@ from typing import Any
 from sqlalchemy import and_
 from sqlmodel import Session
 
-from smartem_backend.model.database import AgentConnection, AgentInstruction, AgentSession
+from smartem_backend.model.database import AgentConnection, AgentInstruction, AgentLog, AgentSession
 from smartem_backend.mq_publisher import publish_agent_instruction_expired
 from smartem_backend.utils import get_db_engine
 
@@ -31,19 +31,14 @@ class AgentConnectionManager:
     - Provide connection statistics and monitoring
     """
 
-    def __init__(self, db_engine=None, check_interval: int = 30):
-        """
-        Initialize the connection manager.
-
-        Args:
-            db_engine: Database engine (defaults to global engine)
-            check_interval: How often to run cleanup tasks (seconds)
-        """
+    def __init__(self, db_engine=None, check_interval: int = 30, log_retention_days: int = 7):
         self.db_engine = db_engine or get_db_engine()
         self.check_interval = check_interval
+        self.log_retention_days = log_retention_days
         self.logger = logging.getLogger("AgentConnectionManager")
         self._running = False
         self._task: asyncio.Task | None = None
+        self._log_cleanup_counter = 0
 
     async def start(self):
         """Start the connection manager background tasks."""
@@ -86,12 +81,16 @@ class AgentConnectionManager:
 
     async def _run_cleanup_tasks(self):
         """Run all cleanup and monitoring tasks."""
-        await asyncio.gather(
+        tasks = [
             self._cleanup_stale_connections(),
             self._handle_expired_instructions(),
             self._update_session_activity(),
-            return_exceptions=True,
-        )
+        ]
+        self._log_cleanup_counter += 1
+        if self._log_cleanup_counter >= 120:
+            tasks.append(self._cleanup_old_logs())
+            self._log_cleanup_counter = 0
+        await asyncio.gather(*tasks, return_exceptions=True)
 
     async def _cleanup_stale_connections(self):
         """Clean up connections that haven't received heartbeats recently."""
@@ -207,6 +206,17 @@ class AgentConnectionManager:
 
         except Exception as e:
             self.logger.error(f"Error updating session activity: {e}")
+
+    async def _cleanup_old_logs(self):
+        try:
+            with Session(self.db_engine) as session:
+                cutoff = datetime.now() - timedelta(days=self.log_retention_days)
+                deleted = session.query(AgentLog).filter(AgentLog.created_at < cutoff).delete(synchronize_session=False)
+                if deleted:
+                    session.commit()
+                    self.logger.info(f"Purged {deleted} agent log entries older than {self.log_retention_days} days")
+        except Exception as e:
+            self.logger.error(f"Error cleaning up old agent logs: {e}")
 
     def get_connection_stats(self) -> dict[str, Any]:
         """Get current connection and session statistics."""

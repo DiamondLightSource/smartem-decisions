@@ -12,6 +12,7 @@ from watchdog.observers import Observer
 from smartem_agent.fs_parser import EpuParser
 from smartem_agent.fs_watcher import DEFAULT_PATTERNS, SmartEMWatcherV2
 from smartem_agent.model.store import InMemoryDataStore
+from smartem_agent.remote_log_handler import RemoteLogHandler
 from smartem_backend.api_client import SmartEMAPIClient as APIClient
 from smartem_common.utils import generate_uuid
 
@@ -198,6 +199,8 @@ def watch_directory(
         logging.error(f"Error: Directory {path} does not exist")
         raise typer.Exit(1)
 
+    remote_log_handler: RemoteLogHandler | None = None
+
     if not dry_run:
         try:
             with APIClient(api_url) as client:
@@ -206,6 +209,16 @@ def watch_directory(
         except Exception as e:
             logging.error(f"Error: API at {api_url} is not reachable: {str(e)}")
             raise typer.Exit(1) from None
+
+        if agent_id and session_id:
+            log_client = APIClient(api_url)
+            remote_log_handler = RemoteLogHandler(
+                api_client=log_client,
+                agent_id=agent_id,
+                session_id=session_id,
+            )
+            logging.getLogger().addHandler(remote_log_handler)
+            logging.info("Remote log handler enabled")
 
     logging.info(
         f"Starting SmartEM Agent to watch directory: {str(path)} "
@@ -232,10 +245,12 @@ def watch_directory(
     observer.schedule(watcher, str(path), recursive=True)
 
     def handle_exit(signum, frame):
-        nonlocal watcher
+        nonlocal watcher, remote_log_handler
         logging.info(watcher.datastore)
         watcher.stop()
         observer.stop()
+        if remote_log_handler:
+            remote_log_handler.close()
         logging.info("Watching stopped")
         observer.join()
         raise typer.Exit()

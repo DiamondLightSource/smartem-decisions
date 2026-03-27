@@ -229,6 +229,7 @@ class Micrograph(SQLModel, table=True, table_name="micrograph"):
     selection_distribution: str | None = Field(default=None)
     number_of_particles_picked: int | None = Field(default=None)
     pick_distribution: str | None = Field(default=None)
+    updated_at: datetime | None = Field(default=None, index=True)
     foilhole: FoilHole = Relationship(sa_relationship_kwargs={"back_populates": "micrographs"})
     quality_model_weights: list["QualityPredictionModelWeight"] = Relationship(
         back_populates="micrograph", cascade_delete=True
@@ -537,6 +538,18 @@ class AgentInstructionAcknowledgement(SQLModel, table=True):
     instruction: "AgentInstruction" = Relationship(sa_relationship_kwargs={"back_populates": "acknowledgements"})
 
 
+class AgentLog(SQLModel, table=True):
+    __table_args__ = {"extend_existing": True}
+    id: int | None = Field(default=None, primary_key=True)
+    agent_id: str = Field(index=True)
+    session_id: str = Field(index=True)
+    timestamp: datetime = Field(index=True)
+    level: str = Field(index=True)
+    logger_name: str = Field(default="")
+    message: str = Field(default="")
+    created_at: datetime = Field(default_factory=datetime.now)
+
+
 def _create_db_and_tables(engine):
     # First drop all tables and enums
     with SQLModelSession(engine) as sess:
@@ -835,6 +848,16 @@ def _create_db_and_tables(engine):
                     "ON agentinstructionacknowledgement (processed_at);"
                 )
             )
+
+            # Agent log indexes
+            sess.execute(text("CREATE INDEX IF NOT EXISTS idx_agent_log_agent_id ON agentlog (agent_id);"))
+            sess.execute(text("CREATE INDEX IF NOT EXISTS idx_agent_log_session_id ON agentlog (session_id);"))
+            sess.execute(text("CREATE INDEX IF NOT EXISTS idx_agent_log_timestamp ON agentlog (timestamp);"))
+            sess.execute(text("CREATE INDEX IF NOT EXISTS idx_agent_log_level ON agentlog (level);"))
+            sess.execute(text("CREATE INDEX IF NOT EXISTS idx_agent_log_agent_id_id ON agentlog (agent_id, id);"))
+
+            # Micrograph updated_at index
+            sess.execute(text("CREATE INDEX IF NOT EXISTS idx_micrograph_updated_at ON micrograph (updated_at);"))
 
             sess.commit()
         except Exception as e:
