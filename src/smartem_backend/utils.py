@@ -273,6 +273,41 @@ class RabbitMQPublisher(RabbitMQConnection):
     Publisher class for sending messages to RabbitMQ
     """
 
+    def _handle_publish(self, event_type: MessageQueueEventType, payload: BaseModel | dict[str, Any]) -> None:
+        """
+        Handle publishing an event
+        """
+        # Convert Pydantic model to dict if needed
+        if isinstance(payload, BaseModel):
+            payload_dict = json.loads(payload.json())
+        else:
+            payload_dict = payload
+
+        # Create message with event_type and payload
+        message = {"event_type": event_type.value, **payload_dict}
+
+        # Use a custom encoder for json.dumps that handles datetime objects
+        class DateTimeEncoder(json.JSONEncoder):
+            def default(self, obj):
+                if isinstance(obj, datetime):
+                    return obj.isoformat()
+                return super().default(obj)
+
+        # Convert message to JSON using the custom encoder
+        message_json = json.dumps(message, cls=DateTimeEncoder)
+
+        # Publish message with delivery_mode=2 (persistent)
+        self._channel.basic_publish(
+            exchange=self.exchange,
+            routing_key=self.queue,
+            body=message_json,
+            properties=pika.BasicProperties(
+                delivery_mode=2,  # Make message persistent
+                content_type="application/json",
+            ),
+        )
+        return None
+
     def publish_event(self, event_type: MessageQueueEventType, payload: BaseModel | dict[str, Any]) -> bool:
         """
         Publish an event to RabbitMQ
@@ -286,42 +321,21 @@ class RabbitMQPublisher(RabbitMQConnection):
         """
         try:
             self.connect()
-
-            # Convert Pydantic model to dict if needed
-            if isinstance(payload, BaseModel):
-                payload_dict = json.loads(payload.json())
-            else:
-                payload_dict = payload
-
-            # Create message with event_type and payload
-            message = {"event_type": event_type.value, **payload_dict}
-
-            # Use a custom encoder for json.dumps that handles datetime objects
-            class DateTimeEncoder(json.JSONEncoder):
-                def default(self, obj):
-                    if isinstance(obj, datetime):
-                        return obj.isoformat()
-                    return super().default(obj)
-
-            # Convert message to JSON using the custom encoder
-            message_json = json.dumps(message, cls=DateTimeEncoder)
-
-            # Publish message with delivery_mode=2 (persistent)
-            self._channel.basic_publish(
-                exchange=self.exchange,
-                routing_key=self.queue,
-                body=message_json,
-                properties=pika.BasicProperties(
-                    delivery_mode=2,  # Make message persistent
-                    content_type="application/json",
-                ),
-            )
-
+            self._handle_publish(event_type, payload)
             return True
 
-        except Exception as e:
-            logger.error(f"Failed to publish {event_type.value} event: {str(e)}")
-            return False
+        except (pika.exceptions.AMQPConnectionError, pika.exceptions.StreamLostError):
+            logger.warning(f"Publish of event type {event_type} failed, retrying")
+            self._connection = None
+            self._channel = None
+            try:
+                self.connect()
+                self._handle_publish(event_type, payload)
+                return True
+
+            except Exception as e:
+                logger.error(f"Failed to publish {event_type.value} event: {str(e)}")
+                return False
 
 
 class RabbitMQConsumer(RabbitMQConnection):
