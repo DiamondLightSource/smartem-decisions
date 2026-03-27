@@ -646,6 +646,10 @@ def handle_motion_correction_complete(event_data: dict[str, Any]) -> None:
             session.add(updated_metric_stats)
             session.commit()
             prior_update(quality, event.micrograph_uuid, "motioncorrection", session)
+            micrograph = session.exec(select(Micrograph).where(Micrograph.uuid == event.micrograph_uuid)).first()
+            if micrograph:
+                micrograph.updated_at = datetime.now()
+                session.commit()
         publish_motion_correction_registered(event.micrograph_uuid, quality >= 0.5, metric_name="motioncorrection")
     except ValidationError as e:
         logger.error(f"Validation error processing motion correction event: {e}")
@@ -697,6 +701,10 @@ def handle_ctf_estimation_complete(event_data: dict[str, Any]) -> None:
             session.add(updated_metric_stats)
             session.commit()
             prior_update(quality, event.micrograph_uuid, "ctfmaxresolution", session)
+            micrograph = session.exec(select(Micrograph).where(Micrograph.uuid == event.micrograph_uuid)).first()
+            if micrograph:
+                micrograph.updated_at = datetime.now()
+                session.commit()
         publish_ctf_estimation_registered(event.micrograph_uuid, quality >= 0.5, metric_name="ctfmaxresolution")
     except ValidationError as e:
         logger.error(f"Validation error processing ctf event: {e}")
