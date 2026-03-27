@@ -22,11 +22,19 @@ from sqlalchemy.orm import sessionmaker
 from sse_starlette.sse import EventSourceResponse
 
 from smartem_backend.agent_connection_manager import get_connection_manager
+from smartem_backend.frontend_stream import (
+    query_acquisition_progress,
+    query_agent_logs,
+    query_agent_statuses,
+    query_instruction_updates,
+    query_processing_metrics,
+)
 from smartem_backend.model.database import (
     Acquisition,
     AgentConnection,
     AgentInstruction,
     AgentInstructionAcknowledgement,
+    AgentLog,
     AgentSession,
     Atlas,
     AtlasTile,
@@ -48,6 +56,11 @@ from smartem_backend.model.entity_status import (
     GridSquareStatus,
     GridStatus,
     MicrographStatus,
+)
+from smartem_backend.model.frontend_sse_event import (
+    AgentLogBatchRequest,
+    AgentLogBatchResponse,
+    FrontendEventType,
 )
 from smartem_backend.model.http_request import (
     AcquisitionCreateRequest,
@@ -2414,6 +2427,179 @@ def get_gridsquare_image(
         im.save(buf, format="PNG")
         im_bytes = buf.getvalue()
     return Response(im_bytes, media_type="image/png")
+
+
+_frontend_sse_connections = 0
+_frontend_sse_max_connections = int(os.getenv("FRONTEND_SSE_MAX_CONNECTIONS", "50"))
+
+
+@app.post("/agent/{agent_id}/session/{session_id}/logs")
+async def ingest_agent_logs(
+    agent_id: str,
+    session_id: str,
+    request: AgentLogBatchRequest,
+    db: SqlAlchemySession = DB_DEPENDENCY,
+) -> AgentLogBatchResponse:
+    session = db.query(AgentSession).filter(AgentSession.session_id == session_id).first()
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+    if session.agent_id != agent_id:
+        raise HTTPException(status_code=403, detail="Session does not belong to agent")
+
+    max_batch = 500
+    logs_to_store = request.logs[:max_batch]
+    for entry in logs_to_store:
+        db.add(
+            AgentLog(
+                agent_id=agent_id,
+                session_id=session_id,
+                timestamp=entry.timestamp,
+                level=entry.level,
+                logger_name=entry.logger_name,
+                message=entry.message,
+            )
+        )
+    db.commit()
+
+    return AgentLogBatchResponse(stored=len(logs_to_store))
+
+
+@app.get("/frontend/events/stream")
+async def frontend_event_stream(
+    request: Request,
+    acquisition_uuid: str | None = None,
+    agent_id: str | None = None,
+    event_types: str | None = None,
+    db: SqlAlchemySession = DB_DEPENDENCY,
+) -> EventSourceResponse:
+    global _frontend_sse_connections
+    if _frontend_sse_connections >= _frontend_sse_max_connections:
+        raise HTTPException(status_code=503, detail="Too many frontend SSE connections")
+
+    requested_types: set[str] | None = None
+    if event_types:
+        requested_types = {t.strip() for t in event_types.split(",")}
+
+    def type_enabled(event_type: FrontendEventType) -> bool:
+        if requested_types is None:
+            return True
+        return event_type.value in requested_types
+
+    async def event_generator():
+        global _frontend_sse_connections
+        _frontend_sse_connections += 1
+        event_counter = 0
+        last_poll_time = datetime.now()
+        last_log_id = 0
+        prev_progress: dict[str, dict] = {}
+
+        try:
+            last_event_id = request.headers.get("Last-Event-ID")
+            if last_event_id:
+                try:
+                    event_counter = int(last_event_id)
+                except ValueError:
+                    pass
+
+            if type_enabled(FrontendEventType.AGENT_STATUS):
+                for status_data in query_agent_statuses(db, agent_id):
+                    event_counter += 1
+                    yield {
+                        "id": str(event_counter),
+                        "event": FrontendEventType.AGENT_STATUS.value,
+                        "data": json.dumps(status_data),
+                    }
+
+            if type_enabled(FrontendEventType.ACQUISITION_PROGRESS):
+                for progress in query_acquisition_progress(db, acquisition_uuid):
+                    event_counter += 1
+                    prev_progress[progress["acquisition_uuid"]] = progress
+                    yield {
+                        "id": str(event_counter),
+                        "event": FrontendEventType.ACQUISITION_PROGRESS.value,
+                        "data": json.dumps(progress),
+                    }
+
+            heartbeat_counter = 0
+            poll_interval = int(os.getenv("FRONTEND_SSE_POLL_INTERVAL", "5"))
+
+            while True:
+                now = datetime.now()
+
+                if heartbeat_counter % 6 == 0:
+                    event_counter += 1
+                    yield {
+                        "id": str(event_counter),
+                        "event": FrontendEventType.HEARTBEAT.value,
+                        "data": json.dumps(
+                            {
+                                "timestamp": now.isoformat(),
+                                "connection_time_s": (now - last_poll_time).total_seconds(),
+                            }
+                        ),
+                    }
+
+                if type_enabled(FrontendEventType.AGENT_STATUS):
+                    for status_data in query_agent_statuses(db, agent_id):
+                        event_counter += 1
+                        yield {
+                            "id": str(event_counter),
+                            "event": FrontendEventType.AGENT_STATUS.value,
+                            "data": json.dumps(status_data),
+                        }
+
+                if type_enabled(FrontendEventType.ACQUISITION_PROGRESS):
+                    for progress in query_acquisition_progress(db, acquisition_uuid):
+                        acq_uuid = progress["acquisition_uuid"]
+                        if prev_progress.get(acq_uuid) != progress:
+                            prev_progress[acq_uuid] = progress
+                            event_counter += 1
+                            yield {
+                                "id": str(event_counter),
+                                "event": FrontendEventType.ACQUISITION_PROGRESS.value,
+                                "data": json.dumps(progress),
+                            }
+
+                if type_enabled(FrontendEventType.INSTRUCTION_LIFECYCLE):
+                    for instr_data in query_instruction_updates(db, last_poll_time, agent_id):
+                        event_counter += 1
+                        yield {
+                            "id": str(event_counter),
+                            "event": FrontendEventType.INSTRUCTION_LIFECYCLE.value,
+                            "data": json.dumps(instr_data),
+                        }
+
+                if type_enabled(FrontendEventType.PROCESSING_METRIC):
+                    for metric in query_processing_metrics(db, last_poll_time, acquisition_uuid):
+                        event_counter += 1
+                        yield {
+                            "id": str(event_counter),
+                            "event": FrontendEventType.PROCESSING_METRIC.value,
+                            "data": json.dumps(metric),
+                        }
+
+                if type_enabled(FrontendEventType.AGENT_LOG):
+                    logs = query_agent_logs(db, last_log_id, agent_id)
+                    for log_entry in logs:
+                        last_log_id = log_entry["id"]
+                        event_counter += 1
+                        yield {
+                            "id": str(event_counter),
+                            "event": FrontendEventType.AGENT_LOG.value,
+                            "data": json.dumps(log_entry),
+                        }
+
+                last_poll_time = now
+                await asyncio.sleep(poll_interval)
+                heartbeat_counter += 1
+
+        except asyncio.CancelledError:
+            logger.info("Frontend SSE connection closed")
+            raise
+        finally:
+            _frontend_sse_connections -= 1
+
+    return EventSourceResponse(event_generator())
 
 
 if __name__ == "__main__":
