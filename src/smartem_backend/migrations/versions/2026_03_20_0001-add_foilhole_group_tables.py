@@ -16,9 +16,6 @@ depends_on = None
 
 
 def upgrade() -> None:
-    # Extend the modellevel enum with the new FOILHOLEGROUP value
-    op.execute("ALTER TYPE modellevel ADD VALUE IF NOT EXISTS 'foilholegroup'")
-
     op.create_table(
         "foilholegroup",
         sa.Column("uuid", sa.String(), nullable=False),
