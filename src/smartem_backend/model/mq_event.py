@@ -386,7 +386,7 @@ class ParticlePickingCompleteBody(GenericEventMessageBody):
 class ParticlePickingRegisteredBody(GenericEventMessageBody):
     micrograph_uuid: str
     quality: bool
-    metric_name: str | None = "particlespicked"
+    metric_name: str | None = "numparticles"
 
 
 class ParticleSelectionStartBody(GenericEventMessageBody):
