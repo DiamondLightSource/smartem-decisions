@@ -73,12 +73,14 @@ from smartem_backend.model.mq_event import (
     ModelParameterUpdateEvent,
     MotionCorrectionCompleteBody,
     MultiFoilHoleModelPredictionEvent,
+    ParticlePickingCompleteBody,
     RefreshPredictionsEvent,
 )
 from smartem_backend.mq_publisher import (
     publish_agent_instruction_created,
     publish_ctf_estimation_registered,
     publish_motion_correction_registered,
+    publish_particle_picking_registered,
 )
 from smartem_backend.predictions.acquisition import ordered_holes
 from smartem_backend.predictions.update import overall_predictions_update, prior_update
@@ -711,6 +713,57 @@ def handle_ctf_estimation_complete(event_data: dict[str, Any]) -> None:
     return None
 
 
+def handle_particle_picking_complete(event_data: dict[str, Any]) -> None:
+    try:
+        event = ParticlePickingCompleteBody(**event_data)
+        quality = _check_against_statistics(
+            "particlespicked", event.micrograph_uuid, event.number_of_particles_picked, larger_better=True
+        )
+        with Session(db_engine) as session:
+            grid_uuid = (
+                session.exec(
+                    select(GridSquare, FoilHole, Micrograph)
+                    .where(GridSquare.uuid == FoilHole.gridsquare_uuid)
+                    .where(FoilHole.uuid == Micrograph.foilhole_uuid)
+                    .where(Micrograph.uuid == event.micrograph_uuid)
+                )
+                .one()[0]
+                .grid_uuid
+            )
+            metric_stats = session.exec(
+                select(QualityMetricStatistics)
+                .where(QualityMetricStatistics.grid_uuid == grid_uuid)
+                .where(QualityMetricStatistics.name == "particlespicked")
+            ).all()
+            if not metric_stats:
+                updated_metric_stats = QualityMetricStatistics(
+                    grid_uuid=grid_uuid,
+                    name="particlespicked",
+                    count=1,
+                    value_sum=event.number_of_particles_picked,
+                    squared_value_sum=0,
+                )
+            else:
+                updated_metric_stats = metric_stats[0]
+                old_diff = event.number_of_particles_picked - (
+                    updated_metric_stats.value_sum / updated_metric_stats.count
+                )
+                updated_metric_stats.count += 1
+                updated_metric_stats.value_sum += event.number_of_particles_picked
+                updated_metric_stats.squared_value_sum += old_diff * (
+                    event.number_of_particles_picked - (updated_metric_stats.value_sum / updated_metric_stats.count)
+                )
+            session.add(updated_metric_stats)
+            session.commit()
+            prior_update(quality, event.micrograph_uuid, "particlespicked", session)
+        publish_particle_picking_registered(event.micrograph_uuid, quality >= 0.5, metric_name="particlespicked")
+    except ValidationError as e:
+        logger.error(f"Validation error processing particle picking event: {e}")
+    except Exception as e:
+        logger.error(f"Error processing particle picking event: {e}")
+    return None
+
+
 def handle_gridsquare_model_prediction(event_data: dict[str, Any]) -> None:
     """
     Handle grid square model prediction event by inserting the result into the database
@@ -1274,6 +1327,7 @@ def get_event_handlers() -> dict[str, Callable]:
         MessageQueueEventType.AGENT_INSTRUCTION_EXPIRED.value: handle_agent_instruction_expired,
         MessageQueueEventType.MOTION_CORRECTION_COMPLETE.value: handle_motion_correction_complete,
         MessageQueueEventType.CTF_COMPLETE.value: handle_ctf_estimation_complete,
+        MessageQueueEventType.PARTICLE_PICKING_COMPLETE.value: handle_particle_picking_complete,
         MessageQueueEventType.GRIDSQUARE_MODEL_PREDICTION.value: handle_gridsquare_model_prediction,
         MessageQueueEventType.FOILHOLE_MODEL_PREDICTION.value: handle_foilhole_model_prediction,
         MessageQueueEventType.MULTI_FOILHOLE_MODEL_PREDICTION.value: handle_multi_foilhole_model_prediction,
