@@ -12,10 +12,12 @@ from smartem_backend.model.mq_event import (
     AtlasTileDeletedEvent,
     AtlasTileUpdatedEvent,
     AtlasUpdatedEvent,
+    CreateFoilHoleGroupEvent,
     CtfCompleteBody,
     CtfRegisteredBody,
     FoilHoleCreatedEvent,
     FoilHoleDeletedEvent,
+    FoilHoleGroupModelPredictionEvent,
     FoilHoleModelPredictionEvent,
     FoilHoleUpdatedEvent,
     GridCreatedEvent,
@@ -35,6 +37,8 @@ from smartem_backend.model.mq_event import (
     MotionCorrectionCompleteBody,
     MotionCorrectionRegisteredBody,
     MultiFoilHoleModelPredictionEvent,
+    ParticlePickingCompleteBody,
+    ParticlePickingRegisteredBody,
     RefreshPredictionsEvent,
 )
 from smartem_backend.utils import rmq_publisher
@@ -309,6 +313,32 @@ def publish_multi_foilhole_model_prediction(
     return rmq_publisher.publish_event(MessageQueueEventType.MULTI_FOILHOLE_MODEL_PREDICTION, event)
 
 
+def publish_create_foilhole_group(grid_uuid: str, foilhole_uuids: list[str], group_uuid: str, name: str | None = None):
+    """Publish event to create a named foil hole group"""
+    event = CreateFoilHoleGroupEvent(
+        event_type=MessageQueueEventType.CREATE_FOILHOLE_GROUP,
+        grid_uuid=grid_uuid,
+        foilhole_uuids=foilhole_uuids,
+        group_uuid=group_uuid,
+        name=name,
+    )
+    return rmq_publisher.publish_event(MessageQueueEventType.CREATE_FOILHOLE_GROUP, event)
+
+
+def publish_foilhole_group_model_prediction(
+    group_uuid: str, model_name: str, prediction_value: float, metric: str | None = None
+):
+    """Publish a single model prediction for an entire foil hole group"""
+    event = FoilHoleGroupModelPredictionEvent(
+        event_type=MessageQueueEventType.FOILHOLE_GROUP_MODEL_PREDICTION,
+        group_uuid=group_uuid,
+        prediction_model_name=model_name,
+        prediction_value=prediction_value,
+        metric=metric,
+    )
+    return rmq_publisher.publish_event(MessageQueueEventType.FOILHOLE_GROUP_MODEL_PREDICTION, event)
+
+
 def publish_model_parameter_update(
     grid_uuid: str, model_name: str, key: str, value: float, metric: str | None = None, group: str = ""
 ):
@@ -366,6 +396,27 @@ def publish_ctf_estimation_registered(micrograph_uuid: str, quality: bool, metri
         metric_name=metric_name,
     )
     return rmq_publisher.publish_event(MessageQueueEventType.CTF_REGISTERED, event)
+
+
+def publish_particle_picking_completed(micrograph_uuid: str, number_of_particles_picked: int):
+    """Publish particle picking completed event to RabbitMQ"""
+    event = ParticlePickingCompleteBody(
+        event_type=MessageQueueEventType.PARTICLE_PICKING_COMPLETE,
+        micrograph_uuid=micrograph_uuid,
+        number_of_particles_picked=number_of_particles_picked,
+    )
+    return rmq_publisher.publish_event(MessageQueueEventType.PARTICLE_PICKING_COMPLETE, event)
+
+
+def publish_particle_picking_registered(micrograph_uuid: str, quality: bool, metric_name: str | None = None):
+    """Publish particle picking registered event to RabbitMQ"""
+    event = ParticlePickingRegisteredBody(
+        event_type=MessageQueueEventType.PARTICLE_PICKING_REGISTERED,
+        micrograph_uuid=micrograph_uuid,
+        quality=quality,
+        metric_name=metric_name,
+    )
+    return rmq_publisher.publish_event(MessageQueueEventType.PARTICLE_PICKING_REGISTERED, event)
 
 
 def publish_refresh_predictions(grid_uuid: str):

@@ -28,10 +28,14 @@ from smartem_backend.log_manager import LogConfig, LogManager
 from smartem_backend.model.database import (
     AgentInstruction,
     AgentSession,
+    CurrentQualityGroupPrediction,
     CurrentQualityPrediction,
     FoilHole,
+    FoilHoleGroup,
+    FoilHoleGroupMembership,
     GridSquare,
     Micrograph,
+    QualityGroupPrediction,
     QualityMetricStatistics,
     QualityPrediction,
     QualityPredictionModelParameter,
@@ -46,9 +50,11 @@ from smartem_backend.model.mq_event import (
     AtlasCreatedEvent,
     AtlasDeletedEvent,
     AtlasUpdatedEvent,
+    CreateFoilHoleGroupEvent,
     CtfCompleteBody,
     FoilHoleCreatedEvent,
     FoilHoleDeletedEvent,
+    FoilHoleGroupModelPredictionEvent,
     FoilHoleModelPredictionEvent,
     FoilHoleUpdatedEvent,
     GridCreatedEvent,
@@ -67,12 +73,14 @@ from smartem_backend.model.mq_event import (
     ModelParameterUpdateEvent,
     MotionCorrectionCompleteBody,
     MultiFoilHoleModelPredictionEvent,
+    ParticlePickingCompleteBody,
     RefreshPredictionsEvent,
 )
 from smartem_backend.mq_publisher import (
     publish_agent_instruction_created,
     publish_ctf_estimation_registered,
     publish_motion_correction_registered,
+    publish_particle_picking_registered,
 )
 from smartem_backend.predictions.acquisition import ordered_holes
 from smartem_backend.predictions.update import overall_predictions_update, prior_update
@@ -705,6 +713,57 @@ def handle_ctf_estimation_complete(event_data: dict[str, Any]) -> None:
     return None
 
 
+def handle_particle_picking_complete(event_data: dict[str, Any]) -> None:
+    try:
+        event = ParticlePickingCompleteBody(**event_data)
+        quality = _check_against_statistics(
+            "numparticles", event.micrograph_uuid, event.number_of_particles_picked, larger_better=True
+        )
+        with Session(db_engine) as session:
+            grid_uuid = (
+                session.exec(
+                    select(GridSquare, FoilHole, Micrograph)
+                    .where(GridSquare.uuid == FoilHole.gridsquare_uuid)
+                    .where(FoilHole.uuid == Micrograph.foilhole_uuid)
+                    .where(Micrograph.uuid == event.micrograph_uuid)
+                )
+                .one()[0]
+                .grid_uuid
+            )
+            metric_stats = session.exec(
+                select(QualityMetricStatistics)
+                .where(QualityMetricStatistics.grid_uuid == grid_uuid)
+                .where(QualityMetricStatistics.name == "numparticles")
+            ).all()
+            if not metric_stats:
+                updated_metric_stats = QualityMetricStatistics(
+                    grid_uuid=grid_uuid,
+                    name="numparticles",
+                    count=1,
+                    value_sum=event.number_of_particles_picked,
+                    squared_value_sum=0,
+                )
+            else:
+                updated_metric_stats = metric_stats[0]
+                old_diff = event.number_of_particles_picked - (
+                    updated_metric_stats.value_sum / updated_metric_stats.count
+                )
+                updated_metric_stats.count += 1
+                updated_metric_stats.value_sum += event.number_of_particles_picked
+                updated_metric_stats.squared_value_sum += old_diff * (
+                    event.number_of_particles_picked - (updated_metric_stats.value_sum / updated_metric_stats.count)
+                )
+            session.add(updated_metric_stats)
+            session.commit()
+            prior_update(quality, event.micrograph_uuid, "numparticles", session)
+        publish_particle_picking_registered(event.micrograph_uuid, quality >= 0.5, metric_name="numparticles")
+    except ValidationError as e:
+        logger.error(f"Validation error processing particle picking event: {e}")
+    except Exception as e:
+        logger.error(f"Error processing particle picking event: {e}")
+    return None
+
+
 def handle_gridsquare_model_prediction(event_data: dict[str, Any]) -> None:
     """
     Handle grid square model prediction event by inserting the result into the database
@@ -852,6 +911,86 @@ def handle_multi_foilhole_model_prediction(event_data: dict[str, Any]) -> None:
         logger.error(f"Validation error processing multiple foil hole model prediction event: {e}")
     except Exception as e:
         logger.error(f"Error processing multiple foil hole model prediction event: {e}")
+
+
+def handle_create_foilhole_group(event_data: dict[str, Any]) -> None:
+    """
+    Handle foil hole group creation event by persisting the group and its memberships.
+
+    Args:
+        event_data: Event data for foil hole group creation
+    """
+    try:
+        event = CreateFoilHoleGroupEvent(**event_data)
+        with Session(db_engine) as session:
+            group = session.exec(select(FoilHoleGroup).where(FoilHoleGroup.uuid == event.group_uuid)).first()
+            if group is None:
+                group = FoilHoleGroup(
+                    uuid=event.group_uuid,
+                    grid_uuid=event.grid_uuid,
+                    name=event.name,
+                )
+                session.add(group)
+                memberships = [
+                    FoilHoleGroupMembership(group_uuid=event.group_uuid, foilhole_uuid=fhuuid)
+                    for fhuuid in event.foilhole_uuids
+                ]
+                session.add_all(memberships)
+            else:
+                group.name = event.name
+            session.commit()
+
+    except ValidationError as e:
+        logger.error(f"Validation error processing create foil hole group event: {e}")
+    except Exception as e:
+        logger.error(f"Error processing create foil hole group event: {e}")
+
+
+def handle_foilhole_group_model_prediction(event_data: dict[str, Any]) -> None:
+    """
+    Handle a group-level model prediction event by inserting a single prediction record
+    for the group rather than one record per foil hole.
+
+    Args:
+        event_data: Event data for foil hole group model prediction
+    """
+    try:
+        event = FoilHoleGroupModelPredictionEvent(**event_data)
+        with Session(db_engine) as session:
+            group = session.exec(select(FoilHoleGroup).where(FoilHoleGroup.uuid == event.group_uuid)).one()
+            session.add(
+                QualityGroupPrediction(
+                    group_uuid=event.group_uuid,
+                    grid_uuid=group.grid_uuid,
+                    value=event.prediction_value,
+                    prediction_model_name=event.prediction_model_name,
+                    metric_name=event.metric,
+                )
+            )
+            existing = session.exec(
+                select(CurrentQualityGroupPrediction)
+                .where(CurrentQualityGroupPrediction.group_uuid == event.group_uuid)
+                .where(CurrentQualityGroupPrediction.prediction_model_name == event.prediction_model_name)
+                .where(CurrentQualityGroupPrediction.metric_name == event.metric)
+            ).first()
+            if existing is None:
+                session.add(
+                    CurrentQualityGroupPrediction(
+                        group_uuid=event.group_uuid,
+                        grid_uuid=group.grid_uuid,
+                        value=event.prediction_value,
+                        prediction_model_name=event.prediction_model_name,
+                        metric_name=event.metric,
+                    )
+                )
+            else:
+                existing.value = event.prediction_value
+            session.commit()
+
+    except ValidationError as e:
+        logger.error(f"Validation error processing foil hole group model prediction event: {e}")
+    except Exception as e:
+        logger.error(f"Error processing foil hole group model prediction event: {e}")
 
 
 def handle_refresh_predictions(event_data: dict[str, Any]) -> None:
@@ -1188,9 +1327,12 @@ def get_event_handlers() -> dict[str, Callable]:
         MessageQueueEventType.AGENT_INSTRUCTION_EXPIRED.value: handle_agent_instruction_expired,
         MessageQueueEventType.MOTION_CORRECTION_COMPLETE.value: handle_motion_correction_complete,
         MessageQueueEventType.CTF_COMPLETE.value: handle_ctf_estimation_complete,
+        MessageQueueEventType.PARTICLE_PICKING_COMPLETE.value: handle_particle_picking_complete,
         MessageQueueEventType.GRIDSQUARE_MODEL_PREDICTION.value: handle_gridsquare_model_prediction,
         MessageQueueEventType.FOILHOLE_MODEL_PREDICTION.value: handle_foilhole_model_prediction,
         MessageQueueEventType.MULTI_FOILHOLE_MODEL_PREDICTION.value: handle_multi_foilhole_model_prediction,
+        MessageQueueEventType.CREATE_FOILHOLE_GROUP.value: handle_create_foilhole_group,
+        MessageQueueEventType.FOILHOLE_GROUP_MODEL_PREDICTION.value: handle_foilhole_group_model_prediction,
         MessageQueueEventType.MODEL_PARAMETER_UPDATE.value: handle_model_parameter_update,
         MessageQueueEventType.REFRESH_PREDICTIONS.value: handle_refresh_predictions,
         # TODO: Add handlers for all other event types as needed

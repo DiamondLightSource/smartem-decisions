@@ -65,6 +65,7 @@ class MessageQueueEventType(str, Enum):
     CTF_REGISTERED = "ctf.registered"
     # PARTICLE_PICKING_START = "particle_picking.started"
     PARTICLE_PICKING_COMPLETE = "particle_picking.completed"
+    PARTICLE_PICKING_REGISTERED = "particle_picking.registered"
     # PARTICLE_SELECTION_START = "particle_selection.started"
     PARTICLE_SELECTION_COMPLETE = "particle_selection.completed"
 
@@ -72,6 +73,8 @@ class MessageQueueEventType(str, Enum):
     GRIDSQUARE_MODEL_PREDICTION = "gridsquare.model_prediction"
     FOILHOLE_MODEL_PREDICTION = "foilhole.model_prediction"
     MULTI_FOILHOLE_MODEL_PREDICTION = "foilhole.model_multi_prediction"
+    CREATE_FOILHOLE_GROUP = "foilhole.group_create"
+    FOILHOLE_GROUP_MODEL_PREDICTION = "foilhole.group_model_prediction"
     MODEL_PARAMETER_UPDATE = "grid.model_parameter_update"
 
     REFRESH_PREDICTIONS = "refresh.predictions"
@@ -372,14 +375,18 @@ class ParticlePickingStartBody(GenericEventMessageBody):
 class ParticlePickingCompleteBody(GenericEventMessageBody):
     micrograph_uuid: str
     number_of_particles_picked: int
-    pick_distribution: dict
 
     @model_validator(mode="after")
     def check_model(self):
         if self.number_of_particles_picked < 0:
             raise ValueError("Number of Particles Picked should be a non-negative int")
-        # TODO validate that number of particles picked equals to the size of pick distribution
         return self
+
+
+class ParticlePickingRegisteredBody(GenericEventMessageBody):
+    micrograph_uuid: str
+    quality: bool
+    metric_name: str | None = "numparticles"
 
 
 class ParticleSelectionStartBody(GenericEventMessageBody):
@@ -438,6 +445,20 @@ class FoilHoleModelPredictionEvent(GenericEventMessageBody):
 
 class MultiFoilHoleModelPredictionEvent(GenericEventMessageBody):
     foilhole_uuids: list[str]
+    prediction_model_name: str
+    prediction_value: float
+    metric: str | None = None
+
+
+class CreateFoilHoleGroupEvent(GenericEventMessageBody):
+    grid_uuid: str
+    foilhole_uuids: list[str]
+    group_uuid: str
+    name: str | None = None
+
+
+class FoilHoleGroupModelPredictionEvent(GenericEventMessageBody):
+    group_uuid: str
     prediction_model_name: str
     prediction_value: float
     metric: str | None = None

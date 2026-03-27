@@ -94,6 +94,10 @@ class Grid(SQLModel, table=True, table_name="grid"):
         back_populates="grid", cascade_delete=True
     )
     overall_predictions: list["OverallQualityPrediction"] = Relationship(back_populates="grid", cascade_delete=True)
+    foilhole_groups: list["FoilHoleGroup"] = Relationship(back_populates="grid", cascade_delete=True)
+    current_quality_group_predictions: list["CurrentQualityGroupPrediction"] = Relationship(
+        back_populates="grid", cascade_delete=True
+    )
 
 
 class AtlasTile(SQLModel, table=True, table_name="atlastile"):
@@ -195,6 +199,7 @@ class FoilHole(SQLModel, table=True, table_name="foilhole"):
     prediction: list["QualityPrediction"] = Relationship(back_populates="foilhole", cascade_delete=True)
     current_prediction: list["CurrentQualityPrediction"] = Relationship(back_populates="foilhole", cascade_delete=True)
     overall_prediction: list["OverallQualityPrediction"] = Relationship(back_populates="foilhole", cascade_delete=True)
+    group_memberships: list["FoilHoleGroupMembership"] = Relationship(back_populates="foilhole", cascade_delete=True)
 
 
 class Micrograph(SQLModel, table=True, table_name="micrograph"):
@@ -354,6 +359,64 @@ class OverallQualityPrediction(SQLModel, table=True):
     foilhole: FoilHole | None = Relationship(back_populates="overall_prediction")
     gridsquare: GridSquare | None = Relationship(back_populates="overall_prediction")
     grid: Grid | None = Relationship(back_populates="overall_predictions")
+
+
+class FoilHoleGroup(SQLModel, table=True, table_name="foilholegroup"):
+    """A named group of foil holes that can receive a single shared prediction."""
+
+    __table_args__ = {"extend_existing": True}
+    uuid: str = Field(primary_key=True)
+    grid_uuid: str = Field(foreign_key="grid.uuid")
+    name: str | None = Field(default=None)
+    grid: Grid | None = Relationship(back_populates="foilhole_groups")
+    memberships: list["FoilHoleGroupMembership"] = Relationship(back_populates="group", cascade_delete=True)
+    predictions: list["QualityGroupPrediction"] = Relationship(back_populates="group", cascade_delete=True)
+    current_predictions: list["CurrentQualityGroupPrediction"] = Relationship(
+        back_populates="group", cascade_delete=True
+    )
+
+
+class FoilHoleGroupMembership(SQLModel, table=True, table_name="foilholegroupmembership"):
+    """Association between a FoilHoleGroup and individual FoilHoles."""
+
+    __table_args__ = {"extend_existing": True}
+    group_uuid: str = Field(foreign_key="foilholegroup.uuid", primary_key=True)
+    foilhole_uuid: str = Field(foreign_key="foilhole.uuid", primary_key=True)
+    group: FoilHoleGroup | None = Relationship(back_populates="memberships")
+    foilhole: FoilHole | None = Relationship(back_populates="group_memberships")
+
+
+class QualityGroupPrediction(SQLModel, table=True, table_name="qualitygroupprediction"):
+    """Timestamped history of every prediction issued for a FoilHoleGroup."""
+
+    __table_args__ = {"extend_existing": True}
+    id: int | None = Field(default=None, primary_key=True)
+    timestamp: datetime = Field(default_factory=datetime.now)
+    group_uuid: str = Field(foreign_key="foilholegroup.uuid")
+    grid_uuid: str = Field(foreign_key="grid.uuid")
+    value: float
+    prediction_model_name: str = Field(foreign_key="qualitypredictionmodel.name")
+    metric_name: str | None = Field(foreign_key="qualitymetric.name", default=None)
+    group: FoilHoleGroup | None = Relationship(back_populates="predictions")
+    grid: Grid | None = Relationship()
+    model: QualityPredictionModel | None = Relationship()
+    metric: QualityMetric | None = Relationship()
+
+
+class CurrentQualityGroupPrediction(SQLModel, table=True, table_name="currentqualitygroupprediction"):
+    """A single prediction record that applies to all foil holes in a FoilHoleGroup."""
+
+    __table_args__ = {"extend_existing": True}
+    id: int | None = Field(default=None, primary_key=True)
+    group_uuid: str = Field(foreign_key="foilholegroup.uuid")
+    grid_uuid: str = Field(foreign_key="grid.uuid")
+    value: float
+    prediction_model_name: str = Field(foreign_key="qualitypredictionmodel.name")
+    metric_name: str | None = Field(foreign_key="qualitymetric.name", default=None)
+    group: FoilHoleGroup | None = Relationship(back_populates="current_predictions")
+    grid: Grid | None = Relationship(back_populates="current_quality_group_predictions")
+    model: QualityPredictionModel | None = Relationship()
+    metric: QualityMetric | None = Relationship()
 
 
 # ============ Agent Communication Tables ============
