@@ -299,6 +299,8 @@ class QualityPredictionModelWeight(SQLModel, table=True):
     prediction_model_name: str = Field(foreign_key="qualitypredictionmodel.name")
     metric_name: str | None = Field(foreign_key="qualitymetric.name", default=None)
     weight: float
+    prediction_value: float | None = Field(default=None)
+    quality_score: float | None = Field(default=None)
     model: QualityPredictionModel | None = Relationship(back_populates="weights")
     metric: QualityMetric | None = Relationship(back_populates="weights")
     grid: Grid | None = Relationship(back_populates="quality_model_weights")
