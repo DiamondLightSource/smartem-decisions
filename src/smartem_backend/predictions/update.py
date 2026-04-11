@@ -106,6 +106,8 @@ def prior_update(
                 metric_name=metric,
                 prediction_model_name=weight_row.prediction_model_name,
                 weight=updated_value,
+                prediction_value=pred_value,
+                quality_score=quality,
             )
         )
         posterior += updated_value
