@@ -137,8 +137,13 @@ addopts = """
     """
 # https://iscinumpy.gitlab.io/post/bound-version-constraints/#watch-for-warnings
 filterwarnings = ["error"]
-# Doctest python code in src docstrings, test functions in tests
-testpaths = "src tests"
+# Collect tests (and any doctests in those files) from tests/.
+# src/ is excluded from collection because pytest's doctest-modules import
+# would double-register SQLModel classes — the modules get loaded once via
+# test imports (as smartem_backend.*) and once via pytest's file-based collection,
+# tripping SQLAlchemy's "Multiple classes found" resolver on string relationships.
+# There are no doctests in src today; if that changes, revisit src-layout setup.
+testpaths = "tests"
 # Exclude Alembic migration files from pytest collection (they're not meant to be imported directly)
 norecursedirs = "src/smartem_backend/migrations"
 
