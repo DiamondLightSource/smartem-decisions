@@ -17,6 +17,7 @@ from fastapi.responses import Response
 from PIL import Image
 from pydantic import BaseModel
 from sqlalchemy import and_, desc, or_, text
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session as SqlAlchemySession
 from sqlalchemy.orm import sessionmaker
 from sse_starlette.sse import EventSourceResponse
@@ -61,6 +62,7 @@ from smartem_backend.model.http_request import (
     FoilHoleCreateRequest,
     FoilHoleUpdateRequest,
     GridCreateRequest,
+    GridSquareBatchCreateRequest,
     GridSquareCreateRequest,
     GridSquarePositionRequest,
     GridSquareUpdateRequest,
@@ -82,6 +84,7 @@ from smartem_backend.model.http_response import (
     AtlasTileResponse,
     FoilHoleResponse,
     GridResponse,
+    GridSquareBatchCreateResponse,
     GridSquareResponse,
     LatentRepresentationResponse,
     MicrographResponse,
@@ -116,13 +119,14 @@ from smartem_backend.mq_publisher import (
     publish_gridsquare_lowmag_updated,
     publish_gridsquare_registered,
     publish_gridsquare_updated,
+    publish_gridsquares_created_batch,
     publish_micrograph_created,
     publish_micrograph_deleted,
     publish_micrograph_updated,
     publish_motion_correction_completed,
     publish_motion_correction_registered,
 )
-from smartem_backend.utils import setup_postgres_connection, setup_rabbitmq
+from smartem_backend.utils import app_config, setup_postgres_connection, setup_rabbitmq
 from smartem_common._version import __version__
 
 # Initialize database connection (skip in documentation generation mode)
@@ -194,6 +198,12 @@ app = FastAPI(
     version=__version__,
     redoc_url=None,
     lifespan=lifespan,
+)
+
+# Resolve runtime config (env var overrides appconfig.yml, which overrides hard default)
+_APP_CFG = (app_config or {}).get("app", {}) if isinstance(app_config, dict) else {}
+GRIDSQUARE_CREATE_BATCH_MAX = int(
+    os.getenv("SMARTEM_GRIDSQUARE_CREATE_BATCH_MAX", _APP_CFG.get("gridsquare_create_batch_max", 1000))
 )
 
 # Configure CORS
@@ -985,6 +995,74 @@ def create_grid_gridsquare(grid_uuid: str, gridsquare: GridSquareCreateRequest, 
         response_data["status"] = GridSquareStatus.NONE
 
     return GridSquareResponse(**response_data)
+
+
+@app.post(
+    "/grids/{grid_uuid}/gridsquares/batch",
+    response_model=GridSquareBatchCreateResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+def create_grid_gridsquares_batch(
+    grid_uuid: str,
+    payload: GridSquareBatchCreateRequest,
+    db: SqlAlchemySession = DB_DEPENDENCY,
+):
+    """Create many grid squares for a grid in a single transaction and a single
+    batched RabbitMQ publish. Solves the overload scenario from issue #249."""
+    items = payload.gridsquares
+    if not items:
+        raise HTTPException(status_code=422, detail="gridsquares must not be empty")
+    if len(items) > GRIDSQUARE_CREATE_BATCH_MAX:
+        raise HTTPException(
+            status_code=422,
+            detail=f"batch size {len(items)} exceeds limit of {GRIDSQUARE_CREATE_BATCH_MAX}",
+        )
+
+    uuids = [gs.uuid for gs in items]
+    if len(set(uuids)) != len(uuids):
+        raise HTTPException(status_code=422, detail="duplicate uuid in batch")
+
+    if not db.query(Grid).filter(Grid.uuid == grid_uuid).first():
+        raise HTTPException(status_code=404, detail="Grid not found")
+
+    db_gridsquares = [
+        GridSquare(
+            **{
+                "uuid": gs.uuid,
+                "grid_uuid": grid_uuid,
+                "status": GridSquareStatus.NONE,
+                **gs.model_dump(),
+            }
+        )
+        for gs in items
+    ]
+
+    db.add_all(db_gridsquares)
+    try:
+        db.commit()
+    except IntegrityError as e:
+        db.rollback()
+        logger.error(f"Integrity error inserting gridsquare batch for grid {grid_uuid}: {e}")
+        raise HTTPException(status_code=409, detail="gridsquare batch conflicts with existing data") from None
+
+    publish_entries = [(gs.uuid, grid_uuid, gs.gridsquare_id, gs.lowmag) for gs in items]
+    success = publish_gridsquares_created_batch(publish_entries)
+    if not success:
+        logger.error(f"Failed to publish gridsquare batch created events for grid {grid_uuid} ({len(items)} items)")
+
+    responses: list[GridSquareResponse] = []
+    for gs in items:
+        response_data = {
+            "uuid": gs.uuid,
+            "grid_uuid": grid_uuid,
+            "status": GridSquareStatus.NONE,
+            **gs.model_dump(),
+        }
+        if "status" not in response_data or response_data["status"] is None:
+            response_data["status"] = GridSquareStatus.NONE
+        responses.append(GridSquareResponse(**response_data))
+
+    return GridSquareBatchCreateResponse(gridsquares=responses)
 
 
 @app.post("/gridsquares/{gridsquare_uuid}/registered")

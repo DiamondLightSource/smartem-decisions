@@ -292,3 +292,9 @@ class ProcessingFeedbackPublishResponse(BaseModel):
     """Confirmation that a processing-feedback event was published to RabbitMQ."""
 
     published: bool
+
+
+class GridSquareBatchCreateResponse(BaseModel):
+    """Response for bulk grid-square creation."""
+
+    gridsquares: list[GridSquareResponse]
