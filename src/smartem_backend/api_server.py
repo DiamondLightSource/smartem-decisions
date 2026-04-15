@@ -56,6 +56,8 @@ from smartem_backend.model.http_request import (
     AtlasTileCreateRequest,
     AtlasTileUpdateRequest,
     AtlasUpdateRequest,
+    CtfEstimationCompletedRequest,
+    CtfEstimationRegisteredRequest,
     FoilHoleCreateRequest,
     FoilHoleUpdateRequest,
     GridCreateRequest,
@@ -65,6 +67,8 @@ from smartem_backend.model.http_request import (
     GridUpdateRequest,
     MicrographCreateRequest,
     MicrographUpdateRequest,
+    MotionCorrectionCompletedRequest,
+    MotionCorrectionRegisteredRequest,
     QualityPredictionCreateRequest,
     QualityPredictionModelCreateRequest,
     QualityPredictionModelUpdateRequest,
@@ -81,6 +85,7 @@ from smartem_backend.model.http_response import (
     GridSquareResponse,
     LatentRepresentationResponse,
     MicrographResponse,
+    ProcessingFeedbackPublishResponse,
     QualityMetricsResponse,
     QualityPredictionModelParameterResponse,
     QualityPredictionModelResponse,
@@ -96,6 +101,8 @@ from smartem_backend.mq_publisher import (
     publish_atlas_tile_deleted,
     publish_atlas_tile_updated,
     publish_atlas_updated,
+    publish_ctf_estimation_completed,
+    publish_ctf_estimation_registered,
     publish_foilhole_created,
     publish_foilhole_deleted,
     publish_foilhole_updated,
@@ -112,6 +119,8 @@ from smartem_backend.mq_publisher import (
     publish_micrograph_created,
     publish_micrograph_deleted,
     publish_micrograph_updated,
+    publish_motion_correction_completed,
+    publish_motion_correction_registered,
 )
 from smartem_backend.utils import setup_postgres_connection, setup_rabbitmq
 from smartem_common._version import __version__
@@ -1214,6 +1223,97 @@ def delete_micrograph(micrograph_uuid: str, db: SqlAlchemySession = DB_DEPENDENC
         logger.error(f"Failed to publish micrograph deleted event for ID: {micrograph_uuid}")
 
     return None
+
+
+def _require_micrograph(micrograph_uuid: str, db: SqlAlchemySession) -> None:
+    if not db.query(Micrograph).filter(Micrograph.uuid == micrograph_uuid).first():
+        raise HTTPException(status_code=404, detail="Micrograph not found")
+
+
+def _publish_or_502(success: bool, event_name: str, micrograph_uuid: str) -> ProcessingFeedbackPublishResponse:
+    if not success:
+        logger.error(f"Failed to publish {event_name} event for micrograph UUID: {micrograph_uuid}")
+        raise HTTPException(status_code=502, detail=f"Failed to publish {event_name} event to message queue")
+    return ProcessingFeedbackPublishResponse(published=True)
+
+
+@app.post(
+    "/micrographs/{micrograph_uuid}/motion_correction/completed",
+    response_model=ProcessingFeedbackPublishResponse,
+    status_code=status.HTTP_202_ACCEPTED,
+)
+def publish_micrograph_motion_correction_completed(
+    micrograph_uuid: str,
+    payload: MotionCorrectionCompletedRequest,
+    db: SqlAlchemySession = DB_DEPENDENCY,
+):
+    """Publish a motion-correction-completed event for a micrograph to RabbitMQ."""
+    _require_micrograph(micrograph_uuid, db)
+    success = publish_motion_correction_completed(
+        micrograph_uuid=micrograph_uuid,
+        total_motion=payload.total_motion,
+        average_motion=payload.average_motion,
+    )
+    return _publish_or_502(success, "motion_correction_completed", micrograph_uuid)
+
+
+@app.post(
+    "/micrographs/{micrograph_uuid}/motion_correction/registered",
+    response_model=ProcessingFeedbackPublishResponse,
+    status_code=status.HTTP_202_ACCEPTED,
+)
+def publish_micrograph_motion_correction_registered(
+    micrograph_uuid: str,
+    payload: MotionCorrectionRegisteredRequest,
+    db: SqlAlchemySession = DB_DEPENDENCY,
+):
+    """Publish a motion-correction-registered event for a micrograph to RabbitMQ."""
+    _require_micrograph(micrograph_uuid, db)
+    success = publish_motion_correction_registered(
+        micrograph_uuid=micrograph_uuid,
+        quality=payload.quality,
+        metric_name=payload.metric_name,
+    )
+    return _publish_or_502(success, "motion_correction_registered", micrograph_uuid)
+
+
+@app.post(
+    "/micrographs/{micrograph_uuid}/ctf_estimation/completed",
+    response_model=ProcessingFeedbackPublishResponse,
+    status_code=status.HTTP_202_ACCEPTED,
+)
+def publish_micrograph_ctf_estimation_completed(
+    micrograph_uuid: str,
+    payload: CtfEstimationCompletedRequest,
+    db: SqlAlchemySession = DB_DEPENDENCY,
+):
+    """Publish a CTF-estimation-completed event for a micrograph to RabbitMQ."""
+    _require_micrograph(micrograph_uuid, db)
+    success = publish_ctf_estimation_completed(
+        micrograph_uuid=micrograph_uuid,
+        ctf_max_res=payload.ctf_max_res,
+    )
+    return _publish_or_502(success, "ctf_estimation_completed", micrograph_uuid)
+
+
+@app.post(
+    "/micrographs/{micrograph_uuid}/ctf_estimation/registered",
+    response_model=ProcessingFeedbackPublishResponse,
+    status_code=status.HTTP_202_ACCEPTED,
+)
+def publish_micrograph_ctf_estimation_registered(
+    micrograph_uuid: str,
+    payload: CtfEstimationRegisteredRequest,
+    db: SqlAlchemySession = DB_DEPENDENCY,
+):
+    """Publish a CTF-estimation-registered event for a micrograph to RabbitMQ."""
+    _require_micrograph(micrograph_uuid, db)
+    success = publish_ctf_estimation_registered(
+        micrograph_uuid=micrograph_uuid,
+        quality=payload.quality,
+        metric_name=payload.metric_name,
+    )
+    return _publish_or_502(success, "ctf_estimation_registered", micrograph_uuid)
 
 
 @app.get("/foilholes/{foilhole_uuid}/micrographs", response_model=list[MicrographResponse])

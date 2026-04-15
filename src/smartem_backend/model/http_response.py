@@ -286,3 +286,9 @@ class AgentInstructionAcknowledgementResponse(BaseModel):
         from_attributes=True,
         use_enum_values=True,
     )
+
+
+class ProcessingFeedbackPublishResponse(BaseModel):
+    """Confirmation that a processing-feedback event was published to RabbitMQ."""
+
+    published: bool

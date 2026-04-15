@@ -290,6 +290,28 @@ class MicrographUpdateRequest(MicrographBaseFields):
     pass
 
 
+# ============ Processing Feedback Request Models ============
+
+
+class MotionCorrectionCompletedRequest(BaseModel):
+    total_motion: float
+    average_motion: float
+
+
+class MotionCorrectionRegisteredRequest(BaseModel):
+    quality: bool
+    metric_name: str | None = None
+
+
+class CtfEstimationCompletedRequest(BaseModel):
+    ctf_max_res: float
+
+
+class CtfEstimationRegisteredRequest(BaseModel):
+    quality: bool
+    metric_name: str | None = None
+
+
 # ============ Quality Prediction Request Models ============
 
 
