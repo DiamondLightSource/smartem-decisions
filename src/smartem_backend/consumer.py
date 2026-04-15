@@ -938,6 +938,16 @@ def handle_create_foilhole_group(event_data: dict[str, Any]) -> None:
                 session.add_all(memberships)
             else:
                 group.name = event.name
+                existing_memberships = session.exec(
+                    select(FoilHoleGroupMembership).where(FoilHoleGroupMembership.group_uuid == event.group_uuid)
+                ).all()
+                existing_uuids = {m.foilhole_uuid for m in existing_memberships}
+                new_memberships = [
+                    FoilHoleGroupMembership(group_uuid=event.group_uuid, foilhole_uuid=fhuuid)
+                    for fhuuid in event.foilhole_uuids
+                    if fhuuid not in existing_uuids
+                ]
+                session.add_all(new_memberships)
             session.commit()
 
     except ValidationError as e:
