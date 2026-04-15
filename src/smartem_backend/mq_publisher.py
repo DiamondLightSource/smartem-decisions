@@ -188,6 +188,30 @@ def publish_gridsquare_lowmag_updated(uuid, grid_uuid=None, gridsquare_id=None):
     return rmq_publisher.publish_event(MessageQueueEventType.GRIDSQUARE_LOWMAG_UPDATED, event)
 
 
+def publish_gridsquares_created_batch(
+    entries: list[tuple[str, str | None, str | None, bool]],
+) -> bool:
+    """Publish a batch of grid-square-created events in a single broker round-trip.
+
+    Each entry is (uuid, grid_uuid, gridsquare_id, lowmag). Low-mag entries are
+    routed to GRIDSQUARE_LOWMAG_CREATED, full-res entries to GRIDSQUARE_CREATED.
+    """
+    items: list[tuple[MessageQueueEventType, GridSquareCreatedEvent]] = []
+    for uuid, grid_uuid, gridsquare_id, lowmag in entries:
+        event_type = (
+            MessageQueueEventType.GRIDSQUARE_LOWMAG_CREATED if lowmag else MessageQueueEventType.GRIDSQUARE_CREATED
+        )
+        items.append(
+            (
+                event_type,
+                GridSquareCreatedEvent(
+                    event_type=event_type, uuid=uuid, grid_uuid=grid_uuid, gridsquare_id=gridsquare_id
+                ),
+            )
+        )
+    return rmq_publisher.publish_events(items)
+
+
 def publish_gridsquare_lowmag_deleted(uuid):
     """Publish low mag grid square deleted event to RabbitMQ"""
     event = GridSquareDeletedEvent(event_type=MessageQueueEventType.GRIDSQUARE_LOWMAG_DELETED, uuid=uuid)

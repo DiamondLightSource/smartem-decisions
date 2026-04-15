@@ -337,6 +337,46 @@ class RabbitMQPublisher(RabbitMQConnection):
                 logger.error(f"Failed to publish {event_type.value} event: {str(e)}")
                 return False
 
+    def publish_events(self, items: list[tuple[MessageQueueEventType, BaseModel | dict[str, Any]]]) -> bool:
+        """
+        Publish a batch of events over a single connection.
+
+        All items are published on the same channel with one connect() at the start
+        and one reconnect attempt if the connection drops mid-batch. This avoids the
+        per-message retry/log overhead of calling publish_event() N times.
+
+        Args:
+            items: Sequence of (event_type, payload) pairs to publish in order.
+
+        Returns:
+            bool: True only if all items were published successfully. On partial
+            failure, already-published items remain on the broker (RabbitMQ does not
+            support batch rollback without publisher confirms + tx, which is out of
+            scope here).
+        """
+        if not items:
+            return True
+
+        try:
+            self.connect()
+            for event_type, payload in items:
+                self._handle_publish(event_type, payload)
+            return True
+
+        except (pika.exceptions.AMQPConnectionError, pika.exceptions.StreamLostError):
+            logger.warning(f"Batch publish of {len(items)} events failed, retrying with fresh connection")
+            self._connection = None
+            self._channel = None
+            try:
+                self.connect()
+                for event_type, payload in items:
+                    self._handle_publish(event_type, payload)
+                return True
+
+            except Exception as e:
+                logger.error(f"Failed to publish batch of {len(items)} events: {str(e)}")
+                return False
+
 
 class RabbitMQConsumer(RabbitMQConnection):
     """

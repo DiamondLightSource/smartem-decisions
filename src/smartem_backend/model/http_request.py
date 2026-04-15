@@ -198,6 +198,10 @@ class GridSquareCreateRequest(GridSquareBaseRequest):
     lowmag: bool = False
 
 
+class GridSquareBatchCreateRequest(BaseModel):
+    gridsquares: list[GridSquareCreateRequest]
+
+
 class GridSquareUpdateRequest(GridSquareBaseFields):
     lowmag: bool = False
 
