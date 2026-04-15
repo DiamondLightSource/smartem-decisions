@@ -119,7 +119,7 @@ from smartem_common._version import __version__
 # Initialize database connection (skip in documentation generation mode)
 if os.getenv("SKIP_DB_INIT", "false").lower() != "true":
     db_engine = setup_postgres_connection()
-    SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=db_engine)
+    SessionLocal = sessionmaker(autocommit=False, autoflush=False, expire_on_commit=False, bind=db_engine)
 else:
     # Mock objects for documentation generation
     db_engine = None
@@ -355,7 +355,6 @@ def create_acquisition(acquisition: AcquisitionCreateRequest, db: SqlAlchemySess
     db_acquisition = Acquisition(**acquisition_data)
     db.add(db_acquisition)
     db.commit()
-    db.refresh(db_acquisition)
 
     success = publish_acquisition_created(
         uuid=db_acquisition.uuid,
@@ -401,7 +400,6 @@ def update_acquisition(
     for key, value in update_data.items():
         setattr(db_acquisition, key, value)
     db.commit()
-    db.refresh(db_acquisition)
 
     success = publish_acquisition_updated(
         uuid=db_acquisition.uuid,
@@ -477,7 +475,6 @@ def update_grid(grid_uuid: str, grid: GridUpdateRequest, db: SqlAlchemySession =
     for key, value in update_data.items():
         setattr(db_grid, key, value)
     db.commit()
-    db.refresh(db_grid)
 
     success = publish_grid_updated(uuid=db_grid.uuid, acquisition_uuid=db_grid.acquisition_uuid)
     if not success:
@@ -530,7 +527,6 @@ def create_acquisition_grid(acquisition_uuid: str, grid: GridCreateRequest, db: 
     db_grid = Grid(**grid_data)
     db.add(db_grid)
     db.commit()
-    db.refresh(db_grid)
 
     success = publish_grid_created(uuid=db_grid.uuid, acquisition_uuid=db_grid.acquisition_uuid)
     if not success:
@@ -589,7 +585,6 @@ def update_atlas(atlas_uuid: str, atlas: AtlasUpdateRequest, db: SqlAlchemySessi
     for key, value in update_data.items():
         setattr(db_atlas, key, value)
     db.commit()
-    db.refresh(db_atlas)
 
     success = publish_atlas_updated(uuid=db_atlas.uuid, id=db_atlas.atlas_id, grid_uuid=db_atlas.grid_uuid)
     if not success:
@@ -647,7 +642,6 @@ def create_grid_atlas(grid_uuid: str, atlas: AtlasCreateRequest, db: SqlAlchemyS
     db_atlas = Atlas(**atlas_dict)
     db.add(db_atlas)
     db.commit()
-    db.refresh(db_atlas)
 
     success = publish_atlas_created(uuid=db_atlas.uuid, id=db_atlas.name, grid_uuid=db_atlas.grid_uuid)
     if not success:
@@ -661,7 +655,6 @@ def create_grid_atlas(grid_uuid: str, atlas: AtlasCreateRequest, db: SqlAlchemyS
             db_tile = AtlasTile(**tile_data)
             db.add(db_tile)
             db.commit()
-            db.refresh(db_tile)
 
             tile_success = publish_atlas_tile_created(
                 uuid=db_tile.uuid, id=db_tile.tile_id, atlas_uuid=db_tile.atlas_uuid
@@ -712,7 +705,6 @@ def update_atlas_tile(tile_uuid: str, tile: AtlasTileUpdateRequest, db: SqlAlche
     for key, value in update_data.items():
         setattr(db_tile, key, value)
     db.commit()
-    db.refresh(db_tile)
 
     success = publish_atlas_tile_updated(uuid=db_tile.uuid, id=db_tile.tile_id, atlas_uuid=db_tile.atlas_uuid)
     if not success:
@@ -763,7 +755,6 @@ def create_atlas_tile_for_atlas(atlas_uuid: str, tile: AtlasTileCreateRequest, d
     db_tile = AtlasTile(**tile_data)
     db.add(db_tile)
     db.commit()
-    db.refresh(db_tile)
 
     success = publish_atlas_tile_created(uuid=db_tile.uuid, id=db_tile.tile_id, atlas_uuid=db_tile.atlas_uuid)
     if not success:
@@ -884,7 +875,6 @@ def update_gridsquare(gridsquare_uuid: str, gridsquare: GridSquareUpdateRequest,
         if hasattr(db_gridsquare, key):
             setattr(db_gridsquare, key, value)
     db.commit()
-    db.refresh(db_gridsquare)
 
     if gridsquare.lowmag:
         success = publish_gridsquare_lowmag_updated(
@@ -962,7 +952,6 @@ def create_grid_gridsquare(grid_uuid: str, gridsquare: GridSquareCreateRequest, 
     db_gridsquare = GridSquare(**gridsquare_data)
     db.add(db_gridsquare)
     db.commit()
-    db.refresh(db_gridsquare)
 
     if gridsquare.lowmag:
         success = publish_gridsquare_lowmag_created(
@@ -1038,7 +1027,6 @@ def update_foilhole(foilhole_uuid: str, foilhole: FoilHoleUpdateRequest, db: Sql
     for key, value in update_data.items():
         setattr(db_foilhole, key, value)
     db.commit()
-    db.refresh(db_foilhole)
 
     success = publish_foilhole_updated(
         uuid=db_foilhole.uuid,
@@ -1173,7 +1161,6 @@ def update_micrograph(micrograph_uuid: str, micrograph: MicrographUpdateRequest,
     for key, value in update_data.items():
         setattr(db_micrograph, key, value)
     db.commit()
-    db.refresh(db_micrograph)
 
     success = publish_micrograph_updated(
         uuid=db_micrograph.uuid,
@@ -1252,7 +1239,6 @@ def create_foilhole_micrograph(
     db_micrograph = Micrograph(**micrograph_data)
     db.add(db_micrograph)
     db.commit()
-    db.refresh(db_micrograph)
 
     success = publish_micrograph_created(
         uuid=db_micrograph.uuid,
@@ -1306,7 +1292,6 @@ def create_prediction_model(request: QualityPredictionModelCreateRequest, db: Sq
     model = QualityPredictionModel(**request.model_dump())
     db.add(model)
     db.commit()
-    db.refresh(model)
     return QualityPredictionModelResponse.model_validate(model)
 
 
@@ -1323,7 +1308,6 @@ def update_prediction_model(
         setattr(model, key, value)
 
     db.commit()
-    db.refresh(model)
     return QualityPredictionModelResponse.model_validate(model)
 
 
@@ -1389,7 +1373,6 @@ def create_quality_prediction(request: QualityPredictionCreateRequest, db: SqlAl
     prediction = QualityPrediction(**request.model_dump())
     db.add(prediction)
     db.commit()
-    db.refresh(prediction)
     return QualityPredictionResponse.model_validate(prediction)
 
 
@@ -1515,7 +1498,6 @@ async def stream_instructions(
                 )
                 db.add(connection)
                 db.commit()
-                db.refresh(connection)
                 logger.info(f"Created connection {connection_id} for agent {agent_id} in session {session_id}")
             except Exception as e:
                 logger.error(f"Failed to create connection record: {e}")
@@ -1595,7 +1577,6 @@ async def stream_instructions(
                             instruction.status = "sent"
                             instruction.sent_at = datetime.now()
                             db.commit()
-                            db.refresh(instruction)
 
                         # Send instruction to agent
                         instruction_data = {
@@ -1707,7 +1688,6 @@ async def acknowledge_instruction(
             instruction.status = "acknowledged"
             instruction.acknowledged_at = datetime.now()
             db.commit()
-            db.refresh(instruction)
         else:
             raise HTTPException(status_code=400, detail="Instruction cannot be acknowledged (invalid status)")
 
@@ -1725,7 +1705,6 @@ async def acknowledge_instruction(
         )
         db.add(ack_record)
         db.commit()
-        db.refresh(ack_record)
 
         logger.info(f"Created acknowledgement for instruction {instruction_id} with status {acknowledgement.status}")
 
@@ -2006,7 +1985,6 @@ async def create_test_instruction(session_id: str, instruction_data: dict, db: S
     )
     db.add(instruction)
     db.commit()
-    db.refresh(instruction)
 
     logger.info(f"Created instruction {instruction.instruction_id} for session {session_id}")
 
@@ -2041,7 +2019,6 @@ async def create_test_session(session_data: dict, db: SqlAlchemySession = DB_DEP
     )
     db.add(session)
     db.commit()
-    db.refresh(session)
 
     logger.info(f"Created agent session {session.session_id} for agent {session.agent_id}")
 
