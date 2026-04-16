@@ -662,7 +662,7 @@ def create_grid_atlas(grid_uuid: str, atlas: AtlasCreateRequest, db: SqlAlchemyS
     db.add(db_atlas)
     db.commit()
 
-    success = publish_atlas_created(uuid=db_atlas.uuid, id=db_atlas.name, grid_uuid=db_atlas.grid_uuid)
+    success = publish_atlas_created(uuid=db_atlas.uuid, id=db_atlas.atlas_id, grid_uuid=db_atlas.grid_uuid)
     if not success:
         logger.error(f"Failed to publish atlas created event for UUID: {db_atlas.uuid}")
 
