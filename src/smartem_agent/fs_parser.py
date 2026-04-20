@@ -1,9 +1,3 @@
-# pyright: reportOptionalMemberAccess=false
-# pyright: reportOptionalSubscript=false
-# pyright: reportArgumentType=false
-# pyright: reportAttributeAccessIssue=false
-# pyright: reportPossiblyUnboundVariable=false
-# TODO: Remove suppressions after fixing type errors (see issue #215)
 import logging
 import os
 import re
@@ -540,9 +534,9 @@ class EpuParser:
         """
 
         result = [
-            (EpuParser.gridsquare_dm_file_pattern.match(filename).group(1), os.path.join(path, filename))
+            (match.group(1), os.path.join(path, filename))
             for filename in os.listdir(path)
-            if EpuParser.gridsquare_dm_file_pattern.match(filename)
+            if (match := EpuParser.gridsquare_dm_file_pattern.match(filename))
         ]
 
         return sorted(result)
@@ -576,7 +570,7 @@ class EpuParser:
                     return None
 
             # Helper function for safe float conversion
-            def safe_float(value: str | None, default: float = None) -> float | None:
+            def safe_float(value: str | None, default: float | None = None) -> float | None:
                 if not value:
                     return default
                 try:
@@ -612,6 +606,7 @@ class EpuParser:
             kvp_elements = root.xpath(kvp_xpath, namespaces=namespaces)
 
             for element in kvp_elements:
+                fh_id: int | None = None
                 try:
                     if (
                         key_elem := element.find(
@@ -681,6 +676,8 @@ class EpuParser:
                     else:
                         continue
 
+                    if pixel_x is None or pixel_y is None or diameter is None:
+                        continue
                     foilhole_positions[fh_id] = FoilHolePosition(
                         x_location=int(pixel_x),
                         y_location=int(pixel_y),
@@ -999,23 +996,24 @@ class EpuParser:
 
         # 1.1 Parse EpuSession.dm
         epu_manifest_path = str(grid.data_dir / "EpuSession.dm")
-        grid.acquisition_data = EpuParser.parse_epu_session_manifest(epu_manifest_path)
+        acquisition_data = EpuParser.parse_epu_session_manifest(epu_manifest_path)
+        if acquisition_data is None:
+            raise ValueError(f"Failed to parse EPU session manifest at {epu_manifest_path}")
 
         # TODO This is hacky and non-obvious - address as techdebt sometime
         #  Overwrite `uuid` generated within `parse_epu_session_manifest` method when `new AcquisitionData()` is
         #  instantiated with the actual acquisition uuid.
-        grid.acquisition_data.uuid = datastore.acquisition.uuid
+        acquisition_data.uuid = datastore.acquisition.uuid
+        grid.acquisition_data = acquisition_data
 
         # Build out the absolute atlas_dir path
-        if grid.acquisition_data.atlas_path:
-            grid.atlas_dir = Path(Path(grid_data_dir) / Path("..") / Path(grid.acquisition_data.atlas_path)).resolve()
+        if acquisition_data.atlas_path:
+            grid.atlas_dir = Path(Path(grid_data_dir) / Path("..") / Path(acquisition_data.atlas_path)).resolve()
             if not grid.atlas_dir.exists():
-                grid.atlas_dir = Path(
-                    Path(grid_data_dir) / Path("../..") / Path(grid.acquisition_data.atlas_path)
-                ).resolve()
+                grid.atlas_dir = Path(Path(grid_data_dir) / Path("../..") / Path(acquisition_data.atlas_path)).resolve()
 
         # 1.2 Parse Atlas.dm
-        if grid.atlas_dir and grid.acquisition_data.atlas_path:
+        if grid.atlas_dir and acquisition_data.atlas_path:
             atlas_file_path = EpuParser._find_atlas_file(grid.atlas_dir)
             if atlas_file_path:
                 grid.atlas_data = EpuParser.parse_atlas_manifest(str(atlas_file_path), grid.uuid)
@@ -1091,40 +1089,49 @@ class EpuParser:
                 )
 
             # Check if atlas data exists and has gridsquare positions before accessing
-            if (
-                grid.atlas_data is not None
-                and grid.atlas_data.gridsquare_positions is not None
-                and grid.atlas_data.gridsquare_positions.get(int(gridsquare_id)) is not None
-            ):
-                found_grid_square = datastore.find_gridsquare_by_natural_id(gridsquare_id)
+            found_grid_square = (
+                datastore.find_gridsquare_by_natural_id(gridsquare_id)
+                if (
+                    grid.atlas_data is not None
+                    and grid.atlas_data.gridsquare_positions is not None
+                    and grid.atlas_data.gridsquare_positions.get(int(gridsquare_id)) is not None
+                )
+                else None
+            )
+            if found_grid_square is not None:
                 gridsquare.uuid = found_grid_square.uuid
                 datastore.update_gridsquare(gridsquare)
             else:
                 datastore.create_gridsquare(gridsquare)
             logging.debug(f"Added gridsquare: {gridsquare_id} (uuid: {gridsquare.uuid})")
-            all_foilhole_data = [
-                FoilHoleData(
-                    id=str(fh_id),
-                    gridsquare_id=gridsquare_id,
-                    gridsquare_uuid=gridsquare.uuid,
-                    x_location=fh_position.x_location,
-                    y_location=fh_position.y_location,
-                    x_stage_position=fh_position.x_stage_position,
-                    y_stage_position=fh_position.y_stage_position,
-                    diameter=fh_position.diameter,
-                    is_near_grid_bar=fh_position.is_near_grid_bar,
-                )
-                for fh_id, fh_position in gridsquare_metadata.foilhole_positions.items()
-            ]
-            datastore.create_foilholes(gridsquare.uuid, all_foilhole_data)
-            if len(gridsquare_metadata.foilhole_positions):
+            if gridsquare_metadata is not None and gridsquare_metadata.foilhole_positions:
+                all_foilhole_data = [
+                    FoilHoleData(
+                        id=str(fh_id),
+                        gridsquare_id=gridsquare_id,
+                        gridsquare_uuid=gridsquare.uuid,
+                        x_location=fh_position.x_location,
+                        y_location=fh_position.y_location,
+                        x_stage_position=fh_position.x_stage_position,
+                        y_stage_position=fh_position.y_stage_position,
+                        diameter=fh_position.diameter,
+                        is_near_grid_bar=fh_position.is_near_grid_bar,
+                    )
+                    for fh_id, fh_position in gridsquare_metadata.foilhole_positions.items()
+                ]
+                datastore.create_foilholes(gridsquare.uuid, all_foilhole_data)
                 datastore.gridsquare_registered(gridsquare.uuid)
 
         # 3. Parse gridsquare manifests and associated data
         instrument_extracted = False  # Track if we've already extracted instrument info for this grid
         for gridsquare_manifest_path in list(grid.data_dir.glob("Images-Disc*/GridSquare_*/GridSquare_*_*.xml")):
             gridsquare_manifest = EpuParser.parse_gridsquare_manifest(str(gridsquare_manifest_path))
-            gridsquare_id = re.search(EpuParser.gridsquare_dir_pattern, str(gridsquare_manifest_path)).group(1)
+            if (
+                gridsquare_id_match := re.search(EpuParser.gridsquare_dir_pattern, str(gridsquare_manifest_path))
+            ) is None:
+                logging.warning(f"Skipping gridsquare manifest with unexpected filename: {gridsquare_manifest_path}")
+                continue
+            gridsquare_id = gridsquare_id_match.group(1)
             gridsquare = datastore.find_gridsquare_by_natural_id(gridsquare_id)
 
             if gridsquare:
@@ -1137,19 +1144,12 @@ class EpuParser:
                 if not instrument_extracted:
                     instrument = EpuParser.parse_microscope_from_image_metadata(str(gridsquare_manifest_path))
                     if instrument:
-                        grid.acquisition_data.instrument = instrument
+                        acquisition_data.instrument = instrument
                         logging.info(
                             f"Extracted instrument info: Model={instrument.instrument_model}, "
                             f"ID={instrument.instrument_id}"
                         )
-                        if hasattr(datastore, "api_client"):
-                            try:
-                                datastore.api_client.update_acquisition(grid.acquisition_data)
-                                logging.info(
-                                    f"Updated acquisition {grid.acquisition_data.id} with instrument information"
-                                )
-                            except Exception as e:
-                                logging.error(f"Failed to update acquisition via API: {e}")
+                        datastore.update_acquisition(acquisition_data)
                         instrument_extracted = True
             else:
                 # Create new gridsquare for Images-Disc data without matching Metadata
@@ -1166,19 +1166,12 @@ class EpuParser:
                 if not instrument_extracted:
                     instrument = EpuParser.parse_microscope_from_image_metadata(str(gridsquare_manifest_path))
                     if instrument:
-                        grid.acquisition_data.instrument = instrument
+                        acquisition_data.instrument = instrument
                         logging.info(
                             f"Extracted instrument info: Model={instrument.instrument_model}, "
                             f"ID={instrument.instrument_id}"
                         )
-                        if hasattr(datastore, "api_client"):
-                            try:
-                                datastore.api_client.update_acquisition(grid.acquisition_data)
-                                logging.info(
-                                    f"Updated acquisition {grid.acquisition_data.id} with instrument information"
-                                )
-                            except Exception as e:
-                                logging.error(f"Failed to update acquisition via API: {e}")
+                        datastore.update_acquisition(acquisition_data)
                         instrument_extracted = True
 
             # Process foilholes and micrographs for this gridsquare (whether existing or newly created)
@@ -1190,10 +1183,16 @@ class EpuParser:
                 )
 
                 for foilhole_manifest_path in foilhole_manifest_paths:
-                    foilhole_id_match = re.search(EpuParser.foilhole_xml_file_pattern, str(foilhole_manifest_path))
+                    if (
+                        foilhole_id_match := re.search(EpuParser.foilhole_xml_file_pattern, str(foilhole_manifest_path))
+                    ) is None:
+                        continue
                     foilhole_id = foilhole_id_match.group(1)
 
                     foilhole = EpuParser.parse_foilhole_manifest(str(foilhole_manifest_path))
+                    if foilhole is None:
+                        logging.warning(f"Failed to parse foilhole manifest: {foilhole_manifest_path}")
+                        continue
                     foilhole.gridsquare_id = gridsquare_id
                     foilhole.gridsquare_uuid = gridsquare.uuid
 
@@ -1201,19 +1200,12 @@ class EpuParser:
                     if not instrument_extracted:
                         instrument = EpuParser.parse_microscope_from_image_metadata(str(foilhole_manifest_path))
                         if instrument:
-                            grid.acquisition_data.instrument = instrument
+                            acquisition_data.instrument = instrument
                             logging.info(
                                 f"Extracted instrument info: Model={instrument.instrument_model}, "
                                 f"ID={instrument.instrument_id}"
                             )
-                            if hasattr(datastore, "api_client"):
-                                try:
-                                    datastore.api_client.update_acquisition(grid.acquisition_data)
-                                    logging.info(
-                                        f"Updated acquisition {grid.acquisition_data.id} with instrument information"
-                                    )
-                                except Exception as e:
-                                    logging.error(f"Failed to update acquisition via API: {e}")
+                            datastore.update_acquisition(acquisition_data)
                             instrument_extracted = True
 
                     # Add to datastore using upsert method
@@ -1231,7 +1223,13 @@ class EpuParser:
                     grid.data_dir.glob(f"Images-Disc*/GridSquare_{gridsquare_id}/Data/FoilHole_*_Data_*_*_*_*.xml")
                 ):
                     micrograph_manifest = EpuParser.parse_micrograph_manifest(str(micrograph_manifest_path))
-                    match = re.search(EpuParser.micrograph_xml_file_pattern, str(micrograph_manifest_path))
+                    if micrograph_manifest is None:
+                        logging.warning(f"Failed to parse micrograph manifest: {micrograph_manifest_path}")
+                        continue
+                    if (
+                        match := re.search(EpuParser.micrograph_xml_file_pattern, str(micrograph_manifest_path))
+                    ) is None:
+                        continue
                     foilhole_id = match.group(1)
                     location_id = match.group(2)
                     foilhole = datastore.find_foilhole_by_natural_id(foilhole_id)
@@ -1246,19 +1244,12 @@ class EpuParser:
                     if not instrument_extracted:
                         instrument = EpuParser.parse_microscope_from_image_metadata(str(micrograph_manifest_path))
                         if instrument:
-                            grid.acquisition_data.instrument = instrument
+                            acquisition_data.instrument = instrument
                             logging.info(
                                 f"Extracted instrument info: Model={instrument.instrument_model}, "
                                 f"ID={instrument.instrument_id}"
                             )
-                            if hasattr(datastore, "api_client"):
-                                try:
-                                    datastore.api_client.update_acquisition(grid.acquisition_data)
-                                    logging.info(
-                                        f"Updated acquisition {grid.acquisition_data.id} with instrument information"
-                                    )
-                                except Exception as e:
-                                    logging.error(f"Failed to update acquisition via API: {e}")
+                            datastore.update_acquisition(acquisition_data)
                             instrument_extracted = True
 
                     micrograph = MicrographData(
