@@ -115,6 +115,10 @@ class InMemoryDataStore:
         logger.debug(f"No grid found for path: {path}")
         return None
 
+    def update_acquisition(self, acquisition: AcquisitionData):
+        if self.acquisition.uuid == acquisition.uuid:
+            self.acquisition = acquisition
+
     # Grid methods
     def create_grid(self, grid, path_mapper: Callable[[Path], Path] = lambda p: p):
         self.grids[grid.uuid] = grid
@@ -375,6 +379,14 @@ class PersistentDataStore(InMemoryDataStore):
             import sys
 
             sys.exit(1)
+
+    def update_acquisition(self, acquisition: AcquisitionData):
+        super().update_acquisition(acquisition)
+        try:
+            self.api_client.update_acquisition(acquisition)
+            logger.info(f"Updated acquisition {acquisition.id} via API")
+        except Exception as e:
+            logger.error(f"Failed to update acquisition via API: {e}")
 
     def create_grid(self, grid, path_mapper: Callable[[Path], Path] = lambda p: p):
         try:
