@@ -16,7 +16,9 @@ case "${ROLE:-api}" in
     api)
         echo "Starting HTTP API..."
         python -m alembic upgrade head
-        exec uvicorn smartem_backend.api_server:app --host 0.0.0.0 --port ${HTTP_API_PORT:-8000}
+        exec uvicorn smartem_backend.api_server:app \
+            --host 0.0.0.0 --port ${HTTP_API_PORT:-8000} \
+            --timeout-graceful-shutdown 30
         ;;
     worker)
         echo "Starting RabbitMQ consumer..."

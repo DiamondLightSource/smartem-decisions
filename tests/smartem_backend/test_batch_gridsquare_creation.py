@@ -35,7 +35,7 @@ def publish_calls():
 
 @pytest.fixture
 def client(publish_calls, monkeypatch):
-    def _fake_batch_publish(entries):
+    async def _fake_batch_publish(entries):
         publish_calls.append(list(entries))
         return True
 
@@ -129,6 +129,9 @@ class TestErrorPaths:
         client._db.rollback.assert_called_once()
 
     def test_publish_failure_logged_but_not_fatal(self, client, monkeypatch):
-        monkeypatch.setattr(api_server, "publish_gridsquares_created_batch", lambda _entries: False)
+        async def _fail(_entries):
+            return False
+
+        monkeypatch.setattr(api_server, "publish_gridsquares_created_batch", _fail)
         resp = client.post(ENDPOINT, json={"gridsquares": [_gs("u-1")]})
         assert resp.status_code == 201

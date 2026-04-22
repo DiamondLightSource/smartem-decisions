@@ -1,3 +1,5 @@
+import logging
+
 from smartem_backend.model.mq_event import (
     AcquisitionCreatedEvent,
     AcquisitionDeletedEvent,
@@ -41,165 +43,165 @@ from smartem_backend.model.mq_event import (
     ParticlePickingRegisteredBody,
     RefreshPredictionsEvent,
 )
-from smartem_backend.utils import rmq_publisher
+from smartem_backend.rmq import AioPikaPublisher
+
+logger = logging.getLogger(__name__)
+
+_publisher: AioPikaPublisher | None = None
+
+
+def set_publisher(publisher: AioPikaPublisher | None) -> None:
+    """Bind the singleton publisher. Called by FastAPI lifespan on startup and shutdown."""
+    global _publisher
+    _publisher = publisher
+
+
+def get_publisher() -> AioPikaPublisher | None:
+    """Expose the bound publisher for health checks and direct access."""
+    return _publisher
+
+
+async def _publish(event_type: MessageQueueEventType, payload) -> bool:
+    if _publisher is None:
+        logger.error("Publish attempted before publisher bound: %s", event_type.value)
+        return False
+    return await _publisher.publish_event(event_type, payload)
+
+
+async def _publish_batch(items) -> bool:
+    if _publisher is None:
+        logger.error("Batch publish attempted before publisher bound: %d items", len(items))
+        return False
+    return await _publisher.publish_events(items)
 
 
 # ========== Acquisition DB Entity Mutations ==========
-def publish_acquisition_created(uuid, id=None, **kwargs):
-    """Publish acquisition created event to RabbitMQ"""
+async def publish_acquisition_created(uuid, id=None, **kwargs) -> bool:
     event = AcquisitionCreatedEvent(event_type=MessageQueueEventType.ACQUISITION_CREATED, uuid=uuid, id=id)
-    return rmq_publisher.publish_event(MessageQueueEventType.ACQUISITION_CREATED, event)
+    return await _publish(MessageQueueEventType.ACQUISITION_CREATED, event)
 
 
-def publish_acquisition_updated(uuid, id=None):
-    """Publish acquisition updated event to RabbitMQ"""
+async def publish_acquisition_updated(uuid, id=None) -> bool:
     event = AcquisitionUpdatedEvent(event_type=MessageQueueEventType.ACQUISITION_UPDATED, uuid=uuid, id=id)
-    return rmq_publisher.publish_event(MessageQueueEventType.ACQUISITION_UPDATED, event)
+    return await _publish(MessageQueueEventType.ACQUISITION_UPDATED, event)
 
 
-def publish_acquisition_deleted(uuid):
-    """Publish acquisition deleted event to RabbitMQ"""
+async def publish_acquisition_deleted(uuid) -> bool:
     event = AcquisitionDeletedEvent(event_type=MessageQueueEventType.ACQUISITION_DELETED, uuid=uuid)
-    return rmq_publisher.publish_event(MessageQueueEventType.ACQUISITION_DELETED, event)
+    return await _publish(MessageQueueEventType.ACQUISITION_DELETED, event)
 
 
 # ========== Atlas DB Entity Mutations ==========
-def publish_atlas_created(uuid, id=None, grid_uuid=None):
-    """Publish atlas created event to RabbitMQ"""
+async def publish_atlas_created(uuid, id=None, grid_uuid=None) -> bool:
     event = AtlasCreatedEvent(event_type=MessageQueueEventType.ATLAS_CREATED, uuid=uuid, id=id, grid_uuid=grid_uuid)
-    return rmq_publisher.publish_event(MessageQueueEventType.ATLAS_CREATED, event)
+    return await _publish(MessageQueueEventType.ATLAS_CREATED, event)
 
 
-def publish_atlas_updated(uuid, id=None, grid_uuid=None):
-    """Publish atlas updated event to RabbitMQ"""
+async def publish_atlas_updated(uuid, id=None, grid_uuid=None) -> bool:
     event = AtlasUpdatedEvent(event_type=MessageQueueEventType.ATLAS_UPDATED, uuid=uuid, id=id, grid_uuid=grid_uuid)
-    return rmq_publisher.publish_event(MessageQueueEventType.ATLAS_UPDATED, event)
+    return await _publish(MessageQueueEventType.ATLAS_UPDATED, event)
 
 
-def publish_atlas_deleted(uuid):
-    """Publish atlas deleted event to RabbitMQ"""
+async def publish_atlas_deleted(uuid) -> bool:
     event = AtlasDeletedEvent(event_type=MessageQueueEventType.ATLAS_DELETED, uuid=uuid)
-    return rmq_publisher.publish_event(MessageQueueEventType.ATLAS_DELETED, event)
+    return await _publish(MessageQueueEventType.ATLAS_DELETED, event)
 
 
 # ========== Atlas Tile DB Entity Mutations ==========
-def publish_atlas_tile_created(uuid, id=None, atlas_uuid=None):
-    """Publish atlas tile created event to RabbitMQ"""
+async def publish_atlas_tile_created(uuid, id=None, atlas_uuid=None) -> bool:
     event = AtlasTileCreatedEvent(
         event_type=MessageQueueEventType.ATLAS_TILE_CREATED, uuid=uuid, id=id, atlas_uuid=atlas_uuid
     )
-    return rmq_publisher.publish_event(MessageQueueEventType.ATLAS_TILE_CREATED, event)
+    return await _publish(MessageQueueEventType.ATLAS_TILE_CREATED, event)
 
 
-def publish_atlas_tile_updated(uuid, id=None, atlas_uuid=None):
-    """Publish atlas tile updated event to RabbitMQ"""
+async def publish_atlas_tile_updated(uuid, id=None, atlas_uuid=None) -> bool:
     event = AtlasTileUpdatedEvent(
         event_type=MessageQueueEventType.ATLAS_TILE_UPDATED, uuid=uuid, id=id, atlas_uuid=atlas_uuid
     )
-    return rmq_publisher.publish_event(MessageQueueEventType.ATLAS_TILE_UPDATED, event)
+    return await _publish(MessageQueueEventType.ATLAS_TILE_UPDATED, event)
 
 
-def publish_atlas_tile_deleted(uuid):
-    """Publish atlas tile deleted event to RabbitMQ"""
+async def publish_atlas_tile_deleted(uuid) -> bool:
     event = AtlasTileDeletedEvent(event_type=MessageQueueEventType.ATLAS_TILE_DELETED, uuid=uuid)
-    return rmq_publisher.publish_event(MessageQueueEventType.ATLAS_TILE_DELETED, event)
+    return await _publish(MessageQueueEventType.ATLAS_TILE_DELETED, event)
 
 
 # ========== Grid DB Entity Mutations ==========
-def publish_grid_created(uuid, acquisition_uuid=None):
-    """Publish grid created event to RabbitMQ"""
+async def publish_grid_created(uuid, acquisition_uuid=None) -> bool:
     event = GridCreatedEvent(
         event_type=MessageQueueEventType.GRID_CREATED, uuid=uuid, acquisition_uuid=acquisition_uuid
     )
-    return rmq_publisher.publish_event(MessageQueueEventType.GRID_CREATED, event)
+    return await _publish(MessageQueueEventType.GRID_CREATED, event)
 
 
-def publish_grid_updated(uuid, acquisition_uuid=None):
-    """Publish grid updated event to RabbitMQ"""
+async def publish_grid_updated(uuid, acquisition_uuid=None) -> bool:
     event = GridUpdatedEvent(
         event_type=MessageQueueEventType.GRID_UPDATED, uuid=uuid, acquisition_uuid=acquisition_uuid
     )
-    return rmq_publisher.publish_event(MessageQueueEventType.GRID_UPDATED, event)
+    return await _publish(MessageQueueEventType.GRID_UPDATED, event)
 
 
-def publish_grid_deleted(uuid):
-    """Publish grid deleted event to RabbitMQ"""
+async def publish_grid_deleted(uuid) -> bool:
     event = GridDeletedEvent(event_type=MessageQueueEventType.GRID_DELETED, uuid=uuid)
-    return rmq_publisher.publish_event(MessageQueueEventType.GRID_DELETED, event)
+    return await _publish(MessageQueueEventType.GRID_DELETED, event)
 
 
-def publish_grid_registered(uuid: str):
-    """Publish grid updated event to RabbitMQ"""
-    event = GridRegisteredEvent(
-        event_type=MessageQueueEventType.GRID_REGISTERED,
-        grid_uuid=uuid,
-    )
-    return rmq_publisher.publish_event(MessageQueueEventType.GRID_REGISTERED, event)
+async def publish_grid_registered(uuid: str) -> bool:
+    event = GridRegisteredEvent(event_type=MessageQueueEventType.GRID_REGISTERED, grid_uuid=uuid)
+    return await _publish(MessageQueueEventType.GRID_REGISTERED, event)
 
 
 # ========== Grid Square DB Entity Mutations ==========
-def publish_gridsquare_created(uuid, grid_uuid=None, gridsquare_id=None):
-    """Publish grid square created event to RabbitMQ"""
+async def publish_gridsquare_created(uuid, grid_uuid=None, gridsquare_id=None) -> bool:
     event = GridSquareCreatedEvent(
         event_type=MessageQueueEventType.GRIDSQUARE_CREATED, uuid=uuid, grid_uuid=grid_uuid, gridsquare_id=gridsquare_id
     )
-    return rmq_publisher.publish_event(MessageQueueEventType.GRIDSQUARE_CREATED, event)
+    return await _publish(MessageQueueEventType.GRIDSQUARE_CREATED, event)
 
 
-def publish_gridsquare_updated(uuid, grid_uuid=None, gridsquare_id=None):
-    """Publish grid square updated event to RabbitMQ"""
+async def publish_gridsquare_updated(uuid, grid_uuid=None, gridsquare_id=None) -> bool:
     event = GridSquareUpdatedEvent(
         event_type=MessageQueueEventType.GRIDSQUARE_UPDATED, uuid=uuid, grid_uuid=grid_uuid, gridsquare_id=gridsquare_id
     )
-    return rmq_publisher.publish_event(MessageQueueEventType.GRIDSQUARE_UPDATED, event)
+    return await _publish(MessageQueueEventType.GRIDSQUARE_UPDATED, event)
 
 
-def publish_gridsquare_deleted(uuid):
-    """Publish grid square deleted event to RabbitMQ"""
+async def publish_gridsquare_deleted(uuid) -> bool:
     event = GridSquareDeletedEvent(event_type=MessageQueueEventType.GRIDSQUARE_DELETED, uuid=uuid)
-    return rmq_publisher.publish_event(MessageQueueEventType.GRIDSQUARE_DELETED, event)
+    return await _publish(MessageQueueEventType.GRIDSQUARE_DELETED, event)
 
 
-def publish_gridsquare_registered(uuid: str, count: int | None = None):
-    """Publish grid square updated event to RabbitMQ"""
+async def publish_gridsquare_registered(uuid: str, count: int | None = None) -> bool:
     event = GridSquareRegisteredEvent(
-        event_type=MessageQueueEventType.GRIDSQUARE_REGISTERED,
-        uuid=uuid,
-        count=count,
+        event_type=MessageQueueEventType.GRIDSQUARE_REGISTERED, uuid=uuid, count=count
     )
-    return rmq_publisher.publish_event(MessageQueueEventType.GRIDSQUARE_REGISTERED, event)
+    return await _publish(MessageQueueEventType.GRIDSQUARE_REGISTERED, event)
 
 
-def publish_gridsquare_lowmag_created(uuid, grid_uuid=None, gridsquare_id=None):
-    """Publish low mag grid square created event to RabbitMQ"""
+async def publish_gridsquare_lowmag_created(uuid, grid_uuid=None, gridsquare_id=None) -> bool:
     event = GridSquareCreatedEvent(
         event_type=MessageQueueEventType.GRIDSQUARE_LOWMAG_CREATED,
         uuid=uuid,
         grid_uuid=grid_uuid,
         gridsquare_id=gridsquare_id,
     )
-    return rmq_publisher.publish_event(MessageQueueEventType.GRIDSQUARE_LOWMAG_CREATED, event)
+    return await _publish(MessageQueueEventType.GRIDSQUARE_LOWMAG_CREATED, event)
 
 
-def publish_gridsquare_lowmag_updated(uuid, grid_uuid=None, gridsquare_id=None):
-    """Publish low mag grid square updated event to RabbitMQ"""
+async def publish_gridsquare_lowmag_updated(uuid, grid_uuid=None, gridsquare_id=None) -> bool:
     event = GridSquareUpdatedEvent(
         event_type=MessageQueueEventType.GRIDSQUARE_LOWMAG_UPDATED,
         uuid=uuid,
         grid_uuid=grid_uuid,
         gridsquare_id=gridsquare_id,
     )
-    return rmq_publisher.publish_event(MessageQueueEventType.GRIDSQUARE_LOWMAG_UPDATED, event)
+    return await _publish(MessageQueueEventType.GRIDSQUARE_LOWMAG_UPDATED, event)
 
 
-def publish_gridsquares_created_batch(
+async def publish_gridsquares_created_batch(
     entries: list[tuple[str, str | None, str | None, bool]],
 ) -> bool:
-    """Publish a batch of grid-square-created events in a single broker round-trip.
-
-    Each entry is (uuid, grid_uuid, gridsquare_id, lowmag). Low-mag entries are
-    routed to GRIDSQUARE_LOWMAG_CREATED, full-res entries to GRIDSQUARE_CREATED.
-    """
     items: list[tuple[MessageQueueEventType, GridSquareCreatedEvent]] = []
     for uuid, grid_uuid, gridsquare_id, lowmag in entries:
         event_type = (
@@ -213,18 +215,16 @@ def publish_gridsquares_created_batch(
                 ),
             )
         )
-    return rmq_publisher.publish_events(items)
+    return await _publish_batch(items)
 
 
-def publish_gridsquare_lowmag_deleted(uuid):
-    """Publish low mag grid square deleted event to RabbitMQ"""
+async def publish_gridsquare_lowmag_deleted(uuid) -> bool:
     event = GridSquareDeletedEvent(event_type=MessageQueueEventType.GRIDSQUARE_LOWMAG_DELETED, uuid=uuid)
-    return rmq_publisher.publish_event(MessageQueueEventType.GRIDSQUARE_LOWMAG_DELETED, event)
+    return await _publish(MessageQueueEventType.GRIDSQUARE_LOWMAG_DELETED, event)
 
 
 # ========== Foil Hole DB Entity Mutations ==========
-def publish_foilhole_created(uuid, foilhole_id=None, gridsquare_uuid=None, gridsquare_id=None):
-    """Publish foil hole created event to RabbitMQ"""
+async def publish_foilhole_created(uuid, foilhole_id=None, gridsquare_uuid=None, gridsquare_id=None) -> bool:
     event = FoilHoleCreatedEvent(
         event_type=MessageQueueEventType.FOILHOLE_CREATED,
         uuid=uuid,
@@ -232,11 +232,10 @@ def publish_foilhole_created(uuid, foilhole_id=None, gridsquare_uuid=None, grids
         gridsquare_uuid=gridsquare_uuid,
         gridsquare_id=gridsquare_id,
     )
-    return rmq_publisher.publish_event(MessageQueueEventType.FOILHOLE_CREATED, event)
+    return await _publish(MessageQueueEventType.FOILHOLE_CREATED, event)
 
 
-def publish_foilhole_updated(uuid, foilhole_id=None, gridsquare_uuid=None, gridsquare_id=None):
-    """Publish foil hole updated event to RabbitMQ"""
+async def publish_foilhole_updated(uuid, foilhole_id=None, gridsquare_uuid=None, gridsquare_id=None) -> bool:
     event = FoilHoleUpdatedEvent(
         event_type=MessageQueueEventType.FOILHOLE_UPDATED,
         uuid=uuid,
@@ -244,18 +243,16 @@ def publish_foilhole_updated(uuid, foilhole_id=None, gridsquare_uuid=None, grids
         gridsquare_uuid=gridsquare_uuid,
         gridsquare_id=gridsquare_id,
     )
-    return rmq_publisher.publish_event(MessageQueueEventType.FOILHOLE_UPDATED, event)
+    return await _publish(MessageQueueEventType.FOILHOLE_UPDATED, event)
 
 
-def publish_foilhole_deleted(uuid):
-    """Publish foil hole deleted event to RabbitMQ"""
+async def publish_foilhole_deleted(uuid) -> bool:
     event = FoilHoleDeletedEvent(event_type=MessageQueueEventType.FOILHOLE_DELETED, uuid=uuid)
-    return rmq_publisher.publish_event(MessageQueueEventType.FOILHOLE_DELETED, event)
+    return await _publish(MessageQueueEventType.FOILHOLE_DELETED, event)
 
 
 # ========== Micrograph DB Entity Mutations ==========
-def publish_micrograph_created(uuid, foilhole_uuid=None, foilhole_id=None, micrograph_id=None):
-    """Publish micrograph created event to RabbitMQ"""
+async def publish_micrograph_created(uuid, foilhole_uuid=None, foilhole_id=None, micrograph_id=None) -> bool:
     event = MicrographCreatedEvent(
         event_type=MessageQueueEventType.MICROGRAPH_CREATED,
         uuid=uuid,
@@ -263,11 +260,10 @@ def publish_micrograph_created(uuid, foilhole_uuid=None, foilhole_id=None, micro
         foilhole_id=foilhole_id,
         micrograph_id=micrograph_id,
     )
-    return rmq_publisher.publish_event(MessageQueueEventType.MICROGRAPH_CREATED, event)
+    return await _publish(MessageQueueEventType.MICROGRAPH_CREATED, event)
 
 
-def publish_micrograph_updated(uuid, foilhole_uuid=None, foilhole_id=None, micrograph_id=None):
-    """Publish micrograph updated event to RabbitMQ"""
+async def publish_micrograph_updated(uuid, foilhole_uuid=None, foilhole_id=None, micrograph_id=None) -> bool:
     event = MicrographUpdatedEvent(
         event_type=MessageQueueEventType.MICROGRAPH_UPDATED,
         uuid=uuid,
@@ -275,30 +271,27 @@ def publish_micrograph_updated(uuid, foilhole_uuid=None, foilhole_id=None, micro
         foilhole_id=foilhole_id,
         micrograph_id=micrograph_id,
     )
-    return rmq_publisher.publish_event(MessageQueueEventType.MICROGRAPH_UPDATED, event)
+    return await _publish(MessageQueueEventType.MICROGRAPH_UPDATED, event)
 
 
-def publish_micrograph_deleted(uuid):
-    """Publish micrograph deleted event to RabbitMQ"""
+async def publish_micrograph_deleted(uuid) -> bool:
     event = MicrographDeletedEvent(event_type=MessageQueueEventType.MICROGRAPH_DELETED, uuid=uuid)
-    return rmq_publisher.publish_event(MessageQueueEventType.MICROGRAPH_DELETED, event)
+    return await _publish(MessageQueueEventType.MICROGRAPH_DELETED, event)
 
 
-def publish_atlas_model_prediction(atlas_uuid: str, prediction_value: float, model_name: str = ""):
-    """Publish quality prediction event for a whole atlas to RabbitMQ"""
+async def publish_atlas_model_prediction(atlas_uuid: str, prediction_value: float, model_name: str = "") -> bool:
     event = AtlasPredictionEvent(
         event_type=MessageQueueEventType.ATLAS_MODEL_PREDICTION,
         uuid=atlas_uuid,
         prediction_value=prediction_value,
         model_name=model_name,
     )
-    return rmq_publisher.publish_event(MessageQueueEventType.ATLAS_MODEL_PREDICTION, event)
+    return await _publish(MessageQueueEventType.ATLAS_MODEL_PREDICTION, event)
 
 
-def publish_gridsquare_model_prediction(
+async def publish_gridsquare_model_prediction(
     gridsquare_uuid: str, model_name: str, prediction_value: float, metric: str | None = None
-):
-    """Publish model prediction event for a grid square to RabbitMQ"""
+) -> bool:
     event = GridSquareModelPredictionEvent(
         event_type=MessageQueueEventType.GRIDSQUARE_MODEL_PREDICTION,
         gridsquare_uuid=gridsquare_uuid,
@@ -306,13 +299,12 @@ def publish_gridsquare_model_prediction(
         prediction_value=prediction_value,
         metric=metric,
     )
-    return rmq_publisher.publish_event(MessageQueueEventType.GRIDSQUARE_MODEL_PREDICTION, event)
+    return await _publish(MessageQueueEventType.GRIDSQUARE_MODEL_PREDICTION, event)
 
 
-def publish_foilhole_model_prediction(
+async def publish_foilhole_model_prediction(
     foilhole_uuid: str, model_name: str, prediction_value: float, metric: str | None = None
-):
-    """Publish model prediction event for a foil hole to RabbitMQ"""
+) -> bool:
     event = FoilHoleModelPredictionEvent(
         event_type=MessageQueueEventType.FOILHOLE_MODEL_PREDICTION,
         foilhole_uuid=foilhole_uuid,
@@ -320,13 +312,12 @@ def publish_foilhole_model_prediction(
         prediction_value=prediction_value,
         metric=metric,
     )
-    return rmq_publisher.publish_event(MessageQueueEventType.FOILHOLE_MODEL_PREDICTION, event)
+    return await _publish(MessageQueueEventType.FOILHOLE_MODEL_PREDICTION, event)
 
 
-def publish_multi_foilhole_model_prediction(
+async def publish_multi_foilhole_model_prediction(
     foilhole_uuids: list[str], model_name: str, prediction_value: float, metric: str | None = None
-):
-    """Publish model prediction event for a list of foil holes to RabbitMQ"""
+) -> bool:
     event = MultiFoilHoleModelPredictionEvent(
         event_type=MessageQueueEventType.MULTI_FOILHOLE_MODEL_PREDICTION,
         foilhole_uuids=foilhole_uuids,
@@ -334,11 +325,12 @@ def publish_multi_foilhole_model_prediction(
         prediction_value=prediction_value,
         metric=metric,
     )
-    return rmq_publisher.publish_event(MessageQueueEventType.MULTI_FOILHOLE_MODEL_PREDICTION, event)
+    return await _publish(MessageQueueEventType.MULTI_FOILHOLE_MODEL_PREDICTION, event)
 
 
-def publish_create_foilhole_group(grid_uuid: str, foilhole_uuids: list[str], group_uuid: str, name: str | None = None):
-    """Publish event to create a named foil hole group"""
+async def publish_create_foilhole_group(
+    grid_uuid: str, foilhole_uuids: list[str], group_uuid: str, name: str | None = None
+) -> bool:
     event = CreateFoilHoleGroupEvent(
         event_type=MessageQueueEventType.CREATE_FOILHOLE_GROUP,
         grid_uuid=grid_uuid,
@@ -346,13 +338,12 @@ def publish_create_foilhole_group(grid_uuid: str, foilhole_uuids: list[str], gro
         group_uuid=group_uuid,
         name=name,
     )
-    return rmq_publisher.publish_event(MessageQueueEventType.CREATE_FOILHOLE_GROUP, event)
+    return await _publish(MessageQueueEventType.CREATE_FOILHOLE_GROUP, event)
 
 
-def publish_foilhole_group_model_prediction(
+async def publish_foilhole_group_model_prediction(
     group_uuid: str, model_name: str, prediction_value: float, metric: str | None = None
-):
-    """Publish a single model prediction for an entire foil hole group"""
+) -> bool:
     event = FoilHoleGroupModelPredictionEvent(
         event_type=MessageQueueEventType.FOILHOLE_GROUP_MODEL_PREDICTION,
         group_uuid=group_uuid,
@@ -360,13 +351,12 @@ def publish_foilhole_group_model_prediction(
         prediction_value=prediction_value,
         metric=metric,
     )
-    return rmq_publisher.publish_event(MessageQueueEventType.FOILHOLE_GROUP_MODEL_PREDICTION, event)
+    return await _publish(MessageQueueEventType.FOILHOLE_GROUP_MODEL_PREDICTION, event)
 
 
-def publish_model_parameter_update(
+async def publish_model_parameter_update(
     grid_uuid: str, model_name: str, key: str, value: float, metric: str | None = None, group: str = ""
-):
-    """Publish model parameter update event to RabbitMQ"""
+) -> bool:
     event = ModelParameterUpdateEvent(
         event_type=MessageQueueEventType.MODEL_PARAMETER_UPDATE,
         grid_uuid=grid_uuid,
@@ -376,84 +366,86 @@ def publish_model_parameter_update(
         metric=metric,
         group=group,
     )
-    return rmq_publisher.publish_event(MessageQueueEventType.MODEL_PARAMETER_UPDATE, event)
+    return await _publish(MessageQueueEventType.MODEL_PARAMETER_UPDATE, event)
 
 
-def publish_motion_correction_completed(micrograph_uuid: str, total_motion: float, average_motion: float):
-    """Publish motion correction completed event to RabbitMQ"""
+async def publish_motion_correction_completed(
+    micrograph_uuid: str, total_motion: float, average_motion: float
+) -> bool:
     event = MotionCorrectionCompleteBody(
         event_type=MessageQueueEventType.MOTION_CORRECTION_COMPLETE,
         micrograph_uuid=micrograph_uuid,
         total_motion=total_motion,
         average_motion=average_motion,
     )
-    return rmq_publisher.publish_event(MessageQueueEventType.MOTION_CORRECTION_COMPLETE, event)
+    return await _publish(MessageQueueEventType.MOTION_CORRECTION_COMPLETE, event)
 
 
-def publish_motion_correction_registered(micrograph_uuid: str, quality: bool, metric_name: str | None = None):
-    """Publish motion correction registered (after motion correction completed) event to RabbitMQ"""
+async def publish_motion_correction_registered(
+    micrograph_uuid: str, quality: bool, metric_name: str | None = None
+) -> bool:
     event = MotionCorrectionRegisteredBody(
         event_type=MessageQueueEventType.MOTION_CORRECTION_REGISTERED,
         micrograph_uuid=micrograph_uuid,
         quality=quality,
         metric_name=metric_name,
     )
-    return rmq_publisher.publish_event(MessageQueueEventType.MOTION_CORRECTION_REGISTERED, event)
+    return await _publish(MessageQueueEventType.MOTION_CORRECTION_REGISTERED, event)
 
 
-def publish_ctf_estimation_completed(micrograph_uuid: str, ctf_max_res: float):
-    """Publish CTF estimation completed event to RabbitMQ"""
+async def publish_ctf_estimation_completed(micrograph_uuid: str, ctf_max_res: float) -> bool:
     event = CtfCompleteBody(
         event_type=MessageQueueEventType.CTF_COMPLETE,
         micrograph_uuid=micrograph_uuid,
         ctf_max_resolution_estimate=ctf_max_res,
     )
-    return rmq_publisher.publish_event(MessageQueueEventType.CTF_COMPLETE, event)
+    return await _publish(MessageQueueEventType.CTF_COMPLETE, event)
 
 
-def publish_ctf_estimation_registered(micrograph_uuid: str, quality: bool, metric_name: str | None = None):
-    """Publish CTF estimation registered (after motion correction completed) event to RabbitMQ"""
+async def publish_ctf_estimation_registered(
+    micrograph_uuid: str, quality: bool, metric_name: str | None = None
+) -> bool:
     event = CtfRegisteredBody(
         event_type=MessageQueueEventType.CTF_REGISTERED,
         micrograph_uuid=micrograph_uuid,
         quality=quality,
         metric_name=metric_name,
     )
-    return rmq_publisher.publish_event(MessageQueueEventType.CTF_REGISTERED, event)
+    return await _publish(MessageQueueEventType.CTF_REGISTERED, event)
 
 
-def publish_particle_picking_completed(micrograph_uuid: str, number_of_particles_picked: int):
-    """Publish particle picking completed event to RabbitMQ"""
+async def publish_particle_picking_completed(micrograph_uuid: str, number_of_particles_picked: int) -> bool:
     event = ParticlePickingCompleteBody(
         event_type=MessageQueueEventType.PARTICLE_PICKING_COMPLETE,
         micrograph_uuid=micrograph_uuid,
         number_of_particles_picked=number_of_particles_picked,
     )
-    return rmq_publisher.publish_event(MessageQueueEventType.PARTICLE_PICKING_COMPLETE, event)
+    return await _publish(MessageQueueEventType.PARTICLE_PICKING_COMPLETE, event)
 
 
-def publish_particle_picking_registered(micrograph_uuid: str, quality: bool, metric_name: str | None = None):
-    """Publish particle picking registered event to RabbitMQ"""
+async def publish_particle_picking_registered(
+    micrograph_uuid: str, quality: bool, metric_name: str | None = None
+) -> bool:
     event = ParticlePickingRegisteredBody(
         event_type=MessageQueueEventType.PARTICLE_PICKING_REGISTERED,
         micrograph_uuid=micrograph_uuid,
         quality=quality,
         metric_name=metric_name,
     )
-    return rmq_publisher.publish_event(MessageQueueEventType.PARTICLE_PICKING_REGISTERED, event)
+    return await _publish(MessageQueueEventType.PARTICLE_PICKING_REGISTERED, event)
 
 
-def publish_refresh_predictions(grid_uuid: str):
-    """Publish event to trigger overall prediction recalculation"""
+async def publish_refresh_predictions(grid_uuid: str) -> bool:
     event = RefreshPredictionsEvent(event_type=MessageQueueEventType.REFRESH_PREDICTIONS, grid_uuid=grid_uuid)
-    return rmq_publisher.publish_event(MessageQueueEventType.REFRESH_PREDICTIONS, event)
+    return await _publish(MessageQueueEventType.REFRESH_PREDICTIONS, event)
 
 
 # ========== Agent Communication Events ==========
 
 
-def publish_agent_instruction_created(instruction_id, session_id, agent_id, instruction_type, payload, **kwargs):
-    """Publish agent instruction created event to RabbitMQ"""
+async def publish_agent_instruction_created(
+    instruction_id, session_id, agent_id, instruction_type, payload, **kwargs
+) -> bool:
     event = AgentInstructionCreatedEvent(
         event_type=MessageQueueEventType.AGENT_INSTRUCTION_CREATED,
         instruction_id=instruction_id,
@@ -466,11 +458,12 @@ def publish_agent_instruction_created(instruction_id, session_id, agent_id, inst
         expires_at=kwargs.get("expires_at"),
         instruction_metadata=kwargs.get("instruction_metadata"),
     )
-    return rmq_publisher.publish_event(MessageQueueEventType.AGENT_INSTRUCTION_CREATED, event)
+    return await _publish(MessageQueueEventType.AGENT_INSTRUCTION_CREATED, event)
 
 
-def publish_agent_instruction_updated(instruction_id, session_id, agent_id, status, acknowledged_at=None):
-    """Publish agent instruction updated event to RabbitMQ"""
+async def publish_agent_instruction_updated(
+    instruction_id, session_id, agent_id, status, acknowledged_at=None
+) -> bool:
     event = AgentInstructionUpdatedEvent(
         event_type=MessageQueueEventType.AGENT_INSTRUCTION_UPDATED,
         instruction_id=instruction_id,
@@ -479,11 +472,10 @@ def publish_agent_instruction_updated(instruction_id, session_id, agent_id, stat
         status=status,
         acknowledged_at=acknowledged_at,
     )
-    return rmq_publisher.publish_event(MessageQueueEventType.AGENT_INSTRUCTION_UPDATED, event)
+    return await _publish(MessageQueueEventType.AGENT_INSTRUCTION_UPDATED, event)
 
 
-def publish_agent_instruction_expired(instruction_id, session_id, agent_id, expires_at, retry_count):
-    """Publish agent instruction expired event to RabbitMQ"""
+async def publish_agent_instruction_expired(instruction_id, session_id, agent_id, expires_at, retry_count) -> bool:
     event = AgentInstructionExpiredEvent(
         event_type=MessageQueueEventType.AGENT_INSTRUCTION_EXPIRED,
         instruction_id=instruction_id,
@@ -492,4 +484,4 @@ def publish_agent_instruction_expired(instruction_id, session_id, agent_id, expi
         expires_at=expires_at,
         retry_count=retry_count,
     )
-    return rmq_publisher.publish_event(MessageQueueEventType.AGENT_INSTRUCTION_EXPIRED, event)
+    return await _publish(MessageQueueEventType.AGENT_INSTRUCTION_EXPIRED, event)
