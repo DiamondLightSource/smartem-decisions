@@ -32,7 +32,7 @@ def captured():
 @pytest.fixture
 def client(captured, monkeypatch):
     def _fake_publish(name, return_value=True):
-        def _inner(**kwargs):
+        async def _inner(**kwargs):
             captured.append(_Captured(name=name, kwargs=kwargs))
             return return_value
 
@@ -78,7 +78,10 @@ class TestMotionCorrectionCompleted:
         assert captured == []
 
     def test_publish_failure_returns_502(self, client, captured, monkeypatch):
-        monkeypatch.setattr(api_server, "publish_motion_correction_completed", lambda **_: False)
+        async def _fail(**_):
+            return False
+
+        monkeypatch.setattr(api_server, "publish_motion_correction_completed", _fail)
         resp = client.post(self.endpoint, json={"total_motion": 1.5, "average_motion": 0.1})
         assert resp.status_code == 502
         assert "motion_correction_completed" in resp.json()["detail"]

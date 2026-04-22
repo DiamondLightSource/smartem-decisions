@@ -24,6 +24,7 @@ dev = [
     "pre-commit",
     "pyright",
     "pytest",
+    "pytest-asyncio>=0.23.0,<2.0.0",
     "pytest-cov",
     "ruff",
     "types-mock",
@@ -64,6 +65,7 @@ cli = [
 # Backend system component dependencies (database, messaging, API server/client)
 backend = [
     "smartem-decisions[common,client,cli]",
+    "aio-pika>=9.4.0,<10.0.0",
     "fastapi>=0.116.1,<1.0.0",
     "uvicorn[standard]>=0.30.0,<1.0.0",
     "sqlalchemy>=2.0.0,<3.0.0",
@@ -135,6 +137,7 @@ reportMissingImports = false # Ignore missing stubs in imported modules
 addopts = """
     --tb=native -vv --doctest-modules
     """
+asyncio_mode = "auto"
 # https://iscinumpy.gitlab.io/post/bound-version-constraints/#watch-for-warnings
 filterwarnings = ["error"]
 # Collect tests (and any doctests in those files) from tests/.

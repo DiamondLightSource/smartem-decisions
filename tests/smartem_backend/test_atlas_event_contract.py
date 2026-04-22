@@ -27,7 +27,7 @@ def captured():
 @pytest.fixture
 def client(captured, monkeypatch):
     def _capture(name):
-        def _inner(**kwargs):
+        async def _inner(**kwargs):
             captured[name] = kwargs
             return True
 
