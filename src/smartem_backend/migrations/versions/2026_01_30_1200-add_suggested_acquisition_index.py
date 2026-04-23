@@ -20,7 +20,9 @@ def upgrade() -> None:
         "overallqualityprediction",
         sa.Column("suggested_acquisition_index", sa.Integer(), nullable=True),
     )
-    op.execute("UPDATE overallqualityprediction SET suggested_acquisition_index = 0 WHERE suggested_acquisition_index IS NULL")
+    op.execute(
+        "UPDATE overallqualityprediction SET suggested_acquisition_index = 0 WHERE suggested_acquisition_index IS NULL"
+    )
     op.alter_column("overallqualityprediction", "suggested_acquisition_index", nullable=False)
 
 

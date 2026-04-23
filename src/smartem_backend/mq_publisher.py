@@ -173,9 +173,7 @@ async def publish_gridsquare_deleted(uuid) -> bool:
 
 
 async def publish_gridsquare_registered(uuid: str, count: int | None = None) -> bool:
-    event = GridSquareRegisteredEvent(
-        event_type=MessageQueueEventType.GRIDSQUARE_REGISTERED, uuid=uuid, count=count
-    )
+    event = GridSquareRegisteredEvent(event_type=MessageQueueEventType.GRIDSQUARE_REGISTERED, uuid=uuid, count=count)
     return await _publish(MessageQueueEventType.GRIDSQUARE_REGISTERED, event)
 
 
@@ -369,9 +367,7 @@ async def publish_model_parameter_update(
     return await _publish(MessageQueueEventType.MODEL_PARAMETER_UPDATE, event)
 
 
-async def publish_motion_correction_completed(
-    micrograph_uuid: str, total_motion: float, average_motion: float
-) -> bool:
+async def publish_motion_correction_completed(micrograph_uuid: str, total_motion: float, average_motion: float) -> bool:
     event = MotionCorrectionCompleteBody(
         event_type=MessageQueueEventType.MOTION_CORRECTION_COMPLETE,
         micrograph_uuid=micrograph_uuid,
@@ -461,9 +457,7 @@ async def publish_agent_instruction_created(
     return await _publish(MessageQueueEventType.AGENT_INSTRUCTION_CREATED, event)
 
 
-async def publish_agent_instruction_updated(
-    instruction_id, session_id, agent_id, status, acknowledged_at=None
-) -> bool:
+async def publish_agent_instruction_updated(instruction_id, session_id, agent_id, status, acknowledged_at=None) -> bool:
     event = AgentInstructionUpdatedEvent(
         event_type=MessageQueueEventType.AGENT_INSTRUCTION_UPDATED,
         instruction_id=instruction_id,

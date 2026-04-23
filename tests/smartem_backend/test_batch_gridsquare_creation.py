@@ -7,7 +7,6 @@ with what payload. No Postgres, no RabbitMQ.
 """
 
 import os
-from unittest.mock import MagicMock
 
 os.environ["SKIP_DB_INIT"] = "true"
 
@@ -17,6 +16,8 @@ from sqlalchemy.exc import IntegrityError
 
 from smartem_backend import api_server
 from smartem_backend.api_server import app, get_db
+
+from ._async_db_stub import make_async_db, make_execute_result
 
 
 def _gs(uuid: str, gridsquare_id: str = "gs-1", lowmag: bool = False) -> dict:
@@ -41,9 +42,7 @@ def client(publish_calls, monkeypatch):
 
     monkeypatch.setattr(api_server, "publish_gridsquares_created_batch", _fake_batch_publish)
 
-    db = MagicMock()
-    # Grid lookup returns a truthy object by default (grid exists)
-    db.query.return_value.filter.return_value.first.return_value = object()
+    db = make_async_db()
 
     app.dependency_overrides[get_db] = lambda: db
     try:
@@ -117,7 +116,7 @@ class TestValidation:
 
 class TestErrorPaths:
     def test_grid_not_found_returns_404(self, client):
-        client._db.query.return_value.filter.return_value.first.return_value = None
+        client._db.execute.return_value = make_execute_result(None)
         resp = client.post(ENDPOINT, json={"gridsquares": [_gs("u-1")]})
         assert resp.status_code == 404
         client._db.add_all.assert_not_called()

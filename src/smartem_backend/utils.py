@@ -4,6 +4,7 @@ import os
 import yaml
 from dotenv import load_dotenv
 from sqlalchemy.engine import Engine
+from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
 from sqlmodel import create_engine
 
 from smartem_backend.log_manager import LogConfig, LogManager
@@ -92,8 +93,52 @@ def setup_logger(level: int = logging.INFO, conf: dict | None = None):
 
 logger = setup_logger()
 
-# Global singleton engine instance
+# Global singleton engine instances. The sync engine is still required for
+# CLI tools, Alembic migrations, and the agent data cleanup service. The async
+# engine drives the FastAPI application and the RabbitMQ consumer.
 _db_engine: Engine | None = None
+_async_db_engine: AsyncEngine | None = None
+
+
+def _load_postgres_env() -> dict[str, str]:
+    load_dotenv(override=False)  # Don't override existing env vars as these might be coming from k8s
+    required_env_vars = ["POSTGRES_USER", "POSTGRES_PASSWORD", "POSTGRES_HOST", "POSTGRES_PORT", "POSTGRES_DB"]
+    env_vars = {}
+    for key in required_env_vars:
+        value = os.getenv(key)
+        if value is None:
+            logger.error(f"Error: Required environment variable '{key}' is not set")
+            exit(1)
+        env_vars[key] = value
+    return env_vars
+
+
+def _load_pool_config() -> dict[str, int | bool]:
+    config = load_conf()
+    db_config = config.get("database", {}) if config else {}
+    return {
+        "pool_size": db_config.get("pool_size", 10),
+        "max_overflow": db_config.get("max_overflow", 20),
+        "pool_timeout": db_config.get("pool_timeout", 30),
+        "pool_recycle": db_config.get("pool_recycle", 3600),
+        "pool_pre_ping": db_config.get("pool_pre_ping", True),
+    }
+
+
+def _sync_postgres_url() -> str:
+    env = _load_postgres_env()
+    return (
+        f"postgresql+psycopg2://{env['POSTGRES_USER']}:{env['POSTGRES_PASSWORD']}"
+        f"@{env['POSTGRES_HOST']}:{env['POSTGRES_PORT']}/{env['POSTGRES_DB']}"
+    )
+
+
+def _async_postgres_url() -> str:
+    env = _load_postgres_env()
+    return (
+        f"postgresql+asyncpg://{env['POSTGRES_USER']}:{env['POSTGRES_PASSWORD']}"
+        f"@{env['POSTGRES_HOST']}:{env['POSTGRES_PORT']}/{env['POSTGRES_DB']}"
+    )
 
 
 def setup_postgres_connection(echo=False, force_new=False) -> Engine:
@@ -112,52 +157,52 @@ def setup_postgres_connection(echo=False, force_new=False) -> Engine:
     # Return existing engine unless forced to create new one
     if _db_engine is not None and not force_new:
         return _db_engine
-    load_dotenv(override=False)  # Don't override existing env vars as these might be coming from k8s
-    required_env_vars = ["POSTGRES_USER", "POSTGRES_PASSWORD", "POSTGRES_HOST", "POSTGRES_PORT", "POSTGRES_DB"]
-
-    env_vars = {}
-    for key in required_env_vars:
-        value = os.getenv(key)
-        if value is None:
-            logger.error(f"Error: Required environment variable '{key}' is not set")
-            exit(1)
-        env_vars[key] = value
-
-    # Load database configuration from appconfig.yml with defaults
-    config = load_conf()
-    db_config = config.get("database", {}) if config else {}
-
-    pool_size = db_config.get("pool_size", 10)
-    max_overflow = db_config.get("max_overflow", 20)
-    pool_timeout = db_config.get("pool_timeout", 30)
-    pool_recycle = db_config.get("pool_recycle", 3600)
-    pool_pre_ping = db_config.get("pool_pre_ping", True)
-
-    # Create engine with connection pooling
+    pool = _load_pool_config()
     _db_engine = create_engine(
-        f"postgresql+psycopg2://{env_vars['POSTGRES_USER']}:{env_vars['POSTGRES_PASSWORD']}@"
-        f"{env_vars['POSTGRES_HOST']}:{env_vars['POSTGRES_PORT']}/{env_vars['POSTGRES_DB']}",
+        _sync_postgres_url(),
         echo=echo,
-        # Connection pool settings from config
-        pool_size=pool_size,  # Number of connections to maintain in pool
-        max_overflow=max_overflow,  # Additional connections beyond pool_size
-        pool_timeout=pool_timeout,  # Seconds to wait for connection from pool
-        pool_recycle=pool_recycle,  # Seconds after which connection is recreated
-        pool_pre_ping=pool_pre_ping,  # Validate connections before use
+        pool_size=pool["pool_size"],
+        max_overflow=pool["max_overflow"],
+        pool_timeout=pool["pool_timeout"],
+        pool_recycle=pool["pool_recycle"],
+        pool_pre_ping=pool["pool_pre_ping"],
     )
-
-    logger.info(f"Created database engine with pool_size={pool_size}, max_overflow={max_overflow}")
+    logger.info(f"Created sync database engine with pool_size={pool['pool_size']}, max_overflow={pool['max_overflow']}")
     return _db_engine
 
 
-def get_db_engine() -> Engine:
-    """
-    Get the singleton database engine. Creates it if it doesn't exist.
+def setup_postgres_async_connection(echo=False, force_new=False) -> AsyncEngine:
+    """Get or create the singleton asyncpg-backed AsyncEngine used by the API server and consumer.
 
-    Returns:
-        SQLAlchemy Engine instance
+    The sync engine in setup_postgres_connection coexists for CLI tools and Alembic migrations.
     """
+    global _async_db_engine
+    if _async_db_engine is not None and not force_new:
+        return _async_db_engine
+    pool = _load_pool_config()
+    _async_db_engine = create_async_engine(
+        _async_postgres_url(),
+        echo=echo,
+        pool_size=pool["pool_size"],
+        max_overflow=pool["max_overflow"],
+        pool_timeout=pool["pool_timeout"],
+        pool_recycle=pool["pool_recycle"],
+        pool_pre_ping=pool["pool_pre_ping"],
+    )
+    logger.info(
+        f"Created async database engine with pool_size={pool['pool_size']}, max_overflow={pool['max_overflow']}"
+    )
+    return _async_db_engine
+
+
+def get_db_engine() -> Engine:
+    """Get the singleton sync database engine. Creates it if it doesn't exist."""
     return setup_postgres_connection()
+
+
+def get_async_db_engine() -> AsyncEngine:
+    """Get the singleton async database engine. Creates it if it doesn't exist."""
+    return setup_postgres_async_connection()
 
 
 # Load application configuration once for consumers that need config-driven behaviour
