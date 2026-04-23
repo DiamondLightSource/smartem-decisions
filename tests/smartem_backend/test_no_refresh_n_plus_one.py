@@ -20,7 +20,7 @@ from smartem_backend import api_server
 
 
 def test_session_local_has_expire_on_commit_false():
-    """Assert the sessionmaker() call in api_server.py passes expire_on_commit=False.
+    """Assert the async_sessionmaker() call in api_server.py passes expire_on_commit=False.
 
     Uses AST inspection rather than reading `api_server.SessionLocal.kw` so the
     test runs regardless of whether the DB is actually initialised (the runtime
@@ -33,18 +33,18 @@ def test_session_local_has_expire_on_commit_false():
         if not isinstance(node, ast.Call):
             continue
         func = node.func
-        if not (isinstance(func, ast.Name) and func.id == "sessionmaker"):
+        if not (isinstance(func, ast.Name) and func.id in {"sessionmaker", "async_sessionmaker"}):
             continue
         kwargs = {kw.arg: kw.value for kw in node.keywords if kw.arg}
         expire = kwargs.get("expire_on_commit")
         assert isinstance(expire, ast.Constant) and expire.value is False, (
-            "sessionmaker() in api_server.py must pass expire_on_commit=False so that "
+            "async_sessionmaker() in api_server.py must pass expire_on_commit=False so that "
             "attributes read by publish_*() and response models after db.commit() do "
             "not trigger lazy SELECTs (issue #248)."
         )
         return
 
-    raise AssertionError("No sessionmaker() call found in api_server.py")
+    raise AssertionError("No (async_)sessionmaker() call found in api_server.py")
 
 
 def test_no_db_refresh_calls_in_api_server():

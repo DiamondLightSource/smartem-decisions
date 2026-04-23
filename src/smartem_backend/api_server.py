@@ -16,12 +16,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
 from PIL import Image
 from pydantic import BaseModel
-from sqlalchemy import and_, desc, or_, text
+from sqlalchemy import and_, desc, or_, select, text
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import Session as SqlAlchemySession
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from sse_starlette.sse import EventSourceResponse
-from starlette.concurrency import run_in_threadpool
 
 from smartem_backend import mq_publisher as mq_publisher_module
 from smartem_backend.agent_connection_manager import get_connection_manager
@@ -130,29 +128,28 @@ from smartem_backend.mq_publisher import (
 )
 from smartem_backend.rmq import AioPikaPublisher
 from smartem_backend.rmq.config import load_rmq_connection_url, load_rmq_topology
-from smartem_backend.utils import app_config, setup_postgres_connection
+from smartem_backend.utils import app_config, setup_postgres_async_connection
 from smartem_common._version import __version__
 
 # Initialize database connection (skip in documentation generation mode)
 if os.getenv("SKIP_DB_INIT", "false").lower() != "true":
-    db_engine = setup_postgres_connection()
-    SessionLocal = sessionmaker(autocommit=False, autoflush=False, expire_on_commit=False, bind=db_engine)
+    db_engine = setup_postgres_async_connection()
+    SessionLocal = async_sessionmaker(
+        bind=db_engine, class_=AsyncSession, autocommit=False, autoflush=False, expire_on_commit=False
+    )
 else:
     # Mock objects for documentation generation
     db_engine = None
     SessionLocal = None
 
 
-def get_db():
+async def get_db():
     if SessionLocal is None:
         # Mock for documentation generation
         yield None
     else:
-        db = SessionLocal()
-        try:
-            yield db
-        finally:
-            db.close()
+        async with SessionLocal() as session:
+            yield session
 
 
 # Create a dependency object at module level to avoid B008 linting errors
@@ -253,20 +250,16 @@ for logger_name in uvicorn_loggers:
     logging.getLogger(logger_name).setLevel(log_level)
 
 
-def check_database_health():
+async def check_database_health():
     """Check database connectivity and basic functionality"""
     try:
-        db = SessionLocal()
-        # Simple query to test database connectivity
-        result = db.execute(text("SELECT 1 as health_check"))
-        row = result.fetchone()
-        db.close()
-
+        async with SessionLocal() as db:
+            result = await db.execute(text("SELECT 1 as health_check"))
+            row = result.fetchone()
         if row and row[0] == 1:
             return {"status": "ok", "details": "Database connection successful"}
         else:
             return {"status": "error", "details": "Database query returned unexpected result"}
-
     except Exception as e:
         logger.error(f"Database health check failed: {e}")
         return {"status": "error", "details": f"Database connection failed: {str(e)}"}
@@ -329,7 +322,7 @@ async def get_status():
 @app.get("/health")
 async def get_health():
     """Health check endpoint with actual connectivity checks"""
-    db_health = await run_in_threadpool(check_database_health)
+    db_health = await check_database_health()
     rabbitmq_health = check_rabbitmq_health()
 
     # Determine overall status
@@ -361,27 +354,23 @@ async def get_health():
 
 
 @app.get("/acquisitions", response_model=list[AcquisitionResponse])
-async def get_acquisitions(db: SqlAlchemySession = DB_DEPENDENCY):
+async def get_acquisitions(db: AsyncSession = DB_DEPENDENCY):
     """Get all acquisitions"""
-    return await run_in_threadpool(lambda: db.query(Acquisition).all())
+    return (await db.execute(select(Acquisition))).scalars().all()
 
 
 @app.post("/acquisitions", response_model=AcquisitionResponse, status_code=status.HTTP_201_CREATED)
-async def create_acquisition(acquisition: AcquisitionCreateRequest, db: SqlAlchemySession = DB_DEPENDENCY):
+async def create_acquisition(acquisition: AcquisitionCreateRequest, db: AsyncSession = DB_DEPENDENCY):
     """Create a new acquisition"""
 
-    def _db_work():
-        acquisition_data = {
-            "uuid": acquisition.uuid,
-            "status": AcquisitionStatus.STARTED,
-            **acquisition.model_dump(exclude={"uuid"}),
-        }
-        db_acquisition = Acquisition(**acquisition_data)
-        db.add(db_acquisition)
-        db.commit()
-        return db_acquisition
-
-    db_acquisition = await run_in_threadpool(_db_work)
+    acquisition_data = {
+        "uuid": acquisition.uuid,
+        "status": AcquisitionStatus.STARTED,
+        **acquisition.model_dump(exclude={"uuid"}),
+    }
+    db_acquisition = Acquisition(**acquisition_data)
+    db.add(db_acquisition)
+    await db.commit()
 
     success = await publish_acquisition_created(
         uuid=db_acquisition.uuid,
@@ -405,11 +394,9 @@ async def create_acquisition(acquisition: AcquisitionCreateRequest, db: SqlAlche
 
 
 @app.get("/acquisitions/{acquisition_uuid}", response_model=AcquisitionResponse)
-async def get_acquisition(acquisition_uuid: str, db: SqlAlchemySession = DB_DEPENDENCY):
+async def get_acquisition(acquisition_uuid: str, db: AsyncSession = DB_DEPENDENCY):
     """Get a single acquisition by ID"""
-    acquisition = await run_in_threadpool(
-        lambda: db.query(Acquisition).filter(Acquisition.uuid == acquisition_uuid).first()
-    )
+    acquisition = (await db.execute(select(Acquisition).where(Acquisition.uuid == acquisition_uuid))).scalars().first()
     if not acquisition:
         raise HTTPException(status_code=404, detail="Acquisition not found")
     return acquisition
@@ -417,21 +404,19 @@ async def get_acquisition(acquisition_uuid: str, db: SqlAlchemySession = DB_DEPE
 
 @app.put("/acquisitions/{acquisition_uuid}", response_model=AcquisitionResponse)
 async def update_acquisition(
-    acquisition_uuid: str, acquisition: AcquisitionUpdateRequest, db: SqlAlchemySession = DB_DEPENDENCY
+    acquisition_uuid: str, acquisition: AcquisitionUpdateRequest, db: AsyncSession = DB_DEPENDENCY
 ):
     """Update an acquisition"""
 
-    def _db_work():
-        db_acquisition = db.query(Acquisition).filter(Acquisition.uuid == acquisition_uuid).first()
-        if not db_acquisition:
-            raise HTTPException(status_code=404, detail="Acquisition not found")
-        update_data = acquisition.model_dump(exclude_unset=True)
-        for key, value in update_data.items():
-            setattr(db_acquisition, key, value)
-        db.commit()
-        return db_acquisition
-
-    db_acquisition = await run_in_threadpool(_db_work)
+    db_acquisition = (
+        (await db.execute(select(Acquisition).where(Acquisition.uuid == acquisition_uuid))).scalars().first()
+    )
+    if not db_acquisition:
+        raise HTTPException(status_code=404, detail="Acquisition not found")
+    update_data = acquisition.model_dump(exclude_unset=True)
+    for key, value in update_data.items():
+        setattr(db_acquisition, key, value)
+    await db.commit()
 
     success = await publish_acquisition_updated(
         uuid=db_acquisition.uuid,
@@ -461,17 +446,16 @@ async def update_acquisition(
 
 
 @app.delete("/acquisitions/{acquisition_uuid}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_acquisition(acquisition_uuid: str, db: SqlAlchemySession = DB_DEPENDENCY):
+async def delete_acquisition(acquisition_uuid: str, db: AsyncSession = DB_DEPENDENCY):
     """Delete an acquisition"""
 
-    def _db_work():
-        db_acquisition = db.query(Acquisition).filter(Acquisition.uuid == acquisition_uuid).first()
-        if not db_acquisition:
-            raise HTTPException(status_code=404, detail="Acquisition not found")
-        db.delete(db_acquisition)
-        db.commit()
-
-    await run_in_threadpool(_db_work)
+    db_acquisition = (
+        (await db.execute(select(Acquisition).where(Acquisition.uuid == acquisition_uuid))).scalars().first()
+    )
+    if not db_acquisition:
+        raise HTTPException(status_code=404, detail="Acquisition not found")
+    await db.delete(db_acquisition)
+    await db.commit()
 
     success = await publish_acquisition_deleted(uuid=acquisition_uuid)
     if not success:
@@ -484,35 +468,31 @@ async def delete_acquisition(acquisition_uuid: str, db: SqlAlchemySession = DB_D
 
 
 @app.get("/grids", response_model=list[GridResponse])
-async def get_grids(db: SqlAlchemySession = DB_DEPENDENCY):
+async def get_grids(db: AsyncSession = DB_DEPENDENCY):
     """Get all grids"""
-    return await run_in_threadpool(lambda: db.query(Grid).all())
+    return (await db.execute(select(Grid))).scalars().all()
 
 
 @app.get("/grids/{grid_uuid}", response_model=GridResponse)
-async def get_grid(grid_uuid: str, db: SqlAlchemySession = DB_DEPENDENCY):
+async def get_grid(grid_uuid: str, db: AsyncSession = DB_DEPENDENCY):
     """Get a single grid by ID"""
-    grid = await run_in_threadpool(lambda: db.query(Grid).filter(Grid.uuid == grid_uuid).first())
+    grid = (await db.execute(select(Grid).where(Grid.uuid == grid_uuid))).scalars().first()
     if not grid:
         raise HTTPException(status_code=404, detail="Grid not found")
     return grid
 
 
 @app.put("/grids/{grid_uuid}", response_model=GridResponse)
-async def update_grid(grid_uuid: str, grid: GridUpdateRequest, db: SqlAlchemySession = DB_DEPENDENCY):
+async def update_grid(grid_uuid: str, grid: GridUpdateRequest, db: AsyncSession = DB_DEPENDENCY):
     """Update a grid"""
 
-    def _db_work():
-        db_grid = db.query(Grid).filter(Grid.uuid == grid_uuid).first()
-        if not db_grid:
-            raise HTTPException(status_code=404, detail="Grid not found")
-        update_data = grid.model_dump(exclude_unset=True)
-        for key, value in update_data.items():
-            setattr(db_grid, key, value)
-        db.commit()
-        return db_grid
-
-    db_grid = await run_in_threadpool(_db_work)
+    db_grid = (await db.execute(select(Grid).where(Grid.uuid == grid_uuid))).scalars().first()
+    if not db_grid:
+        raise HTTPException(status_code=404, detail="Grid not found")
+    update_data = grid.model_dump(exclude_unset=True)
+    for key, value in update_data.items():
+        setattr(db_grid, key, value)
+    await db.commit()
 
     success = await publish_grid_updated(uuid=db_grid.uuid, acquisition_uuid=db_grid.acquisition_uuid)
     if not success:
@@ -533,15 +513,12 @@ async def update_grid(grid_uuid: str, grid: GridUpdateRequest, db: SqlAlchemySes
 
 
 @app.delete("/grids/{grid_uuid}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_grid(grid_uuid: str, db: SqlAlchemySession = DB_DEPENDENCY):
+async def delete_grid(grid_uuid: str, db: AsyncSession = DB_DEPENDENCY):
     """Delete a grid by publishing to RabbitMQ"""
 
-    def _db_work():
-        db_grid = db.query(Grid).filter(Grid.uuid == grid_uuid).first()
-        if not db_grid:
-            raise HTTPException(status_code=404, detail="Grid not found")
-
-    await run_in_threadpool(_db_work)
+    db_grid = (await db.execute(select(Grid).where(Grid.uuid == grid_uuid))).scalars().first()
+    if not db_grid:
+        raise HTTPException(status_code=404, detail="Grid not found")
 
     success = await publish_grid_deleted(uuid=grid_uuid)
     if not success:
@@ -551,30 +528,24 @@ async def delete_grid(grid_uuid: str, db: SqlAlchemySession = DB_DEPENDENCY):
 
 
 @app.get("/acquisitions/{acquisition_uuid}/grids", response_model=list[GridResponse])
-async def get_acquisition_grids(acquisition_uuid: str, db: SqlAlchemySession = DB_DEPENDENCY):
+async def get_acquisition_grids(acquisition_uuid: str, db: AsyncSession = DB_DEPENDENCY):
     """Get all grids for a specific acquisition"""
-    return await run_in_threadpool(lambda: db.query(Grid).filter(Grid.acquisition_uuid == acquisition_uuid).all())
+    return (await db.execute(select(Grid).where(Grid.acquisition_uuid == acquisition_uuid))).scalars().all()
 
 
 @app.post("/acquisitions/{acquisition_uuid}/grids", response_model=GridResponse, status_code=status.HTTP_201_CREATED)
-async def create_acquisition_grid(
-    acquisition_uuid: str, grid: GridCreateRequest, db: SqlAlchemySession = DB_DEPENDENCY
-):
+async def create_acquisition_grid(acquisition_uuid: str, grid: GridCreateRequest, db: AsyncSession = DB_DEPENDENCY):
     """Create a new grid for a specific acquisition"""
 
-    def _db_work():
-        grid_data = {
-            "uuid": grid.uuid,
-            "acquisition_uuid": acquisition_uuid,
-            "status": GridStatus.NONE,
-            **grid.model_dump(),
-        }
-        db_grid = Grid(**grid_data)
-        db.add(db_grid)
-        db.commit()
-        return db_grid
-
-    db_grid = await run_in_threadpool(_db_work)
+    grid_data = {
+        "uuid": grid.uuid,
+        "acquisition_uuid": acquisition_uuid,
+        "status": GridStatus.NONE,
+        **grid.model_dump(),
+    }
+    db_grid = Grid(**grid_data)
+    db.add(db_grid)
+    await db.commit()
 
     success = await publish_grid_created(uuid=db_grid.uuid, acquisition_uuid=db_grid.acquisition_uuid)
     if not success:
@@ -606,35 +577,31 @@ async def grid_registered(grid_uuid: str) -> bool:
 
 
 @app.get("/atlases", response_model=list[AtlasResponse])
-async def get_atlases(db: SqlAlchemySession = DB_DEPENDENCY):
+async def get_atlases(db: AsyncSession = DB_DEPENDENCY):
     """Get all atlases"""
-    return await run_in_threadpool(lambda: db.query(Atlas).all())
+    return (await db.execute(select(Atlas))).scalars().all()
 
 
 @app.get("/atlases/{atlas_uuid}", response_model=AtlasResponse)
-async def get_atlas(atlas_uuid: str, db: SqlAlchemySession = DB_DEPENDENCY):
+async def get_atlas(atlas_uuid: str, db: AsyncSession = DB_DEPENDENCY):
     """Get a single atlas by ID"""
-    atlas = await run_in_threadpool(lambda: db.query(Atlas).filter(Atlas.uuid == atlas_uuid).first())
+    atlas = (await db.execute(select(Atlas).where(Atlas.uuid == atlas_uuid))).scalars().first()
     if not atlas:
         raise HTTPException(status_code=404, detail="Atlas not found")
     return atlas
 
 
 @app.put("/atlases/{atlas_uuid}", response_model=AtlasResponse)
-async def update_atlas(atlas_uuid: str, atlas: AtlasUpdateRequest, db: SqlAlchemySession = DB_DEPENDENCY):
+async def update_atlas(atlas_uuid: str, atlas: AtlasUpdateRequest, db: AsyncSession = DB_DEPENDENCY):
     """Update an atlas"""
 
-    def _db_work():
-        db_atlas = db.query(Atlas).filter(Atlas.uuid == atlas_uuid).first()
-        if not db_atlas:
-            raise HTTPException(status_code=404, detail="Atlas not found")
-        update_data = atlas.model_dump(exclude_unset=True)
-        for key, value in update_data.items():
-            setattr(db_atlas, key, value)
-        db.commit()
-        return db_atlas
-
-    db_atlas = await run_in_threadpool(_db_work)
+    db_atlas = (await db.execute(select(Atlas).where(Atlas.uuid == atlas_uuid))).scalars().first()
+    if not db_atlas:
+        raise HTTPException(status_code=404, detail="Atlas not found")
+    update_data = atlas.model_dump(exclude_unset=True)
+    for key, value in update_data.items():
+        setattr(db_atlas, key, value)
+    await db.commit()
 
     success = await publish_atlas_updated(uuid=db_atlas.uuid, id=db_atlas.atlas_id, grid_uuid=db_atlas.grid_uuid)
     if not success:
@@ -654,15 +621,12 @@ async def update_atlas(atlas_uuid: str, atlas: AtlasUpdateRequest, db: SqlAlchem
 
 
 @app.delete("/atlases/{atlas_uuid}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_atlas(atlas_uuid: str, db: SqlAlchemySession = DB_DEPENDENCY):
+async def delete_atlas(atlas_uuid: str, db: AsyncSession = DB_DEPENDENCY):
     """Delete an atlas by publishing to RabbitMQ"""
 
-    def _db_work():
-        db_atlas = db.query(Atlas).filter(Atlas.uuid == atlas_uuid).first()
-        if not db_atlas:
-            raise HTTPException(status_code=404, detail="Atlas not found")
-
-    await run_in_threadpool(_db_work)
+    db_atlas = (await db.execute(select(Atlas).where(Atlas.uuid == atlas_uuid))).scalars().first()
+    if not db_atlas:
+        raise HTTPException(status_code=404, detail="Atlas not found")
 
     success = await publish_atlas_deleted(uuid=atlas_uuid)
     if not success:
@@ -672,32 +636,29 @@ async def delete_atlas(atlas_uuid: str, db: SqlAlchemySession = DB_DEPENDENCY):
 
 
 @app.get("/grids/{grid_uuid}/atlas", response_model=AtlasResponse)
-async def get_grid_atlas(grid_uuid: str, db: SqlAlchemySession = DB_DEPENDENCY):
+async def get_grid_atlas(grid_uuid: str, db: AsyncSession = DB_DEPENDENCY):
     """Get the atlas for a specific grid"""
-    atlas = await run_in_threadpool(lambda: db.query(Atlas).filter(Atlas.grid_uuid == grid_uuid).first())
+    atlas = (await db.execute(select(Atlas).where(Atlas.grid_uuid == grid_uuid))).scalars().first()
     if not atlas:
         raise HTTPException(status_code=404, detail="Atlas not found for this grid")
     return atlas
 
 
 @app.post("/grids/{grid_uuid}/atlas", response_model=AtlasResponse, status_code=status.HTTP_201_CREATED)
-async def create_grid_atlas(grid_uuid: str, atlas: AtlasCreateRequest, db: SqlAlchemySession = DB_DEPENDENCY):
+async def create_grid_atlas(grid_uuid: str, atlas: AtlasCreateRequest, db: AsyncSession = DB_DEPENDENCY):
     """Create a new atlas for a grid"""
 
-    def _create_atlas():
-        tiles_data_local = None
-        if atlas.tiles:
-            tiles_data_local = [tile.model_dump() for tile in atlas.tiles]
-            atlas_dict = atlas.model_dump(exclude={"tiles"})
-        else:
-            atlas_dict = atlas.model_dump()
-        atlas_dict["grid_uuid"] = grid_uuid
-        db_atlas = Atlas(**atlas_dict)
-        db.add(db_atlas)
-        db.commit()
-        return db_atlas, tiles_data_local
-
-    db_atlas, tiles_data = await run_in_threadpool(_create_atlas)
+    tiles_data_local = None
+    if atlas.tiles:
+        tiles_data_local = [tile.model_dump() for tile in atlas.tiles]
+        atlas_dict = atlas.model_dump(exclude={"tiles"})
+    else:
+        atlas_dict = atlas.model_dump()
+    atlas_dict["grid_uuid"] = grid_uuid
+    db_atlas = Atlas(**atlas_dict)
+    db.add(db_atlas)
+    await db.commit()
+    db_atlas, tiles_data = db_atlas, tiles_data_local
 
     success = await publish_atlas_created(uuid=db_atlas.uuid, id=db_atlas.atlas_id, grid_uuid=db_atlas.grid_uuid)
     if not success:
@@ -706,14 +667,9 @@ async def create_grid_atlas(grid_uuid: str, atlas: AtlasCreateRequest, db: SqlAl
     if tiles_data:
         for tile_data in tiles_data:
             tile_data["atlas_uuid"] = db_atlas.uuid
-
-            def _create_tile(td=tile_data):
-                db_tile = AtlasTile(**td)
-                db.add(db_tile)
-                db.commit()
-                return db_tile
-
-            db_tile = await run_in_threadpool(_create_tile)
+            db_tile = AtlasTile(**tile_data)
+            db.add(db_tile)
+            await db.commit()
 
             tile_success = await publish_atlas_tile_created(
                 uuid=db_tile.uuid, id=db_tile.tile_id, atlas_uuid=db_tile.atlas_uuid
@@ -738,35 +694,31 @@ async def create_grid_atlas(grid_uuid: str, atlas: AtlasCreateRequest, db: SqlAl
 
 
 @app.get("/atlas-tiles", response_model=list[AtlasTileResponse])
-async def get_atlas_tiles(db: SqlAlchemySession = DB_DEPENDENCY):
+async def get_atlas_tiles(db: AsyncSession = DB_DEPENDENCY):
     """Get all atlas tiles"""
-    return await run_in_threadpool(lambda: db.query(AtlasTile).all())
+    return (await db.execute(select(AtlasTile))).scalars().all()
 
 
 @app.get("/atlas-tiles/{tile_uuid}", response_model=AtlasTileResponse)
-async def get_atlas_tile(tile_uuid: str, db: SqlAlchemySession = DB_DEPENDENCY):
+async def get_atlas_tile(tile_uuid: str, db: AsyncSession = DB_DEPENDENCY):
     """Get a single atlas tile by ID"""
-    tile = await run_in_threadpool(lambda: db.query(AtlasTile).filter(AtlasTile.uuid == tile_uuid).first())
+    tile = (await db.execute(select(AtlasTile).where(AtlasTile.uuid == tile_uuid))).scalars().first()
     if not tile:
         raise HTTPException(status_code=404, detail="Atlas tile not found")
     return tile
 
 
 @app.put("/atlas-tiles/{tile_uuid}", response_model=AtlasTileResponse)
-async def update_atlas_tile(tile_uuid: str, tile: AtlasTileUpdateRequest, db: SqlAlchemySession = DB_DEPENDENCY):
+async def update_atlas_tile(tile_uuid: str, tile: AtlasTileUpdateRequest, db: AsyncSession = DB_DEPENDENCY):
     """Update an atlas tile"""
 
-    def _db_work():
-        db_tile = db.query(AtlasTile).filter(AtlasTile.uuid == tile_uuid).first()
-        if not db_tile:
-            raise HTTPException(status_code=404, detail="Atlas tile not found")
-        update_data = tile.model_dump(exclude_unset=True)
-        for key, value in update_data.items():
-            setattr(db_tile, key, value)
-        db.commit()
-        return db_tile
-
-    db_tile = await run_in_threadpool(_db_work)
+    db_tile = (await db.execute(select(AtlasTile).where(AtlasTile.uuid == tile_uuid))).scalars().first()
+    if not db_tile:
+        raise HTTPException(status_code=404, detail="Atlas tile not found")
+    update_data = tile.model_dump(exclude_unset=True)
+    for key, value in update_data.items():
+        setattr(db_tile, key, value)
+    await db.commit()
 
     success = await publish_atlas_tile_updated(uuid=db_tile.uuid, id=db_tile.tile_id, atlas_uuid=db_tile.atlas_uuid)
     if not success:
@@ -788,15 +740,12 @@ async def update_atlas_tile(tile_uuid: str, tile: AtlasTileUpdateRequest, db: Sq
 
 
 @app.delete("/atlas-tiles/{tile_uuid}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_atlas_tile(tile_uuid: str, db: SqlAlchemySession = DB_DEPENDENCY):
+async def delete_atlas_tile(tile_uuid: str, db: AsyncSession = DB_DEPENDENCY):
     """Delete an atlas tile by publishing to RabbitMQ"""
 
-    def _db_work():
-        db_tile = db.query(AtlasTile).filter(AtlasTile.uuid == tile_uuid).first()
-        if not db_tile:
-            raise HTTPException(status_code=404, detail="Atlas tile not found")
-
-    await run_in_threadpool(_db_work)
+    db_tile = (await db.execute(select(AtlasTile).where(AtlasTile.uuid == tile_uuid))).scalars().first()
+    if not db_tile:
+        raise HTTPException(status_code=404, detail="Atlas tile not found")
 
     success = await publish_atlas_tile_deleted(uuid=tile_uuid)
     if not success:
@@ -806,26 +755,20 @@ async def delete_atlas_tile(tile_uuid: str, db: SqlAlchemySession = DB_DEPENDENC
 
 
 @app.get("/atlases/{atlas_uuid}/tiles", response_model=list[AtlasTileResponse])
-async def get_atlas_tiles_by_atlas(atlas_uuid: str, db: SqlAlchemySession = DB_DEPENDENCY):
+async def get_atlas_tiles_by_atlas(atlas_uuid: str, db: AsyncSession = DB_DEPENDENCY):
     """Get all tiles for a specific atlas"""
-    return await run_in_threadpool(lambda: db.query(AtlasTile).filter(AtlasTile.atlas_uuid == atlas_uuid).all())
+    return (await db.execute(select(AtlasTile).where(AtlasTile.atlas_uuid == atlas_uuid))).scalars().all()
 
 
 @app.post("/atlases/{atlas_uuid}/tiles", response_model=AtlasTileResponse, status_code=status.HTTP_201_CREATED)
-async def create_atlas_tile_for_atlas(
-    atlas_uuid: str, tile: AtlasTileCreateRequest, db: SqlAlchemySession = DB_DEPENDENCY
-):
+async def create_atlas_tile_for_atlas(atlas_uuid: str, tile: AtlasTileCreateRequest, db: AsyncSession = DB_DEPENDENCY):
     """Create a new tile for a specific atlas"""
 
-    def _db_work():
-        tile_data = tile.model_dump()
-        tile_data["atlas_uuid"] = atlas_uuid
-        db_tile = AtlasTile(**tile_data)
-        db.add(db_tile)
-        db.commit()
-        return db_tile
-
-    db_tile = await run_in_threadpool(_db_work)
+    tile_data = tile.model_dump()
+    tile_data["atlas_uuid"] = atlas_uuid
+    db_tile = AtlasTile(**tile_data)
+    db.add(db_tile)
+    await db.commit()
 
     success = await publish_atlas_tile_created(uuid=db_tile.uuid, id=db_tile.tile_id, atlas_uuid=db_tile.atlas_uuid)
     if not success:
@@ -855,20 +798,16 @@ async def link_atlas_tile_to_gridsquare(
     tile_uuid: str,
     gridsquare_uuid: str,
     gridsquare_position: GridSquarePositionRequest,
-    db: SqlAlchemySession = DB_DEPENDENCY,
+    db: AsyncSession = DB_DEPENDENCY,
 ):
     """Connect a grid square to a tile with its position information"""
 
-    def _db_work():
-        position_data = gridsquare_position.model_dump()
-        position_data["atlastile_uuid"] = tile_uuid
-        position_data["gridsquare_uuid"] = gridsquare_uuid
-        tile_square_link = AtlasTileGridSquarePosition(**position_data)
-        db.add(tile_square_link)
-        db.commit()
-        return tile_square_link
-
-    tile_square_link = await run_in_threadpool(_db_work)
+    position_data = gridsquare_position.model_dump()
+    position_data["atlastile_uuid"] = tile_uuid
+    position_data["gridsquare_uuid"] = gridsquare_uuid
+    tile_square_link = AtlasTileGridSquarePosition(**position_data)
+    db.add(tile_square_link)
+    await db.commit()
 
     response_data = {
         "atlastile_uuid": tile_square_link.atlastile_uuid,
@@ -889,32 +828,29 @@ async def link_atlas_tile_to_gridsquare(
 async def link_atlas_tile_to_gridsquares(
     tile_uuid: str,
     gridsquare_positions: list[GridSquarePositionRequest],
-    db: SqlAlchemySession = DB_DEPENDENCY,
+    db: AsyncSession = DB_DEPENDENCY,
 ):
     """Connect mutliple grid squares to a tile with its position information"""
 
-    def _db_work():
-        response_data = []
-        for gridsquare_position in gridsquare_positions:
-            position_data = gridsquare_position.model_dump()
-            position_data["atlastile_uuid"] = tile_uuid
-            position_data["gridsquare_uuid"] = gridsquare_position.gridsquare_uuid
-            tile_square_link = AtlasTileGridSquarePosition(**position_data)
-            db.add(tile_square_link)
-            response_data.append(
-                {
-                    "atlastile_uuid": tile_square_link.atlastile_uuid,
-                    "gridsquare_uuid": tile_square_link.gridsquare_uuid,
-                    "center_x": tile_square_link.center_x,
-                    "center_y": tile_square_link.center_y,
-                    "size_width": tile_square_link.size_width,
-                    "size_height": tile_square_link.size_height,
-                }
-            )
-        db.commit()
-        return response_data
+    response_data = []
+    for gridsquare_position in gridsquare_positions:
+        position_data = gridsquare_position.model_dump()
+        position_data["atlastile_uuid"] = tile_uuid
+        position_data["gridsquare_uuid"] = gridsquare_position.gridsquare_uuid
+        tile_square_link = AtlasTileGridSquarePosition(**position_data)
+        db.add(tile_square_link)
+        response_data.append(
+            {
+                "atlastile_uuid": tile_square_link.atlastile_uuid,
+                "gridsquare_uuid": tile_square_link.gridsquare_uuid,
+                "center_x": tile_square_link.center_x,
+                "center_y": tile_square_link.center_y,
+                "size_width": tile_square_link.size_width,
+                "size_height": tile_square_link.size_height,
+            }
+        )
+    await db.commit()
 
-    response_data = await run_in_threadpool(_db_work)
     return [AtlasTileGridSquarePositionResponse(**rd) for rd in response_data]
 
 
@@ -922,17 +858,15 @@ async def link_atlas_tile_to_gridsquares(
 
 
 @app.get("/gridsquares", response_model=list[GridSquareResponse])
-async def get_gridsquares(db: SqlAlchemySession = DB_DEPENDENCY):
+async def get_gridsquares(db: AsyncSession = DB_DEPENDENCY):
     """Get all grid squares"""
-    return await run_in_threadpool(lambda: db.query(GridSquare).all())
+    return (await db.execute(select(GridSquare))).scalars().all()
 
 
 @app.get("/gridsquares/{gridsquare_uuid}", response_model=GridSquareResponse)
-async def get_gridsquare(gridsquare_uuid: str, db: SqlAlchemySession = DB_DEPENDENCY):
+async def get_gridsquare(gridsquare_uuid: str, db: AsyncSession = DB_DEPENDENCY):
     """Get a single grid square by ID"""
-    gridsquare = await run_in_threadpool(
-        lambda: db.query(GridSquare).filter(GridSquare.uuid == gridsquare_uuid).first()
-    )
+    gridsquare = (await db.execute(select(GridSquare).where(GridSquare.uuid == gridsquare_uuid))).scalars().first()
     if not gridsquare:
         raise HTTPException(status_code=404, detail="Grid Square not found")
     return gridsquare
@@ -940,24 +874,20 @@ async def get_gridsquare(gridsquare_uuid: str, db: SqlAlchemySession = DB_DEPEND
 
 @app.put("/gridsquares/{gridsquare_uuid}", response_model=GridSquareResponse)
 async def update_gridsquare(
-    gridsquare_uuid: str, gridsquare: GridSquareUpdateRequest, db: SqlAlchemySession = DB_DEPENDENCY
+    gridsquare_uuid: str, gridsquare: GridSquareUpdateRequest, db: AsyncSession = DB_DEPENDENCY
 ):
     """Update a grid square"""
 
-    def _db_work():
-        db_gridsquare = db.query(GridSquare).filter(GridSquare.uuid == gridsquare_uuid).first()
-        if not db_gridsquare:
-            raise HTTPException(status_code=404, detail="Grid Square not found")
-        update_data = gridsquare.model_dump(exclude_unset=True)
-        if update_data["status"] == GridSquareStatus.NONE:
-            update_data["status"] = db_gridsquare.status
-        for key, value in update_data.items():
-            if hasattr(db_gridsquare, key):
-                setattr(db_gridsquare, key, value)
-        db.commit()
-        return db_gridsquare
-
-    db_gridsquare = await run_in_threadpool(_db_work)
+    db_gridsquare = (await db.execute(select(GridSquare).where(GridSquare.uuid == gridsquare_uuid))).scalars().first()
+    if not db_gridsquare:
+        raise HTTPException(status_code=404, detail="Grid Square not found")
+    update_data = gridsquare.model_dump(exclude_unset=True)
+    if update_data["status"] == GridSquareStatus.NONE:
+        update_data["status"] = db_gridsquare.status
+    for key, value in update_data.items():
+        if hasattr(db_gridsquare, key):
+            setattr(db_gridsquare, key, value)
+    await db.commit()
 
     if gridsquare.lowmag:
         success = await publish_gridsquare_lowmag_updated(
@@ -1003,15 +933,12 @@ async def update_gridsquare(
 
 
 @app.delete("/gridsquares/{gridsquare_uuid}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_gridsquare(gridsquare_uuid: str, db: SqlAlchemySession = DB_DEPENDENCY):
+async def delete_gridsquare(gridsquare_uuid: str, db: AsyncSession = DB_DEPENDENCY):
     """Delete a grid square by publishing to RabbitMQ"""
 
-    def _db_work():
-        db_gridsquare = db.query(GridSquare).filter(GridSquare.uuid == gridsquare_uuid).first()
-        if not db_gridsquare:
-            raise HTTPException(status_code=404, detail="Grid Square not found")
-
-    await run_in_threadpool(_db_work)
+    db_gridsquare = (await db.execute(select(GridSquare).where(GridSquare.uuid == gridsquare_uuid))).scalars().first()
+    if not db_gridsquare:
+        raise HTTPException(status_code=404, detail="Grid Square not found")
 
     success = await publish_gridsquare_deleted(uuid=gridsquare_uuid)
     if not success:
@@ -1021,32 +948,24 @@ async def delete_gridsquare(gridsquare_uuid: str, db: SqlAlchemySession = DB_DEP
 
 
 @app.get("/grids/{grid_uuid}/gridsquares", response_model=list[GridSquareResponse])
-async def get_grid_gridsquares(grid_uuid: str, db: SqlAlchemySession = DB_DEPENDENCY):
+async def get_grid_gridsquares(grid_uuid: str, db: AsyncSession = DB_DEPENDENCY):
     """Get all grid squares for a specific grid"""
-    return await run_in_threadpool(
-        lambda: db.query(GridSquare).filter(GridSquare.grid_uuid == grid_uuid).all()
-    )
+    return (await db.execute(select(GridSquare).where(GridSquare.grid_uuid == grid_uuid))).scalars().all()
 
 
 @app.post("/grids/{grid_uuid}/gridsquares", response_model=GridSquareResponse, status_code=status.HTTP_201_CREATED)
-async def create_grid_gridsquare(
-    grid_uuid: str, gridsquare: GridSquareCreateRequest, db: SqlAlchemySession = DB_DEPENDENCY
-):
+async def create_grid_gridsquare(grid_uuid: str, gridsquare: GridSquareCreateRequest, db: AsyncSession = DB_DEPENDENCY):
     """Create a new grid square for a specific grid"""
 
-    def _db_work():
-        gridsquare_data = {
-            "uuid": gridsquare.uuid,
-            "grid_uuid": grid_uuid,
-            "status": GridSquareStatus.NONE,
-            **gridsquare.model_dump(),
-        }
-        db_gridsquare = GridSquare(**gridsquare_data)
-        db.add(db_gridsquare)
-        db.commit()
-        return db_gridsquare
-
-    db_gridsquare = await run_in_threadpool(_db_work)
+    gridsquare_data = {
+        "uuid": gridsquare.uuid,
+        "grid_uuid": grid_uuid,
+        "status": GridSquareStatus.NONE,
+        **gridsquare.model_dump(),
+    }
+    db_gridsquare = GridSquare(**gridsquare_data)
+    db.add(db_gridsquare)
+    await db.commit()
 
     if gridsquare.lowmag:
         success = await publish_gridsquare_lowmag_created(
@@ -1081,7 +1000,7 @@ async def create_grid_gridsquare(
 async def create_grid_gridsquares_batch(
     grid_uuid: str,
     payload: GridSquareBatchCreateRequest,
-    db: SqlAlchemySession = DB_DEPENDENCY,
+    db: AsyncSession = DB_DEPENDENCY,
 ):
     """Create many grid squares for a grid in a single transaction and a single
     batched RabbitMQ publish. Solves the overload scenario from issue #249."""
@@ -1098,29 +1017,26 @@ async def create_grid_gridsquares_batch(
     if len(set(uuids)) != len(uuids):
         raise HTTPException(status_code=422, detail="duplicate uuid in batch")
 
-    def _db_work():
-        if not db.query(Grid).filter(Grid.uuid == grid_uuid).first():
-            raise HTTPException(status_code=404, detail="Grid not found")
-        db_gridsquares = [
-            GridSquare(
-                **{
-                    "uuid": gs.uuid,
-                    "grid_uuid": grid_uuid,
-                    "status": GridSquareStatus.NONE,
-                    **gs.model_dump(),
-                }
-            )
-            for gs in items
-        ]
-        db.add_all(db_gridsquares)
-        try:
-            db.commit()
-        except IntegrityError as e:
-            db.rollback()
-            logger.error(f"Integrity error inserting gridsquare batch for grid {grid_uuid}: {e}")
-            raise HTTPException(status_code=409, detail="gridsquare batch conflicts with existing data") from None
-
-    await run_in_threadpool(_db_work)
+    if not (await db.execute(select(Grid).where(Grid.uuid == grid_uuid))).scalars().first():
+        raise HTTPException(status_code=404, detail="Grid not found")
+    db_gridsquares = [
+        GridSquare(
+            **{
+                "uuid": gs.uuid,
+                "grid_uuid": grid_uuid,
+                "status": GridSquareStatus.NONE,
+                **gs.model_dump(),
+            }
+        )
+        for gs in items
+    ]
+    db.add_all(db_gridsquares)
+    try:
+        await db.commit()
+    except IntegrityError as e:
+        await db.rollback()
+        logger.error(f"Integrity error inserting gridsquare batch for grid {grid_uuid}: {e}")
+        raise HTTPException(status_code=409, detail="gridsquare batch conflicts with existing data") from None
 
     publish_entries = [(gs.uuid, grid_uuid, gs.gridsquare_id, gs.lowmag) for gs in items]
     success = await publish_gridsquares_created_batch(publish_entries)
@@ -1144,19 +1060,16 @@ async def create_grid_gridsquares_batch(
 
 @app.post("/gridsquares/{gridsquare_uuid}/registered")
 async def gridsquare_registered(
-    gridsquare_uuid: str, count: int | None = None, db: SqlAlchemySession = DB_DEPENDENCY
+    gridsquare_uuid: str, count: int | None = None, db: AsyncSession = DB_DEPENDENCY
 ) -> bool:
     """All holes on a grid square have been registered at square mag"""
 
-    def _db_work():
-        db_gridsquare = db.query(GridSquare).filter(GridSquare.uuid == gridsquare_uuid).first()
-        if not db_gridsquare:
-            raise HTTPException(status_code=404, detail="Grid Square not found")
-        db_gridsquare.status = GridSquareStatus.REGISTERED
-        db.add(db_gridsquare)
-        db.commit()
-
-    await run_in_threadpool(_db_work)
+    db_gridsquare = (await db.execute(select(GridSquare).where(GridSquare.uuid == gridsquare_uuid))).scalars().first()
+    if not db_gridsquare:
+        raise HTTPException(status_code=404, detail="Grid Square not found")
+    db_gridsquare.status = GridSquareStatus.REGISTERED
+    db.add(db_gridsquare)
+    await db.commit()
 
     success = await publish_gridsquare_registered(gridsquare_uuid, count=count)
     if not success:
@@ -1168,35 +1081,31 @@ async def gridsquare_registered(
 
 
 @app.get("/foilholes", response_model=list[FoilHoleResponse])
-async def get_foilholes(db: SqlAlchemySession = DB_DEPENDENCY):
+async def get_foilholes(db: AsyncSession = DB_DEPENDENCY):
     """Get all foil holes"""
-    return await run_in_threadpool(lambda: db.query(FoilHole).all())
+    return (await db.execute(select(FoilHole))).scalars().all()
 
 
 @app.get("/foilholes/{foilhole_uuid}", response_model=FoilHoleResponse)
-async def get_foilhole(foilhole_uuid: str, db: SqlAlchemySession = DB_DEPENDENCY):
+async def get_foilhole(foilhole_uuid: str, db: AsyncSession = DB_DEPENDENCY):
     """Get a single foil hole by ID"""
-    foilhole = await run_in_threadpool(lambda: db.query(FoilHole).filter(FoilHole.uuid == foilhole_uuid).first())
+    foilhole = (await db.execute(select(FoilHole).where(FoilHole.uuid == foilhole_uuid))).scalars().first()
     if not foilhole:
         raise HTTPException(status_code=404, detail="Foil Hole not found")
     return foilhole
 
 
 @app.put("/foilholes/{foilhole_uuid}", response_model=FoilHoleResponse)
-async def update_foilhole(foilhole_uuid: str, foilhole: FoilHoleUpdateRequest, db: SqlAlchemySession = DB_DEPENDENCY):
+async def update_foilhole(foilhole_uuid: str, foilhole: FoilHoleUpdateRequest, db: AsyncSession = DB_DEPENDENCY):
     """Update a foil hole"""
 
-    def _db_work():
-        db_foilhole = db.query(FoilHole).filter(FoilHole.uuid == foilhole_uuid).first()
-        if not db_foilhole:
-            raise HTTPException(status_code=404, detail="Foil Hole not found")
-        update_data = foilhole.model_dump(exclude_unset=True)
-        for key, value in update_data.items():
-            setattr(db_foilhole, key, value)
-        db.commit()
-        return db_foilhole
-
-    db_foilhole = await run_in_threadpool(_db_work)
+    db_foilhole = (await db.execute(select(FoilHole).where(FoilHole.uuid == foilhole_uuid))).scalars().first()
+    if not db_foilhole:
+        raise HTTPException(status_code=404, detail="Foil Hole not found")
+    update_data = foilhole.model_dump(exclude_unset=True)
+    for key, value in update_data.items():
+        setattr(db_foilhole, key, value)
+    await db.commit()
 
     success = await publish_foilhole_updated(
         uuid=db_foilhole.uuid,
@@ -1231,15 +1140,12 @@ async def update_foilhole(foilhole_uuid: str, foilhole: FoilHoleUpdateRequest, d
 
 
 @app.delete("/foilholes/{foilhole_uuid}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_foilhole(foilhole_uuid: str, db: SqlAlchemySession = DB_DEPENDENCY):
+async def delete_foilhole(foilhole_uuid: str, db: AsyncSession = DB_DEPENDENCY):
     """Delete a foil hole by publishing to RabbitMQ"""
 
-    def _db_work():
-        db_foilhole = db.query(FoilHole).filter(FoilHole.uuid == foilhole_uuid).first()
-        if not db_foilhole:
-            raise HTTPException(status_code=404, detail="Foil Hole not found")
-
-    await run_in_threadpool(_db_work)
+    db_foilhole = (await db.execute(select(FoilHole).where(FoilHole.uuid == foilhole_uuid))).scalars().first()
+    if not db_foilhole:
+        raise HTTPException(status_code=404, detail="Foil Hole not found")
 
     success = await publish_foilhole_deleted(uuid=foilhole_uuid)
     if not success:
@@ -1250,21 +1156,18 @@ async def delete_foilhole(foilhole_uuid: str, db: SqlAlchemySession = DB_DEPENDE
 
 @app.get("/gridsquares/{gridsquare_uuid}/foilholes", response_model=list[FoilHoleResponse])
 async def get_gridsquare_foilholes(
-    gridsquare_uuid: str, on_square_only: bool = False, db: SqlAlchemySession = DB_DEPENDENCY
+    gridsquare_uuid: str, on_square_only: bool = False, db: AsyncSession = DB_DEPENDENCY
 ):
     """Get all foil holes for a specific grid square"""
 
-    def _db_work():
-        if on_square_only:
-            return (
-                db.query(FoilHole)
-                .filter(FoilHole.gridsquare_uuid == gridsquare_uuid)
-                .filter(FoilHole.is_near_grid_bar == False)  # noqa: E712
-                .all()
-            )
-        return db.query(FoilHole).filter(FoilHole.gridsquare_uuid == gridsquare_uuid).all()
-
-    return await run_in_threadpool(_db_work)
+    if on_square_only:
+        result = await db.execute(
+            select(FoilHole)
+            .where(FoilHole.gridsquare_uuid == gridsquare_uuid)
+            .where(FoilHole.is_near_grid_bar == False)  # noqa: E712
+        )
+        return result.scalars().all()
+    return (await db.execute(select(FoilHole).where(FoilHole.gridsquare_uuid == gridsquare_uuid))).scalars().all()
 
 
 @app.post(
@@ -1273,21 +1176,17 @@ async def get_gridsquare_foilholes(
     status_code=status.HTTP_201_CREATED,
 )
 async def create_gridsquare_foilhole(
-    gridsquare_uuid: str, foilholes: list[FoilHoleCreateRequest], db: SqlAlchemySession = DB_DEPENDENCY
+    gridsquare_uuid: str, foilholes: list[FoilHoleCreateRequest], db: AsyncSession = DB_DEPENDENCY
 ):
     """Create a new foil hole for a specific grid square"""
 
-    def _db_work():
-        added_holes = []
-        for foilhole in foilholes:
-            foilhole_data = {"gridsquare_uuid": gridsquare_uuid, "status": FoilHoleStatus.NONE, **foilhole.model_dump()}
-            db_foilhole = FoilHole(**foilhole_data)
-            db.add(db_foilhole)
-            added_holes.append(FoilHole(**foilhole_data))
-        db.commit()
-        return added_holes
-
-    added_holes = await run_in_threadpool(_db_work)
+    added_holes = []
+    for foilhole in foilholes:
+        foilhole_data = {"gridsquare_uuid": gridsquare_uuid, "status": FoilHoleStatus.NONE, **foilhole.model_dump()}
+        db_foilhole = FoilHole(**foilhole_data)
+        db.add(db_foilhole)
+        added_holes.append(FoilHole(**foilhole_data))
+    await db.commit()
 
     response = []
     for foilhole in added_holes:
@@ -1318,17 +1217,15 @@ async def create_gridsquare_foilhole(
 
 
 @app.get("/micrographs", response_model=list[MicrographResponse])
-async def get_micrographs(db: SqlAlchemySession = DB_DEPENDENCY):
+async def get_micrographs(db: AsyncSession = DB_DEPENDENCY):
     """Get all micrographs"""
-    return await run_in_threadpool(lambda: db.query(Micrograph).all())
+    return (await db.execute(select(Micrograph))).scalars().all()
 
 
 @app.get("/micrographs/{micrograph_uuid}", response_model=MicrographResponse)
-async def get_micrograph(micrograph_uuid: str, db: SqlAlchemySession = DB_DEPENDENCY):
+async def get_micrograph(micrograph_uuid: str, db: AsyncSession = DB_DEPENDENCY):
     """Get a single micrograph by ID"""
-    micrograph = await run_in_threadpool(
-        lambda: db.query(Micrograph).filter(Micrograph.uuid == micrograph_uuid).first()
-    )
+    micrograph = (await db.execute(select(Micrograph).where(Micrograph.uuid == micrograph_uuid))).scalars().first()
     if not micrograph:
         raise HTTPException(status_code=404, detail="Micrograph not found")
     return micrograph
@@ -1336,21 +1233,17 @@ async def get_micrograph(micrograph_uuid: str, db: SqlAlchemySession = DB_DEPEND
 
 @app.put("/micrographs/{micrograph_uuid}", response_model=MicrographResponse)
 async def update_micrograph(
-    micrograph_uuid: str, micrograph: MicrographUpdateRequest, db: SqlAlchemySession = DB_DEPENDENCY
+    micrograph_uuid: str, micrograph: MicrographUpdateRequest, db: AsyncSession = DB_DEPENDENCY
 ):
     """Update a micrograph"""
 
-    def _db_work():
-        db_micrograph = db.query(Micrograph).filter(Micrograph.uuid == micrograph_uuid).first()
-        if not db_micrograph:
-            raise HTTPException(status_code=404, detail="Micrograph not found")
-        update_data = micrograph.model_dump(exclude_unset=True)
-        for key, value in update_data.items():
-            setattr(db_micrograph, key, value)
-        db.commit()
-        return db_micrograph
-
-    db_micrograph = await run_in_threadpool(_db_work)
+    db_micrograph = (await db.execute(select(Micrograph).where(Micrograph.uuid == micrograph_uuid))).scalars().first()
+    if not db_micrograph:
+        raise HTTPException(status_code=404, detail="Micrograph not found")
+    update_data = micrograph.model_dump(exclude_unset=True)
+    for key, value in update_data.items():
+        setattr(db_micrograph, key, value)
+    await db.commit()
 
     success = await publish_micrograph_updated(
         uuid=db_micrograph.uuid,
@@ -1393,15 +1286,12 @@ async def update_micrograph(
 
 
 @app.delete("/micrographs/{micrograph_uuid}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_micrograph(micrograph_uuid: str, db: SqlAlchemySession = DB_DEPENDENCY):
+async def delete_micrograph(micrograph_uuid: str, db: AsyncSession = DB_DEPENDENCY):
     """Delete a micrograph by publishing to RabbitMQ"""
 
-    def _db_work():
-        db_micrograph = db.query(Micrograph).filter(Micrograph.uuid == micrograph_uuid).first()
-        if not db_micrograph:
-            raise HTTPException(status_code=404, detail="Micrograph not found")
-
-    await run_in_threadpool(_db_work)
+    db_micrograph = (await db.execute(select(Micrograph).where(Micrograph.uuid == micrograph_uuid))).scalars().first()
+    if not db_micrograph:
+        raise HTTPException(status_code=404, detail="Micrograph not found")
 
     success = await publish_micrograph_deleted(uuid=micrograph_uuid)
     if not success:
@@ -1410,8 +1300,9 @@ async def delete_micrograph(micrograph_uuid: str, db: SqlAlchemySession = DB_DEP
     return None
 
 
-def _require_micrograph(micrograph_uuid: str, db: SqlAlchemySession) -> None:
-    if not db.query(Micrograph).filter(Micrograph.uuid == micrograph_uuid).first():
+async def _require_micrograph(micrograph_uuid: str, db: AsyncSession) -> None:
+    result = await db.execute(select(Micrograph).where(Micrograph.uuid == micrograph_uuid))
+    if result.scalars().first() is None:
         raise HTTPException(status_code=404, detail="Micrograph not found")
 
 
@@ -1430,10 +1321,10 @@ def _publish_or_502(success: bool, event_name: str, micrograph_uuid: str) -> Pro
 async def publish_micrograph_motion_correction_completed(
     micrograph_uuid: str,
     payload: MotionCorrectionCompletedRequest,
-    db: SqlAlchemySession = DB_DEPENDENCY,
+    db: AsyncSession = DB_DEPENDENCY,
 ):
     """Publish a motion-correction-completed event for a micrograph to RabbitMQ."""
-    await run_in_threadpool(_require_micrograph, micrograph_uuid, db)
+    await _require_micrograph(micrograph_uuid, db)
     success = await publish_motion_correction_completed(
         micrograph_uuid=micrograph_uuid,
         total_motion=payload.total_motion,
@@ -1450,10 +1341,10 @@ async def publish_micrograph_motion_correction_completed(
 async def publish_micrograph_motion_correction_registered(
     micrograph_uuid: str,
     payload: MotionCorrectionRegisteredRequest,
-    db: SqlAlchemySession = DB_DEPENDENCY,
+    db: AsyncSession = DB_DEPENDENCY,
 ):
     """Publish a motion-correction-registered event for a micrograph to RabbitMQ."""
-    await run_in_threadpool(_require_micrograph, micrograph_uuid, db)
+    await _require_micrograph(micrograph_uuid, db)
     success = await publish_motion_correction_registered(
         micrograph_uuid=micrograph_uuid,
         quality=payload.quality,
@@ -1470,10 +1361,10 @@ async def publish_micrograph_motion_correction_registered(
 async def publish_micrograph_ctf_estimation_completed(
     micrograph_uuid: str,
     payload: CtfEstimationCompletedRequest,
-    db: SqlAlchemySession = DB_DEPENDENCY,
+    db: AsyncSession = DB_DEPENDENCY,
 ):
     """Publish a CTF-estimation-completed event for a micrograph to RabbitMQ."""
-    await run_in_threadpool(_require_micrograph, micrograph_uuid, db)
+    await _require_micrograph(micrograph_uuid, db)
     success = await publish_ctf_estimation_completed(
         micrograph_uuid=micrograph_uuid,
         ctf_max_res=payload.ctf_max_res,
@@ -1489,10 +1380,10 @@ async def publish_micrograph_ctf_estimation_completed(
 async def publish_micrograph_ctf_estimation_registered(
     micrograph_uuid: str,
     payload: CtfEstimationRegisteredRequest,
-    db: SqlAlchemySession = DB_DEPENDENCY,
+    db: AsyncSession = DB_DEPENDENCY,
 ):
     """Publish a CTF-estimation-registered event for a micrograph to RabbitMQ."""
-    await run_in_threadpool(_require_micrograph, micrograph_uuid, db)
+    await _require_micrograph(micrograph_uuid, db)
     success = await publish_ctf_estimation_registered(
         micrograph_uuid=micrograph_uuid,
         quality=payload.quality,
@@ -1502,34 +1393,28 @@ async def publish_micrograph_ctf_estimation_registered(
 
 
 @app.get("/foilholes/{foilhole_uuid}/micrographs", response_model=list[MicrographResponse])
-async def get_foilhole_micrographs(foilhole_uuid: str, db: SqlAlchemySession = DB_DEPENDENCY):
+async def get_foilhole_micrographs(foilhole_uuid: str, db: AsyncSession = DB_DEPENDENCY):
     """Get all micrographs for a specific foil hole"""
-    return await run_in_threadpool(
-        lambda: db.query(Micrograph).filter(Micrograph.foilhole_uuid == foilhole_uuid).all()
-    )
+    return (await db.execute(select(Micrograph).where(Micrograph.foilhole_uuid == foilhole_uuid))).scalars().all()
 
 
 @app.post(
     "/foilholes/{foilhole_uuid}/micrographs", response_model=MicrographResponse, status_code=status.HTTP_201_CREATED
 )
 async def create_foilhole_micrograph(
-    foilhole_uuid: str, micrograph: MicrographCreateRequest, db: SqlAlchemySession = DB_DEPENDENCY
+    foilhole_uuid: str, micrograph: MicrographCreateRequest, db: AsyncSession = DB_DEPENDENCY
 ):
     """Create a new micrograph for a specific foil hole"""
 
-    def _db_work():
-        micrograph_data = {
-            "uuid": micrograph.uuid,
-            "foilhole_uuid": foilhole_uuid,
-            "status": MicrographStatus.NONE,
-            **micrograph.model_dump(),
-        }
-        db_micrograph = Micrograph(**micrograph_data)
-        db.add(db_micrograph)
-        db.commit()
-        return db_micrograph
-
-    db_micrograph = await run_in_threadpool(_db_work)
+    micrograph_data = {
+        "uuid": micrograph.uuid,
+        "foilhole_uuid": foilhole_uuid,
+        "status": MicrographStatus.NONE,
+        **micrograph.model_dump(),
+    }
+    db_micrograph = Micrograph(**micrograph_data)
+    db.add(db_micrograph)
+    await db.commit()
 
     success = await publish_micrograph_created(
         uuid=db_micrograph.uuid,
@@ -1559,235 +1444,226 @@ async def create_foilhole_micrograph(
 
 
 @app.get("/prediction_models", response_model=list[QualityPredictionModelResponse])
-async def get_prediction_models(db: SqlAlchemySession = DB_DEPENDENCY):
-    def _db_work():
-        models = db.query(QualityPredictionModel).all()
-        return [QualityPredictionModelResponse.model_validate(m) for m in models]
-
-    return await run_in_threadpool(_db_work)
+async def get_prediction_models(db: AsyncSession = DB_DEPENDENCY):
+    models = (await db.execute(select(QualityPredictionModel))).scalars().all()
+    return [QualityPredictionModelResponse.model_validate(m) for m in models]
 
 
 @app.get("/prediction_models/{name}", response_model=QualityPredictionModelResponse)
-async def get_prediction_model(name: str, db: SqlAlchemySession = DB_DEPENDENCY):
-    def _db_work():
-        model = db.query(QualityPredictionModel).filter(QualityPredictionModel.name == name).first()
-        if not model:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Prediction model {name} not found")
-        return QualityPredictionModelResponse.model_validate(model)
-
-    return await run_in_threadpool(_db_work)
+async def get_prediction_model(name: str, db: AsyncSession = DB_DEPENDENCY):
+    model = (
+        (await db.execute(select(QualityPredictionModel).where(QualityPredictionModel.name == name))).scalars().first()
+    )
+    if not model:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Prediction model {name} not found")
+    return QualityPredictionModelResponse.model_validate(model)
 
 
 @app.post("/prediction_models", response_model=QualityPredictionModelResponse, status_code=status.HTTP_201_CREATED)
-async def create_prediction_model(
-    request: QualityPredictionModelCreateRequest, db: SqlAlchemySession = DB_DEPENDENCY
-):
-    def _db_work():
-        existing = db.query(QualityPredictionModel).filter(QualityPredictionModel.name == request.name).first()
-        if existing:
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT, detail=f"Prediction model {request.name} already exists"
-            )
-        model = QualityPredictionModel(**request.model_dump())
-        db.add(model)
-        db.commit()
-        return QualityPredictionModelResponse.model_validate(model)
-
-    return await run_in_threadpool(_db_work)
+async def create_prediction_model(request: QualityPredictionModelCreateRequest, db: AsyncSession = DB_DEPENDENCY):
+    existing = (
+        (await db.execute(select(QualityPredictionModel).where(QualityPredictionModel.name == request.name)))
+        .scalars()
+        .first()
+    )
+    if existing:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail=f"Prediction model {request.name} already exists"
+        )
+    model = QualityPredictionModel(**request.model_dump())
+    db.add(model)
+    await db.commit()
+    return QualityPredictionModelResponse.model_validate(model)
 
 
 @app.put("/prediction_models/{name}", response_model=QualityPredictionModelResponse)
 async def update_prediction_model(
-    name: str, request: QualityPredictionModelUpdateRequest, db: SqlAlchemySession = DB_DEPENDENCY
+    name: str, request: QualityPredictionModelUpdateRequest, db: AsyncSession = DB_DEPENDENCY
 ):
-    def _db_work():
-        model = db.query(QualityPredictionModel).filter(QualityPredictionModel.name == name).first()
-        if not model:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Prediction model {name} not found")
-        update_data = request.model_dump(exclude_unset=True)
-        for key, value in update_data.items():
-            setattr(model, key, value)
-        db.commit()
-        return QualityPredictionModelResponse.model_validate(model)
-
-    return await run_in_threadpool(_db_work)
+    model = (
+        (await db.execute(select(QualityPredictionModel).where(QualityPredictionModel.name == name))).scalars().first()
+    )
+    if not model:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Prediction model {name} not found")
+    update_data = request.model_dump(exclude_unset=True)
+    for key, value in update_data.items():
+        setattr(model, key, value)
+    await db.commit()
+    return QualityPredictionModelResponse.model_validate(model)
 
 
 @app.delete("/prediction_models/{name}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_prediction_model(name: str, db: SqlAlchemySession = DB_DEPENDENCY):
-    def _db_work():
-        model = db.query(QualityPredictionModel).filter(QualityPredictionModel.name == name).first()
-        if not model:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Prediction model {name} not found")
-        db.delete(model)
-        db.commit()
-
-    await run_in_threadpool(_db_work)
+async def delete_prediction_model(name: str, db: AsyncSession = DB_DEPENDENCY):
+    model = (
+        (await db.execute(select(QualityPredictionModel).where(QualityPredictionModel.name == name))).scalars().first()
+    )
+    if not model:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Prediction model {name} not found")
+    await db.delete(model)
+    await db.commit()
 
 
 # ============ Quality Prediction Endpoints ============
 
 
 @app.get("/gridsquares/{gridsquare_uuid}/quality_predictions", response_model=list[QualityPredictionResponse])
-async def get_gridsquare_quality_predictions(gridsquare_uuid: str, db: SqlAlchemySession = DB_DEPENDENCY):
-    def _db_work():
-        gridsquare = db.query(GridSquare).filter(GridSquare.uuid == gridsquare_uuid).first()
-        if not gridsquare:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail=f"GridSquare {gridsquare_uuid} not found"
-            )
-        predictions = db.query(QualityPrediction).filter(QualityPrediction.gridsquare_uuid == gridsquare_uuid).all()
-        return [QualityPredictionResponse.model_validate(pred) for pred in predictions]
-
-    return await run_in_threadpool(_db_work)
+async def get_gridsquare_quality_predictions(gridsquare_uuid: str, db: AsyncSession = DB_DEPENDENCY):
+    gridsquare = (await db.execute(select(GridSquare).where(GridSquare.uuid == gridsquare_uuid))).scalars().first()
+    if not gridsquare:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"GridSquare {gridsquare_uuid} not found")
+    predictions = (
+        (await db.execute(select(QualityPrediction).where(QualityPrediction.gridsquare_uuid == gridsquare_uuid)))
+        .scalars()
+        .all()
+    )
+    return [QualityPredictionResponse.model_validate(pred) for pred in predictions]
 
 
 @app.get("/gridsquares/{gridsquare_uuid}/foilhole_quality_predictions", response_model=list[QualityPredictionResponse])
-async def get_gridsquare_foilhole_quality_predictions(gridsquare_uuid: str, db: SqlAlchemySession = DB_DEPENDENCY):
-    def _db_work():
-        gridsquare = db.query(GridSquare).filter(GridSquare.uuid == gridsquare_uuid).first()
-        if not gridsquare:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail=f"GridSquare {gridsquare_uuid} not found"
-            )
-        foilhole_uuids = [fh.uuid for fh in gridsquare.foilholes]
-        predictions = (
-            db.query(QualityPrediction).filter(QualityPrediction.foilhole_uuid.in_(foilhole_uuids)).all()
-        )
-        return [QualityPredictionResponse.model_validate(pred) for pred in predictions]
-
-    return await run_in_threadpool(_db_work)
+async def get_gridsquare_foilhole_quality_predictions(gridsquare_uuid: str, db: AsyncSession = DB_DEPENDENCY):
+    gridsquare = (await db.execute(select(GridSquare).where(GridSquare.uuid == gridsquare_uuid))).scalars().first()
+    if not gridsquare:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"GridSquare {gridsquare_uuid} not found")
+    foilhole_uuids = [fh.uuid for fh in gridsquare.foilholes]
+    predictions = (
+        (await db.execute(select(QualityPrediction).where(QualityPrediction.foilhole_uuid.in_(foilhole_uuids))))
+        .scalars()
+        .all()
+    )
+    return [QualityPredictionResponse.model_validate(pred) for pred in predictions]
 
 
 @app.post("/quality_predictions", response_model=QualityPredictionResponse, status_code=status.HTTP_201_CREATED)
-async def create_quality_prediction(request: QualityPredictionCreateRequest, db: SqlAlchemySession = DB_DEPENDENCY):
-    def _db_work():
-        if request.foilhole_uuid:
-            foilhole = db.query(FoilHole).filter(FoilHole.uuid == request.foilhole_uuid).first()
-            if not foilhole:
-                raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND, detail=f"FoilHole {request.foilhole_uuid} not found"
-                )
-        if request.gridsquare_uuid:
-            gridsquare = db.query(GridSquare).filter(GridSquare.uuid == request.gridsquare_uuid).first()
-            if not gridsquare:
-                raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND,
-                    detail=f"GridSquare {request.gridsquare_uuid} not found",
-                )
-        model = (
-            db.query(QualityPredictionModel)
-            .filter(QualityPredictionModel.name == request.prediction_model_name)
-            .first()
+async def create_quality_prediction(request: QualityPredictionCreateRequest, db: AsyncSession = DB_DEPENDENCY):
+    if request.foilhole_uuid:
+        foilhole = (await db.execute(select(FoilHole).where(FoilHole.uuid == request.foilhole_uuid))).scalars().first()
+        if not foilhole:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail=f"FoilHole {request.foilhole_uuid} not found"
+            )
+    if request.gridsquare_uuid:
+        gridsquare = (
+            (await db.execute(select(GridSquare).where(GridSquare.uuid == request.gridsquare_uuid))).scalars().first()
         )
-        if not model:
+        if not gridsquare:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Prediction model {request.prediction_model_name} not found",
+                detail=f"GridSquare {request.gridsquare_uuid} not found",
             )
-        prediction = QualityPrediction(**request.model_dump())
-        db.add(prediction)
-        db.commit()
-        return QualityPredictionResponse.model_validate(prediction)
-
-    return await run_in_threadpool(_db_work)
+    model = (
+        (
+            await db.execute(
+                select(QualityPredictionModel).where(QualityPredictionModel.name == request.prediction_model_name)
+            )
+        )
+        .scalars()
+        .first()
+    )
+    if not model:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Prediction model {request.prediction_model_name} not found",
+        )
+    prediction = QualityPrediction(**request.model_dump())
+    db.add(prediction)
+    await db.commit()
+    return QualityPredictionResponse.model_validate(prediction)
 
 
 @app.get("/quality_metrics", response_model=QualityMetricsResponse)
-async def get_quality_metrics(db: SqlAlchemySession = DB_DEPENDENCY):
+async def get_quality_metrics(db: AsyncSession = DB_DEPENDENCY):
     from sqlalchemy import func
 
-    def _db_work():
-        total_predictions = db.query(func.count(QualityPrediction.id)).scalar() or 0
-        avg_quality = db.query(func.avg(QualityPrediction.value)).scalar()
-        min_quality = db.query(func.min(QualityPrediction.value)).scalar()
-        max_quality = db.query(func.max(QualityPrediction.value)).scalar()
-        models_count = db.query(func.count(QualityPredictionModel.name)).scalar() or 0
-        return QualityMetricsResponse(
-            total_predictions=total_predictions,
-            average_quality=float(avg_quality) if avg_quality is not None else None,
-            min_quality=float(min_quality) if min_quality is not None else None,
-            max_quality=float(max_quality) if max_quality is not None else None,
-            models_count=models_count,
-        )
-
-    return await run_in_threadpool(_db_work)
+    total_predictions = (await db.execute(select(func.count(QualityPrediction.id)))).scalar() or 0
+    avg_quality = (await db.execute(select(func.avg(QualityPrediction.value)))).scalar()
+    min_quality = (await db.execute(select(func.min(QualityPrediction.value)))).scalar()
+    max_quality = (await db.execute(select(func.max(QualityPrediction.value)))).scalar()
+    models_count = (await db.execute(select(func.count(QualityPredictionModel.name)))).scalar() or 0
+    return QualityMetricsResponse(
+        total_predictions=total_predictions,
+        average_quality=float(avg_quality) if avg_quality is not None else None,
+        min_quality=float(min_quality) if min_quality is not None else None,
+        max_quality=float(max_quality) if max_quality is not None else None,
+        models_count=models_count,
+    )
 
 
 @app.get(
     "/prediction_model/{prediction_model_name}/grid/{grid_uuid}/prediction",
     response_model=list[QualityPredictionResponse],
 )
-async def get_grid_predictions(prediction_model_name: str, grid_uuid: str, db: SqlAlchemySession = DB_DEPENDENCY):
-    def _db_work():
-        grid = db.query(Grid).filter(Grid.uuid == grid_uuid).first()
-        if not grid:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Grid {grid_uuid} not found")
-        model = (
-            db.query(QualityPredictionModel).filter(QualityPredictionModel.name == prediction_model_name).first()
+async def get_grid_predictions(prediction_model_name: str, grid_uuid: str, db: AsyncSession = DB_DEPENDENCY):
+    grid = (await db.execute(select(Grid).where(Grid.uuid == grid_uuid))).scalars().first()
+    if not grid:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Grid {grid_uuid} not found")
+    model = (
+        (await db.execute(select(QualityPredictionModel).where(QualityPredictionModel.name == prediction_model_name)))
+        .scalars()
+        .first()
+    )
+    if not model:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Prediction model {prediction_model_name} not found",
         )
-        if not model:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Prediction model {prediction_model_name} not found",
-            )
-        gridsquare_uuids = [gs.uuid for gs in grid.gridsquares]
-        predictions = (
-            db.query(QualityPrediction)
-            .filter(
-                and_(
-                    QualityPrediction.prediction_model_name == prediction_model_name,
-                    QualityPrediction.gridsquare_uuid.in_(gridsquare_uuids),
+    gridsquare_uuids = [gs.uuid for gs in grid.gridsquares]
+    predictions = (
+        (
+            await db.execute(
+                select(QualityPrediction).where(
+                    and_(
+                        QualityPrediction.prediction_model_name == prediction_model_name,
+                        QualityPrediction.gridsquare_uuid.in_(gridsquare_uuids),
+                    )
                 )
             )
-            .all()
         )
-        return [QualityPredictionResponse.model_validate(pred) for pred in predictions]
-
-    return await run_in_threadpool(_db_work)
+        .scalars()
+        .all()
+    )
+    return [QualityPredictionResponse.model_validate(pred) for pred in predictions]
 
 
 @app.get(
     "/prediction_model/{prediction_model_name}/grid/{grid_uuid}/latent_representation",
     response_model=list[QualityPredictionModelParameterResponse],
 )
-async def get_grid_latent_representation(
-    prediction_model_name: str, grid_uuid: str, db: SqlAlchemySession = DB_DEPENDENCY
-):
-    def _db_work():
-        grid = db.query(Grid).filter(Grid.uuid == grid_uuid).first()
-        if not grid:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Grid {grid_uuid} not found")
-        model = (
-            db.query(QualityPredictionModel).filter(QualityPredictionModel.name == prediction_model_name).first()
+async def get_grid_latent_representation(prediction_model_name: str, grid_uuid: str, db: AsyncSession = DB_DEPENDENCY):
+    grid = (await db.execute(select(Grid).where(Grid.uuid == grid_uuid))).scalars().first()
+    if not grid:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Grid {grid_uuid} not found")
+    model = (
+        (await db.execute(select(QualityPredictionModel).where(QualityPredictionModel.name == prediction_model_name)))
+        .scalars()
+        .first()
+    )
+    if not model:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Prediction model {prediction_model_name} not found",
         )
-        if not model:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Prediction model {prediction_model_name} not found",
-            )
-        parameters = (
-            db.query(QualityPredictionModelParameter)
-            .filter(
-                and_(
-                    QualityPredictionModelParameter.grid_uuid == grid_uuid,
-                    QualityPredictionModelParameter.prediction_model_name == prediction_model_name,
+    parameters = (
+        (
+            await db.execute(
+                select(QualityPredictionModelParameter).where(
+                    and_(
+                        QualityPredictionModelParameter.grid_uuid == grid_uuid,
+                        QualityPredictionModelParameter.prediction_model_name == prediction_model_name,
+                    )
                 )
             )
-            .all()
         )
-        return [QualityPredictionModelParameterResponse.model_validate(param) for param in parameters]
-
-    return await run_in_threadpool(_db_work)
+        .scalars()
+        .all()
+    )
+    return [QualityPredictionModelParameterResponse.model_validate(param) for param in parameters]
 
 
 # ============ Agent Communication Endpoints ============
 
 
 @app.get("/agent/{agent_id}/session/{session_id}/instructions/stream")
-async def stream_instructions(
-    agent_id: str, session_id: str, db: SqlAlchemySession = DB_DEPENDENCY
-) -> EventSourceResponse:
+async def stream_instructions(agent_id: str, session_id: str, db: AsyncSession = DB_DEPENDENCY) -> EventSourceResponse:
     """SSE endpoint for streaming instructions to agents for a specific session"""
 
     async def event_generator():
@@ -1796,7 +1672,11 @@ async def stream_instructions(
         try:
             # Validate session exists and belongs to agent
             try:
-                session = db.query(AgentSession).filter(AgentSession.session_id == session_id).first()
+                session = (
+                    (await db.execute(select(AgentSession).where(AgentSession.session_id == session_id)))
+                    .scalars()
+                    .first()
+                )
                 if not session:
                     raise ValueError(f"Session {session_id} not found")
                 if session.agent_id != agent_id:
@@ -1824,7 +1704,7 @@ async def stream_instructions(
                     last_heartbeat_at=datetime.now(),
                 )
                 db.add(connection)
-                db.commit()
+                await db.commit()
                 logger.info(f"Created connection {connection_id} for agent {agent_id} in session {session_id}")
             except Exception as e:
                 logger.error(f"Failed to create connection record: {e}")
@@ -1861,11 +1741,17 @@ async def stream_instructions(
                 if heartbeat_counter % 6 == 0:  # Every 6th iteration (30 seconds)
                     # Update connection heartbeat
                     connection_obj = (
-                        db.query(AgentConnection).filter(AgentConnection.connection_id == connection_id).first()
+                        (
+                            await db.execute(
+                                select(AgentConnection).where(AgentConnection.connection_id == connection_id)
+                            )
+                        )
+                        .scalars()
+                        .first()
                     )
                     if connection_obj and connection_obj.status == "active":
                         connection_obj.last_heartbeat_at = datetime.now()
-                        db.commit()
+                        await db.commit()
                     yield {
                         "event": "heartbeat",
                         "data": json.dumps(
@@ -1880,21 +1766,27 @@ async def stream_instructions(
                 # Check for pending instructions
                 try:
                     pending_instructions = (
-                        db.query(AgentInstruction)
-                        .filter(
-                            and_(
-                                AgentInstruction.session_id == session_id,
-                                AgentInstruction.status == "pending",
-                                or_(
-                                    AgentInstruction.expires_at.is_(None), AgentInstruction.expires_at > datetime.now()
-                                ),
+                        (
+                            await db.execute(
+                                select(AgentInstruction)
+                                .where(
+                                    and_(
+                                        AgentInstruction.session_id == session_id,
+                                        AgentInstruction.status == "pending",
+                                        or_(
+                                            AgentInstruction.expires_at.is_(None),
+                                            AgentInstruction.expires_at > datetime.now(),
+                                        ),
+                                    )
+                                )
+                                .order_by(
+                                    AgentInstruction.priority.desc(),  # High priority first
+                                    AgentInstruction.sequence_number.asc(),  # Lower sequence numbers first
+                                    AgentInstruction.created_at.asc(),  # Older instructions first
+                                )
                             )
                         )
-                        .order_by(
-                            AgentInstruction.priority.desc(),  # High priority first
-                            AgentInstruction.sequence_number.asc(),  # Lower sequence numbers first
-                            AgentInstruction.created_at.asc(),  # Older instructions first
-                        )
+                        .scalars()
                         .all()
                     )
 
@@ -1903,7 +1795,7 @@ async def stream_instructions(
                         if instruction.status == "pending":
                             instruction.status = "sent"
                             instruction.sent_at = datetime.now()
-                            db.commit()
+                            await db.commit()
 
                         # Send instruction to agent
                         instruction_data = {
@@ -1929,7 +1821,7 @@ async def stream_instructions(
 
                 # Update session activity
                 session.last_activity_at = datetime.now()
-                db.commit()
+                await db.commit()
 
                 # Wait 5 seconds before next poll
                 await asyncio.sleep(5)
@@ -1938,23 +1830,31 @@ async def stream_instructions(
         except asyncio.CancelledError:
             logger.info(f"SSE connection closed for agent {agent_id}, session {session_id}")
             # Connection closed by client
-            connection_obj = db.query(AgentConnection).filter(AgentConnection.connection_id == connection_id).first()
+            connection_obj = (
+                (await db.execute(select(AgentConnection).where(AgentConnection.connection_id == connection_id)))
+                .scalars()
+                .first()
+            )
             if connection_obj:
                 connection_obj.status = "closed"
                 connection_obj.closed_at = datetime.now()
                 connection_obj.close_reason = "client_disconnect"
-                db.commit()
+                await db.commit()
                 logger.info(f"Closed connection {connection_id} with reason: client_disconnect")
             raise
         except Exception as e:
             logger.error(f"SSE stream error for agent {agent_id}: {e}")
             # Unexpected error
-            connection_obj = db.query(AgentConnection).filter(AgentConnection.connection_id == connection_id).first()
+            connection_obj = (
+                (await db.execute(select(AgentConnection).where(AgentConnection.connection_id == connection_id)))
+                .scalars()
+                .first()
+            )
             if connection_obj:
                 connection_obj.status = "closed"
                 connection_obj.closed_at = datetime.now()
                 connection_obj.close_reason = f"error: {str(e)}"
-                db.commit()
+                await db.commit()
                 logger.info(f"Closed connection {connection_id} with reason: error: {str(e)}")
             raise
 
@@ -1970,13 +1870,15 @@ async def acknowledge_instruction(
     session_id: str,
     instruction_id: str,
     acknowledgement: AgentInstructionAcknowledgementRequest,
-    db: SqlAlchemySession = DB_DEPENDENCY,
+    db: AsyncSession = DB_DEPENDENCY,
 ) -> AgentInstructionAcknowledgementResponse:
     """HTTP endpoint for instruction acknowledgements with database persistence"""
 
     try:
         # Validate session exists and belongs to agent
-        session = db.query(AgentSession).filter(AgentSession.session_id == session_id).first()
+        session = (
+            (await db.execute(select(AgentSession).where(AgentSession.session_id == session_id))).scalars().first()
+        )
         if not session:
             raise HTTPException(status_code=404, detail=f"Session {session_id} not found")
         if session.agent_id != agent_id:
@@ -1986,9 +1888,14 @@ async def acknowledge_instruction(
 
         # Validate agent has an active connection
         active_connections = (
-            db.query(AgentConnection)
-            .filter(and_(AgentConnection.agent_id == agent_id, AgentConnection.status == "active"))
-            .order_by(desc(AgentConnection.last_heartbeat_at))
+            (
+                await db.execute(
+                    select(AgentConnection)
+                    .where(and_(AgentConnection.agent_id == agent_id, AgentConnection.status == "active"))
+                    .order_by(desc(AgentConnection.last_heartbeat_at))
+                )
+            )
+            .scalars()
             .all()
         )
         if not active_connections:
@@ -2000,7 +1907,11 @@ async def acknowledge_instruction(
             raise HTTPException(status_code=400, detail="No active connection for this session")
 
         # Get and validate instruction
-        instruction = db.query(AgentInstruction).filter(AgentInstruction.instruction_id == instruction_id).first()
+        instruction = (
+            (await db.execute(select(AgentInstruction).where(AgentInstruction.instruction_id == instruction_id)))
+            .scalars()
+            .first()
+        )
         if not instruction:
             raise HTTPException(status_code=404, detail="Instruction not found")
 
@@ -2014,7 +1925,7 @@ async def acknowledge_instruction(
         if instruction.status == "sent":
             instruction.status = "acknowledged"
             instruction.acknowledged_at = datetime.now()
-            db.commit()
+            await db.commit()
         else:
             raise HTTPException(status_code=400, detail="Instruction cannot be acknowledged (invalid status)")
 
@@ -2031,17 +1942,17 @@ async def acknowledge_instruction(
             processed_at=datetime.now() if acknowledgement.status in ["processed", "failed"] else None,
         )
         db.add(ack_record)
-        db.commit()
+        await db.commit()
 
         logger.info(f"Created acknowledgement for instruction {instruction_id} with status {acknowledgement.status}")
 
         # Update session activity
         session.last_activity_at = datetime.now()
-        db.commit()
+        await db.commit()
 
         # Update connection heartbeat
         session_connection.last_heartbeat_at = datetime.now()
-        db.commit()
+        await db.commit()
 
         logger.info(
             f"Instruction {instruction_id} acknowledged by agent {agent_id} with status: {acknowledgement.status}"
@@ -2064,7 +1975,7 @@ async def acknowledge_instruction(
 
 
 @app.post("/agent/{agent_id}/session/{session_id}/heartbeat")
-async def agent_heartbeat(agent_id: str, session_id: str, db: SqlAlchemySession = DB_DEPENDENCY):
+async def agent_heartbeat(agent_id: str, session_id: str, db: AsyncSession = DB_DEPENDENCY):
     """
     Agent heartbeat endpoint to update connection health status.
 
@@ -2079,14 +1990,18 @@ async def agent_heartbeat(agent_id: str, session_id: str, db: SqlAlchemySession 
     try:
         # Find active connection for this agent and session
         connection = (
-            db.query(AgentConnection)
-            .filter(
-                and_(
-                    AgentConnection.agent_id == agent_id,
-                    AgentConnection.session_id == session_id,
-                    AgentConnection.status == "active",
+            (
+                await db.execute(
+                    select(AgentConnection).where(
+                        and_(
+                            AgentConnection.agent_id == agent_id,
+                            AgentConnection.session_id == session_id,
+                            AgentConnection.status == "active",
+                        )
+                    )
                 )
             )
+            .scalars()
             .first()
         )
 
@@ -2096,13 +2011,15 @@ async def agent_heartbeat(agent_id: str, session_id: str, db: SqlAlchemySession 
         # Update heartbeat timestamp
         now = datetime.now()
         connection.last_heartbeat_at = now
-        db.commit()
+        await db.commit()
 
         # Also update session activity
-        session = db.query(AgentSession).filter(AgentSession.session_id == session_id).first()
+        session = (
+            (await db.execute(select(AgentSession).where(AgentSession.session_id == session_id))).scalars().first()
+        )
         if session:
             session.last_activity_at = now
-            db.commit()
+            await db.commit()
 
         logger.info(f"Heartbeat received from agent {agent_id} session {session_id}")
 
@@ -2123,13 +2040,18 @@ async def agent_heartbeat(agent_id: str, session_id: str, db: SqlAlchemySession 
 
 # Debug endpoints for development
 @app.get("/debug/agent-connections")
-async def get_active_connections(db: SqlAlchemySession = DB_DEPENDENCY):
+async def get_active_connections(db: AsyncSession = DB_DEPENDENCY):
     """Debug endpoint to view active agent connections"""
     # Get all active connections
     all_connections = (
-        db.query(AgentConnection)
-        .filter(AgentConnection.status == "active")
-        .order_by(AgentConnection.last_heartbeat_at.desc())
+        (
+            await db.execute(
+                select(AgentConnection)
+                .where(AgentConnection.status == "active")
+                .order_by(AgentConnection.last_heartbeat_at.desc())
+            )
+        )
+        .scalars()
         .all()
     )
 
@@ -2152,13 +2074,18 @@ async def get_active_connections(db: SqlAlchemySession = DB_DEPENDENCY):
 
 
 @app.get("/debug/session/{session_id}/instructions")
-async def get_session_instructions(session_id: str, db: SqlAlchemySession = DB_DEPENDENCY):
+async def get_session_instructions(session_id: str, db: AsyncSession = DB_DEPENDENCY):
     """Debug endpoint to view instructions for a session"""
     # Get all instructions for the session
     instructions = (
-        db.query(AgentInstruction)
-        .filter(AgentInstruction.session_id == session_id)
-        .order_by(AgentInstruction.created_at.desc())
+        (
+            await db.execute(
+                select(AgentInstruction)
+                .where(AgentInstruction.session_id == session_id)
+                .order_by(AgentInstruction.created_at.desc())
+            )
+        )
+        .scalars()
         .all()
     )
 
@@ -2166,9 +2093,14 @@ async def get_session_instructions(session_id: str, db: SqlAlchemySession = DB_D
     for instr in instructions:
         # Get acknowledgements for this instruction
         acknowledgements = (
-            db.query(AgentInstructionAcknowledgement)
-            .filter(AgentInstructionAcknowledgement.instruction_id == instr.instruction_id)
-            .order_by(desc(AgentInstructionAcknowledgement.created_at))
+            (
+                await db.execute(
+                    select(AgentInstructionAcknowledgement)
+                    .where(AgentInstructionAcknowledgement.instruction_id == instr.instruction_id)
+                    .order_by(desc(AgentInstructionAcknowledgement.created_at))
+                )
+            )
+            .scalars()
             .all()
         )
 
@@ -2193,13 +2125,12 @@ async def get_session_instructions(session_id: str, db: SqlAlchemySession = DB_D
     # Get acknowledgement statistics
     from sqlalchemy import func
 
-    ack_stats_query = (
-        db.query(AgentInstructionAcknowledgement.status, func.count().label("count"))
-        .filter(AgentInstructionAcknowledgement.session_id == session_id)
+    ack_stats_result = await db.execute(
+        select(AgentInstructionAcknowledgement.status, func.count().label("count"))
+        .where(AgentInstructionAcknowledgement.session_id == session_id)
         .group_by(AgentInstructionAcknowledgement.status)
-        .all()
     )
-    ack_stats = dict(ack_stats_query)
+    ack_stats = {row[0]: row[1] for row in ack_stats_result.all()}
 
     return {
         "session_id": session_id,
@@ -2211,12 +2142,17 @@ async def get_session_instructions(session_id: str, db: SqlAlchemySession = DB_D
 
 # Additional debug endpoints for session and connection management
 @app.get("/debug/sessions")
-async def get_active_sessions(db: SqlAlchemySession = DB_DEPENDENCY):
+async def get_active_sessions(db: AsyncSession = DB_DEPENDENCY):
     """Debug endpoint to view all active sessions"""
     sessions = (
-        db.query(AgentSession)
-        .filter(AgentSession.status == "active")
-        .order_by(AgentSession.last_activity_at.desc())
+        (
+            await db.execute(
+                select(AgentSession)
+                .where(AgentSession.status == "active")
+                .order_by(AgentSession.last_activity_at.desc())
+            )
+        )
+        .scalars()
         .all()
     )
 
@@ -2284,10 +2220,10 @@ async def close_managed_session(session_id: str):
 
 
 @app.post("/debug/session/{session_id}/create-instruction")
-async def create_test_instruction(session_id: str, instruction_data: dict, db: SqlAlchemySession = DB_DEPENDENCY):
+async def create_test_instruction(session_id: str, instruction_data: dict, db: AsyncSession = DB_DEPENDENCY):
     """Debug endpoint to create test instructions"""
     # Validate session exists
-    session = db.query(AgentSession).filter(AgentSession.session_id == session_id).first()
+    session = (await db.execute(select(AgentSession).where(AgentSession.session_id == session_id))).scalars().first()
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
 
@@ -2311,7 +2247,7 @@ async def create_test_instruction(session_id: str, instruction_data: dict, db: S
         instruction_metadata=instruction_data.get("metadata", {}),
     )
     db.add(instruction)
-    db.commit()
+    await db.commit()
 
     logger.info(f"Created instruction {instruction.instruction_id} for session {session_id}")
 
@@ -2323,12 +2259,14 @@ async def create_test_instruction(session_id: str, instruction_data: dict, db: S
 
 
 @app.post("/debug/sessions/create")
-async def create_test_session(session_data: dict, db: SqlAlchemySession = DB_DEPENDENCY):
+async def create_test_session(session_data: dict, db: AsyncSession = DB_DEPENDENCY):
     """Debug endpoint to create test sessions"""
     # Validate acquisition exists if provided
     acquisition_uuid = session_data.get("acquisition_uuid")
     if acquisition_uuid:
-        acquisition = db.query(Acquisition).filter(Acquisition.uuid == acquisition_uuid).first()
+        acquisition = (
+            (await db.execute(select(Acquisition).where(Acquisition.uuid == acquisition_uuid))).scalars().first()
+        )
         if not acquisition:
             raise HTTPException(status_code=404, detail=f"Acquisition {acquisition_uuid} not found")
 
@@ -2345,7 +2283,7 @@ async def create_test_session(session_data: dict, db: SqlAlchemySession = DB_DEP
         last_activity_at=datetime.now(),
     )
     db.add(session)
-    db.commit()
+    await db.commit()
 
     logger.info(f"Created agent session {session.session_id} for agent {session.agent_id}")
 
@@ -2361,37 +2299,39 @@ async def create_test_session(session_data: dict, db: SqlAlchemySession = DB_DEP
 
 
 @app.get("/grid/{grid_uuid}/model_weights", response_model=dict[str, list[QualityPredictionModelWeight]])
-async def get_model_weights_for_grid(grid_uuid: str, db: SqlAlchemySession = DB_DEPENDENCY):
+async def get_model_weights_for_grid(grid_uuid: str, db: AsyncSession = DB_DEPENDENCY):
     """Get time series of model weights for grid"""
 
-    def _db_work():
-        weights = (
-            db.query(QualityPredictionModelWeight)
-            .filter(QualityPredictionModelWeight.grid_uuid == grid_uuid)
-            .order_by(QualityPredictionModelWeight.timestamp)
-            .all()
+    weights = (
+        (
+            await db.execute(
+                select(QualityPredictionModelWeight)
+                .where(QualityPredictionModelWeight.grid_uuid == grid_uuid)
+                .order_by(QualityPredictionModelWeight.timestamp)
+            )
         )
-        return {k: list(v) for k, v in itertools.groupby(weights, lambda x: x.prediction_model_name)}
-
-    return await run_in_threadpool(_db_work)
+        .scalars()
+        .all()
+    )
+    return {k: list(v) for k, v in itertools.groupby(weights, lambda x: x.prediction_model_name)}
 
 
 @app.get("/gridsquares/{gridsquare_uuid}/quality_predictions", response_model=dict[str, list[QualityPrediction]])
-async def get_gridsquare_quality_prediction_time_series(
-    gridsquare_uuid: str, db: SqlAlchemySession = DB_DEPENDENCY
-):
+async def get_gridsquare_quality_prediction_time_series(gridsquare_uuid: str, db: AsyncSession = DB_DEPENDENCY):
     """Get time ordered predictions for all models that provide them for this square"""
 
-    def _db_work():
-        predictions = (
-            db.query(QualityPrediction)
-            .filter(QualityPrediction.gridsquare_uuid == gridsquare_uuid)
-            .order_by(QualityPrediction.timestamp)
-            .all()
+    predictions = (
+        (
+            await db.execute(
+                select(QualityPrediction)
+                .where(QualityPrediction.gridsquare_uuid == gridsquare_uuid)
+                .order_by(QualityPrediction.timestamp)
+            )
         )
-        return {k: list(v) for k, v in itertools.groupby(predictions, lambda x: x.prediction_model_name)}
-
-    return await run_in_threadpool(_db_work)
+        .scalars()
+        .all()
+    )
+    return {k: list(v) for k, v in itertools.groupby(predictions, lambda x: x.prediction_model_name)}
 
 
 @app.get(
@@ -2399,27 +2339,25 @@ async def get_gridsquare_quality_prediction_time_series(
     response_model=dict[str, dict[str, list[QualityPrediction]]],
 )
 async def get_foilhole_quality_prediction_time_series_for_gridsquare(
-    gridsquare_uuid: str, db: SqlAlchemySession = DB_DEPENDENCY
+    gridsquare_uuid: str, db: AsyncSession = DB_DEPENDENCY
 ):
     """Get time ordered predictions for all models that provide them for this square"""
 
-    def _db_work():
-        predictions = (
-            db.query(QualityPrediction, FoilHole)
-            .filter(QualityPrediction.foilhole_uuid == FoilHole.uuid)
-            .filter(FoilHole.gridsquare_uuid == gridsquare_uuid)
-            .filter(QualityPrediction.metric_name == None)  # noqa: E711
+    predictions = (
+        await db.execute(
+            select(QualityPrediction, FoilHole)
+            .where(QualityPrediction.foilhole_uuid == FoilHole.uuid)
+            .where(FoilHole.gridsquare_uuid == gridsquare_uuid)
+            .where(QualityPrediction.metric_name == None)  # noqa: E711
             .order_by(QualityPrediction.timestamp)
-            .all()
         )
-        predictions = sorted(predictions, key=lambda x: x[1].foilhole_id)
-        predictions = sorted(predictions, key=lambda x: x[0].prediction_model_name)
-        return {
-            k: {fh: [elem[0] for elem in v2] for fh, v2 in itertools.groupby(list(v), lambda x: x[1].foilhole_id)}
-            for k, v in itertools.groupby(predictions, lambda x: x[0].prediction_model_name)
-        }
-
-    return await run_in_threadpool(_db_work)
+    ).all()
+    predictions = sorted(predictions, key=lambda x: x[1].foilhole_id)
+    predictions = sorted(predictions, key=lambda x: x[0].prediction_model_name)
+    return {
+        k: {fh: [elem[0] for elem in v2] for fh, v2 in itertools.groupby(list(v), lambda x: x[1].foilhole_id)}
+        for k, v in itertools.groupby(predictions, lambda x: x[0].prediction_model_name)
+    }
 
 
 @app.get(
@@ -2427,67 +2365,71 @@ async def get_foilhole_quality_prediction_time_series_for_gridsquare(
     response_model=dict[str, dict[str, list[QualityPrediction]]],
 )
 async def get_foilhole_quality_prediction_time_series_for_gridsquare_for_metric(
-    metric_name: str, gridsquare_uuid: str, db: SqlAlchemySession = DB_DEPENDENCY
+    metric_name: str, gridsquare_uuid: str, db: AsyncSession = DB_DEPENDENCY
 ):
     """Get time ordered predictions for all models that provide them for this square"""
 
-    def _db_work():
-        predictions = (
-            db.query(QualityPrediction, FoilHole)
-            .filter(QualityPrediction.foilhole_uuid == FoilHole.uuid)
-            .filter(FoilHole.gridsquare_uuid == gridsquare_uuid)
-            .filter(QualityPrediction.metric_name == metric_name)
+    predictions = (
+        await db.execute(
+            select(QualityPrediction, FoilHole)
+            .where(QualityPrediction.foilhole_uuid == FoilHole.uuid)
+            .where(FoilHole.gridsquare_uuid == gridsquare_uuid)
+            .where(QualityPrediction.metric_name == metric_name)
             .order_by(QualityPrediction.timestamp)
-            .all()
         )
-        predictions = sorted(predictions, key=lambda x: x[1].foilhole_id)
-        predictions = sorted(predictions, key=lambda x: x[0].prediction_model_name)
-        return {
-            k: {fh: [elem[0] for elem in v2] for fh, v2 in itertools.groupby(list(v), lambda x: x[1].foilhole_id)}
-            for k, v in itertools.groupby(predictions, lambda x: x[0].prediction_model_name)
-        }
-
-    return await run_in_threadpool(_db_work)
+    ).all()
+    predictions = sorted(predictions, key=lambda x: x[1].foilhole_id)
+    predictions = sorted(predictions, key=lambda x: x[0].prediction_model_name)
+    return {
+        k: {fh: [elem[0] for elem in v2] for fh, v2 in itertools.groupby(list(v), lambda x: x[1].foilhole_id)}
+        for k, v in itertools.groupby(predictions, lambda x: x[0].prediction_model_name)
+    }
 
 
 @app.get(
     "/prediction_model/{prediction_model_name}/grid/{grid_uuid}/prediction",
     response_model=list[QualityPredictionResponse],
 )
-async def get_prediction_for_grid(
-    prediction_model_name: str, grid_uuid: str, db: SqlAlchemySession = DB_DEPENDENCY
-):
-    def _db_work():
-        squares = db.query(GridSquare).filter(GridSquare.grid_uuid == grid_uuid).all()
-        predictions = [
-            db.query(QualityPrediction)
-            .filter(QualityPrediction.gridsquare_uuid == gs.uuid)
-            .filter(QualityPrediction.prediction_model_name == prediction_model_name)
-            .order_by(QualityPrediction.timestamp.desc())
-            .all()
-            for gs in squares
-        ]
-        predictions = [p[0] for p in predictions if p]
-        if not predictions:
-            holes = (
-                db.query(GridSquare, FoilHole)
-                .filter(GridSquare.grid_uuid == grid_uuid)
-                .filter(FoilHole.gridsquare_uuid == GridSquare.uuid)
-                .all()
-            )
-            predictions = [
-                db.query(QualityPrediction)
-                .filter(QualityPrediction.foilhole_uuid == fh[1].uuid)
-                .filter(QualityPrediction.prediction_model_name == prediction_model_name)
+async def get_prediction_for_grid(prediction_model_name: str, grid_uuid: str, db: AsyncSession = DB_DEPENDENCY):
+    squares = (await db.execute(select(GridSquare).where(GridSquare.grid_uuid == grid_uuid))).scalars().all()
+    predictions = [
+        (
+            await db.execute(
+                select(QualityPrediction)
+                .where(QualityPrediction.gridsquare_uuid == gs.uuid)
+                .where(QualityPrediction.prediction_model_name == prediction_model_name)
                 .order_by(QualityPrediction.timestamp.desc())
-                .first()
-                for fh in holes
-            ]
-            for i in range(len(predictions)):
-                predictions[i].gridsquare_uuid = holes[i][0].uuid
-        return predictions
-
-    return await run_in_threadpool(_db_work)
+            )
+        )
+        .scalars()
+        .all()
+        for gs in squares
+    ]
+    predictions = [p[0] for p in predictions if p]
+    if not predictions:
+        holes = (
+            await db.execute(
+                select(GridSquare, FoilHole)
+                .where(GridSquare.grid_uuid == grid_uuid)
+                .where(FoilHole.gridsquare_uuid == GridSquare.uuid)
+            )
+        ).all()
+        predictions = [
+            (
+                await db.execute(
+                    select(QualityPrediction)
+                    .where(QualityPrediction.foilhole_uuid == fh[1].uuid)
+                    .where(QualityPrediction.prediction_model_name == prediction_model_name)
+                    .order_by(QualityPrediction.timestamp.desc())
+                )
+            )
+            .scalars()
+            .first()
+            for fh in holes
+        ]
+        for i in range(len(predictions)):
+            predictions[i].gridsquare_uuid = holes[i][0].uuid
+    return predictions
 
 
 @app.get(
@@ -2495,37 +2437,42 @@ async def get_prediction_for_grid(
     response_model=list[QualityPredictionResponse],
 )
 async def get_prediction_for_gridsquare(
-    prediction_model_name: str, gridsquare_uuid: str, db: SqlAlchemySession = DB_DEPENDENCY
+    prediction_model_name: str, gridsquare_uuid: str, db: AsyncSession = DB_DEPENDENCY
 ):
-    def _db_work():
-        holes = db.query(FoilHole).filter(FoilHole.gridsquare_uuid == gridsquare_uuid).all()
-        predictions = [
-            db.query(QualityPrediction)
-            .filter(QualityPrediction.foilhole_uuid == fh.uuid)
-            .filter(QualityPrediction.prediction_model_name == prediction_model_name)
-            .order_by(QualityPrediction.timestamp.desc())
-            .all()
-            for fh in holes
-        ]
-        return [p[0] for p in predictions if p]
-
-    return await run_in_threadpool(_db_work)
+    holes = (await db.execute(select(FoilHole).where(FoilHole.gridsquare_uuid == gridsquare_uuid))).scalars().all()
+    predictions = [
+        (
+            await db.execute(
+                select(QualityPrediction)
+                .where(QualityPrediction.foilhole_uuid == fh.uuid)
+                .where(QualityPrediction.prediction_model_name == prediction_model_name)
+                .order_by(QualityPrediction.timestamp.desc())
+            )
+        )
+        .scalars()
+        .all()
+        for fh in holes
+    ]
+    return [p[0] for p in predictions if p]
 
 
 @app.get(
     "/gridsquare/{gridsquare_uuid}/overall_prediction",
     response_model=list[OverallQualityPrediction],
 )
-async def get_overall_prediction_for_gridsquare(gridsquare_uuid: str, db: SqlAlchemySession = DB_DEPENDENCY):
-    def _db_work():
-        holes = db.query(FoilHole).filter(FoilHole.gridsquare_uuid == gridsquare_uuid).all()
-        return (
-            db.query(OverallQualityPrediction)
-            .filter(OverallQualityPrediction.foilhole_uuid.in_([h.uuid for h in holes]))
-            .all()
+async def get_overall_prediction_for_gridsquare(gridsquare_uuid: str, db: AsyncSession = DB_DEPENDENCY):
+    holes = (await db.execute(select(FoilHole).where(FoilHole.gridsquare_uuid == gridsquare_uuid))).scalars().all()
+    return (
+        (
+            await db.execute(
+                select(OverallQualityPrediction).where(
+                    OverallQualityPrediction.foilhole_uuid.in_([h.uuid for h in holes])
+                )
+            )
         )
-
-    return await run_in_threadpool(_db_work)
+        .scalars()
+        .all()
+    )
 
 
 @app.get(
@@ -2533,174 +2480,197 @@ async def get_overall_prediction_for_gridsquare(gridsquare_uuid: str, db: SqlAlc
     response_model=list[GridSquare],
 )
 async def get_suggested_square_collections(
-    grid_uuid: str, prediction_model_name: str, latent_rep_model_name: str, db: SqlAlchemySession = DB_DEPENDENCY
+    grid_uuid: str, prediction_model_name: str, latent_rep_model_name: str, db: AsyncSession = DB_DEPENDENCY
 ):
-    def _db_work():
-        scores = (
-            db.query(GridSquare, CurrentQualityPrediction)
-            .filter(CurrentQualityPrediction.gridsquare_uuid == GridSquare.uuid)
-            .filter(GridSquare.grid_uuid == grid_uuid)
-            .filter(CurrentQualityPrediction.prediction_model_name == prediction_model_name)
-            .all()
+    scores = (
+        await db.execute(
+            select(GridSquare, CurrentQualityPrediction)
+            .where(CurrentQualityPrediction.gridsquare_uuid == GridSquare.uuid)
+            .where(GridSquare.grid_uuid == grid_uuid)
+            .where(CurrentQualityPrediction.prediction_model_name == prediction_model_name)
         )
-        cluster_indices = {
-            p.key: p.value
-            for p in db.query(QualityPredictionModelParameter)
-            .filter(QualityPredictionModelParameter.grid_uuid == grid_uuid)
-            .filter(QualityPredictionModelParameter.prediction_model_name == latent_rep_model_name)
-            .filter(QualityPredictionModelParameter.group == "cluster_indices")
-            .all()
-        }
-        score_ordered_squares = [
-            p[0]
-            for p in sorted(
-                scores,
-                key=lambda x: x[1].value * (x[0].size_width ** 2) * (0 if x[0].size_width < 60 else 1),
-                reverse=True,
+    ).all()
+    cluster_indices = {
+        p.key: p.value
+        for p in (
+            await db.execute(
+                select(QualityPredictionModelParameter)
+                .where(QualityPredictionModelParameter.grid_uuid == grid_uuid)
+                .where(QualityPredictionModelParameter.prediction_model_name == latent_rep_model_name)
+                .where(QualityPredictionModelParameter.group == "cluster_indices")
             )
-        ]
-        cluster_counts = dict.fromkeys(set(cluster_indices.values()), 0)
-        suggested = []
-        for i in range(len(score_ordered_squares) // 2):
-            square = score_ordered_squares[i]
-            if cluster_counts[cluster_indices[square.uuid]] < 2:
-                suggested.append(square)
-                cluster_counts[cluster_indices[square.uuid]] += 1
-        return suggested
-
-    return await run_in_threadpool(_db_work)
+        )
+        .scalars()
+        .all()
+    }
+    score_ordered_squares = [
+        p[0]
+        for p in sorted(
+            scores,
+            key=lambda x: x[1].value * (x[0].size_width ** 2) * (0 if x[0].size_width < 60 else 1),
+            reverse=True,
+        )
+    ]
+    cluster_counts = dict.fromkeys(set(cluster_indices.values()), 0)
+    suggested = []
+    for i in range(len(score_ordered_squares) // 2):
+        square = score_ordered_squares[i]
+        if cluster_counts[cluster_indices[square.uuid]] < 2:
+            suggested.append(square)
+            cluster_counts[cluster_indices[square.uuid]] += 1
+    return suggested
 
 
 @app.get(
     "/prediction_model/{prediction_model_name}/grid/{grid_uuid}/latent_representation",
     response_model=list[LatentRepresentationResponse],
 )
-async def get_latent_rep(prediction_model_name: str, grid_uuid: str, db: SqlAlchemySession = DB_DEPENDENCY):
-    def _db_work():
-        xs = (
-            db.query(QualityPredictionModelParameter)
-            .filter(QualityPredictionModelParameter.prediction_model_name == prediction_model_name)
-            .filter(QualityPredictionModelParameter.grid_uuid == grid_uuid)
-            .filter(QualityPredictionModelParameter.group.like("coordinates:%"))
-            .filter(QualityPredictionModelParameter.key == "x")
-            .order_by(QualityPredictionModelParameter.timestamp.desc())
-            .all()
-        )
-        ys = (
-            db.query(QualityPredictionModelParameter)
-            .filter(QualityPredictionModelParameter.prediction_model_name == prediction_model_name)
-            .filter(QualityPredictionModelParameter.grid_uuid == grid_uuid)
-            .filter(QualityPredictionModelParameter.group.like("coordinates:%"))
-            .filter(QualityPredictionModelParameter.key == "y")
-            .order_by(QualityPredictionModelParameter.timestamp.desc())
-            .all()
-        )
-        cluster_indices = (
-            db.query(QualityPredictionModelParameter)
-            .filter(QualityPredictionModelParameter.prediction_model_name == prediction_model_name)
-            .filter(QualityPredictionModelParameter.grid_uuid == grid_uuid)
-            .filter(QualityPredictionModelParameter.group == "cluster_indices")
-            .order_by(QualityPredictionModelParameter.timestamp.desc())
-            .all()
-        )
-
-        class LatentRep(BaseModel):
-            x: float | None = None
-            y: float | None = None
-            index: int | None = None
-
-            def complete(self):
-                return all(a is not None for a in (self.x, self.y, self.index))
-
-        rep = {p.uuid: LatentRep() for p in db.query(GridSquare).filter(GridSquare.grid_uuid == grid_uuid).all()}
-        if not set(rep.keys()).intersection({ci.key for ci in cluster_indices}):
-            rep = {
-                p[1].uuid: LatentRep()
-                for p in db.query(GridSquare, FoilHole)
-                .filter(GridSquare.grid_uuid == grid_uuid)
-                .filter(FoilHole.gridsquare_uuid == GridSquare.uuid)
-                .all()
-            }
-        indices = {ci.key: ci.value for ci in cluster_indices}
-        res = []
-        for x, y in zip(xs, ys, strict=True):
-            uuid_str = x.group.replace("coordinates:", "")
-            res.append(
-                LatentRepresentationResponse(gridsquare_uuid=uuid_str, x=x.value, y=y.value, index=indices[uuid_str])
+async def get_latent_rep(prediction_model_name: str, grid_uuid: str, db: AsyncSession = DB_DEPENDENCY):
+    xs = (
+        (
+            await db.execute(
+                select(QualityPredictionModelParameter)
+                .where(QualityPredictionModelParameter.prediction_model_name == prediction_model_name)
+                .where(QualityPredictionModelParameter.grid_uuid == grid_uuid)
+                .where(QualityPredictionModelParameter.group.like("coordinates:%"))
+                .where(QualityPredictionModelParameter.key == "x")
+                .order_by(QualityPredictionModelParameter.timestamp.desc())
             )
-        return res
+        )
+        .scalars()
+        .all()
+    )
+    ys = (
+        (
+            await db.execute(
+                select(QualityPredictionModelParameter)
+                .where(QualityPredictionModelParameter.prediction_model_name == prediction_model_name)
+                .where(QualityPredictionModelParameter.grid_uuid == grid_uuid)
+                .where(QualityPredictionModelParameter.group.like("coordinates:%"))
+                .where(QualityPredictionModelParameter.key == "y")
+                .order_by(QualityPredictionModelParameter.timestamp.desc())
+            )
+        )
+        .scalars()
+        .all()
+    )
+    cluster_indices = (
+        (
+            await db.execute(
+                select(QualityPredictionModelParameter)
+                .where(QualityPredictionModelParameter.prediction_model_name == prediction_model_name)
+                .where(QualityPredictionModelParameter.grid_uuid == grid_uuid)
+                .where(QualityPredictionModelParameter.group == "cluster_indices")
+                .order_by(QualityPredictionModelParameter.timestamp.desc())
+            )
+        )
+        .scalars()
+        .all()
+    )
 
-    return await run_in_threadpool(_db_work)
+    class LatentRep(BaseModel):
+        x: float | None = None
+        y: float | None = None
+        index: int | None = None
+
+        def complete(self):
+            return all(a is not None for a in (self.x, self.y, self.index))
+
+    rep = {
+        p.uuid: LatentRep()
+        for p in (await db.execute(select(GridSquare).where(GridSquare.grid_uuid == grid_uuid))).scalars().all()
+    }
+    if not set(rep.keys()).intersection({ci.key for ci in cluster_indices}):
+        grid_square_foilholes = (
+            await db.execute(
+                select(GridSquare, FoilHole)
+                .where(GridSquare.grid_uuid == grid_uuid)
+                .where(FoilHole.gridsquare_uuid == GridSquare.uuid)
+            )
+        ).all()
+        rep = {p[1].uuid: LatentRep() for p in grid_square_foilholes}
+    indices = {ci.key: ci.value for ci in cluster_indices}
+    res = []
+    for x, y in zip(xs, ys, strict=True):
+        uuid_str = x.group.replace("coordinates:", "")
+        res.append(
+            LatentRepresentationResponse(gridsquare_uuid=uuid_str, x=x.value, y=y.value, index=indices[uuid_str])
+        )
+    return res
 
 
 @app.get(
     "/prediction_model/{prediction_model_name}/gridsquare/{gridsquare_uuid}/latent_representation",
     response_model=list[LatentRepresentationResponse],
 )
-async def get_square_latent_rep(
-    prediction_model_name: str, gridsquare_uuid: str, db: SqlAlchemySession = DB_DEPENDENCY
-):
-    def _db_work():
-        square_and_holes = (
-            db.query(GridSquare, FoilHole)
-            .filter(GridSquare.uuid == gridsquare_uuid)
-            .filter(FoilHole.gridsquare_uuid == GridSquare.uuid)
-            .all()
+async def get_square_latent_rep(prediction_model_name: str, gridsquare_uuid: str, db: AsyncSession = DB_DEPENDENCY):
+    square_and_holes = (
+        await db.execute(
+            select(GridSquare, FoilHole)
+            .where(GridSquare.uuid == gridsquare_uuid)
+            .where(FoilHole.gridsquare_uuid == GridSquare.uuid)
         )
-        grid_uuid = square_and_holes[0][0].grid_uuid
-        hole_uuids = [p[1].uuid for p in square_and_holes]
-        model_parameters = (
-            db.query(QualityPredictionModelParameter)
-            .filter(QualityPredictionModelParameter.prediction_model_name == prediction_model_name)
-            .filter(QualityPredictionModelParameter.grid_uuid == grid_uuid)
-            .filter(QualityPredictionModelParameter.group.like("coordinates:%"))
-            .order_by(QualityPredictionModelParameter.timestamp.desc())
-            .all()
+    ).all()
+    grid_uuid = square_and_holes[0][0].grid_uuid
+    hole_uuids = [p[1].uuid for p in square_and_holes]
+    model_parameters = (
+        (
+            await db.execute(
+                select(QualityPredictionModelParameter)
+                .where(QualityPredictionModelParameter.prediction_model_name == prediction_model_name)
+                .where(QualityPredictionModelParameter.grid_uuid == grid_uuid)
+                .where(QualityPredictionModelParameter.group.like("coordinates:%"))
+                .order_by(QualityPredictionModelParameter.timestamp.desc())
+            )
         )
-        cluster_indices = (
-            db.query(QualityPredictionModelParameter)
-            .filter(QualityPredictionModelParameter.prediction_model_name == prediction_model_name)
-            .filter(QualityPredictionModelParameter.grid_uuid == grid_uuid)
-            .filter(QualityPredictionModelParameter.group == "cluster_indices")
-            .filter(QualityPredictionModelParameter.key.in_(hole_uuids))
-            .order_by(QualityPredictionModelParameter.timestamp.desc())
-            .all()
+        .scalars()
+        .all()
+    )
+    cluster_indices = (
+        (
+            await db.execute(
+                select(QualityPredictionModelParameter)
+                .where(QualityPredictionModelParameter.prediction_model_name == prediction_model_name)
+                .where(QualityPredictionModelParameter.grid_uuid == grid_uuid)
+                .where(QualityPredictionModelParameter.group == "cluster_indices")
+                .where(QualityPredictionModelParameter.key.in_(hole_uuids))
+                .order_by(QualityPredictionModelParameter.timestamp.desc())
+            )
         )
+        .scalars()
+        .all()
+    )
 
-        class LatentRep(BaseModel):
-            x: float | None = None
-            y: float | None = None
-            index: int | None = None
+    class LatentRep(BaseModel):
+        x: float | None = None
+        y: float | None = None
+        index: int | None = None
 
-            def complete(self):
-                return all(a is not None for a in (self.x, self.y, self.index))
+        def complete(self):
+            return all(a is not None for a in (self.x, self.y, self.index))
 
-        rep = {
-            p.uuid: LatentRep()
-            for p in db.query(FoilHole).filter(FoilHole.gridsquare_uuid == gridsquare_uuid).all()
-            if not p.is_near_grid_bar
-        }
-        for p in cluster_indices + model_parameters:
-            if p.group == "cluster_indices":
-                hole_uuid = p.key
-                if rep[hole_uuid].index is None:
-                    rep[hole_uuid].index = p.value
-                continue
-            else:
-                hole_uuid = p.group.replace("coordinates:", "")
-            if hole_uuid not in rep.keys():
-                continue
-            if rep.get(hole_uuid, LatentRep()).complete():
-                continue
-            if p.key == "x":
-                rep[hole_uuid].x = p.value
-            else:
-                rep[hole_uuid].y = p.value
-        return [
-            LatentRepresentationResponse(foilhole_uuid=k, x=v.x, y=v.y, index=v.index) for k, v in rep.items() if v
-        ]
-
-    return await run_in_threadpool(_db_work)
+    rep = {
+        p.uuid: LatentRep()
+        for p in (await db.execute(select(FoilHole).where(FoilHole.gridsquare_uuid == gridsquare_uuid))).scalars().all()
+        if not p.is_near_grid_bar
+    }
+    for p in cluster_indices + model_parameters:
+        if p.group == "cluster_indices":
+            hole_uuid = p.key
+            if rep[hole_uuid].index is None:
+                rep[hole_uuid].index = p.value
+            continue
+        else:
+            hole_uuid = p.group.replace("coordinates:", "")
+        if hole_uuid not in rep.keys():
+            continue
+        if rep.get(hole_uuid, LatentRep()).complete():
+            continue
+        if p.key == "x":
+            rep[hole_uuid].x = p.value
+        else:
+            rep[hole_uuid].y = p.value
+    return [LatentRepresentationResponse(foilhole_uuid=k, x=v.x, y=v.y, index=v.index) for k, v in rep.items() if v]
 
 
 @app.get("/grids/{grid_uuid}/atlas_image", responses={200: {"content": {"image/png": {}}}})
@@ -2710,61 +2680,55 @@ async def get_grid_atlas_image(
     y: int | None = None,
     w: int | None = None,
     h: int | None = None,
-    db: SqlAlchemySession = DB_DEPENDENCY,
+    db: AsyncSession = DB_DEPENDENCY,
 ):
     """Get a single grid by ID"""
 
-    def _work():
-        grid = db.query(Grid).filter(Grid.uuid == grid_uuid).first()
-        if not grid:
-            raise HTTPException(status_code=404, detail="Grid not found")
-        atlas_img_path_candidates = list(Path(grid.atlas_dir).parent.glob("Atlas*.mrc"))
-        if atlas_img_path_candidates:
-            atlas_img_path = atlas_img_path_candidates[0]
-        else:
-            atlas_img_path = Path(grid.atlas_dir)
-        mrc = mrcfile.read(atlas_img_path)
-        mrc = mrc - mrc.min()
-        mrc = mrc * (255 / mrc.max())
-        mrc = mrc.astype("uint8")
-        if None not in (x, y, w, h):
-            mrc = mrc[y - h // 2 : y + h // 2, x - w // 2 : x + w // 2]
-        im = Image.fromarray(mrc)
-        with io.BytesIO() as buf:
-            im.save(buf, format="PNG")
-            return buf.getvalue()
-
-    im_bytes = await run_in_threadpool(_work)
+    grid = (await db.execute(select(Grid).where(Grid.uuid == grid_uuid))).scalars().first()
+    if not grid:
+        raise HTTPException(status_code=404, detail="Grid not found")
+    atlas_img_path_candidates = list(Path(grid.atlas_dir).parent.glob("Atlas*.mrc"))
+    if atlas_img_path_candidates:
+        atlas_img_path = atlas_img_path_candidates[0]
+    else:
+        atlas_img_path = Path(grid.atlas_dir)
+    mrc = mrcfile.read(atlas_img_path)
+    mrc = mrc - mrc.min()
+    mrc = mrc * (255 / mrc.max())
+    mrc = mrc.astype("uint8")
+    if None not in (x, y, w, h):
+        mrc = mrc[y - h // 2 : y + h // 2, x - w // 2 : x + w // 2]
+    im = Image.fromarray(mrc)
+    with io.BytesIO() as buf:
+        im.save(buf, format="PNG")
+        im_bytes = buf.getvalue()
     return Response(im_bytes, media_type="image/png")
 
 
 @app.get("/gridsquares/{gridsquare_uuid}/gridsquare_image", responses={200: {"content": {"image/png": {}}}})
 async def get_gridsquare_image(
     gridsquare_uuid: str,
-    db: SqlAlchemySession = DB_DEPENDENCY,
+    db: AsyncSession = DB_DEPENDENCY,
 ):
     """Get a single grid square by ID"""
 
-    def _work():
-        gridsquare = db.query(GridSquare).filter(GridSquare.uuid == gridsquare_uuid).first()
-        if not gridsquare:
-            raise HTTPException(status_code=404, detail="Grid square not found")
-        if not gridsquare.image_path:
-            raise HTTPException(status_code=404, detail="Grid square image unknown")
-        square_img_path = Path(gridsquare.image_path)
-        if square_img_path.suffix == ".mrc":
-            imdata = mrcfile.read(square_img_path)
-        else:
-            imdata = tifffile.imread(square_img_path)
-        imdata = imdata - imdata.min()
-        imdata = imdata * (255 / imdata.max())
-        imdata = imdata.astype("uint8")
-        im = Image.fromarray(imdata)
-        with io.BytesIO() as buf:
-            im.save(buf, format="PNG")
-            return buf.getvalue()
-
-    im_bytes = await run_in_threadpool(_work)
+    gridsquare = (await db.execute(select(GridSquare).where(GridSquare.uuid == gridsquare_uuid))).scalars().first()
+    if not gridsquare:
+        raise HTTPException(status_code=404, detail="Grid square not found")
+    if not gridsquare.image_path:
+        raise HTTPException(status_code=404, detail="Grid square image unknown")
+    square_img_path = Path(gridsquare.image_path)
+    if square_img_path.suffix == ".mrc":
+        imdata = mrcfile.read(square_img_path)
+    else:
+        imdata = tifffile.imread(square_img_path)
+    imdata = imdata - imdata.min()
+    imdata = imdata * (255 / imdata.max())
+    imdata = imdata.astype("uint8")
+    im = Image.fromarray(imdata)
+    with io.BytesIO() as buf:
+        im.save(buf, format="PNG")
+        im_bytes = buf.getvalue()
     return Response(im_bytes, media_type="image/png")
 
 

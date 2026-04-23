@@ -511,9 +511,7 @@ async def handle_ctf_estimation_complete(event_data: dict[str, Any]) -> None:
             return quality
 
         quality = await run_in_threadpool(_db_work)
-        await publish_ctf_estimation_registered(
-            event.micrograph_uuid, quality >= 0.5, metric_name="ctfmaxresolution"
-        )
+        await publish_ctf_estimation_registered(event.micrograph_uuid, quality >= 0.5, metric_name="ctfmaxresolution")
     except ValidationError as e:
         logger.error(f"Validation error processing ctf event: {e}")
     except Exception as e:
@@ -560,8 +558,7 @@ async def handle_particle_picking_complete(event_data: dict[str, Any]) -> None:
                     updated_metric_stats.count += 1
                     updated_metric_stats.value_sum += event.number_of_particles_picked
                     updated_metric_stats.squared_value_sum += old_diff * (
-                        event.number_of_particles_picked
-                        - (updated_metric_stats.value_sum / updated_metric_stats.count)
+                        event.number_of_particles_picked - (updated_metric_stats.value_sum / updated_metric_stats.count)
                     )
                 session.add(updated_metric_stats)
                 session.commit()
@@ -569,9 +566,7 @@ async def handle_particle_picking_complete(event_data: dict[str, Any]) -> None:
             return quality
 
         quality = await run_in_threadpool(_db_work)
-        await publish_particle_picking_registered(
-            event.micrograph_uuid, quality >= 0.5, metric_name="numparticles"
-        )
+        await publish_particle_picking_registered(event.micrograph_uuid, quality >= 0.5, metric_name="numparticles")
     except ValidationError as e:
         logger.error(f"Validation error processing particle picking event: {e}")
     except Exception as e:
@@ -599,9 +594,7 @@ async def handle_gridsquare_model_prediction(event_data: dict[str, Any]) -> None
                 ).first()
                 if current_quality_prediction is None:
                     grid_uuid = (
-                        session.exec(select(GridSquare).where(GridSquare.uuid == event.gridsquare_uuid))
-                        .one()
-                        .grid_uuid
+                        session.exec(select(GridSquare).where(GridSquare.uuid == event.gridsquare_uuid)).one().grid_uuid
                     )
                     current_quality_prediction = CurrentQualityPrediction(
                         grid_uuid=grid_uuid,
@@ -924,9 +917,7 @@ async def handle_external_foilhole_model_prediction(event_data: dict[str, Any]) 
                     priority="normal",
                 )
                 if success:
-                    logger.info(
-                        f"Generated foilhole reorder instruction {instruction_id} for agent {session.agent_id}"
-                    )
+                    logger.info(f"Generated foilhole reorder instruction {instruction_id} for agent {session.agent_id}")
                 else:
                     logger.error(f"Failed to generate foilhole instruction for agent {session.agent_id}")
         else:
@@ -961,9 +952,7 @@ async def handle_agent_instruction_created(event_data: dict[str, Any]) -> None:
 
         def _db_work() -> bool:
             with Session(db_engine) as session:
-                session_obj = (
-                    session.query(AgentSession).filter(AgentSession.session_id == event.session_id).first()
-                )
+                session_obj = session.query(AgentSession).filter(AgentSession.session_id == event.session_id).first()
                 if not session_obj:
                     return False
                 instruction = AgentInstruction(
@@ -1140,9 +1129,7 @@ async def _on_message(consumer: AioPikaConsumer, message: AbstractIncomingMessag
         try:
             await consumer.requeue_with_retry(message, retry_count + 1)
             await message.ack()
-            logger.debug(
-                f"Republished message with retry count {retry_count + 1}, event_type: {event_type}"
-            )
+            logger.debug(f"Republished message with retry count {retry_count + 1}, event_type: {event_type}")
         except Exception as republish_error:
             logger.error(f"Failed to republish message: {republish_error}")
             await message.reject(requeue=True)

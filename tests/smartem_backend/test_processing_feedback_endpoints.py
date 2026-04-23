@@ -7,7 +7,6 @@ monkeypatch the publish helpers so nothing real is touched.
 
 import os
 from dataclasses import dataclass
-from unittest.mock import MagicMock
 
 os.environ["SKIP_DB_INIT"] = "true"
 
@@ -16,6 +15,8 @@ from fastapi.testclient import TestClient
 
 from smartem_backend import api_server
 from smartem_backend.api_server import app, get_db
+
+from ._async_db_stub import make_async_db, make_execute_result
 
 
 @dataclass
@@ -43,8 +44,7 @@ def client(captured, monkeypatch):
     monkeypatch.setattr(api_server, "publish_ctf_estimation_completed", _fake_publish("ctf_completed"))
     monkeypatch.setattr(api_server, "publish_ctf_estimation_registered", _fake_publish("ctf_registered"))
 
-    db = MagicMock()
-    db.query.return_value.filter.return_value.first.return_value = object()
+    db = make_async_db()
 
     app.dependency_overrides[get_db] = lambda: db
     try:
@@ -71,7 +71,7 @@ class TestMotionCorrectionCompleted:
         }
 
     def test_missing_micrograph_returns_404(self, client, captured):
-        client._db.query.return_value.filter.return_value.first.return_value = None
+        client._db.execute.return_value = make_execute_result(None)
         resp = client.post(self.endpoint, json={"total_motion": 1.5, "average_motion": 0.1})
         assert resp.status_code == 404
         assert resp.json()["detail"] == "Micrograph not found"

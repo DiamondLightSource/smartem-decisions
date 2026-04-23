@@ -8,7 +8,6 @@ bug could regress silently. These tests lock the contract in place.
 """
 
 import os
-from unittest.mock import MagicMock
 
 os.environ["SKIP_DB_INIT"] = "true"
 
@@ -17,6 +16,8 @@ from fastapi.testclient import TestClient
 
 from smartem_backend import api_server
 from smartem_backend.api_server import app, get_db
+
+from ._async_db_stub import make_async_db
 
 
 @pytest.fixture
@@ -36,7 +37,7 @@ def client(captured, monkeypatch):
     monkeypatch.setattr(api_server, "publish_atlas_created", _capture("atlas_created"))
     monkeypatch.setattr(api_server, "publish_atlas_updated", _capture("atlas_updated"))
 
-    db = MagicMock()
+    db = make_async_db()
     app.dependency_overrides[get_db] = lambda: db
     try:
         with TestClient(app) as tc:
