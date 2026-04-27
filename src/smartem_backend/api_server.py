@@ -9,6 +9,7 @@ from contextlib import asynccontextmanager
 from datetime import datetime, timedelta
 from pathlib import Path
 
+import asyncpg
 import mrcfile
 import tifffile
 from fastapi import Depends, FastAPI, HTTPException, Request, status
@@ -30,6 +31,7 @@ from smartem_backend.frontend_stream import (
     query_instruction_updates,
     query_processing_metrics,
 )
+from smartem_backend.instruction_notify import INSTRUCTION_CHANNEL, notify_instruction_pending
 from smartem_backend.model.database import (
     Acquisition,
     AgentConnection,
@@ -141,7 +143,7 @@ from smartem_backend.mq_publisher import (
 )
 from smartem_backend.rmq import AioPikaPublisher
 from smartem_backend.rmq.config import load_rmq_connection_url, load_rmq_topology
-from smartem_backend.utils import app_config, setup_postgres_async_connection
+from smartem_backend.utils import app_config, get_asyncpg_dsn, setup_postgres_async_connection
 from smartem_common._version import __version__
 
 # Initialize database connection (skip in documentation generation mode)
@@ -1675,15 +1677,86 @@ async def get_grid_latent_representation(prediction_model_name: str, grid_uuid: 
 # ============ Agent Communication Endpoints ============
 
 
+_SSE_HEARTBEAT_INTERVAL_SECONDS = 30
+
+
+async def _drain_pending_instructions(db: AsyncSession, agent_id: str, session_id: str):
+    """Yield SSE events for any pending+unexpired instructions, marking each as sent.
+
+    A single transaction per dispatched instruction (status -> sent + sent_at).
+    """
+    pending = (
+        (
+            await db.execute(
+                select(AgentInstruction)
+                .where(
+                    and_(
+                        AgentInstruction.session_id == session_id,
+                        AgentInstruction.status == "pending",
+                        or_(
+                            AgentInstruction.expires_at.is_(None),
+                            AgentInstruction.expires_at > datetime.now(),
+                        ),
+                    )
+                )
+                .order_by(
+                    AgentInstruction.priority.desc(),
+                    AgentInstruction.sequence_number.asc(),
+                    AgentInstruction.created_at.asc(),
+                )
+            )
+        )
+        .scalars()
+        .all()
+    )
+
+    for instruction in pending:
+        if instruction.status == "pending":
+            instruction.status = "sent"
+            instruction.sent_at = datetime.now()
+            await db.commit()
+
+        yield {
+            "event": "instruction",
+            "data": json.dumps(
+                {
+                    "type": "instruction",
+                    "instruction_id": instruction.instruction_id,
+                    "agent_id": agent_id,
+                    "session_id": session_id,
+                    "instruction_type": instruction.instruction_type,
+                    "payload": instruction.payload,
+                    "sequence_number": instruction.sequence_number,
+                    "priority": instruction.priority,
+                    "created_at": instruction.created_at.isoformat(),
+                    "expires_at": instruction.expires_at.isoformat() if instruction.expires_at else None,
+                    "metadata": instruction.instruction_metadata,
+                }
+            ),
+        }
+        logger.info(f"Sent instruction {instruction.instruction_id} to agent {agent_id}")
+
+
 @app.get("/agent/{agent_id}/session/{session_id}/instructions/stream")
 async def stream_instructions(agent_id: str, session_id: str, db: AsyncSession = DB_DEPENDENCY) -> EventSourceResponse:
-    """SSE endpoint for streaming instructions to agents for a specific session"""
+    """SSE endpoint for streaming instructions to agents for a specific session.
+
+    Uses PostgreSQL LISTEN/NOTIFY (channel `agent_instructions`, payload = session_id)
+    instead of polling: a dedicated asyncpg connection holds a LISTEN, the main loop
+    awaits the next notification or a heartbeat timeout, and only queries the
+    database when a notification arrives or on initial connect.
+    """
 
     async def event_generator():
         connection_id = str(uuid.uuid4())
+        listen_conn: asyncpg.Connection | None = None
+        notif_queue: asyncio.Queue[str] = asyncio.Queue()
+
+        def _on_notify(_conn, _pid, _channel, payload: str) -> None:
+            if payload == session_id:
+                notif_queue.put_nowait(payload)
 
         try:
-            # Validate session exists and belongs to agent
             try:
                 session = (
                     (await db.execute(select(AgentSession).where(AgentSession.session_id == session_id)))
@@ -1704,7 +1777,6 @@ async def stream_instructions(agent_id: str, session_id: str, db: AsyncSession =
                 }
                 return
 
-            # Create database connection record
             try:
                 connection = AgentConnection(
                     connection_id=connection_id,
@@ -1733,7 +1805,6 @@ async def stream_instructions(agent_id: str, session_id: str, db: AsyncSession =
                 }
                 return
 
-            # Send initial connection acknowledgment
             yield {
                 "event": "connection",
                 "data": json.dumps(
@@ -1747,12 +1818,41 @@ async def stream_instructions(agent_id: str, session_id: str, db: AsyncSession =
                 ),
             }
 
-            heartbeat_counter = 0
+            # Open the dedicated LISTEN connection BEFORE the initial drain so
+            # any instruction created concurrently with the SELECT shows up as
+            # a queued notification we'll process on the next loop iteration.
+            try:
+                listen_conn = await asyncpg.connect(get_asyncpg_dsn())
+                await listen_conn.add_listener(INSTRUCTION_CHANNEL, _on_notify)
+            except Exception as e:
+                logger.error(f"Failed to set up LISTEN for session {session_id}: {e}")
+                yield {
+                    "event": "error",
+                    "data": json.dumps(
+                        {"type": "error", "error": "listen_setup_failed", "message": "Failed to subscribe"}
+                    ),
+                }
+                return
+
+            async for event in _drain_pending_instructions(db, agent_id, session_id):
+                yield event
+
+            session.last_activity_at = datetime.now()
+            await db.commit()
 
             while True:
-                # Send heartbeat every 30 seconds
-                if heartbeat_counter % 6 == 0:  # Every 6th iteration (30 seconds)
-                    # Update connection heartbeat
+                try:
+                    await asyncio.wait_for(notif_queue.get(), timeout=_SSE_HEARTBEAT_INTERVAL_SECONDS)
+                    while not notif_queue.empty():
+                        notif_queue.get_nowait()
+                    try:
+                        async for event in _drain_pending_instructions(db, agent_id, session_id):
+                            yield event
+                    except Exception as e:
+                        logger.error(f"Error processing instructions for session {session_id}: {e}")
+                    session.last_activity_at = datetime.now()
+                    await db.commit()
+                except TimeoutError:
                     connection_obj = (
                         (
                             await db.execute(
@@ -1776,73 +1876,8 @@ async def stream_instructions(agent_id: str, session_id: str, db: AsyncSession =
                         ),
                     }
 
-                # Check for pending instructions
-                try:
-                    pending_instructions = (
-                        (
-                            await db.execute(
-                                select(AgentInstruction)
-                                .where(
-                                    and_(
-                                        AgentInstruction.session_id == session_id,
-                                        AgentInstruction.status == "pending",
-                                        or_(
-                                            AgentInstruction.expires_at.is_(None),
-                                            AgentInstruction.expires_at > datetime.now(),
-                                        ),
-                                    )
-                                )
-                                .order_by(
-                                    AgentInstruction.priority.desc(),  # High priority first
-                                    AgentInstruction.sequence_number.asc(),  # Lower sequence numbers first
-                                    AgentInstruction.created_at.asc(),  # Older instructions first
-                                )
-                            )
-                        )
-                        .scalars()
-                        .all()
-                    )
-
-                    for instruction in pending_instructions:
-                        # Mark as sent
-                        if instruction.status == "pending":
-                            instruction.status = "sent"
-                            instruction.sent_at = datetime.now()
-                            await db.commit()
-
-                        # Send instruction to agent
-                        instruction_data = {
-                            "type": "instruction",
-                            "instruction_id": instruction.instruction_id,
-                            "agent_id": agent_id,
-                            "session_id": session_id,
-                            "instruction_type": instruction.instruction_type,
-                            "payload": instruction.payload,
-                            "sequence_number": instruction.sequence_number,
-                            "priority": instruction.priority,
-                            "created_at": instruction.created_at.isoformat(),
-                            "expires_at": instruction.expires_at.isoformat() if instruction.expires_at else None,
-                            "metadata": instruction.instruction_metadata,
-                        }
-
-                        yield {"event": "instruction", "data": json.dumps(instruction_data)}
-
-                        logger.info(f"Sent instruction {instruction.instruction_id} to agent {agent_id}")
-
-                except Exception as e:
-                    logger.error(f"Error processing instructions for session {session_id}: {e}")
-
-                # Update session activity
-                session.last_activity_at = datetime.now()
-                await db.commit()
-
-                # Wait 5 seconds before next poll
-                await asyncio.sleep(5)
-                heartbeat_counter += 1
-
         except asyncio.CancelledError:
             logger.info(f"SSE connection closed for agent {agent_id}, session {session_id}")
-            # Connection closed by client
             connection_obj = (
                 (await db.execute(select(AgentConnection).where(AgentConnection.connection_id == connection_id)))
                 .scalars()
@@ -1857,7 +1892,6 @@ async def stream_instructions(agent_id: str, session_id: str, db: AsyncSession =
             raise
         except Exception as e:
             logger.error(f"SSE stream error for agent {agent_id}: {e}")
-            # Unexpected error
             connection_obj = (
                 (await db.execute(select(AgentConnection).where(AgentConnection.connection_id == connection_id)))
                 .scalars()
@@ -1870,6 +1904,16 @@ async def stream_instructions(agent_id: str, session_id: str, db: AsyncSession =
                 await db.commit()
                 logger.info(f"Closed connection {connection_id} with reason: error: {str(e)}")
             raise
+        finally:
+            if listen_conn is not None:
+                try:
+                    await listen_conn.remove_listener(INSTRUCTION_CHANNEL, _on_notify)
+                except Exception as e:
+                    logger.warning(f"Failed to remove LISTEN listener for session {session_id}: {e}")
+                try:
+                    await listen_conn.close()
+                except Exception as e:
+                    logger.warning(f"Failed to close LISTEN connection for session {session_id}: {e}")
 
     return EventSourceResponse(event_generator())
 
@@ -2254,6 +2298,7 @@ async def create_test_instruction(session_id: str, instruction_data: dict, db: A
         instruction_metadata=instruction_data.get("metadata", {}),
     )
     db.add(instruction)
+    await notify_instruction_pending(db, session_id)
     await db.commit()
 
     logger.info(f"Created instruction {instruction.instruction_id} for session {session_id}")
