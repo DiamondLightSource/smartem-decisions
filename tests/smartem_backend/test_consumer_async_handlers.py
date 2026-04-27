@@ -143,3 +143,92 @@ class TestActiveAgentSessionsHelper:
         result = asyncio.run(consumer._get_active_agent_sessions())
 
         assert result == [sentinel, sentinel]
+
+
+class TestMotionCorrectionComplete:
+    base_event = {
+        "event_type": "motion_correction.completed",
+        "micrograph_uuid": "mic-1",
+        "total_motion": 1.5,
+        "average_motion": 0.1,
+    }
+
+    def test_publishes_registered_event(self, db, monkeypatch, stub_publisher):
+        grid_row = MagicMock()
+        grid_row.grid_uuid = "grid-1"
+        db.execute.return_value.one.return_value = (grid_row,)
+        db.execute.return_value.scalars.return_value.all.return_value = []
+
+        async def _stub_check(*args, **kwargs):
+            return 0.7
+
+        async def _stub_prior(*args, **kwargs):
+            return None
+
+        async def _stub_publish(*args, **kwargs):
+            return True
+
+        monkeypatch.setattr(consumer, "_check_against_statistics", _stub_check)
+        monkeypatch.setattr(consumer, "prior_update", _stub_prior)
+        monkeypatch.setattr(consumer, "publish_motion_correction_registered", _stub_publish)
+
+        import asyncio
+
+        asyncio.run(consumer.handle_motion_correction_complete(dict(self.base_event)))
+
+        assert db.add.call_count == 1
+        assert db.commit.await_count == 1
+
+
+class TestRefreshPredictions:
+    base_event = {
+        "event_type": "refresh.predictions",
+        "grid_uuid": "grid-1",
+    }
+
+    def test_calls_predictions_helpers(self, db, monkeypatch):
+        called: list[str] = []
+
+        async def _stub_overall(grid_uuid, session):
+            called.append(f"overall:{grid_uuid}")
+
+        async def _stub_ordered(grid_uuid, session):
+            called.append(f"ordered:{grid_uuid}")
+            return []
+
+        monkeypatch.setattr(consumer, "overall_predictions_update", _stub_overall)
+        monkeypatch.setattr(consumer, "ordered_holes", _stub_ordered)
+
+        import asyncio
+
+        asyncio.run(consumer.handle_refresh_predictions(dict(self.base_event)))
+
+        assert called == ["overall:grid-1", "ordered:grid-1"]
+
+
+class TestGridCreated:
+    base_event = {
+        "event_type": "grid.created",
+        "uuid": "grid-1",
+        "name": "g1",
+        "data_directory": "/tmp/x",
+        "atlas_directory": "/tmp/x/atlas",
+        "scan_start_datetime": None,
+        "scan_end_datetime": None,
+        "instrument_id": None,
+        "acquisition_uuid": "acq-1",
+    }
+
+    def test_invokes_initialise(self, monkeypatch):
+        called: list[str] = []
+
+        async def _stub(grid_uuid, engine=None):
+            called.append(grid_uuid)
+
+        monkeypatch.setattr(consumer, "initialise_all_models_for_grid", _stub)
+
+        import asyncio
+
+        asyncio.run(consumer.handle_grid_created(dict(self.base_event)))
+
+        assert called == ["grid-1"]

@@ -2,8 +2,9 @@ from datetime import datetime, timedelta
 
 import numpy as np
 from sqlalchemy import func
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import aliased
-from sqlmodel import Session, and_, or_, select
+from sqlmodel import and_, or_, select
 
 from smartem_backend.model.database import (
     CurrentQualityGroupPrediction,
@@ -22,73 +23,97 @@ from smartem_backend.model.database import (
 from smartem_common.entity_status import ModelLevel
 
 
-def prior_update(
+async def prior_update(
     quality: float,
     micrograph_uuid: str,
     metric: str,
-    session: Session,
+    session: AsyncSession,
 ) -> None:
     # get the grid uuid from the micrograph
     # this should only ever produce a single response
-    hierarchy_response = session.exec(
-        select(Micrograph, FoilHole, GridSquare)
-        .where(Micrograph.uuid == micrograph_uuid)
-        .where(FoilHole.uuid == Micrograph.foilhole_uuid)
-        .where(FoilHole.gridsquare_uuid == GridSquare.uuid)
+    hierarchy_response = (
+        await session.execute(
+            select(Micrograph, FoilHole, GridSquare)
+            .where(Micrograph.uuid == micrograph_uuid)
+            .where(FoilHole.uuid == Micrograph.foilhole_uuid)
+            .where(FoilHole.gridsquare_uuid == GridSquare.uuid)
+        )
     ).one()
     grid_uuid = hierarchy_response[2].grid_uuid
     square_uuid = hierarchy_response[2].uuid
     hole_uuid = hierarchy_response[1].uuid
 
-    model_names = [(n.name, n.level) for n in session.exec(select(QualityPredictionModel)).all()]
+    model_rows = (await session.execute(select(QualityPredictionModel))).scalars().all()
+    model_names = [(n.name, n.level) for n in model_rows]
 
     # main prior update logic
     posterior = 0
     delta_missing = 1
     updates = []
     for m, model_level in model_names:
-        weight_row = session.exec(
-            select(CurrentQualityPredictionModelWeight)
-            .where(CurrentQualityPredictionModelWeight.grid_uuid == grid_uuid)
-            .where(CurrentQualityPredictionModelWeight.prediction_model_name == m)
-            .where(CurrentQualityPredictionModelWeight.metric_name == metric)
-        ).one()
+        weight_row = (
+            (
+                await session.execute(
+                    select(CurrentQualityPredictionModelWeight)
+                    .where(CurrentQualityPredictionModelWeight.grid_uuid == grid_uuid)
+                    .where(CurrentQualityPredictionModelWeight.prediction_model_name == m)
+                    .where(CurrentQualityPredictionModelWeight.metric_name == metric)
+                )
+            )
+            .scalars()
+            .one()
+        )
 
         if model_level == ModelLevel.FOILHOLEGROUP:
             # predictions are stored once per group; look up via group membership
-            pred_value = session.exec(
-                select(CurrentQualityGroupPrediction.value)
-                .where(CurrentQualityGroupPrediction.group_uuid == FoilHoleGroupMembership.group_uuid)
-                .where(FoilHoleGroupMembership.foilhole_uuid == hole_uuid)
-                .where(CurrentQualityGroupPrediction.prediction_model_name == m)
-                .where(
-                    or_(
-                        CurrentQualityGroupPrediction.metric_name == metric,
-                        CurrentQualityGroupPrediction.metric_name == None,  # noqa: E711
+            pred_value = (
+                (
+                    await session.execute(
+                        select(CurrentQualityGroupPrediction.value)
+                        .where(CurrentQualityGroupPrediction.group_uuid == FoilHoleGroupMembership.group_uuid)
+                        .where(FoilHoleGroupMembership.foilhole_uuid == hole_uuid)
+                        .where(CurrentQualityGroupPrediction.prediction_model_name == m)
+                        .where(
+                            or_(
+                                CurrentQualityGroupPrediction.metric_name == metric,
+                                CurrentQualityGroupPrediction.metric_name == None,  # noqa: E711
+                            )
+                        )
                     )
                 )
-            ).first()
+                .scalars()
+                .first()
+            )
         else:
             # FOILHOLE and GRIDSQUARE predictions stored in CurrentQualityPrediction
-            pred_row = session.exec(
-                select(CurrentQualityPrediction)
-                .where(
-                    or_(
-                        and_(
-                            CurrentQualityPrediction.foilhole_uuid == hole_uuid,
-                            CurrentQualityPrediction.gridsquare_uuid == square_uuid,
-                        ),
-                        and_(
-                            CurrentQualityPrediction.foilhole_uuid == None,  # noqa: E711
-                            CurrentQualityPrediction.gridsquare_uuid == square_uuid,
-                        ),
+            pred_row = (
+                (
+                    await session.execute(
+                        select(CurrentQualityPrediction)
+                        .where(
+                            or_(
+                                and_(
+                                    CurrentQualityPrediction.foilhole_uuid == hole_uuid,
+                                    CurrentQualityPrediction.gridsquare_uuid == square_uuid,
+                                ),
+                                and_(
+                                    CurrentQualityPrediction.foilhole_uuid == None,  # noqa: E711
+                                    CurrentQualityPrediction.gridsquare_uuid == square_uuid,
+                                ),
+                            )
+                        )
+                        .where(CurrentQualityPrediction.prediction_model_name == m)
+                        .where(
+                            or_(
+                                CurrentQualityPrediction.metric_name == metric,
+                                CurrentQualityPrediction.metric_name == None,  # noqa: E711
+                            )
+                        )
                     )
                 )
-                .where(CurrentQualityPrediction.prediction_model_name == m)
-                .where(
-                    or_(CurrentQualityPrediction.metric_name == metric, CurrentQualityPrediction.metric_name == None)  # noqa: E711
-                )
-            ).first()
+                .scalars()
+                .first()
+            )
             pred_value = pred_row.value if pred_row is not None else None
 
         if pred_value is None:
@@ -116,47 +141,57 @@ def prior_update(
     for update in updates:
         update.weight = delta_missing * update.weight / posterior
         session.add(update)
-    session.commit()
+    await session.commit()
     return None
 
 
-def overall_predictions_update(grid_uuid: str, session: Session) -> None:
+async def overall_predictions_update(grid_uuid: str, session: AsyncSession) -> None:
     # check grid to see if it has been long enough to refresh predictions
-    grid = session.exec(select(Grid).where(Grid.uuid == grid_uuid)).one()
+    grid = (await session.execute(select(Grid).where(Grid.uuid == grid_uuid))).scalars().one()
     if grid.prediction_updated_time > datetime.now() - timedelta(seconds=60):
         return None
 
     # seems easier to just collect the model name for future use here
-    model_names = [(n.name, n.level) for n in session.exec(select(QualityPredictionModel)).all()]
+    model_rows = (await session.execute(select(QualityPredictionModel))).scalars().all()
+    model_names = [(n.name, n.level) for n in model_rows]
     # also get all quality metric names
-    metric_names = [m.name for m in session.exec(select(QualityMetric)).all()]
-    weights = {
-        (w.metric_name, w.prediction_model_name): w.weight
-        for w in session.exec(
-            select(CurrentQualityPredictionModelWeight).where(
-                CurrentQualityPredictionModelWeight.grid_uuid == grid_uuid
+    metric_rows = (await session.execute(select(QualityMetric))).scalars().all()
+    metric_names = [m.name for m in metric_rows]
+    weight_rows = (
+        (
+            await session.execute(
+                select(CurrentQualityPredictionModelWeight).where(
+                    CurrentQualityPredictionModelWeight.grid_uuid == grid_uuid
+                )
             )
-        ).all()
-    }
+        )
+        .scalars()
+        .all()
+    )
+    weights = {(w.metric_name, w.prediction_model_name): w.weight for w in weight_rows}
 
-    grid_square_counts = session.exec(
-        select(GridSquare.uuid, func.count(FoilHole.uuid))
-        .where(GridSquare.uuid == FoilHole.gridsquare_uuid)
-        .where(FoilHole.x_location != None)  # noqa: E711
-        .where(GridSquare.grid_uuid == grid_uuid)
-        .order_by(GridSquare.uuid)
-        .group_by(GridSquare.uuid)
+    grid_square_counts = (
+        await session.execute(
+            select(GridSquare.uuid, func.count(FoilHole.uuid))
+            .where(GridSquare.uuid == FoilHole.gridsquare_uuid)
+            .where(FoilHole.x_location != None)  # noqa: E711
+            .where(GridSquare.grid_uuid == grid_uuid)
+            .order_by(GridSquare.uuid)
+            .group_by(GridSquare.uuid)
+        )
     ).all()
     num_foil_holes = np.sum([gc[1] for gc in grid_square_counts])
     value_matrix = np.zeros((len(metric_names), len(model_names), num_foil_holes))
 
     # Ordered list of (gridsquare_uuid, foilhole_uuid) matching the value_matrix column order
-    ordered_foilhole_ids = session.exec(
-        select(GridSquare.uuid, FoilHole.uuid)
-        .where(GridSquare.uuid == FoilHole.gridsquare_uuid)
-        .where(FoilHole.x_location != None)  # noqa: E711
-        .where(GridSquare.grid_uuid == grid_uuid)
-        .order_by(GridSquare.uuid, FoilHole.uuid)
+    ordered_foilhole_ids = (
+        await session.execute(
+            select(GridSquare.uuid, FoilHole.uuid)
+            .where(GridSquare.uuid == FoilHole.gridsquare_uuid)
+            .where(FoilHole.x_location != None)  # noqa: E711
+            .where(GridSquare.grid_uuid == grid_uuid)
+            .order_by(GridSquare.uuid, FoilHole.uuid)
+        )
     ).all()
 
     for imet, metric in enumerate(metric_names):
@@ -172,20 +207,30 @@ def overall_predictions_update(grid_uuid: str, session: Session) -> None:
                     .where(CurrentQualityPrediction.grid_uuid == grid_uuid)
                     .where(CurrentQualityPrediction.prediction_model_name == model)
                 )
-                if (
-                    session.exec(
-                        select(func.count(CurrentQualityPrediction.id))
-                        .where(metric_filter)
-                        .where(CurrentQualityPrediction.grid_uuid == grid_uuid)
-                        .where(CurrentQualityPrediction.prediction_model_name == model)
-                    ).one()
-                    == num_foil_holes
-                ):
-                    preds = session.exec(
-                        pred_query.order_by(
-                            CurrentQualityPrediction.gridsquare_uuid, CurrentQualityPrediction.foilhole_uuid
+                count = (
+                    (
+                        await session.execute(
+                            select(func.count(CurrentQualityPrediction.id))
+                            .where(metric_filter)
+                            .where(CurrentQualityPrediction.grid_uuid == grid_uuid)
+                            .where(CurrentQualityPrediction.prediction_model_name == model)
                         )
-                    ).all()
+                    )
+                    .scalars()
+                    .one()
+                )
+                if count == num_foil_holes:
+                    preds = (
+                        (
+                            await session.execute(
+                                pred_query.order_by(
+                                    CurrentQualityPrediction.gridsquare_uuid, CurrentQualityPrediction.foilhole_uuid
+                                )
+                            )
+                        )
+                        .scalars()
+                        .all()
+                    )
                 else:
                     pred_alias = aliased(CurrentQualityPrediction, pred_query.subquery())
                     gridsquare_subquery = (
@@ -202,7 +247,7 @@ def overall_predictions_update(grid_uuid: str, session: Session) -> None:
                         .outerjoin(pred_alias, gridsquare_alias.uuid == pred_alias.foilhole_uuid)
                         .order_by(gridsquare_alias.gridsquare_uuid, gridsquare_alias.uuid)
                     )
-                    preds = session.exec(preds_query).all()
+                    preds = (await session.execute(preds_query)).scalars().all()
                 value_matrix[imet, imod] = np.array(
                     [
                         weights[(metric, model)] * p.value if p is not None else weights[(metric, model)] * 0.5
@@ -217,14 +262,25 @@ def overall_predictions_update(grid_uuid: str, session: Session) -> None:
                     .where(CurrentQualityPrediction.grid_uuid == grid_uuid)
                     .where(CurrentQualityPrediction.prediction_model_name == model)
                 )
-                if session.exec(
-                    select(func.count(CurrentQualityPrediction.id))
-                    .where(metric_filter)
-                    .where(CurrentQualityPrediction.gridsquare_uuid.in_([gc[0] for gc in grid_square_counts]))
-                    .where(CurrentQualityPrediction.grid_uuid == grid_uuid)
-                    .where(CurrentQualityPrediction.prediction_model_name == model)
-                ).one() == len(grid_square_counts):
-                    preds = session.exec(pred_query.order_by(CurrentQualityPrediction.gridsquare_uuid)).all()
+                count = (
+                    (
+                        await session.execute(
+                            select(func.count(CurrentQualityPrediction.id))
+                            .where(metric_filter)
+                            .where(CurrentQualityPrediction.gridsquare_uuid.in_([gc[0] for gc in grid_square_counts]))
+                            .where(CurrentQualityPrediction.grid_uuid == grid_uuid)
+                            .where(CurrentQualityPrediction.prediction_model_name == model)
+                        )
+                    )
+                    .scalars()
+                    .one()
+                )
+                if count == len(grid_square_counts):
+                    preds = (
+                        (await session.execute(pred_query.order_by(CurrentQualityPrediction.gridsquare_uuid)))
+                        .scalars()
+                        .all()
+                    )
                 else:
                     pred_alias = aliased(CurrentQualityPrediction, pred_query.subquery())
                     gridsquare_subquery = (
@@ -240,7 +296,7 @@ def overall_predictions_update(grid_uuid: str, session: Session) -> None:
                         .outerjoin(pred_alias, gridsquare_alias.uuid == pred_alias.gridsquare_uuid)
                         .order_by(gridsquare_alias.uuid)
                     )
-                    preds = session.exec(preds_query).all()
+                    preds = (await session.execute(preds_query)).scalars().all()
                 ctotal = 0
                 for p, c in zip(preds, grid_square_counts, strict=True):
                     sub_values = np.ndarray(c[1])
@@ -251,17 +307,19 @@ def overall_predictions_update(grid_uuid: str, session: Session) -> None:
                     ctotal += c[1]
             elif model_level == ModelLevel.FOILHOLEGROUP:
                 # Build a foilhole_uuid -> value map from group predictions for this model/metric
-                group_preds = session.exec(
-                    select(FoilHoleGroupMembership.foilhole_uuid, CurrentQualityGroupPrediction.value)
-                    .where(CurrentQualityGroupPrediction.grid_uuid == grid_uuid)
-                    .where(CurrentQualityGroupPrediction.prediction_model_name == model)
-                    .where(
-                        or_(
-                            CurrentQualityGroupPrediction.metric_name == metric,
-                            CurrentQualityGroupPrediction.metric_name == None,  # noqa: E711
+                group_preds = (
+                    await session.execute(
+                        select(FoilHoleGroupMembership.foilhole_uuid, CurrentQualityGroupPrediction.value)
+                        .where(CurrentQualityGroupPrediction.grid_uuid == grid_uuid)
+                        .where(CurrentQualityGroupPrediction.prediction_model_name == model)
+                        .where(
+                            or_(
+                                CurrentQualityGroupPrediction.metric_name == metric,
+                                CurrentQualityGroupPrediction.metric_name == None,  # noqa: E711
+                            )
                         )
+                        .where(FoilHoleGroupMembership.group_uuid == CurrentQualityGroupPrediction.group_uuid)
                     )
-                    .where(FoilHoleGroupMembership.group_uuid == CurrentQualityGroupPrediction.group_uuid)
                 ).all()
                 group_value_by_fh = dict(group_preds)
                 value_matrix[imet, imod] = np.array(
@@ -273,18 +331,26 @@ def overall_predictions_update(grid_uuid: str, session: Session) -> None:
 
     summed = np.sum(value_matrix, axis=1)
     results = np.prod(summed, axis=0) ** (1 / len(summed))
-    overall_preds = session.exec(
-        select(OverallQualityPrediction)
-        .where(OverallQualityPrediction.grid_uuid == grid_uuid)
-        .order_by(OverallQualityPrediction.gridsquare_uuid, OverallQualityPrediction.foilhole_uuid)
-    ).all()
+    overall_preds = (
+        (
+            await session.execute(
+                select(OverallQualityPrediction)
+                .where(OverallQualityPrediction.grid_uuid == grid_uuid)
+                .order_by(OverallQualityPrediction.gridsquare_uuid, OverallQualityPrediction.foilhole_uuid)
+            )
+        )
+        .scalars()
+        .all()
+    )
     if not overall_preds:
-        ids = session.exec(
-            select(GridSquare.uuid, FoilHole.uuid)
-            .where(GridSquare.uuid == FoilHole.gridsquare_uuid)
-            .where(FoilHole.x_location != None)  # noqa: E711
-            .where(GridSquare.uuid == grid_uuid)
-            .order_by(GridSquare.uuid, FoilHole.uuid)
+        ids = (
+            await session.execute(
+                select(GridSquare.uuid, FoilHole.uuid)
+                .where(GridSquare.uuid == FoilHole.gridsquare_uuid)
+                .where(FoilHole.x_location != None)  # noqa: E711
+                .where(GridSquare.uuid == grid_uuid)
+                .order_by(GridSquare.uuid, FoilHole.uuid)
+            )
         ).all()
         overall_preds = [
             OverallQualityPrediction(grid_uuid=grid_uuid, gridsquare_uuid=i[0], foilhole_uuid=i[1], value=float(v))
@@ -296,5 +362,5 @@ def overall_predictions_update(grid_uuid: str, session: Session) -> None:
     grid.prediction_updated_time = datetime.now()
     session.add_all(overall_preds)
     session.add(grid)
-    session.commit()
+    await session.commit()
     return None

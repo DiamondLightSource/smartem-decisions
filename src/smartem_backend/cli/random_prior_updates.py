@@ -1,58 +1,66 @@
+import asyncio
 import random
-import threading
-import time
 
 import typer
-from sqlalchemy.engine import Engine
-from sqlmodel import Session, select
+from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker
+from sqlmodel import select
 
 from smartem_backend.model.database import FoilHole, Grid, GridSquare, Micrograph
 from smartem_backend.predictions.update import prior_update
-from smartem_backend.utils import get_db_engine, logger
+from smartem_backend.utils import logger, setup_postgres_async_connection
 
-# Default time ranges for processing steps (in seconds)
 DEFAULT_MOTION_CORRECTION_DELAY = (1.0, 3.0)
 DEFAULT_CTF_DELAY = (2.0, 5.0)
 DEFAULT_PARTICLE_PICKING_DELAY = (3.0, 8.0)
 DEFAULT_PARTICLE_SELECTION_DELAY = (2.0, 6.0)
 
+# Hold strong references to background simulation tasks so they aren't garbage
+# collected mid-flight (asyncio only weakly retains tasks unless something awaits them).
+_background_tasks: set[asyncio.Task] = set()
 
-def perform_random_updates(
+
+def _make_session_factory(engine: AsyncEngine) -> async_sessionmaker[AsyncSession]:
+    return async_sessionmaker(
+        bind=engine, class_=AsyncSession, autocommit=False, autoflush=False, expire_on_commit=False
+    )
+
+
+async def perform_random_updates(
     grid_uuid: str | None = None,
     random_range: tuple[float, float] = (0, 1),
     metric: str = "motioncorrection",
-    engine: Engine = None,
+    engine: AsyncEngine | None = None,
 ) -> None:
     if engine is None:
-        engine = get_db_engine()
+        engine = setup_postgres_async_connection()
+    session_factory = _make_session_factory(engine)
 
-    with Session(engine) as sess:
+    async with session_factory() as sess:
         if grid_uuid is None:
-            grid = sess.exec(select(Grid)).first()
+            grid = (await sess.execute(select(Grid))).scalars().first()
             grid_uuid = grid.uuid
-        mics = sess.exec(
-            select(Micrograph, FoilHole, GridSquare)
-            .where(Micrograph.foilhole_uuid == FoilHole.uuid)
-            .where(FoilHole.gridsquare_uuid == GridSquare.uuid)
-            .where(GridSquare.grid_uuid == grid_uuid)
+        mics = (
+            await sess.execute(
+                select(Micrograph, FoilHole, GridSquare)
+                .where(Micrograph.foilhole_uuid == FoilHole.uuid)
+                .where(FoilHole.gridsquare_uuid == GridSquare.uuid)
+                .where(GridSquare.grid_uuid == grid_uuid)
+            )
         ).all()
         for m in mics:
-            prior_update(random.uniform(random_range[0], random_range[1]) < 0.5, m[0].uuid, sess, metric=metric)
+            quality = float(random.uniform(random_range[0], random_range[1]) < 0.5)
+            await prior_update(quality, m[0].uuid, metric, sess)
     return None
 
 
-def simulate_processing_pipeline(micrograph_uuid: str, engine: Engine = None) -> None:
-    """
-    Simulate the data processing pipeline for a micrograph with random delays.
+async def simulate_processing_pipeline(micrograph_uuid: str, engine: AsyncEngine | None = None) -> None:
+    """Simulate the data processing pipeline for a micrograph with random delays.
 
-    Pipeline: motion correction → ctf → particle picking → particle selection
-
-    Args:
-        micrograph_uuid: UUID of the micrograph to process
-        engine: Optional database engine (uses singleton if not provided)
+    Pipeline: motion correction -> ctf -> particle picking -> particle selection.
     """
     if engine is None:
-        engine = get_db_engine()
+        engine = setup_postgres_async_connection()
+    session_factory = _make_session_factory(engine)
 
     processing_steps = [
         ("motion_correction", DEFAULT_MOTION_CORRECTION_DELAY),
@@ -64,45 +72,41 @@ def simulate_processing_pipeline(micrograph_uuid: str, engine: Engine = None) ->
     logger.info(f"Starting processing pipeline simulation for micrograph {micrograph_uuid}")
 
     for step_name, delay_range in processing_steps:
-        # Random delay for this processing step
         delay = random.uniform(delay_range[0], delay_range[1])
         logger.debug(f"Simulating {step_name} for micrograph {micrograph_uuid}, delay: {delay:.2f}s")
-        time.sleep(delay)
+        await asyncio.sleep(delay)
 
-        # Perform random weight update for this step - reuse the same engine
         try:
-            with Session(engine) as sess:
-                # Generate random quality result (True/False)
-                quality_result = random.choice([True, False])
-                prior_update(quality=quality_result, micrograph_uuid=micrograph_uuid, session=sess, metric=step_name)
+            async with session_factory() as sess:
+                quality_result = float(random.choice([True, False]))
+                await prior_update(quality_result, micrograph_uuid, step_name, sess)
                 logger.info(f"Completed {step_name} for micrograph {micrograph_uuid}, quality: {quality_result}")
         except Exception as e:
             logger.error(f"Error in {step_name} for micrograph {micrograph_uuid}: {e}")
-            # Continue with next step even if one fails
 
     logger.info(f"Completed processing pipeline simulation for micrograph {micrograph_uuid}")
 
 
-def simulate_processing_pipeline_async(micrograph_uuid: str, engine: Engine = None) -> None:
+async def simulate_processing_pipeline_async(micrograph_uuid: str, engine: AsyncEngine | None = None) -> None:
+    """Spawn the processing pipeline simulation as a background asyncio task.
+
+    Returns once the task is scheduled; the simulation runs concurrently on the
+    consumer's event loop and does not block the caller.
     """
-    Start the processing pipeline simulation in a background thread.
-
-    Args:
-        micrograph_uuid: UUID of the micrograph to process
-        engine: Optional database engine (uses singleton if not provided)
-    """
-    if engine is None:
-        engine = get_db_engine()
-
-    def run_simulation():
-        simulate_processing_pipeline(micrograph_uuid, engine)
-
-    # Start simulation in background thread so it doesn't block the consumer
-    thread = threading.Thread(target=run_simulation, daemon=True)
-    thread.start()
+    task = asyncio.create_task(simulate_processing_pipeline(micrograph_uuid, engine))
+    _background_tasks.add(task)
+    task.add_done_callback(_background_tasks.discard)
     logger.debug(f"Started background processing simulation for micrograph {micrograph_uuid}")
 
 
+def _typer_entry(
+    grid_uuid: str | None = None,
+    random_range: tuple[float, float] = (0, 1),
+    metric: str = "motioncorrection",
+) -> None:
+    asyncio.run(perform_random_updates(grid_uuid, random_range, metric))
+
+
 def run() -> None:
-    typer.run(perform_random_updates)
+    typer.run(_typer_entry)
     return None
