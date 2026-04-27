@@ -26,6 +26,7 @@ from smartem_backend.cli.random_model_predictions import (
     generate_predictions_for_gridsquare,
 )
 from smartem_backend.cli.random_prior_updates import simulate_processing_pipeline_async
+from smartem_backend.instruction_notify import notify_instruction_pending
 from smartem_backend.log_manager import LogConfig, LogManager
 from smartem_backend.model.database import (
     AgentInstruction,
@@ -1004,6 +1005,7 @@ async def handle_agent_instruction_created(event_data: dict[str, Any]) -> None:
                 instruction_metadata=event.instruction_metadata or {},
             )
             session.add(instruction)
+            await notify_instruction_pending(session, event.session_id)
             await session.commit()
         logger.info(f"Successfully persisted instruction {event.instruction_id} to database")
     except ValidationError as e:
@@ -1066,6 +1068,7 @@ async def handle_agent_instruction_expired(event_data: dict[str, Any]) -> None:
                 instruction.status = "pending"
                 instruction.retry_count = event.retry_count
                 resolution = "retry"
+                await notify_instruction_pending(session, instruction.session_id)
             await session.commit()
         if resolution == "expired":
             logger.info(f"Instruction {event.instruction_id} marked as expired after {event.retry_count} retries")

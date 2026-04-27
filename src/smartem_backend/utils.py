@@ -141,6 +141,19 @@ def _async_postgres_url() -> str:
     )
 
 
+def get_asyncpg_dsn() -> str:
+    """Return a DSN suitable for `asyncpg.connect()` (no SQLAlchemy driver suffix).
+
+    Used for dedicated asyncpg connections that need bare-driver behaviour, e.g.
+    LISTEN/NOTIFY listeners that live outside the SQLAlchemy session pool.
+    """
+    env = _load_postgres_env()
+    return (
+        f"postgresql://{env['POSTGRES_USER']}:{env['POSTGRES_PASSWORD']}"
+        f"@{env['POSTGRES_HOST']}:{env['POSTGRES_PORT']}/{env['POSTGRES_DB']}"
+    )
+
+
 def setup_postgres_connection(echo=False, force_new=False) -> Engine:
     """
     Get or create a singleton database engine with connection pooling.
