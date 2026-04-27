@@ -16,10 +16,8 @@ import scipy.stats
 from aio_pika.abc import AbstractIncomingMessage
 from dotenv import load_dotenv
 from pydantic import ValidationError
-from sqlalchemy.engine import Engine
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker
-from sqlmodel import Session, select
-from starlette.concurrency import run_in_threadpool
+from sqlmodel import select
 
 from smartem_backend import mq_publisher as mq_publisher_module
 from smartem_backend.cli.initialise_prediction_model_weights import initialise_all_models_for_grid
@@ -90,7 +88,7 @@ from smartem_backend.predictions.acquisition import ordered_holes
 from smartem_backend.predictions.update import overall_predictions_update, prior_update
 from smartem_backend.rmq import AioPikaConsumer, AioPikaPublisher, decode_event_body
 from smartem_backend.rmq.config import load_rmq_connection_url, load_rmq_topology
-from smartem_backend.utils import get_db_engine, load_conf, setup_logger, setup_postgres_async_connection
+from smartem_backend.utils import load_conf, setup_logger, setup_postgres_async_connection
 
 load_dotenv(override=False)  # Don't override existing env vars as these might be coming from k8s
 conf = load_conf()
@@ -99,17 +97,14 @@ conf = load_conf()
 log_manager = LogManager.get_instance("smartem_backend")
 logger = log_manager.configure(LogConfig(level=logging.ERROR, console=True))
 
-db_engine: Engine
 async_db_engine: AsyncEngine
 SessionLocal: async_sessionmaker[AsyncSession]
 if os.getenv("SKIP_DB_INIT", "false").lower() != "true":
-    db_engine = get_db_engine()
     async_db_engine = setup_postgres_async_connection()
     SessionLocal = async_sessionmaker(
         bind=async_db_engine, class_=AsyncSession, autocommit=False, autoflush=False, expire_on_commit=False
     )
 else:
-    db_engine = None  # type: ignore[assignment]
     async_db_engine = None  # type: ignore[assignment]
     SessionLocal = None  # type: ignore[assignment]
 
@@ -180,15 +175,10 @@ async def handle_grid_created(event_data: dict[str, Any]) -> None:
     try:
         event = GridCreatedEvent(**event_data)
         logger.info(f"Grid created event: {event.model_dump()}")
-
-        def _initialise():
-            initialise_all_models_for_grid(event.uuid, engine=db_engine)
-
         try:
-            await run_in_threadpool(_initialise)
+            await initialise_all_models_for_grid(event.uuid)
             logger.info(f"Successfully initialised prediction model weights for grid {event.uuid}")
         except Exception as weight_init_error:
-            # Don't fail the entire event processing if weight initialisation fails.
             logger.error(f"Failed to initialise prediction model weights for grid {event.uuid}: {weight_init_error}")
     except ValidationError as e:
         logger.error(f"Validation error processing grid created event: {e}")
@@ -240,12 +230,8 @@ async def handle_gridsquare_created(event_data: dict[str, Any]) -> None:
     try:
         event = GridSquareCreatedEvent(**event_data)
         logger.info(f"GridSquare created event: {event.model_dump()}")
-
-        def _generate():
-            generate_predictions_for_gridsquare(event.uuid, event.grid_uuid, engine=db_engine)
-
         try:
-            await run_in_threadpool(_generate)
+            await generate_predictions_for_gridsquare(event.uuid, event.grid_uuid)
             logger.info(f"Successfully generated predictions for gridsquare {event.uuid}")
         except Exception as prediction_error:
             logger.error(f"Failed to generate predictions for gridsquare {event.uuid}: {prediction_error}")
@@ -309,12 +295,8 @@ async def handle_foilhole_created(event_data: dict[str, Any]) -> None:
     try:
         event = FoilHoleCreatedEvent(**event_data)
         logger.info(f"FoilHole created event: {event.model_dump()}")
-
-        def _generate():
-            generate_predictions_for_foilhole(event.uuid, event.gridsquare_uuid, engine=db_engine)
-
         try:
-            await run_in_threadpool(_generate)
+            await generate_predictions_for_foilhole(event.uuid, event.gridsquare_uuid)
             logger.info(f"Successfully generated predictions for foilhole {event.uuid}")
         except Exception as prediction_error:
             logger.error(f"Failed to generate predictions for foilhole {event.uuid}: {prediction_error}")
@@ -348,14 +330,8 @@ async def handle_micrograph_created(event_data: dict[str, Any]) -> None:
     try:
         event = MicrographCreatedEvent(**event_data)
         logger.info(f"Micrograph created event: {event.model_dump()}")
-
-        # simulate_processing_pipeline_async spawns its own background worker;
-        # run it in the threadpool so any blocking setup doesn't stall the loop.
-        def _simulate():
-            simulate_processing_pipeline_async(event.uuid, engine=db_engine)
-
         try:
-            await run_in_threadpool(_simulate)
+            await simulate_processing_pipeline_async(event.uuid)
             logger.info(f"Started processing pipeline simulation for micrograph {event.uuid}")
         except Exception as simulation_error:
             logger.error(f"Failed to start processing simulation for micrograph {event.uuid}: {simulation_error}")
@@ -385,28 +361,33 @@ async def handle_micrograph_deleted(event_data: dict[str, Any]) -> None:
         logger.error(f"Error processing micrograph deleted event: {e}")
 
 
-def _check_against_statistics(
+async def _check_against_statistics(
     metric_name: str,
     micrograph_uuid: str,
     comparison_value: float,
     larger_better: bool = False,
 ) -> float:
-    with Session(db_engine) as session:
-        grid_uuid = (
-            session.exec(
+    async with SessionLocal() as session:
+        grid_row = (
+            await session.execute(
                 select(GridSquare, FoilHole, Micrograph)
                 .where(GridSquare.uuid == FoilHole.gridsquare_uuid)
                 .where(FoilHole.uuid == Micrograph.foilhole_uuid)
                 .where(Micrograph.uuid == micrograph_uuid)
             )
-            .one()[0]
-            .grid_uuid
+        ).one()
+        grid_uuid = grid_row[0].grid_uuid
+        metric_stats = (
+            (
+                await session.execute(
+                    select(QualityMetricStatistics)
+                    .where(QualityMetricStatistics.grid_uuid == grid_uuid)
+                    .where(QualityMetricStatistics.name == metric_name)
+                )
+            )
+            .scalars()
+            .all()
         )
-        metric_stats = session.exec(
-            select(QualityMetricStatistics)
-            .where(QualityMetricStatistics.grid_uuid == grid_uuid)
-            .where(QualityMetricStatistics.name == metric_name)
-        ).all()
     if not metric_stats:
         return 1
     elif metric_stats[0].count < 2:
@@ -426,47 +407,47 @@ def _check_against_statistics(
 async def handle_motion_correction_complete(event_data: dict[str, Any]) -> None:
     try:
         event = MotionCorrectionCompleteBody(**event_data)
-
-        def _db_work() -> float:
-            quality = _check_against_statistics("motioncorrection", event.micrograph_uuid, event.total_motion)
-            with Session(db_engine) as session:
-                grid_uuid = (
-                    session.exec(
-                        select(GridSquare, FoilHole, Micrograph)
-                        .where(GridSquare.uuid == FoilHole.gridsquare_uuid)
-                        .where(FoilHole.uuid == Micrograph.foilhole_uuid)
-                        .where(Micrograph.uuid == event.micrograph_uuid)
-                    )
-                    .one()[0]
-                    .grid_uuid
+        quality = await _check_against_statistics("motioncorrection", event.micrograph_uuid, event.total_motion)
+        async with SessionLocal() as session:
+            grid_row = (
+                await session.execute(
+                    select(GridSquare, FoilHole, Micrograph)
+                    .where(GridSquare.uuid == FoilHole.gridsquare_uuid)
+                    .where(FoilHole.uuid == Micrograph.foilhole_uuid)
+                    .where(Micrograph.uuid == event.micrograph_uuid)
                 )
-                metric_stats = session.exec(
-                    select(QualityMetricStatistics)
-                    .where(QualityMetricStatistics.grid_uuid == grid_uuid)
-                    .where(QualityMetricStatistics.name == "motioncorrection")
-                ).all()
-                if not metric_stats:
-                    updated_metric_stats = QualityMetricStatistics(
-                        grid_uuid=grid_uuid,
-                        name="motioncorrection",
-                        count=1,
-                        value_sum=event.total_motion,
-                        squared_value_sum=0,
+            ).one()
+            grid_uuid = grid_row[0].grid_uuid
+            metric_stats = (
+                (
+                    await session.execute(
+                        select(QualityMetricStatistics)
+                        .where(QualityMetricStatistics.grid_uuid == grid_uuid)
+                        .where(QualityMetricStatistics.name == "motioncorrection")
                     )
-                else:
-                    updated_metric_stats = metric_stats[0]
-                    old_diff = event.total_motion - (updated_metric_stats.value_sum / updated_metric_stats.count)
-                    updated_metric_stats.count += 1
-                    updated_metric_stats.value_sum += event.total_motion
-                    updated_metric_stats.squared_value_sum += old_diff * (
-                        event.total_motion - (updated_metric_stats.value_sum / updated_metric_stats.count)
-                    )
-                session.add(updated_metric_stats)
-                session.commit()
-                prior_update(quality, event.micrograph_uuid, "motioncorrection", session)
-            return quality
-
-        quality = await run_in_threadpool(_db_work)
+                )
+                .scalars()
+                .all()
+            )
+            if not metric_stats:
+                updated_metric_stats = QualityMetricStatistics(
+                    grid_uuid=grid_uuid,
+                    name="motioncorrection",
+                    count=1,
+                    value_sum=event.total_motion,
+                    squared_value_sum=0,
+                )
+            else:
+                updated_metric_stats = metric_stats[0]
+                old_diff = event.total_motion - (updated_metric_stats.value_sum / updated_metric_stats.count)
+                updated_metric_stats.count += 1
+                updated_metric_stats.value_sum += event.total_motion
+                updated_metric_stats.squared_value_sum += old_diff * (
+                    event.total_motion - (updated_metric_stats.value_sum / updated_metric_stats.count)
+                )
+            session.add(updated_metric_stats)
+            await session.commit()
+            await prior_update(quality, event.micrograph_uuid, "motioncorrection", session)
         await publish_motion_correction_registered(
             event.micrograph_uuid, quality >= 0.5, metric_name="motioncorrection"
         )
@@ -479,52 +460,51 @@ async def handle_motion_correction_complete(event_data: dict[str, Any]) -> None:
 async def handle_ctf_estimation_complete(event_data: dict[str, Any]) -> None:
     try:
         event = CtfCompleteBody(**event_data)
-
-        def _db_work() -> float:
-            quality = _check_against_statistics(
-                "ctfmaxresolution", event.micrograph_uuid, event.ctf_max_resolution_estimate
-            )
-            with Session(db_engine) as session:
-                grid_uuid = (
-                    session.exec(
-                        select(GridSquare, FoilHole, Micrograph)
-                        .where(GridSquare.uuid == FoilHole.gridsquare_uuid)
-                        .where(FoilHole.uuid == Micrograph.foilhole_uuid)
-                        .where(Micrograph.uuid == event.micrograph_uuid)
-                    )
-                    .one()[0]
-                    .grid_uuid
+        quality = await _check_against_statistics(
+            "ctfmaxresolution", event.micrograph_uuid, event.ctf_max_resolution_estimate
+        )
+        async with SessionLocal() as session:
+            grid_row = (
+                await session.execute(
+                    select(GridSquare, FoilHole, Micrograph)
+                    .where(GridSquare.uuid == FoilHole.gridsquare_uuid)
+                    .where(FoilHole.uuid == Micrograph.foilhole_uuid)
+                    .where(Micrograph.uuid == event.micrograph_uuid)
                 )
-                metric_stats = session.exec(
-                    select(QualityMetricStatistics)
-                    .where(QualityMetricStatistics.grid_uuid == grid_uuid)
-                    .where(QualityMetricStatistics.name == "ctfmaxresolution")
-                ).all()
-                if not metric_stats:
-                    updated_metric_stats = QualityMetricStatistics(
-                        grid_uuid=grid_uuid,
-                        name="ctfmaxresolution",
-                        count=1,
-                        value_sum=event.ctf_max_resolution_estimate,
-                        squared_value_sum=0,
+            ).one()
+            grid_uuid = grid_row[0].grid_uuid
+            metric_stats = (
+                (
+                    await session.execute(
+                        select(QualityMetricStatistics)
+                        .where(QualityMetricStatistics.grid_uuid == grid_uuid)
+                        .where(QualityMetricStatistics.name == "ctfmaxresolution")
                     )
-                else:
-                    updated_metric_stats = metric_stats[0]
-                    old_diff = event.ctf_max_resolution_estimate - (
-                        updated_metric_stats.value_sum / updated_metric_stats.count
-                    )
-                    updated_metric_stats.count += 1
-                    updated_metric_stats.value_sum += event.ctf_max_resolution_estimate
-                    updated_metric_stats.squared_value_sum += old_diff * (
-                        event.ctf_max_resolution_estimate
-                        - (updated_metric_stats.value_sum / updated_metric_stats.count)
-                    )
-                session.add(updated_metric_stats)
-                session.commit()
-                prior_update(quality, event.micrograph_uuid, "ctfmaxresolution", session)
-            return quality
-
-        quality = await run_in_threadpool(_db_work)
+                )
+                .scalars()
+                .all()
+            )
+            if not metric_stats:
+                updated_metric_stats = QualityMetricStatistics(
+                    grid_uuid=grid_uuid,
+                    name="ctfmaxresolution",
+                    count=1,
+                    value_sum=event.ctf_max_resolution_estimate,
+                    squared_value_sum=0,
+                )
+            else:
+                updated_metric_stats = metric_stats[0]
+                old_diff = event.ctf_max_resolution_estimate - (
+                    updated_metric_stats.value_sum / updated_metric_stats.count
+                )
+                updated_metric_stats.count += 1
+                updated_metric_stats.value_sum += event.ctf_max_resolution_estimate
+                updated_metric_stats.squared_value_sum += old_diff * (
+                    event.ctf_max_resolution_estimate - (updated_metric_stats.value_sum / updated_metric_stats.count)
+                )
+            session.add(updated_metric_stats)
+            await session.commit()
+            await prior_update(quality, event.micrograph_uuid, "ctfmaxresolution", session)
         await publish_ctf_estimation_registered(event.micrograph_uuid, quality >= 0.5, metric_name="ctfmaxresolution")
     except ValidationError as e:
         logger.error(f"Validation error processing ctf event: {e}")
@@ -535,51 +515,51 @@ async def handle_ctf_estimation_complete(event_data: dict[str, Any]) -> None:
 async def handle_particle_picking_complete(event_data: dict[str, Any]) -> None:
     try:
         event = ParticlePickingCompleteBody(**event_data)
-
-        def _db_work() -> float:
-            quality = _check_against_statistics(
-                "numparticles", event.micrograph_uuid, event.number_of_particles_picked, larger_better=True
-            )
-            with Session(db_engine) as session:
-                grid_uuid = (
-                    session.exec(
-                        select(GridSquare, FoilHole, Micrograph)
-                        .where(GridSquare.uuid == FoilHole.gridsquare_uuid)
-                        .where(FoilHole.uuid == Micrograph.foilhole_uuid)
-                        .where(Micrograph.uuid == event.micrograph_uuid)
-                    )
-                    .one()[0]
-                    .grid_uuid
+        quality = await _check_against_statistics(
+            "numparticles", event.micrograph_uuid, event.number_of_particles_picked, larger_better=True
+        )
+        async with SessionLocal() as session:
+            grid_row = (
+                await session.execute(
+                    select(GridSquare, FoilHole, Micrograph)
+                    .where(GridSquare.uuid == FoilHole.gridsquare_uuid)
+                    .where(FoilHole.uuid == Micrograph.foilhole_uuid)
+                    .where(Micrograph.uuid == event.micrograph_uuid)
                 )
-                metric_stats = session.exec(
-                    select(QualityMetricStatistics)
-                    .where(QualityMetricStatistics.grid_uuid == grid_uuid)
-                    .where(QualityMetricStatistics.name == "numparticles")
-                ).all()
-                if not metric_stats:
-                    updated_metric_stats = QualityMetricStatistics(
-                        grid_uuid=grid_uuid,
-                        name="numparticles",
-                        count=1,
-                        value_sum=event.number_of_particles_picked,
-                        squared_value_sum=0,
+            ).one()
+            grid_uuid = grid_row[0].grid_uuid
+            metric_stats = (
+                (
+                    await session.execute(
+                        select(QualityMetricStatistics)
+                        .where(QualityMetricStatistics.grid_uuid == grid_uuid)
+                        .where(QualityMetricStatistics.name == "numparticles")
                     )
-                else:
-                    updated_metric_stats = metric_stats[0]
-                    old_diff = event.number_of_particles_picked - (
-                        updated_metric_stats.value_sum / updated_metric_stats.count
-                    )
-                    updated_metric_stats.count += 1
-                    updated_metric_stats.value_sum += event.number_of_particles_picked
-                    updated_metric_stats.squared_value_sum += old_diff * (
-                        event.number_of_particles_picked - (updated_metric_stats.value_sum / updated_metric_stats.count)
-                    )
-                session.add(updated_metric_stats)
-                session.commit()
-                prior_update(quality, event.micrograph_uuid, "numparticles", session)
-            return quality
-
-        quality = await run_in_threadpool(_db_work)
+                )
+                .scalars()
+                .all()
+            )
+            if not metric_stats:
+                updated_metric_stats = QualityMetricStatistics(
+                    grid_uuid=grid_uuid,
+                    name="numparticles",
+                    count=1,
+                    value_sum=event.number_of_particles_picked,
+                    squared_value_sum=0,
+                )
+            else:
+                updated_metric_stats = metric_stats[0]
+                old_diff = event.number_of_particles_picked - (
+                    updated_metric_stats.value_sum / updated_metric_stats.count
+                )
+                updated_metric_stats.count += 1
+                updated_metric_stats.value_sum += event.number_of_particles_picked
+                updated_metric_stats.squared_value_sum += old_diff * (
+                    event.number_of_particles_picked - (updated_metric_stats.value_sum / updated_metric_stats.count)
+                )
+            session.add(updated_metric_stats)
+            await session.commit()
+            await prior_update(quality, event.micrograph_uuid, "numparticles", session)
         await publish_particle_picking_registered(event.micrograph_uuid, quality >= 0.5, metric_name="numparticles")
     except ValidationError as e:
         logger.error(f"Validation error processing particle picking event: {e}")
@@ -841,13 +821,9 @@ async def handle_foilhole_group_model_prediction(event_data: dict[str, Any]) -> 
 async def handle_refresh_predictions(event_data: dict[str, Any]) -> None:
     try:
         event = RefreshPredictionsEvent(**event_data)
-
-        def _db_work():
-            with Session(db_engine) as session:
-                overall_predictions_update(event.grid_uuid, session)
-                ordered_holes(event.grid_uuid, session)
-
-        await run_in_threadpool(_db_work)
+        async with SessionLocal() as session:
+            await overall_predictions_update(event.grid_uuid, session)
+            await ordered_holes(event.grid_uuid, session)
     except ValidationError as e:
         logger.error(f"Validation error processing refresh predictions event: {e}")
     except Exception as e:

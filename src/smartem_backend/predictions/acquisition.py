@@ -1,14 +1,15 @@
 import numpy as np
 from sqlalchemy.dialects.postgresql import array_agg
-from sqlmodel import Session, select
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlmodel import select
 
 from smartem_backend.model.database import (
     OverallQualityPrediction,
 )
 
 
-def get_all_scores_for_grid(grid_uuid: str, session: Session) -> dict[str, tuple[str, float]]:
-    overall_predictions = session.exec(
+async def get_all_scores_for_grid(grid_uuid: str, session: AsyncSession) -> dict[str, tuple[str, float]]:
+    result = await session.execute(
         select(
             OverallQualityPrediction.gridsquare_uuid,
             array_agg(OverallQualityPrediction.foilhole_uuid),
@@ -16,7 +17,8 @@ def get_all_scores_for_grid(grid_uuid: str, session: Session) -> dict[str, tuple
         )
         .where(OverallQualityPrediction.grid_uuid == grid_uuid)
         .group_by(OverallQualityPrediction.gridsquare_uuid)
-    ).all()
+    )
+    overall_predictions = result.all()
     return {
         el[0]: sorted(zip(el[1], el[2], strict=False), key=lambda x: x[1], reverse=True) for el in overall_predictions
     }
@@ -137,12 +139,13 @@ def _ordered_holes(square_scores_and_uuids: dict[str, tuple[str, float]]) -> lis
     return hole_order
 
 
-def ordered_holes(grid_uuid: str, session: Session) -> list[str]:
-    square_scores_and_uuids = get_all_scores_for_grid(grid_uuid, session)
+async def ordered_holes(grid_uuid: str, session: AsyncSession) -> list[str]:
+    square_scores_and_uuids = await get_all_scores_for_grid(grid_uuid, session)
     holes = _ordered_holes(square_scores_and_uuids)
-    overall_predictions = session.exec(
+    result = await session.execute(
         select(OverallQualityPrediction).where(OverallQualityPrediction.grid_uuid == grid_uuid)
-    ).all()
+    )
+    overall_predictions = result.scalars().all()
     overall_prediction_map = {p.foilhole_uuid: p for p in overall_predictions}
     updated_predictions = []
     for i, h in enumerate(holes):
@@ -150,5 +153,5 @@ def ordered_holes(grid_uuid: str, session: Session) -> list[str]:
         pred.suggested_acquisition_index = i + 1
         updated_predictions.append(pred)
     session.add_all(updated_predictions)
-    session.commit()
+    await session.commit()
     return holes
