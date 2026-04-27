@@ -4,6 +4,7 @@ import argparse
 import asyncio
 import json
 import logging
+import os
 import signal
 import uuid
 from collections.abc import Awaitable, Callable
@@ -15,6 +16,8 @@ import scipy.stats
 from aio_pika.abc import AbstractIncomingMessage
 from dotenv import load_dotenv
 from pydantic import ValidationError
+from sqlalchemy.engine import Engine
+from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker
 from sqlmodel import Session, select
 from starlette.concurrency import run_in_threadpool
 
@@ -87,7 +90,7 @@ from smartem_backend.predictions.acquisition import ordered_holes
 from smartem_backend.predictions.update import overall_predictions_update, prior_update
 from smartem_backend.rmq import AioPikaConsumer, AioPikaPublisher, decode_event_body
 from smartem_backend.rmq.config import load_rmq_connection_url, load_rmq_topology
-from smartem_backend.utils import get_db_engine, load_conf, setup_logger
+from smartem_backend.utils import get_db_engine, load_conf, setup_logger, setup_postgres_async_connection
 
 load_dotenv(override=False)  # Don't override existing env vars as these might be coming from k8s
 conf = load_conf()
@@ -96,8 +99,19 @@ conf = load_conf()
 log_manager = LogManager.get_instance("smartem_backend")
 logger = log_manager.configure(LogConfig(level=logging.ERROR, console=True))
 
-# Get singleton database engine for reuse across all event handlers
-db_engine = get_db_engine()
+db_engine: Engine
+async_db_engine: AsyncEngine
+SessionLocal: async_sessionmaker[AsyncSession]
+if os.getenv("SKIP_DB_INIT", "false").lower() != "true":
+    db_engine = get_db_engine()
+    async_db_engine = setup_postgres_async_connection()
+    SessionLocal = async_sessionmaker(
+        bind=async_db_engine, class_=AsyncSession, autocommit=False, autoflush=False, expire_on_commit=False
+    )
+else:
+    db_engine = None  # type: ignore[assignment]
+    async_db_engine = None  # type: ignore[assignment]
+    SessionLocal = None  # type: ignore[assignment]
 
 EventHandler = Callable[[dict[str, Any]], Awaitable[None]]
 
@@ -576,39 +590,44 @@ async def handle_particle_picking_complete(event_data: dict[str, Any]) -> None:
 async def handle_gridsquare_model_prediction(event_data: dict[str, Any]) -> None:
     try:
         event = GridSquareModelPredictionEvent(**event_data)
-
-        def _db_work():
-            quality_prediction = QualityPrediction(
-                gridsquare_uuid=event.gridsquare_uuid,
-                prediction_model_name=event.prediction_model_name,
-                value=event.prediction_value,
-                metric_name=event.metric,
+        quality_prediction = QualityPrediction(
+            gridsquare_uuid=event.gridsquare_uuid,
+            prediction_model_name=event.prediction_model_name,
+            value=event.prediction_value,
+            metric_name=event.metric,
+        )
+        async with SessionLocal() as session:
+            session.add(quality_prediction)
+            current_quality_prediction = (
+                (
+                    await session.execute(
+                        select(CurrentQualityPrediction)
+                        .where(CurrentQualityPrediction.gridsquare_uuid == event.gridsquare_uuid)
+                        .where(CurrentQualityPrediction.prediction_model_name == event.prediction_model_name)
+                        .where(CurrentQualityPrediction.metric_name == event.metric)
+                    )
+                )
+                .scalars()
+                .first()
             )
-            with Session(db_engine) as session:
-                session.add(quality_prediction)
-                current_quality_prediction = session.exec(
-                    select(CurrentQualityPrediction)
-                    .where(CurrentQualityPrediction.gridsquare_uuid == event.gridsquare_uuid)
-                    .where(CurrentQualityPrediction.prediction_model_name == event.prediction_model_name)
-                    .where(CurrentQualityPrediction.metric_name == event.metric)
-                ).first()
-                if current_quality_prediction is None:
-                    grid_uuid = (
-                        session.exec(select(GridSquare).where(GridSquare.uuid == event.gridsquare_uuid)).one().grid_uuid
-                    )
-                    current_quality_prediction = CurrentQualityPrediction(
-                        grid_uuid=grid_uuid,
-                        gridsquare_uuid=event.gridsquare_uuid,
-                        prediction_model_name=event.prediction_model_name,
-                        value=event.prediction_value,
-                        metric_name=event.metric,
-                    )
-                else:
-                    current_quality_prediction.value = event.prediction_value
-                session.add(current_quality_prediction)
-                session.commit()
-
-        await run_in_threadpool(_db_work)
+            if current_quality_prediction is None:
+                grid_uuid = (
+                    (await session.execute(select(GridSquare).where(GridSquare.uuid == event.gridsquare_uuid)))
+                    .scalars()
+                    .one()
+                    .grid_uuid
+                )
+                current_quality_prediction = CurrentQualityPrediction(
+                    grid_uuid=grid_uuid,
+                    gridsquare_uuid=event.gridsquare_uuid,
+                    prediction_model_name=event.prediction_model_name,
+                    value=event.prediction_value,
+                    metric_name=event.metric,
+                )
+            else:
+                current_quality_prediction.value = event.prediction_value
+            session.add(current_quality_prediction)
+            await session.commit()
     except ValidationError as e:
         logger.error(f"Validation error processing grid square model prediction event: {e}")
     except Exception as e:
@@ -618,42 +637,47 @@ async def handle_gridsquare_model_prediction(event_data: dict[str, Any]) -> None
 async def handle_foilhole_model_prediction(event_data: dict[str, Any]) -> None:
     try:
         event = FoilHoleModelPredictionEvent(**event_data)
-
-        def _db_work():
-            quality_prediction = QualityPrediction(
-                foilhole_uuid=event.foilhole_uuid,
-                prediction_model_name=event.prediction_model_name,
-                value=event.prediction_value,
-                metric_name=event.metric,
+        quality_prediction = QualityPrediction(
+            foilhole_uuid=event.foilhole_uuid,
+            prediction_model_name=event.prediction_model_name,
+            value=event.prediction_value,
+            metric_name=event.metric,
+        )
+        async with SessionLocal() as session:
+            session.add(quality_prediction)
+            current_quality_prediction = (
+                (
+                    await session.execute(
+                        select(CurrentQualityPrediction)
+                        .where(CurrentQualityPrediction.foilhole_uuid == event.foilhole_uuid)
+                        .where(CurrentQualityPrediction.prediction_model_name == event.prediction_model_name)
+                        .where(CurrentQualityPrediction.metric_name == event.metric)
+                    )
+                )
+                .scalars()
+                .first()
             )
-            with Session(db_engine) as session:
-                session.add(quality_prediction)
-                current_quality_prediction = session.exec(
-                    select(CurrentQualityPrediction)
-                    .where(CurrentQualityPrediction.foilhole_uuid == event.foilhole_uuid)
-                    .where(CurrentQualityPrediction.prediction_model_name == event.prediction_model_name)
-                    .where(CurrentQualityPrediction.metric_name == event.metric)
-                ).first()
-                if current_quality_prediction is None:
-                    square = session.exec(
+            if current_quality_prediction is None:
+                square_row = (
+                    await session.execute(
                         select(GridSquare, FoilHole)
                         .where(GridSquare.uuid == FoilHole.gridsquare_uuid)
                         .where(FoilHole.uuid == event.foilhole_uuid)
-                    ).one()[0]
-                    current_quality_prediction = CurrentQualityPrediction(
-                        grid_uuid=square.grid_uuid,
-                        gridsquare_uuid=square.uuid,
-                        foilhole_uuid=event.foilhole_uuid,
-                        prediction_model_name=event.prediction_model_name,
-                        value=event.prediction_value,
-                        metric_name=event.metric,
                     )
-                else:
-                    current_quality_prediction.value = event.prediction_value
-                session.add(current_quality_prediction)
-                session.commit()
-
-        await run_in_threadpool(_db_work)
+                ).one()
+                square = square_row[0]
+                current_quality_prediction = CurrentQualityPrediction(
+                    grid_uuid=square.grid_uuid,
+                    gridsquare_uuid=square.uuid,
+                    foilhole_uuid=event.foilhole_uuid,
+                    prediction_model_name=event.prediction_model_name,
+                    value=event.prediction_value,
+                    metric_name=event.metric,
+                )
+            else:
+                current_quality_prediction.value = event.prediction_value
+            session.add(current_quality_prediction)
+            await session.commit()
     except ValidationError as e:
         logger.error(f"Validation error processing foil hole model prediction event: {e}")
     except Exception as e:
@@ -663,50 +687,54 @@ async def handle_foilhole_model_prediction(event_data: dict[str, Any]) -> None:
 async def handle_multi_foilhole_model_prediction(event_data: dict[str, Any]) -> None:
     try:
         event = MultiFoilHoleModelPredictionEvent(**event_data)
-
-        def _db_work():
-            quality_predictions = [
-                QualityPrediction(
-                    foilhole_uuid=fhuuid,
-                    prediction_model_name=event.prediction_model_name,
-                    value=event.prediction_value,
-                    metric_name=event.metric,
+        quality_predictions = [
+            QualityPrediction(
+                foilhole_uuid=fhuuid,
+                prediction_model_name=event.prediction_model_name,
+                value=event.prediction_value,
+                metric_name=event.metric,
+            )
+            for fhuuid in event.foilhole_uuids
+        ]
+        async with SessionLocal() as session:
+            session.add_all(quality_predictions)
+            current_quality_predictions = list(
+                (
+                    await session.execute(
+                        select(CurrentQualityPrediction)
+                        .where(CurrentQualityPrediction.foilhole_uuid.in_(event.foilhole_uuids))
+                        .where(CurrentQualityPrediction.prediction_model_name == event.prediction_model_name)
+                        .where(CurrentQualityPrediction.metric_name == event.metric)
+                    )
                 )
-                for fhuuid in event.foilhole_uuids
-            ]
-            with Session(db_engine) as session:
-                session.add_all(quality_predictions)
-                current_quality_predictions = session.exec(
-                    select(CurrentQualityPrediction)
-                    .where(CurrentQualityPrediction.foilhole_uuid.in_(event.foilhole_uuids))
-                    .where(CurrentQualityPrediction.prediction_model_name == event.prediction_model_name)
-                    .where(CurrentQualityPrediction.metric_name == event.metric)
-                ).all()
-                if not current_quality_predictions:
-                    squares = session.exec(
+                .scalars()
+                .all()
+            )
+            if not current_quality_predictions:
+                squares = (
+                    await session.execute(
                         select(GridSquare, FoilHole)
                         .where(GridSquare.uuid == FoilHole.gridsquare_uuid)
                         .where(FoilHole.uuid.in_(event.foilhole_uuids))
-                    ).all()
-                    square_lookup = {s[1].uuid: s[0] for s in squares}
-                    current_quality_predictions = [
-                        CurrentQualityPrediction(
-                            grid_uuid=square_lookup[fhuuid].grid_uuid,
-                            gridsquare_uuid=square_lookup[fhuuid].uuid,
-                            foilhole_uuid=fhuuid,
-                            prediction_model_name=event.prediction_model_name,
-                            value=event.prediction_value,
-                            metric_name=event.metric,
-                        )
-                        for fhuuid in event.foilhole_uuids
-                    ]
-                else:
-                    for pred in current_quality_predictions:
-                        pred.value = event.prediction_value
-                session.add_all(current_quality_predictions)
-                session.commit()
-
-        await run_in_threadpool(_db_work)
+                    )
+                ).all()
+                square_lookup = {s[1].uuid: s[0] for s in squares}
+                current_quality_predictions = [
+                    CurrentQualityPrediction(
+                        grid_uuid=square_lookup[fhuuid].grid_uuid,
+                        gridsquare_uuid=square_lookup[fhuuid].uuid,
+                        foilhole_uuid=fhuuid,
+                        prediction_model_name=event.prediction_model_name,
+                        value=event.prediction_value,
+                        metric_name=event.metric,
+                    )
+                    for fhuuid in event.foilhole_uuids
+                ]
+            else:
+                for pred in current_quality_predictions:
+                    pred.value = event.prediction_value
+            session.add_all(current_quality_predictions)
+            await session.commit()
     except ValidationError as e:
         logger.error(f"Validation error processing multiple foil hole model prediction event: {e}")
     except Exception as e:
@@ -716,37 +744,45 @@ async def handle_multi_foilhole_model_prediction(event_data: dict[str, Any]) -> 
 async def handle_create_foilhole_group(event_data: dict[str, Any]) -> None:
     try:
         event = CreateFoilHoleGroupEvent(**event_data)
-
-        def _db_work():
-            with Session(db_engine) as session:
-                group = session.exec(select(FoilHoleGroup).where(FoilHoleGroup.uuid == event.group_uuid)).first()
-                if group is None:
-                    group = FoilHoleGroup(
-                        uuid=event.group_uuid,
-                        grid_uuid=event.grid_uuid,
-                        name=event.name,
+        async with SessionLocal() as session:
+            group = (
+                (await session.execute(select(FoilHoleGroup).where(FoilHoleGroup.uuid == event.group_uuid)))
+                .scalars()
+                .first()
+            )
+            if group is None:
+                group = FoilHoleGroup(
+                    uuid=event.group_uuid,
+                    grid_uuid=event.grid_uuid,
+                    name=event.name,
+                )
+                session.add(group)
+                memberships = [
+                    FoilHoleGroupMembership(group_uuid=event.group_uuid, foilhole_uuid=fhuuid)
+                    for fhuuid in event.foilhole_uuids
+                ]
+                session.add_all(memberships)
+            else:
+                group.name = event.name
+                existing_memberships = (
+                    (
+                        await session.execute(
+                            select(FoilHoleGroupMembership).where(
+                                FoilHoleGroupMembership.group_uuid == event.group_uuid
+                            )
+                        )
                     )
-                    session.add(group)
-                    memberships = [
-                        FoilHoleGroupMembership(group_uuid=event.group_uuid, foilhole_uuid=fhuuid)
-                        for fhuuid in event.foilhole_uuids
-                    ]
-                    session.add_all(memberships)
-                else:
-                    group.name = event.name
-                    existing_memberships = session.exec(
-                        select(FoilHoleGroupMembership).where(FoilHoleGroupMembership.group_uuid == event.group_uuid)
-                    ).all()
-                    existing_uuids = {m.foilhole_uuid for m in existing_memberships}
-                    new_memberships = [
-                        FoilHoleGroupMembership(group_uuid=event.group_uuid, foilhole_uuid=fhuuid)
-                        for fhuuid in event.foilhole_uuids
-                        if fhuuid not in existing_uuids
-                    ]
-                    session.add_all(new_memberships)
-                session.commit()
-
-        await run_in_threadpool(_db_work)
+                    .scalars()
+                    .all()
+                )
+                existing_uuids = {m.foilhole_uuid for m in existing_memberships}
+                new_memberships = [
+                    FoilHoleGroupMembership(group_uuid=event.group_uuid, foilhole_uuid=fhuuid)
+                    for fhuuid in event.foilhole_uuids
+                    if fhuuid not in existing_uuids
+                ]
+                session.add_all(new_memberships)
+            await session.commit()
     except ValidationError as e:
         logger.error(f"Validation error processing create foil hole group event: {e}")
     except Exception as e:
@@ -756,12 +792,36 @@ async def handle_create_foilhole_group(event_data: dict[str, Any]) -> None:
 async def handle_foilhole_group_model_prediction(event_data: dict[str, Any]) -> None:
     try:
         event = FoilHoleGroupModelPredictionEvent(**event_data)
-
-        def _db_work():
-            with Session(db_engine) as session:
-                group = session.exec(select(FoilHoleGroup).where(FoilHoleGroup.uuid == event.group_uuid)).one()
+        async with SessionLocal() as session:
+            group = (
+                (await session.execute(select(FoilHoleGroup).where(FoilHoleGroup.uuid == event.group_uuid)))
+                .scalars()
+                .one()
+            )
+            session.add(
+                QualityGroupPrediction(
+                    group_uuid=event.group_uuid,
+                    grid_uuid=group.grid_uuid,
+                    value=event.prediction_value,
+                    prediction_model_name=event.prediction_model_name,
+                    metric_name=event.metric,
+                )
+            )
+            existing = (
+                (
+                    await session.execute(
+                        select(CurrentQualityGroupPrediction)
+                        .where(CurrentQualityGroupPrediction.group_uuid == event.group_uuid)
+                        .where(CurrentQualityGroupPrediction.prediction_model_name == event.prediction_model_name)
+                        .where(CurrentQualityGroupPrediction.metric_name == event.metric)
+                    )
+                )
+                .scalars()
+                .first()
+            )
+            if existing is None:
                 session.add(
-                    QualityGroupPrediction(
+                    CurrentQualityGroupPrediction(
                         group_uuid=event.group_uuid,
                         grid_uuid=group.grid_uuid,
                         value=event.prediction_value,
@@ -769,27 +829,9 @@ async def handle_foilhole_group_model_prediction(event_data: dict[str, Any]) -> 
                         metric_name=event.metric,
                     )
                 )
-                existing = session.exec(
-                    select(CurrentQualityGroupPrediction)
-                    .where(CurrentQualityGroupPrediction.group_uuid == event.group_uuid)
-                    .where(CurrentQualityGroupPrediction.prediction_model_name == event.prediction_model_name)
-                    .where(CurrentQualityGroupPrediction.metric_name == event.metric)
-                ).first()
-                if existing is None:
-                    session.add(
-                        CurrentQualityGroupPrediction(
-                            group_uuid=event.group_uuid,
-                            grid_uuid=group.grid_uuid,
-                            value=event.prediction_value,
-                            prediction_model_name=event.prediction_model_name,
-                            metric_name=event.metric,
-                        )
-                    )
-                else:
-                    existing.value = event.prediction_value
-                session.commit()
-
-        await run_in_threadpool(_db_work)
+            else:
+                existing.value = event.prediction_value
+            await session.commit()
     except ValidationError as e:
         logger.error(f"Validation error processing foil hole group model prediction event: {e}")
     except Exception as e:
@@ -815,21 +857,17 @@ async def handle_refresh_predictions(event_data: dict[str, Any]) -> None:
 async def handle_model_parameter_update(event_data: dict[str, Any]) -> None:
     try:
         event = ModelParameterUpdateEvent(**event_data)
-
-        def _db_work():
-            model_parameter = QualityPredictionModelParameter(
-                grid_uuid=event.grid_uuid,
-                prediction_model_name=event.prediction_model_name,
-                key=event.key,
-                value=event.value,
-                metric_name=event.metric,
-                group=event.group,
-            )
-            with Session(db_engine) as session:
-                session.add(model_parameter)
-                session.commit()
-
-        await run_in_threadpool(_db_work)
+        model_parameter = QualityPredictionModelParameter(
+            grid_uuid=event.grid_uuid,
+            prediction_model_name=event.prediction_model_name,
+            key=event.key,
+            value=event.value,
+            metric_name=event.metric,
+            group=event.group,
+        )
+        async with SessionLocal() as session:
+            session.add(model_parameter)
+            await session.commit()
     except ValidationError as e:
         logger.error(f"Validation error processing model parameter update event: {e}")
     except Exception as e:
@@ -839,9 +877,10 @@ async def handle_model_parameter_update(event_data: dict[str, Any]) -> None:
 # ============ External Message Processing Events ============
 
 
-def _get_active_agent_sessions() -> list[AgentSession]:
-    with Session(db_engine) as session:
-        return session.query(AgentSession).filter(AgentSession.status == "active").all()
+async def _get_active_agent_sessions() -> list[AgentSession]:
+    async with SessionLocal() as session:
+        result = await session.execute(select(AgentSession).where(AgentSession.status == "active"))
+        return list(result.scalars().all())
 
 
 async def handle_external_gridsquare_model_prediction(event_data: dict[str, Any]) -> None:
@@ -869,7 +908,7 @@ async def handle_external_gridsquare_model_prediction(event_data: dict[str, Any]
             logger.info(f"Medium quality gridsquare {gridsquare_id} ({quality_score:.3f}) - no action needed")
             return
 
-        active_sessions = await run_in_threadpool(_get_active_agent_sessions)
+        active_sessions = await _get_active_agent_sessions()
         for session in active_sessions:
             instruction_id = str(uuid.uuid4())
             success = await publish_agent_instruction_created(
@@ -905,7 +944,7 @@ async def handle_external_foilhole_model_prediction(event_data: dict[str, Any]) 
                 "reason": f"Found {len(high_quality_foilholes)} high quality foilholes",
             }
 
-            active_sessions = await run_in_threadpool(_get_active_agent_sessions)
+            active_sessions = await _get_active_agent_sessions()
             for session in active_sessions:
                 instruction_id = str(uuid.uuid4())
                 success = await publish_agent_instruction_created(
@@ -950,32 +989,30 @@ async def handle_agent_instruction_created(event_data: dict[str, Any]) -> None:
         event = AgentInstructionCreatedEvent(**event_data)
         logger.info(f"Agent instruction created event: {event.model_dump()}")
 
-        def _db_work() -> bool:
-            with Session(db_engine) as session:
-                session_obj = session.query(AgentSession).filter(AgentSession.session_id == event.session_id).first()
-                if not session_obj:
-                    return False
-                instruction = AgentInstruction(
-                    instruction_id=event.instruction_id,
-                    session_id=event.session_id,
-                    agent_id=event.agent_id,
-                    instruction_type=event.instruction_type,
-                    payload=event.payload,
-                    sequence_number=event.sequence_number,
-                    priority=event.priority,
-                    status="pending",
-                    created_at=datetime.now(),
-                    expires_at=event.expires_at,
-                    instruction_metadata=event.instruction_metadata or {},
-                )
-                session.add(instruction)
-                session.commit()
-                return True
-
-        persisted = await run_in_threadpool(_db_work)
-        if not persisted:
-            logger.warning(f"Session {event.session_id} not found for instruction {event.instruction_id}")
-            return
+        async with SessionLocal() as session:
+            session_obj = (
+                (await session.execute(select(AgentSession).where(AgentSession.session_id == event.session_id)))
+                .scalars()
+                .first()
+            )
+            if not session_obj:
+                logger.warning(f"Session {event.session_id} not found for instruction {event.instruction_id}")
+                return
+            instruction = AgentInstruction(
+                instruction_id=event.instruction_id,
+                session_id=event.session_id,
+                agent_id=event.agent_id,
+                instruction_type=event.instruction_type,
+                payload=event.payload,
+                sequence_number=event.sequence_number,
+                priority=event.priority,
+                status="pending",
+                created_at=datetime.now(),
+                expires_at=event.expires_at,
+                instruction_metadata=event.instruction_metadata or {},
+            )
+            session.add(instruction)
+            await session.commit()
         logger.info(f"Successfully persisted instruction {event.instruction_id} to database")
     except ValidationError as e:
         logger.error(f"Validation error processing agent instruction created event: {e}")
@@ -988,26 +1025,24 @@ async def handle_agent_instruction_updated(event_data: dict[str, Any]) -> None:
         event = AgentInstructionUpdatedEvent(**event_data)
         logger.info(f"Agent instruction updated event: {event.model_dump()}")
 
-        def _db_work() -> bool:
-            with Session(db_engine) as session:
-                instruction = (
-                    session.query(AgentInstruction)
-                    .filter(AgentInstruction.instruction_id == event.instruction_id)
-                    .first()
+        async with SessionLocal() as session:
+            instruction = (
+                (
+                    await session.execute(
+                        select(AgentInstruction).where(AgentInstruction.instruction_id == event.instruction_id)
+                    )
                 )
-                if instruction is None:
-                    return False
-                instruction.status = event.status
-                if event.acknowledged_at:
-                    instruction.acknowledged_at = event.acknowledged_at
-                session.commit()
-                return True
-
-        updated = await run_in_threadpool(_db_work)
-        if updated:
-            logger.info(f"Updated instruction {event.instruction_id} status to {event.status}")
-        else:
-            logger.warning(f"Instruction {event.instruction_id} not found for status update")
+                .scalars()
+                .first()
+            )
+            if instruction is None:
+                logger.warning(f"Instruction {event.instruction_id} not found for status update")
+                return
+            instruction.status = event.status
+            if event.acknowledged_at:
+                instruction.acknowledged_at = event.acknowledged_at
+            await session.commit()
+        logger.info(f"Updated instruction {event.instruction_id} status to {event.status}")
     except ValidationError as e:
         logger.error(f"Validation error processing agent instruction updated event: {e}")
     except Exception as e:
@@ -1019,32 +1054,31 @@ async def handle_agent_instruction_expired(event_data: dict[str, Any]) -> None:
         event = AgentInstructionExpiredEvent(**event_data)
         logger.info(f"Agent instruction expired event: {event.model_dump()}")
 
-        def _db_work() -> str | None:
-            with Session(db_engine) as session:
-                instruction = (
-                    session.query(AgentInstruction)
-                    .filter(AgentInstruction.instruction_id == event.instruction_id)
-                    .first()
+        async with SessionLocal() as session:
+            instruction = (
+                (
+                    await session.execute(
+                        select(AgentInstruction).where(AgentInstruction.instruction_id == event.instruction_id)
+                    )
                 )
-                if instruction is None:
-                    return None
-                if event.retry_count >= instruction.max_retries:
-                    instruction.status = "expired"
-                    resolution = "expired"
-                else:
-                    instruction.status = "pending"
-                    instruction.retry_count = event.retry_count
-                    resolution = "retry"
-                session.commit()
-                return resolution
-
-        resolution = await run_in_threadpool(_db_work)
+                .scalars()
+                .first()
+            )
+            if instruction is None:
+                logger.warning(f"Instruction {event.instruction_id} not found for expiry handling")
+                return
+            if event.retry_count >= instruction.max_retries:
+                instruction.status = "expired"
+                resolution = "expired"
+            else:
+                instruction.status = "pending"
+                instruction.retry_count = event.retry_count
+                resolution = "retry"
+            await session.commit()
         if resolution == "expired":
             logger.info(f"Instruction {event.instruction_id} marked as expired after {event.retry_count} retries")
-        elif resolution == "retry":
-            logger.info(f"Instruction {event.instruction_id} reset for retry ({event.retry_count})")
         else:
-            logger.warning(f"Instruction {event.instruction_id} not found for expiry handling")
+            logger.info(f"Instruction {event.instruction_id} reset for retry ({event.retry_count})")
     except ValidationError as e:
         logger.error(f"Validation error processing agent instruction expired event: {e}")
     except Exception as e:
