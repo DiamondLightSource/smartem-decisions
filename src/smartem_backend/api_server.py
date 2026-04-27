@@ -381,7 +381,7 @@ async def create_acquisition(acquisition: AcquisitionCreateRequest, db: AsyncSes
     acquisition_data = {
         "uuid": acquisition.uuid,
         "status": AcquisitionStatus.STARTED,
-        **acquisition.model_dump(exclude={"uuid"}),
+        **acquisition.model_dump(exclude={"uuid", "status"}),
     }
     db_acquisition = Acquisition(**acquisition_data)
     db.add(db_acquisition)
@@ -556,7 +556,7 @@ async def create_acquisition_grid(acquisition_uuid: str, grid: GridCreateRequest
         "uuid": grid.uuid,
         "acquisition_uuid": acquisition_uuid,
         "status": GridStatus.NONE,
-        **grid.model_dump(),
+        **grid.model_dump(exclude={"uuid", "acquisition_uuid", "status"}),
     }
     db_grid = Grid(**grid_data)
     db.add(db_grid)
@@ -570,11 +570,8 @@ async def create_acquisition_grid(acquisition_uuid: str, grid: GridCreateRequest
         "uuid": grid.uuid,
         "acquisition_uuid": acquisition_uuid,
         "status": GridStatus.NONE,
-        **grid.model_dump(),
+        **grid.model_dump(exclude={"uuid", "acquisition_uuid", "status"}),
     }
-
-    if "status" not in response_data or response_data["status"] is None:
-        response_data["status"] = GridStatus.NONE
 
     return GridResponse(**response_data)
 
