@@ -449,8 +449,10 @@ async def handle_motion_correction_complete(event_data: dict[str, Any]) -> None:
             await session.commit()
             await prior_update(quality, event.micrograph_uuid, "motioncorrection", session)
             micrograph = (
-                await session.execute(select(Micrograph).where(Micrograph.uuid == event.micrograph_uuid))
-            ).scalars().first()
+                (await session.execute(select(Micrograph).where(Micrograph.uuid == event.micrograph_uuid)))
+                .scalars()
+                .first()
+            )
             if micrograph:
                 micrograph.updated_at = datetime.now()
                 await session.commit()
@@ -512,8 +514,10 @@ async def handle_ctf_estimation_complete(event_data: dict[str, Any]) -> None:
             await session.commit()
             await prior_update(quality, event.micrograph_uuid, "ctfmaxresolution", session)
             micrograph = (
-                await session.execute(select(Micrograph).where(Micrograph.uuid == event.micrograph_uuid))
-            ).scalars().first()
+                (await session.execute(select(Micrograph).where(Micrograph.uuid == event.micrograph_uuid)))
+                .scalars()
+                .first()
+            )
             if micrograph:
                 micrograph.updated_at = datetime.now()
                 await session.commit()

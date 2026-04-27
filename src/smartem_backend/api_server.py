@@ -2754,9 +2754,9 @@ async def ingest_agent_logs(
     agent_id: str,
     session_id: str,
     request: AgentLogBatchRequest,
-    db: SqlAlchemySession = DB_DEPENDENCY,
+    db: AsyncSession = DB_DEPENDENCY,
 ) -> AgentLogBatchResponse:
-    session = db.query(AgentSession).filter(AgentSession.session_id == session_id).first()
+    session = (await db.execute(select(AgentSession).where(AgentSession.session_id == session_id))).scalars().first()
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
     if session.agent_id != agent_id:
@@ -2775,7 +2775,7 @@ async def ingest_agent_logs(
                 message=entry.message,
             )
         )
-    db.commit()
+    await db.commit()
 
     return AgentLogBatchResponse(stored=len(logs_to_store))
 
@@ -2786,7 +2786,7 @@ async def frontend_event_stream(
     acquisition_uuid: str | None = None,
     agent_id: str | None = None,
     event_types: str | None = None,
-    db: SqlAlchemySession = DB_DEPENDENCY,
+    db: AsyncSession = DB_DEPENDENCY,
 ) -> EventSourceResponse:
     global _frontend_sse_connections
     if _frontend_sse_connections >= _frontend_sse_max_connections:
@@ -2818,7 +2818,7 @@ async def frontend_event_stream(
                     pass
 
             if type_enabled(FrontendEventType.AGENT_STATUS):
-                for status_data in query_agent_statuses(db, agent_id):
+                for status_data in await query_agent_statuses(db, agent_id):
                     event_counter += 1
                     yield {
                         "id": str(event_counter),
@@ -2827,7 +2827,7 @@ async def frontend_event_stream(
                     }
 
             if type_enabled(FrontendEventType.ACQUISITION_PROGRESS):
-                for progress in query_acquisition_progress(db, acquisition_uuid):
+                for progress in await query_acquisition_progress(db, acquisition_uuid):
                     event_counter += 1
                     prev_progress[progress["acquisition_uuid"]] = progress
                     yield {
@@ -2856,7 +2856,7 @@ async def frontend_event_stream(
                     }
 
                 if type_enabled(FrontendEventType.AGENT_STATUS):
-                    for status_data in query_agent_statuses(db, agent_id):
+                    for status_data in await query_agent_statuses(db, agent_id):
                         event_counter += 1
                         yield {
                             "id": str(event_counter),
@@ -2865,7 +2865,7 @@ async def frontend_event_stream(
                         }
 
                 if type_enabled(FrontendEventType.ACQUISITION_PROGRESS):
-                    for progress in query_acquisition_progress(db, acquisition_uuid):
+                    for progress in await query_acquisition_progress(db, acquisition_uuid):
                         acq_uuid = progress["acquisition_uuid"]
                         if prev_progress.get(acq_uuid) != progress:
                             prev_progress[acq_uuid] = progress
@@ -2877,7 +2877,7 @@ async def frontend_event_stream(
                             }
 
                 if type_enabled(FrontendEventType.INSTRUCTION_LIFECYCLE):
-                    for instr_data in query_instruction_updates(db, last_poll_time, agent_id):
+                    for instr_data in await query_instruction_updates(db, last_poll_time, agent_id):
                         event_counter += 1
                         yield {
                             "id": str(event_counter),
@@ -2886,7 +2886,7 @@ async def frontend_event_stream(
                         }
 
                 if type_enabled(FrontendEventType.PROCESSING_METRIC):
-                    for metric in query_processing_metrics(db, last_poll_time, acquisition_uuid):
+                    for metric in await query_processing_metrics(db, last_poll_time, acquisition_uuid):
                         event_counter += 1
                         yield {
                             "id": str(event_counter),
@@ -2895,7 +2895,7 @@ async def frontend_event_stream(
                         }
 
                 if type_enabled(FrontendEventType.AGENT_LOG):
-                    logs = query_agent_logs(db, last_log_id, agent_id)
+                    logs = await query_agent_logs(db, last_log_id, agent_id)
                     for log_entry in logs:
                         last_log_id = log_entry["id"]
                         event_counter += 1

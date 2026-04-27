@@ -1,7 +1,7 @@
 from datetime import datetime
 
 from sqlalchemy import and_, func, select
-from sqlmodel import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from smartem_backend.model.database import (
     Acquisition,
@@ -17,7 +17,7 @@ from smartem_backend.model.database import (
 )
 
 
-def query_agent_statuses(db: Session, agent_id: str | None = None) -> list[dict]:
+async def query_agent_statuses(db: AsyncSession, agent_id: str | None = None) -> list[dict]:
     query = (
         select(
             AgentConnection.agent_id,
@@ -40,7 +40,7 @@ def query_agent_statuses(db: Session, agent_id: str | None = None) -> list[dict]
     if agent_id:
         query = query.where(AgentConnection.agent_id == agent_id)
 
-    rows = db.exec(query).all()
+    rows = (await db.execute(query)).all()
     return [
         {
             "agent_id": row.agent_id,
@@ -54,36 +54,44 @@ def query_agent_statuses(db: Session, agent_id: str | None = None) -> list[dict]
     ]
 
 
-def query_acquisition_progress(db: Session, acquisition_uuid: str | None = None) -> list[dict]:
+async def query_acquisition_progress(db: AsyncSession, acquisition_uuid: str | None = None) -> list[dict]:
     acq_query = select(Acquisition.uuid, Acquisition.status)
     if acquisition_uuid:
         acq_query = acq_query.where(Acquisition.uuid == acquisition_uuid)
 
-    acquisitions = db.exec(acq_query).all()
+    acquisitions = (await db.execute(acq_query)).all()
     results = []
     for acq in acquisitions:
-        grid_count = db.exec(select(func.count()).select_from(Grid).where(Grid.acquisition_uuid == acq.uuid)).one()
-        gridsquare_count = db.exec(
-            select(func.count())
-            .select_from(GridSquare)
-            .join(Grid, GridSquare.grid_uuid == Grid.uuid)
-            .where(Grid.acquisition_uuid == acq.uuid)
-        ).one()
-        foilhole_count = db.exec(
-            select(func.count())
-            .select_from(FoilHole)
-            .join(GridSquare, FoilHole.gridsquare_uuid == GridSquare.uuid)
-            .join(Grid, GridSquare.grid_uuid == Grid.uuid)
-            .where(Grid.acquisition_uuid == acq.uuid)
-        ).one()
-        micrograph_count = db.exec(
-            select(func.count())
-            .select_from(Micrograph)
-            .join(FoilHole, Micrograph.foilhole_uuid == FoilHole.uuid)
-            .join(GridSquare, FoilHole.gridsquare_uuid == GridSquare.uuid)
-            .join(Grid, GridSquare.grid_uuid == Grid.uuid)
-            .where(Grid.acquisition_uuid == acq.uuid)
-        ).one()
+        grid_count = (
+            await db.execute(select(func.count()).select_from(Grid).where(Grid.acquisition_uuid == acq.uuid))
+        ).scalar_one()
+        gridsquare_count = (
+            await db.execute(
+                select(func.count())
+                .select_from(GridSquare)
+                .join(Grid, GridSquare.grid_uuid == Grid.uuid)
+                .where(Grid.acquisition_uuid == acq.uuid)
+            )
+        ).scalar_one()
+        foilhole_count = (
+            await db.execute(
+                select(func.count())
+                .select_from(FoilHole)
+                .join(GridSquare, FoilHole.gridsquare_uuid == GridSquare.uuid)
+                .join(Grid, GridSquare.grid_uuid == Grid.uuid)
+                .where(Grid.acquisition_uuid == acq.uuid)
+            )
+        ).scalar_one()
+        micrograph_count = (
+            await db.execute(
+                select(func.count())
+                .select_from(Micrograph)
+                .join(FoilHole, Micrograph.foilhole_uuid == FoilHole.uuid)
+                .join(GridSquare, FoilHole.gridsquare_uuid == GridSquare.uuid)
+                .join(Grid, GridSquare.grid_uuid == Grid.uuid)
+                .where(Grid.acquisition_uuid == acq.uuid)
+            )
+        ).scalar_one()
         results.append(
             {
                 "acquisition_uuid": acq.uuid,
@@ -97,7 +105,7 @@ def query_acquisition_progress(db: Session, acquisition_uuid: str | None = None)
     return results
 
 
-def query_instruction_updates(db: Session, since: datetime, agent_id: str | None = None) -> list[dict]:
+async def query_instruction_updates(db: AsyncSession, since: datetime, agent_id: str | None = None) -> list[dict]:
     query = select(AgentInstruction).where(
         (AgentInstruction.created_at > since)
         | (AgentInstruction.sent_at > since)
@@ -106,14 +114,20 @@ def query_instruction_updates(db: Session, since: datetime, agent_id: str | None
     if agent_id:
         query = query.where(AgentInstruction.agent_id == agent_id)
 
-    instructions = db.exec(query).all()
+    instructions = (await db.execute(query)).scalars().all()
     results = []
     for instr in instructions:
-        ack = db.exec(
-            select(AgentInstructionAcknowledgement)
-            .where(AgentInstructionAcknowledgement.instruction_id == instr.instruction_id)
-            .order_by(AgentInstructionAcknowledgement.created_at.desc())
-        ).first()
+        ack = (
+            (
+                await db.execute(
+                    select(AgentInstructionAcknowledgement)
+                    .where(AgentInstructionAcknowledgement.instruction_id == instr.instruction_id)
+                    .order_by(AgentInstructionAcknowledgement.created_at.desc())
+                )
+            )
+            .scalars()
+            .first()
+        )
         results.append(
             {
                 "instruction_id": instr.instruction_id,
@@ -130,7 +144,9 @@ def query_instruction_updates(db: Session, since: datetime, agent_id: str | None
     return results
 
 
-def query_processing_metrics(db: Session, since: datetime, acquisition_uuid: str | None = None) -> list[dict]:
+async def query_processing_metrics(
+    db: AsyncSession, since: datetime, acquisition_uuid: str | None = None
+) -> list[dict]:
     query = select(Micrograph).where(and_(Micrograph.updated_at.is_not(None), Micrograph.updated_at > since))
     if acquisition_uuid:
         query = (
@@ -140,7 +156,7 @@ def query_processing_metrics(db: Session, since: datetime, acquisition_uuid: str
             .where(Grid.acquisition_uuid == acquisition_uuid)
         )
 
-    micrographs = db.exec(query).all()
+    micrographs = (await db.execute(query)).scalars().all()
     return [
         {
             "micrograph_uuid": m.uuid,
@@ -155,12 +171,14 @@ def query_processing_metrics(db: Session, since: datetime, acquisition_uuid: str
     ]
 
 
-def query_agent_logs(db: Session, since_id: int, agent_id: str | None = None, limit: int = 200) -> list[dict]:
+async def query_agent_logs(
+    db: AsyncSession, since_id: int, agent_id: str | None = None, limit: int = 200
+) -> list[dict]:
     query = select(AgentLog).where(AgentLog.id > since_id).order_by(AgentLog.id).limit(limit)
     if agent_id:
         query = query.where(AgentLog.agent_id == agent_id)
 
-    logs = db.exec(query).all()
+    logs = (await db.execute(query)).scalars().all()
     return [
         {
             "id": log.id,
