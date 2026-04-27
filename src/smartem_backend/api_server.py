@@ -1934,15 +1934,13 @@ async def acknowledge_instruction(
         if instruction.agent_id != agent_id:
             raise HTTPException(status_code=400, detail="Instruction does not belong to this agent")
 
-        # Mark instruction as acknowledged in the database
-        if instruction.status == "sent":
-            instruction.status = "acknowledged"
-            instruction.acknowledged_at = datetime.now()
-            await db.commit()
-        else:
+        if instruction.status != "sent":
             raise HTTPException(status_code=400, detail="Instruction cannot be acknowledged (invalid status)")
 
-        # Create acknowledgement record for audit trail
+        now = datetime.now()
+        instruction.status = "acknowledged"
+        instruction.acknowledged_at = now
+
         ack_record = AgentInstructionAcknowledgement(
             instruction_id=instruction_id,
             agent_id=agent_id,
@@ -1951,21 +1949,17 @@ async def acknowledge_instruction(
             result=acknowledgement.result,
             error_message=acknowledgement.error_message,
             acknowledgement_metadata=getattr(acknowledgement, "metadata", None) or {},
-            created_at=datetime.now(),
-            processed_at=datetime.now() if acknowledgement.status in ["processed", "failed"] else None,
+            created_at=now,
+            processed_at=now if acknowledgement.status in ["processed", "failed"] else None,
         )
         db.add(ack_record)
+
+        session.last_activity_at = now
+        session_connection.last_heartbeat_at = now
+
         await db.commit()
 
         logger.info(f"Created acknowledgement for instruction {instruction_id} with status {acknowledgement.status}")
-
-        # Update session activity
-        session.last_activity_at = datetime.now()
-        await db.commit()
-
-        # Update connection heartbeat
-        session_connection.last_heartbeat_at = datetime.now()
-        await db.commit()
 
         logger.info(
             f"Instruction {instruction_id} acknowledged by agent {agent_id} with status: {acknowledgement.status}"
