@@ -30,7 +30,11 @@ class TestGetPredictionModel:
         set_db_row(client, QualityPredictionModel(name="model-a", description="desc"))
         resp = client.get("/prediction_models/model-a")
         assert resp.status_code == 200
-        assert resp.json()["name"] == "model-a"
+        body = resp.json()
+        assert body["name"] == "model-a"
+        assert body["can_train"] is False
+        assert body["can_infer"] is True
+        assert body["can_update"] is False
 
 
 class TestCreatePredictionModel:
@@ -38,9 +42,25 @@ class TestCreatePredictionModel:
         set_db_row(client, None)  # no existing
         resp = client.post("/prediction_models", json=_payload())
         assert resp.status_code == 201
-        assert resp.json()["name"] == "model-a"
+        body = resp.json()
+        assert body["name"] == "model-a"
+        assert body["can_train"] is False
+        assert body["can_infer"] is True
+        assert body["can_update"] is False
         client._db.add.assert_called_once()
         client._db.commit.assert_called_once()
+
+    def test_create_with_capability_flags(self, client):
+        set_db_row(client, None)
+        resp = client.post(
+            "/prediction_models",
+            json=_payload(can_train=True, can_infer=False, can_update=True),
+        )
+        assert resp.status_code == 201
+        body = resp.json()
+        assert body["can_train"] is True
+        assert body["can_infer"] is False
+        assert body["can_update"] is True
 
     def test_409_when_name_already_exists(self, client):
         from smartem_backend.model.database import QualityPredictionModel
@@ -63,6 +83,21 @@ class TestUpdatePredictionModel:
         resp = client.put("/prediction_models/model-a", json={"description": "new"})
         assert resp.status_code == 200
         client._db.commit.assert_called_once()
+
+    def test_update_capability_flags(self, client):
+        from smartem_backend.model.database import QualityPredictionModel
+
+        existing = QualityPredictionModel(name="model-a", description="old")
+        set_db_row(client, existing)
+        resp = client.put(
+            "/prediction_models/model-a",
+            json={"can_train": True, "can_update": True},
+        )
+        assert resp.status_code == 200
+        body = resp.json()
+        assert body["can_train"] is True
+        assert body["can_infer"] is True
+        assert body["can_update"] is True
 
     def test_404_when_not_found(self, client):
         set_db_row(client, None)

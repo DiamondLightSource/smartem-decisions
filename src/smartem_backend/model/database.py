@@ -241,6 +241,9 @@ class QualityPredictionModel(SQLModel, table=True):
     name: str = Field(primary_key=True)
     description: str = ""
     level: ModelLevel = Field(default=ModelLevel.GRIDSQUARE, sa_column=Column(ModelLevelType))
+    can_train: bool = Field(default=False)
+    can_infer: bool = Field(default=True)
+    can_update: bool = Field(default=False)
     parameters: list["QualityPredictionModelParameter"] = Relationship(back_populates="model", cascade_delete=True)
     weights: list["QualityPredictionModelWeight"] = Relationship(back_populates="model", cascade_delete=True)
     predictions: list["QualityPrediction"] = Relationship(back_populates="model", cascade_delete=True)
