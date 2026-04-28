@@ -327,10 +327,16 @@ class QualityPredictionModelBaseFields(BaseModel):
 class QualityPredictionModelCreateRequest(BaseModel):
     name: str
     description: str = ""
+    can_train: bool = False
+    can_infer: bool = True
+    can_update: bool = False
 
 
 class QualityPredictionModelUpdateRequest(BaseModel):
     description: str | None = None
+    can_train: bool | None = None
+    can_infer: bool | None = None
+    can_update: bool | None = None
 
 
 class QualityPredictionCreateRequest(BaseModel):

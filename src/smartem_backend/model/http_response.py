@@ -196,6 +196,9 @@ class MicrographResponse(BaseModel):
 class QualityPredictionModelResponse(BaseModel):
     name: str
     description: str
+    can_train: bool
+    can_infer: bool
+    can_update: bool
 
     model_config = ConfigDict(from_attributes=True)
 
