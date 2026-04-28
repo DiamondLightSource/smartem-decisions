@@ -47,7 +47,7 @@ class TestUpdateGridSquare:
         )
         calls = stub_publisher("publish_gridsquare_updated")
 
-        resp = client.put("/gridsquares/gs-1", json={"defocus": 1.5, "status": "none"})
+        resp = client.put("/gridsquares/gs-1", json={"defocus": 1.5})
         assert resp.status_code == 200
         client._db.commit.assert_called_once()
         assert calls == [{"uuid": "gs-1", "grid_uuid": "grid-1", "gridsquare_id": "gs-id-1"}]
@@ -62,7 +62,7 @@ class TestUpdateGridSquare:
         regular = stub_publisher("publish_gridsquare_updated")
         lowmag = stub_publisher("publish_gridsquare_lowmag_updated")
 
-        resp = client.put("/gridsquares/gs-1", json={"lowmag": True, "defocus": 1.0, "status": "none"})
+        resp = client.put("/gridsquares/gs-1", json={"lowmag": True, "defocus": 1.0})
         assert resp.status_code == 200
         assert regular == []
         assert lowmag == [{"uuid": "gs-1", "grid_uuid": "grid-1", "gridsquare_id": "gs-id-1"}]
@@ -70,7 +70,7 @@ class TestUpdateGridSquare:
     def test_404_when_not_found(self, client, stub_publisher):
         set_db_row(client, None)
         calls = stub_publisher("publish_gridsquare_updated")
-        resp = client.put("/gridsquares/missing", json={"defocus": 1.0, "status": "none"})
+        resp = client.put("/gridsquares/missing", json={"defocus": 1.0})
         assert resp.status_code == 404
         assert calls == []
 
@@ -132,6 +132,15 @@ class TestCreateGridGridSquare:
         assert resp.status_code == 422
         client._db.add.assert_not_called()
         assert calls == []
+
+    def test_path_grid_uuid_wins_over_body(self, client, stub_publisher):
+        calls = stub_publisher("publish_gridsquare_created")
+        payload = _gs_payload(grid_uuid="other-grid")
+
+        resp = client.post("/grids/grid-1/gridsquares", json=payload)
+        assert resp.status_code == 201
+        assert resp.json()["grid_uuid"] == "grid-1"
+        assert calls[0]["grid_uuid"] == "grid-1"
 
 
 class TestGridSquareRegistered:

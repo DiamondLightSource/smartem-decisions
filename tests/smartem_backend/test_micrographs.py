@@ -3,12 +3,11 @@
 from .conftest import set_db_row
 
 
-def _micrograph_payload(uuid: str = "mic-1", foilhole_uuid: str = "fh-1", **overrides) -> dict:
+def _micrograph_payload(uuid: str = "mic-1", **overrides) -> dict:
     base = {
         "uuid": uuid,
         "micrograph_id": "mic-id-1",
         "foilhole_id": "fh-id-1",
-        "foilhole_uuid": foilhole_uuid,
     }
     base.update(overrides)
     return base
@@ -116,3 +115,12 @@ class TestCreateFoilHoleMicrograph:
         assert resp.status_code == 422
         client._db.add.assert_not_called()
         assert calls == []
+
+    def test_path_foilhole_uuid_wins_over_body(self, client, stub_publisher):
+        calls = stub_publisher("publish_micrograph_created")
+        payload = _micrograph_payload(foilhole_uuid="other-fh")
+
+        resp = client.post("/foilholes/fh-1/micrographs", json=payload)
+        assert resp.status_code == 201
+        assert resp.json()["foilhole_uuid"] == "fh-1"
+        assert calls[0]["foilhole_uuid"] == "fh-1"

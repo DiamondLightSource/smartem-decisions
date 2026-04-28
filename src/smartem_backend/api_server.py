@@ -894,7 +894,7 @@ async def update_gridsquare(
     if not db_gridsquare:
         raise HTTPException(status_code=404, detail="Grid Square not found")
     update_data = gridsquare.model_dump(exclude_unset=True)
-    if update_data["status"] == GridSquareStatus.NONE:
+    if update_data.get("status", GridSquareStatus.NONE) == GridSquareStatus.NONE:
         update_data["status"] = db_gridsquare.status
     for key, value in update_data.items():
         if hasattr(db_gridsquare, key):
@@ -970,10 +970,10 @@ async def create_grid_gridsquare(grid_uuid: str, gridsquare: GridSquareCreateReq
     """Create a new grid square for a specific grid"""
 
     gridsquare_data = {
+        **gridsquare.model_dump(),
         "uuid": gridsquare.uuid,
         "grid_uuid": grid_uuid,
         "status": GridSquareStatus.NONE,
-        **gridsquare.model_dump(),
     }
     db_gridsquare = GridSquare(**gridsquare_data)
     db.add(db_gridsquare)
@@ -991,15 +991,11 @@ async def create_grid_gridsquare(grid_uuid: str, gridsquare: GridSquareCreateReq
         logger.error(f"Failed to publish gridsquare created event for UUID: {db_gridsquare.uuid}")
 
     response_data = {
+        **gridsquare.model_dump(),
         "uuid": gridsquare.uuid,
         "grid_uuid": grid_uuid,
         "status": GridSquareStatus.NONE,
-        **gridsquare.model_dump(),
     }
-
-    # Make sure status is set correctly (the above might get overridden by model_dump)
-    if "status" not in response_data or response_data["status"] is None:
-        response_data["status"] = GridSquareStatus.NONE
 
     return GridSquareResponse(**response_data)
 
@@ -1419,10 +1415,10 @@ async def create_foilhole_micrograph(
     """Create a new micrograph for a specific foil hole"""
 
     micrograph_data = {
+        **micrograph.model_dump(),
         "uuid": micrograph.uuid,
         "foilhole_uuid": foilhole_uuid,
         "status": MicrographStatus.NONE,
-        **micrograph.model_dump(),
     }
     db_micrograph = Micrograph(**micrograph_data)
     db.add(db_micrograph)
@@ -1438,16 +1434,12 @@ async def create_foilhole_micrograph(
         logger.error(f"Failed to publish micrograph created event for UUID: {db_micrograph.uuid}")
 
     response_data = {
+        **micrograph.model_dump(),
         "uuid": micrograph.uuid,
         "foilhole_uuid": foilhole_uuid,
         "foilhole_id": micrograph.foilhole_id,
         "status": MicrographStatus.NONE,
-        **micrograph.model_dump(),
     }
-
-    # Make sure status is set correctly (the above might get overridden by model_dump)
-    if "status" not in response_data or response_data["status"] is None:
-        response_data["status"] = MicrographStatus.NONE
 
     return MicrographResponse(**response_data)
 
