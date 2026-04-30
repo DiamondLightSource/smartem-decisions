@@ -19,3 +19,7 @@ database:
   pool_timeout: 30       # Seconds to wait for connection from pool
   pool_recycle: 3600     # Seconds after which connection is recreated
   pool_pre_ping: true    # Validate connections before use (recommended for production)
+
+storage:
+  # Directory to be used to temporarily store files that may be needed for calculations
+  directory: /tmp

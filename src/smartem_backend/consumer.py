@@ -9,7 +9,8 @@ import signal
 import uuid
 from collections.abc import Awaitable, Callable
 from datetime import datetime
-from typing import Any
+from pathlib import Path
+from typing import Any, Literal
 
 import numpy as np
 import scipy.stats
@@ -362,12 +363,7 @@ async def handle_micrograph_deleted(event_data: dict[str, Any]) -> None:
         logger.error(f"Error processing micrograph deleted event: {e}")
 
 
-async def _check_against_statistics(
-    metric_name: str,
-    micrograph_uuid: str,
-    comparison_value: float,
-    larger_better: bool = False,
-) -> float:
+async def _calculate_gaussian_cdf(metric_name: str, micrograph_uuid: str, comparison_value: float) -> float:
     async with SessionLocal() as session:
         grid_row = (
             await session.execute(
@@ -395,68 +391,110 @@ async def _check_against_statistics(
         if comparison_value == metric_stats[0].value_sum / metric_stats[0].count:
             return 0.5
         elif comparison_value > metric_stats[0].value_sum / metric_stats[0].count:
-            return 1 if larger_better else 0
+            return 1
         else:
-            return 0 if larger_better else 1
+            return 0
     else:
         metric_mean = metric_stats[0].value_sum / metric_stats[0].count
         metric_var = metric_stats[0].squared_value_sum / (metric_stats[0].count - 1)
         cdf_value = float(scipy.stats.norm(metric_mean, np.sqrt(metric_var)).cdf(comparison_value))
-        return cdf_value if larger_better else 1 - cdf_value
+        return cdf_value
+
+
+async def _calculate_kde_cdf(metric_name: str, micrograph_uuid: str, comparison_value: float) -> float:
+    async with SessionLocal() as session:
+        grid_row = (
+            await session.execute(
+                select(GridSquare, FoilHole, Micrograph)
+                .where(GridSquare.uuid == FoilHole.gridsquare_uuid)
+                .where(FoilHole.uuid == Micrograph.foilhole_uuid)
+                .where(Micrograph.uuid == micrograph_uuid)
+            )
+        ).one()
+        grid_uuid = grid_row[0].grid_uuid
+    if conf is None:
+        return 0.5
+    base_path = Path(conf["storage"]["directory"])
+    if (base_path / f"{grid_uuid}_{metric_name}.npy").is_file():
+        metric_data = np.load(base_path / f"{grid_uuid}_{metric_name}.npy")
+    else:
+        np.save(base_path / f"{grid_uuid}_{metric_name}.npy", [comparison_value])
+        return 0.5
+    kde = scipy.stats.gaussian_kde(metric_data)
+    integrated_pdf = kde.integrate_box_1d(0, comparison_value)
+    metric_data = np.append(metric_data, comparison_value)
+    np.save(base_path / f"{grid_uuid}_{metric_name}.npy", metric_data)
+    return integrated_pdf
+
+
+async def _check_against_statistics(
+    metric_name: str,
+    micrograph_uuid: str,
+    comparison_value: float,
+    larger_better: bool = False,
+    method: Literal["gaussian", "kde"] = "gaussian",
+) -> float:
+    if method == "gaussian":
+        cdf_value = await _calculate_gaussian_cdf(metric_name, micrograph_uuid, comparison_value)
+    else:
+        cdf_value = await _calculate_kde_cdf(metric_name, micrograph_uuid, comparison_value)
+    return cdf_value if larger_better else 1 - cdf_value
+
+
+async def _update_statistical_model_gaussian(micrograph_uuid: str, metric_name: str, new_value: float, quality: float):
+    async with SessionLocal() as session:
+        grid_row = (
+            await session.execute(
+                select(GridSquare, FoilHole, Micrograph)
+                .where(GridSquare.uuid == FoilHole.gridsquare_uuid)
+                .where(FoilHole.uuid == Micrograph.foilhole_uuid)
+                .where(Micrograph.uuid == micrograph_uuid)
+            )
+        ).one()
+        grid_uuid = grid_row[0].grid_uuid
+        metric_stats = (
+            (
+                await session.execute(
+                    select(QualityMetricStatistics)
+                    .where(QualityMetricStatistics.grid_uuid == grid_uuid)
+                    .where(QualityMetricStatistics.name == metric_name)
+                )
+            )
+            .scalars()
+            .all()
+        )
+        if not metric_stats:
+            updated_metric_stats = QualityMetricStatistics(
+                grid_uuid=grid_uuid,
+                name=metric_name,
+                count=1,
+                value_sum=new_value,
+                squared_value_sum=0,
+            )
+        else:
+            updated_metric_stats = metric_stats[0]
+            old_diff = new_value - (updated_metric_stats.value_sum / updated_metric_stats.count)
+            updated_metric_stats.count += 1
+            updated_metric_stats.value_sum += new_value
+            updated_metric_stats.squared_value_sum += old_diff * (
+                new_value - (updated_metric_stats.value_sum / updated_metric_stats.count)
+            )
+        session.add(updated_metric_stats)
+        await session.commit()
+        await prior_update(quality, micrograph_uuid, metric_name, session)
+        micrograph = (
+            (await session.execute(select(Micrograph).where(Micrograph.uuid == micrograph_uuid))).scalars().first()
+        )
+        if micrograph:
+            micrograph.updated_at = datetime.now()
+            await session.commit()
 
 
 async def handle_motion_correction_complete(event_data: dict[str, Any]) -> None:
     try:
         event = MotionCorrectionCompleteBody(**event_data)
         quality = await _check_against_statistics("motioncorrection", event.micrograph_uuid, event.total_motion)
-        async with SessionLocal() as session:
-            grid_row = (
-                await session.execute(
-                    select(GridSquare, FoilHole, Micrograph)
-                    .where(GridSquare.uuid == FoilHole.gridsquare_uuid)
-                    .where(FoilHole.uuid == Micrograph.foilhole_uuid)
-                    .where(Micrograph.uuid == event.micrograph_uuid)
-                )
-            ).one()
-            grid_uuid = grid_row[0].grid_uuid
-            metric_stats = (
-                (
-                    await session.execute(
-                        select(QualityMetricStatistics)
-                        .where(QualityMetricStatistics.grid_uuid == grid_uuid)
-                        .where(QualityMetricStatistics.name == "motioncorrection")
-                    )
-                )
-                .scalars()
-                .all()
-            )
-            if not metric_stats:
-                updated_metric_stats = QualityMetricStatistics(
-                    grid_uuid=grid_uuid,
-                    name="motioncorrection",
-                    count=1,
-                    value_sum=event.total_motion,
-                    squared_value_sum=0,
-                )
-            else:
-                updated_metric_stats = metric_stats[0]
-                old_diff = event.total_motion - (updated_metric_stats.value_sum / updated_metric_stats.count)
-                updated_metric_stats.count += 1
-                updated_metric_stats.value_sum += event.total_motion
-                updated_metric_stats.squared_value_sum += old_diff * (
-                    event.total_motion - (updated_metric_stats.value_sum / updated_metric_stats.count)
-                )
-            session.add(updated_metric_stats)
-            await session.commit()
-            await prior_update(quality, event.micrograph_uuid, "motioncorrection", session)
-            micrograph = (
-                (await session.execute(select(Micrograph).where(Micrograph.uuid == event.micrograph_uuid)))
-                .scalars()
-                .first()
-            )
-            if micrograph:
-                micrograph.updated_at = datetime.now()
-                await session.commit()
+        await _update_statistical_model_gaussian(event.micrograph_uuid, "motioncorrection", event.total_motion, quality)
         await publish_motion_correction_registered(
             event.micrograph_uuid, quality >= 0.5, metric_name="motioncorrection"
         )
@@ -472,56 +510,9 @@ async def handle_ctf_estimation_complete(event_data: dict[str, Any]) -> None:
         quality = await _check_against_statistics(
             "ctfmaxresolution", event.micrograph_uuid, event.ctf_max_resolution_estimate
         )
-        async with SessionLocal() as session:
-            grid_row = (
-                await session.execute(
-                    select(GridSquare, FoilHole, Micrograph)
-                    .where(GridSquare.uuid == FoilHole.gridsquare_uuid)
-                    .where(FoilHole.uuid == Micrograph.foilhole_uuid)
-                    .where(Micrograph.uuid == event.micrograph_uuid)
-                )
-            ).one()
-            grid_uuid = grid_row[0].grid_uuid
-            metric_stats = (
-                (
-                    await session.execute(
-                        select(QualityMetricStatistics)
-                        .where(QualityMetricStatistics.grid_uuid == grid_uuid)
-                        .where(QualityMetricStatistics.name == "ctfmaxresolution")
-                    )
-                )
-                .scalars()
-                .all()
-            )
-            if not metric_stats:
-                updated_metric_stats = QualityMetricStatistics(
-                    grid_uuid=grid_uuid,
-                    name="ctfmaxresolution",
-                    count=1,
-                    value_sum=event.ctf_max_resolution_estimate,
-                    squared_value_sum=0,
-                )
-            else:
-                updated_metric_stats = metric_stats[0]
-                old_diff = event.ctf_max_resolution_estimate - (
-                    updated_metric_stats.value_sum / updated_metric_stats.count
-                )
-                updated_metric_stats.count += 1
-                updated_metric_stats.value_sum += event.ctf_max_resolution_estimate
-                updated_metric_stats.squared_value_sum += old_diff * (
-                    event.ctf_max_resolution_estimate - (updated_metric_stats.value_sum / updated_metric_stats.count)
-                )
-            session.add(updated_metric_stats)
-            await session.commit()
-            await prior_update(quality, event.micrograph_uuid, "ctfmaxresolution", session)
-            micrograph = (
-                (await session.execute(select(Micrograph).where(Micrograph.uuid == event.micrograph_uuid)))
-                .scalars()
-                .first()
-            )
-            if micrograph:
-                micrograph.updated_at = datetime.now()
-                await session.commit()
+        await _update_statistical_model_gaussian(
+            event.micrograph_uuid, "ctfmaxresolution", event.ctf_max_resolution_estimate, quality
+        )
         await publish_ctf_estimation_registered(event.micrograph_uuid, quality >= 0.5, metric_name="ctfmaxresolution")
     except ValidationError as e:
         logger.error(f"Validation error processing ctf event: {e}")
@@ -535,48 +526,9 @@ async def handle_particle_picking_complete(event_data: dict[str, Any]) -> None:
         quality = await _check_against_statistics(
             "numparticles", event.micrograph_uuid, event.number_of_particles_picked, larger_better=True
         )
-        async with SessionLocal() as session:
-            grid_row = (
-                await session.execute(
-                    select(GridSquare, FoilHole, Micrograph)
-                    .where(GridSquare.uuid == FoilHole.gridsquare_uuid)
-                    .where(FoilHole.uuid == Micrograph.foilhole_uuid)
-                    .where(Micrograph.uuid == event.micrograph_uuid)
-                )
-            ).one()
-            grid_uuid = grid_row[0].grid_uuid
-            metric_stats = (
-                (
-                    await session.execute(
-                        select(QualityMetricStatistics)
-                        .where(QualityMetricStatistics.grid_uuid == grid_uuid)
-                        .where(QualityMetricStatistics.name == "numparticles")
-                    )
-                )
-                .scalars()
-                .all()
-            )
-            if not metric_stats:
-                updated_metric_stats = QualityMetricStatistics(
-                    grid_uuid=grid_uuid,
-                    name="numparticles",
-                    count=1,
-                    value_sum=event.number_of_particles_picked,
-                    squared_value_sum=0,
-                )
-            else:
-                updated_metric_stats = metric_stats[0]
-                old_diff = event.number_of_particles_picked - (
-                    updated_metric_stats.value_sum / updated_metric_stats.count
-                )
-                updated_metric_stats.count += 1
-                updated_metric_stats.value_sum += event.number_of_particles_picked
-                updated_metric_stats.squared_value_sum += old_diff * (
-                    event.number_of_particles_picked - (updated_metric_stats.value_sum / updated_metric_stats.count)
-                )
-            session.add(updated_metric_stats)
-            await session.commit()
-            await prior_update(quality, event.micrograph_uuid, "numparticles", session)
+        await _update_statistical_model_gaussian(
+            event.micrograph_uuid, "numparticles", event.number_pf_particles_picked, quality
+        )
         await publish_particle_picking_registered(event.micrograph_uuid, quality >= 0.5, metric_name="numparticles")
     except ValidationError as e:
         logger.error(f"Validation error processing particle picking event: {e}")
