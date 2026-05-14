@@ -73,6 +73,7 @@ backend = [
     "sqlmodel>=0.0.24,<1.0.0",
     "alembic>=1.13.0,<2.0.0",
     "sse-starlette>=2.1.0,<4.0.0",
+    "pyjwt[crypto]>=2.9.0,<3.0.0",
 ]
 
 # Packages for cryoEM file I/O; used for image displays from API
