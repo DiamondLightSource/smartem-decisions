@@ -24,6 +24,7 @@ from sse_starlette.sse import EventSourceResponse
 
 from smartem_backend import mq_publisher as mq_publisher_module
 from smartem_backend.agent_connection_manager import get_connection_manager
+from smartem_backend.auth import verify_token
 from smartem_backend.frontend_stream import (
     query_acquisition_progress,
     query_agent_logs,
@@ -228,6 +229,7 @@ app = FastAPI(
     version=__version__,
     redoc_url=None,
     lifespan=lifespan,
+    dependencies=[Depends(verify_token)],
 )
 
 # Resolve runtime config (env var overrides appconfig.yml, which overrides hard default)
