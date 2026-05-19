@@ -59,6 +59,7 @@ class SmartEMWatcherV2(FileSystemEventHandler):
         error_base_delay: float = 1.0,
         error_max_delay: float = 60.0,
         metrics_window_size: int = 1000,
+        keycloak_client=None,
     ):
         self.watch_dir = watch_dir.absolute()
         self.log_interval = log_interval
@@ -76,7 +77,7 @@ class SmartEMWatcherV2(FileSystemEventHandler):
         else:
             if not api_url:
                 raise ValueError("api_url is required when dry_run is False")
-            self.datastore = PersistentDataStore(str(self.watch_dir), api_url)
+            self.datastore = PersistentDataStore(str(self.watch_dir), api_url, keycloak_client=keycloak_client)
 
         self.parser = EpuParser()
 
@@ -108,7 +109,11 @@ class SmartEMWatcherV2(FileSystemEventHandler):
 
         if agent_id and session_id and api_url and not dry_run:
             self.sse_client = SSEAgentClient(
-                base_url=api_url, agent_id=agent_id, session_id=session_id, timeout=sse_timeout
+                base_url=api_url,
+                agent_id=agent_id,
+                session_id=session_id,
+                timeout=sse_timeout,
+                keycloak_client=keycloak_client,
             )
             self._start_sse_stream()
             self._start_heartbeat_timer()

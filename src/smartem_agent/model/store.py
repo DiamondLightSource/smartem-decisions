@@ -357,14 +357,19 @@ class InMemoryDataStore:
 
 
 class PersistentDataStore(InMemoryDataStore):
-    def __init__(self, root_dir: str, api_url: str):
+    def __init__(self, root_dir: str, api_url: str, keycloak_client=None):
         """
         Initialize with root directory and API URL.
         Will exit the program if acquisition creation fails.
+
+        Args:
+            root_dir: Local root directory being watched.
+            api_url: Backend API base URL.
+            keycloak_client: Optional KeycloakClient for Bearer-auth integration.
         """
         try:
             super().__init__(root_dir)
-            self.api_client = SmartEMAPIClient(base_url=api_url, logger=logger)
+            self.api_client = SmartEMAPIClient(base_url=api_url, logger=logger, keycloak_client=keycloak_client)
             result = self.api_client.create_acquisition(self.acquisition)
             if not result:
                 raise RuntimeError(f"API call to create acquisition {self.acquisition.uuid} failed with no response")

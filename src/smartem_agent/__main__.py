@@ -3,6 +3,7 @@
 import logging
 import platform
 import signal
+import sys
 import time
 from pathlib import Path
 
@@ -14,7 +15,20 @@ from smartem_agent.fs_watcher import DEFAULT_PATTERNS, SmartEMWatcherV2
 from smartem_agent.model.store import InMemoryDataStore
 from smartem_agent.remote_log_handler import RemoteLogHandler
 from smartem_backend.api_client import SmartEMAPIClient as APIClient
+from smartem_backend.keycloak_client import KeycloakClient, load_keycloak_config
 from smartem_common.utils import generate_uuid
+
+
+def _default_keycloak_config_path() -> Path:
+    """Default location for the Keycloak configuration file.
+
+    For a PyInstaller-bundled executable, this is `agent.env` alongside the .exe.
+    For a `python -m smartem_agent` invocation, this is `agent.env` in the current
+    working directory.
+    """
+    if getattr(sys, "frozen", False):
+        return Path(sys.executable).parent / "agent.env"
+    return Path.cwd() / "agent.env"
 
 epu_data_intake_cli = typer.Typer(help="EPU Data Intake Tools")
 parse_cli = typer.Typer(help="Commands for parsing EPU data")
@@ -168,6 +182,15 @@ def watch_directory(
     heartbeat_interval: int = typer.Option(
         60, "--heartbeat-interval", help="Agent heartbeat interval in seconds (0 to disable)"
     ),
+    config: Path = typer.Option(  # noqa: B008
+        None,
+        "--config",
+        help=(
+            "Path to the Keycloak authentication configuration file (dotenv-style with "
+            "KEYCLOAK_URL, KEYCLOAK_REALM, KEYCLOAK_CLIENT_ID, KEYCLOAK_CLIENT_SECRET). "
+            "Defaults to agent.env alongside the executable."
+        ),
+    ),
     verbose: int = typer.Option(
         0, "-v", "--verbose", count=True, help="Increase verbosity (-v for INFO, -vv for DEBUG)"
     ),
@@ -200,10 +223,19 @@ def watch_directory(
         raise typer.Exit(1)
 
     remote_log_handler: RemoteLogHandler | None = None
+    keycloak_client: KeycloakClient | None = None
 
     if not dry_run:
+        config_path = config or _default_keycloak_config_path()
         try:
-            with APIClient(api_url) as client:
+            kc_config = load_keycloak_config(config_path)
+        except (FileNotFoundError, ValueError) as e:
+            logging.error(f"Keycloak configuration error: {e}")
+            raise typer.Exit(1) from None
+        keycloak_client = KeycloakClient(kc_config)
+
+        try:
+            with APIClient(api_url, keycloak_client=keycloak_client) as client:
                 status_data = client.get_status()
             logging.info(f"API is reachable at {api_url} - Status: {status_data.get('status', 'unknown')}")
         except Exception as e:
@@ -211,7 +243,7 @@ def watch_directory(
             raise typer.Exit(1) from None
 
         if agent_id and session_id:
-            log_client = APIClient(api_url)
+            log_client = APIClient(api_url, keycloak_client=keycloak_client)
             remote_log_handler = RemoteLogHandler(
                 api_client=log_client,
                 agent_id=agent_id,
@@ -235,6 +267,7 @@ def watch_directory(
         session_id=session_id,
         sse_timeout=sse_timeout,
         heartbeat_interval=heartbeat_interval,
+        keycloak_client=keycloak_client,
     )
 
     logging.info("Parsing existing directory contents...")
