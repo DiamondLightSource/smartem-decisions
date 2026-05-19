@@ -225,7 +225,7 @@ class SmartEMAPIClient:
     and maintains a cache of entity IDs.
     """
 
-    def __init__(self, base_url: str, timeout: float = 10.0, logger=None):
+    def __init__(self, base_url: str, timeout: float = 10.0, logger=None, keycloak_client=None):
         """
         Initialize the SmartEM API client
 
@@ -233,11 +233,15 @@ class SmartEMAPIClient:
             base_url: Base URL for the API
             timeout: Request timeout in seconds
             logger: Optional custom logger instance
+            keycloak_client: Optional KeycloakClient. When provided, every request gains a
+                Bearer Authorization header sourced from the client; a 401 from the backend
+                triggers a single refresh-and-retry.
         """
         self.base_url = base_url.rstrip("/")
         self.timeout = timeout
         self._session = requests.Session()
         self._session.timeout = timeout
+        self._keycloak_client = keycloak_client
         self._logger = logger or logging.getLogger(__name__)
 
         # Configure logger if it's the default one
@@ -249,6 +253,25 @@ class SmartEMAPIClient:
             self._logger.setLevel(logging.INFO)
 
         self._logger.info(f"Initialized SmartEM API client with base URL: {base_url}")
+
+    def _send_with_auth(self, method: str, url: str, json_data=None):
+        """Send a request through the shared session. If a KeycloakClient is configured,
+        attach a Bearer token; on a 401 response, invalidate the cached token, fetch a
+        fresh one, and retry the request once before returning.
+        """
+        headers: dict[str, str] = {}
+        if self._keycloak_client:
+            headers["Authorization"] = f"Bearer {self._keycloak_client.get_token()}"
+
+        response = self._session.request(method, url, json=json_data, headers=headers or None)
+
+        if response.status_code == 401 and self._keycloak_client:
+            self._logger.warning("Received 401 from %s %s; refreshing token and retrying once", method.upper(), url)
+            self._keycloak_client.invalidate()
+            headers["Authorization"] = f"Bearer {self._keycloak_client.get_token()}"
+            response = self._session.request(method, url, json=json_data, headers=headers)
+
+        return response
 
     def close(self) -> None:
         """Close the client connection"""
@@ -305,7 +328,7 @@ class SmartEMAPIClient:
 
         try:
             self._logger.debug(f"Making {method.upper()} request to {url}")
-            response = self._session.request(method, url, json=json_data)
+            response = self._send_with_auth(method, url, json_data)
             response.raise_for_status()
 
             # For delete operations, return None
@@ -659,6 +682,7 @@ class SSEAgentClient:
         max_retries: int = 10,
         initial_retry_delay: float = 1.0,
         max_retry_delay: float = 60.0,
+        keycloak_client=None,
     ):
         """
         Initialize SSE client for agent communication
@@ -671,6 +695,10 @@ class SSEAgentClient:
             max_retries: Maximum number of reconnection attempts
             initial_retry_delay: Initial delay between retries in seconds
             max_retry_delay: Maximum delay between retries in seconds
+            keycloak_client: Optional KeycloakClient. When provided, every SSE request and
+                acknowledgement/heartbeat POST gains a Bearer Authorization header. Mid-stream
+                token expiry is handled by the auto-reconnect path, which fetches a fresh
+                token on the next connection attempt.
         """
         self.base_url = base_url.rstrip("/")
         self.agent_id = agent_id
@@ -679,6 +707,7 @@ class SSEAgentClient:
         self.max_retries = max_retries
         self.initial_retry_delay = initial_retry_delay
         self.max_retry_delay = max_retry_delay
+        self._keycloak_client = keycloak_client
         self.logger = logging.getLogger(f"SSEAgentClient-{agent_id}")
         self._is_running = False
         self._connection_id: str | None = None
@@ -691,6 +720,13 @@ class SSEAgentClient:
             "last_connection_time": None,
             "last_instruction_time": None,
         }
+
+    def _auth_headers(self, extra: dict[str, str] | None = None) -> dict[str, str]:
+        """Return a headers dict with Bearer auth attached when a KeycloakClient is configured."""
+        headers: dict[str, str] = dict(extra) if extra else {}
+        if self._keycloak_client:
+            headers["Authorization"] = f"Bearer {self._keycloak_client.get_token()}"
+        return headers
 
     def stream_instructions(
         self,
@@ -714,7 +750,10 @@ class SSEAgentClient:
 
         try:
             response = requests.get(
-                stream_url, headers={"Accept": "text/event-stream"}, stream=True, timeout=self.timeout
+                stream_url,
+                headers=self._auth_headers({"Accept": "text/event-stream"}),
+                stream=True,
+                timeout=self.timeout,
             )
             response.raise_for_status()
 
@@ -882,9 +921,17 @@ class SSEAgentClient:
                 response = requests.post(
                     ack_url,
                     json=acknowledgement.model_dump(mode="json"),
-                    headers={"Content-Type": "application/json"},
+                    headers=self._auth_headers({"Content-Type": "application/json"}),
                     timeout=self.timeout,
                 )
+                if response.status_code == 401 and self._keycloak_client:
+                    self._keycloak_client.invalidate()
+                    response = requests.post(
+                        ack_url,
+                        json=acknowledgement.model_dump(mode="json"),
+                        headers=self._auth_headers({"Content-Type": "application/json"}),
+                        timeout=self.timeout,
+                    )
                 response.raise_for_status()
 
                 ack_response = AgentInstructionAcknowledgementResponse(**response.json())
@@ -958,9 +1005,16 @@ class SSEAgentClient:
             try:
                 response = requests.post(
                     heartbeat_url,
-                    headers={"Content-Type": "application/json"},
+                    headers=self._auth_headers({"Content-Type": "application/json"}),
                     timeout=self.timeout,
                 )
+                if response.status_code == 401 and self._keycloak_client:
+                    self._keycloak_client.invalidate()
+                    response = requests.post(
+                        heartbeat_url,
+                        headers=self._auth_headers({"Content-Type": "application/json"}),
+                        timeout=self.timeout,
+                    )
                 response.raise_for_status()
 
                 heartbeat_response = response.json()
