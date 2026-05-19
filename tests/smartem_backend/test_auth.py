@@ -1,71 +1,129 @@
 """Tests for the Keycloak JWT verification dependency.
 
-These cover the gating and routing behaviour. End-to-end signature verification
-against a live Keycloak is exercised in staging - constructing a fake JWKS here
-adds machinery without adding confidence in the small validate-and-decode call.
+These cover the routing and claim-validation behaviour. End-to-end signature
+verification against a live Keycloak is exercised in staging - constructing a
+fake JWKS here adds machinery without adding confidence in the small
+validate-and-decode call.
 """
-
-import os
 
 import pytest
 
-from .conftest import app, client  # noqa: F401 - re-export fixture
-
 
 @pytest.fixture(autouse=True)
-def reset_auth_env(monkeypatch):
-    """Ensure each test starts with KEYCLOAK_AUTH_REQUIRED unset (effectively false)."""
-    monkeypatch.delenv("KEYCLOAK_AUTH_REQUIRED", raising=False)
-    monkeypatch.delenv("KEYCLOAK_URL", raising=False)
+def keycloak_env(monkeypatch):
+    """Auth always runs; KEYCLOAK_URL must be set or the JWKS client raises.
+
+    Also resets the cached JWKS client so each test picks up env on next request,
+    and clears any leftover azp allow-list from prior tests.
+    """
+    monkeypatch.setenv("KEYCLOAK_URL", "http://keycloak-service:8080")
+    monkeypatch.delenv("KEYCLOAK_ALLOWED_AZP", raising=False)
+    import smartem_backend.auth as auth_module
+
+    monkeypatch.setattr(auth_module, "_jwks_client", None)
 
 
-class TestAuthDisabledByDefault:
-    def test_unauthenticated_status_call_succeeds(self, client):
-        # Disabled-by-default behaviour is implicitly covered by the rest of the
-        # backend test suite, which all runs without an Authorization header and
-        # expects normal responses. This case just pins the contract explicitly.
-        response = client.get("/status")
-        assert response.status_code == 200
+class TestAuthValidation:
+    def test_exempt_path_no_token_succeeds(self, real_auth_client):
+        assert real_auth_client.get("/status").status_code == 200
+        assert real_auth_client.get("/health").status_code in (200, 503)
+        assert real_auth_client.get("/openapi.json").status_code == 200
 
-
-class TestAuthRequired:
-    @pytest.fixture(autouse=True)
-    def enable_auth(self, monkeypatch):
-        monkeypatch.setenv("KEYCLOAK_AUTH_REQUIRED", "true")
-        monkeypatch.setenv("KEYCLOAK_URL", "http://keycloak-service:8080")
-        # Reset cached JWKS client so it picks up env on next request.
-        import smartem_backend.auth as auth_module
-        monkeypatch.setattr(auth_module, "_jwks_client", None)
-
-    def test_exempt_path_no_token_succeeds(self, client):
-        assert client.get("/status").status_code == 200
-        assert client.get("/health").status_code in (200, 503)
-        assert client.get("/openapi.json").status_code == 200
-
-    def test_protected_endpoint_without_token_returns_401(self, client):
-        response = client.get("/acquisitions")
+    def test_protected_endpoint_without_token_returns_401(self, real_auth_client):
+        response = real_auth_client.get("/acquisitions")
         assert response.status_code == 401
         assert response.headers.get("www-authenticate") == "Bearer"
         assert "Authorization" in response.json()["detail"]
 
-    def test_protected_endpoint_with_malformed_token_returns_401(self, client):
-        response = client.get(
+    def test_protected_endpoint_with_malformed_token_returns_401(self, real_auth_client):
+        response = real_auth_client.get(
             "/acquisitions",
             headers={"Authorization": "Bearer not-a-real-jwt"},
         )
         assert response.status_code == 401
         assert response.headers.get("www-authenticate") == "Bearer"
 
-    def test_non_bearer_scheme_returns_401(self, client):
-        response = client.get(
+    def test_non_bearer_scheme_returns_401(self, real_auth_client):
+        response = real_auth_client.get(
             "/acquisitions",
             headers={"Authorization": "Basic dXNlcjpwYXNz"},
         )
         assert response.status_code == 401
 
-    def test_empty_bearer_returns_401(self, client):
-        response = client.get("/acquisitions", headers={"Authorization": "Bearer "})
+    def test_empty_bearer_returns_401(self, real_auth_client):
+        response = real_auth_client.get("/acquisitions", headers={"Authorization": "Bearer "})
         assert response.status_code == 401
+
+
+class TestAzpAllowList:
+    """The azp (authorised party) claim is the OAuth client a token was issued
+    to. When `KEYCLOAK_ALLOWED_AZP` is set, only tokens with one of those `azp`
+    values are accepted. End-to-end check is exercised in staging; here we
+    pin the parser and the decision logic.
+    """
+
+    def test_empty_env_means_no_check(self, monkeypatch):
+        monkeypatch.setenv("KEYCLOAK_ALLOWED_AZP", "")
+        from smartem_backend import auth
+
+        assert auth._allowed_azps() == frozenset()
+
+    def test_unset_env_means_no_check(self, monkeypatch):
+        monkeypatch.delenv("KEYCLOAK_ALLOWED_AZP", raising=False)
+        from smartem_backend import auth
+
+        assert auth._allowed_azps() == frozenset()
+
+    def test_single_value_parsed(self, monkeypatch):
+        monkeypatch.setenv("KEYCLOAK_ALLOWED_AZP", "SmartEM_Agent")
+        from smartem_backend import auth
+
+        assert auth._allowed_azps() == frozenset({"SmartEM_Agent"})
+
+    def test_comma_separated_parsed_and_trimmed(self, monkeypatch):
+        monkeypatch.setenv("KEYCLOAK_ALLOWED_AZP", " SmartEM_User , SmartEM_Agent ")
+        from smartem_backend import auth
+
+        assert auth._allowed_azps() == frozenset({"SmartEM_User", "SmartEM_Agent"})
+
+    def test_disallowed_azp_rejected_post_decode(self, monkeypatch):
+        """The post-decode azp check raises 401 when the claim's azp is not on
+        the allow-list. We bypass the JWKS/signature dance by stubbing the
+        signing-key lookup and jwt.decode."""
+        monkeypatch.setenv("KEYCLOAK_ALLOWED_AZP", "SmartEM_User,SmartEM_Agent")
+        from smartem_backend import auth
+
+        class _FakeKey:
+            key = "fake-key"
+
+        class _FakeJWKSClient:
+            def get_signing_key_from_jwt(self, token):
+                return _FakeKey()
+
+        monkeypatch.setattr(auth, "_jwks_client", _FakeJWKSClient())
+        monkeypatch.setattr(auth.jwt, "decode", lambda *a, **kw: {"sub": "u", "azp": "EvilClient"})
+
+        with pytest.raises(auth.HTTPException) as exc:
+            auth._verify("any-token")
+        assert exc.value.status_code == 401
+        assert "azp" in exc.value.detail.lower()
+
+    def test_allowed_azp_accepted_post_decode(self, monkeypatch):
+        monkeypatch.setenv("KEYCLOAK_ALLOWED_AZP", "SmartEM_Agent")
+        from smartem_backend import auth
+
+        class _FakeKey:
+            key = "fake-key"
+
+        class _FakeJWKSClient:
+            def get_signing_key_from_jwt(self, token):
+                return _FakeKey()
+
+        monkeypatch.setattr(auth, "_jwks_client", _FakeJWKSClient())
+        claims = {"sub": "u", "azp": "SmartEM_Agent"}
+        monkeypatch.setattr(auth.jwt, "decode", lambda *a, **kw: claims)
+
+        assert auth._verify("any-token") == claims
 
 
 class TestConfigHelpers:
@@ -88,4 +146,27 @@ class TestConfigHelpers:
             auth._get_jwks_client()
 
 
-_ = os  # silence unused-import lint when env helpers aren't touched
+class TestLeeway:
+    def test_leeway_passed_to_jwt_decode(self, monkeypatch):
+        """The configured leeway must reach `jwt.decode` so modest clock skew
+        between hosts doesn't immediately invalidate tokens."""
+        from smartem_backend import auth
+
+        captured: dict = {}
+
+        class _FakeKey:
+            key = "fake-key"
+
+        class _FakeJWKSClient:
+            def get_signing_key_from_jwt(self, token):
+                return _FakeKey()
+
+        def _capture_decode(token, key, **kwargs):
+            captured.update(kwargs)
+            return {"sub": "u", "azp": "x"}
+
+        monkeypatch.setattr(auth, "_jwks_client", _FakeJWKSClient())
+        monkeypatch.setattr(auth.jwt, "decode", _capture_decode)
+
+        auth._verify("any-token")
+        assert captured.get("leeway") == auth.JWT_LEEWAY_SECONDS

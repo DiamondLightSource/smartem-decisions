@@ -4,9 +4,11 @@ Validates `Authorization: Bearer <jwt>` against the configured Keycloak realm's
 JWKS. Verification is offline - JWKS is fetched once and cached by PyJWKClient;
 no per-request call to Keycloak.
 
-Gated by `KEYCLOAK_AUTH_REQUIRED` (default false) so tests and existing dev
-workflows that don't pass tokens are unaffected. When true, every request that
-isn't on the exempt path list must carry a valid token.
+Authentication is always enforced. Tokens are decoded with a small leeway to
+absorb modest clock skew between hosts. If `KEYCLOAK_ALLOWED_AZP` is set, the
+`azp` claim is checked against the allow-list; tokens whose `azp` is not on the
+list are rejected. Exempt paths (`/status`, `/health`, etc.) bypass the check
+entirely.
 """
 
 import logging
@@ -20,11 +22,11 @@ logger = logging.getLogger("smartem_backend.auth")
 
 EXEMPT_PATHS: frozenset[str] = frozenset({"/health", "/status", "/openapi.json", "/docs", "/redoc"})
 
+# Clock skew tolerance applied to time-based JWT claims (exp, nbf, iat).
+# Small enough to bound replay of expired tokens, large enough to absorb realistic NTP drift.
+JWT_LEEWAY_SECONDS = 60
+
 _jwks_client: PyJWKClient | None = None
-
-
-def _is_auth_required() -> bool:
-    return os.getenv("KEYCLOAK_AUTH_REQUIRED", "false").lower() == "true"
 
 
 def _verify_iss() -> bool:
@@ -47,11 +49,21 @@ def _jwks_url() -> str:
     return f"{_issuer()}/protocol/openid-connect/certs"
 
 
+def _allowed_azps() -> frozenset[str]:
+    """Parse `KEYCLOAK_ALLOWED_AZP` (comma-separated) into a frozenset.
+
+    Empty environment variable means "no azp check" - any valid token from the realm
+    is accepted regardless of which client it was issued to.
+    """
+    raw = os.getenv("KEYCLOAK_ALLOWED_AZP", "")
+    return frozenset(s.strip() for s in raw.split(",") if s.strip())
+
+
 def _get_jwks_client() -> PyJWKClient:
     global _jwks_client
     if _jwks_client is None:
         if not _keycloak_url():
-            raise RuntimeError("KEYCLOAK_URL must be set when KEYCLOAK_AUTH_REQUIRED=true")
+            raise RuntimeError("KEYCLOAK_URL must be set")
         _jwks_client = PyJWKClient(_jwks_url(), cache_keys=True, lifespan=600)
         logger.info("Initialised Keycloak JWKS client at %s", _jwks_url())
     return _jwks_client
@@ -86,25 +98,36 @@ def _verify(token: str) -> dict:
         raise _unauthorized("Invalid token") from e
 
     options = {"verify_iss": _verify_iss(), "verify_aud": False}
-    decode_kwargs: dict = {"algorithms": ["RS256"], "options": options}
+    decode_kwargs: dict = {
+        "algorithms": ["RS256"],
+        "options": options,
+        "leeway": JWT_LEEWAY_SECONDS,
+    }
     if _verify_iss():
         decode_kwargs["issuer"] = _issuer()
 
     try:
-        return jwt.decode(token, signing_key, **decode_kwargs)
+        claims = jwt.decode(token, signing_key, **decode_kwargs)
     except jwt.ExpiredSignatureError as e:
         raise _unauthorized("Token expired") from e
     except jwt.PyJWTError as e:
         logger.warning("Token validation failed: %s", e)
         raise _unauthorized("Invalid token") from e
 
+    allowed = _allowed_azps()
+    if allowed:
+        azp = claims.get("azp")
+        if azp not in allowed:
+            logger.warning("Token rejected: azp %r not in allow-list", azp)
+            raise _unauthorized("Token azp not permitted")
+
+    return claims
+
 
 async def verify_token(request: Request) -> dict | None:
-    """Route dependency. Returns claims when validation succeeded, otherwise None
-    (auth disabled or exempt path). Raises 401 on validation failure.
+    """Route dependency. Returns claims when validation succeeded, or None for
+    exempt paths. Raises 401 on validation failure.
     """
-    if not _is_auth_required():
-        return None
     if request.url.path in EXEMPT_PATHS:
         return None
     return _verify(_extract_bearer(request))
