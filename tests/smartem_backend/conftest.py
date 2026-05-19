@@ -25,6 +25,7 @@ from fastapi.testclient import TestClient
 
 from smartem_backend import api_server
 from smartem_backend.api_server import app, get_db
+from smartem_backend.auth import verify_token
 
 from ._async_db_stub import make_async_db, make_execute_result
 
@@ -37,7 +38,30 @@ def db():
 
 @pytest.fixture
 def client(db):
-    """TestClient with `get_db` overridden. The mock db is reachable as `client._db`."""
+    """TestClient with `get_db` overridden and `verify_token` bypassed.
+
+    The verify_token override returns a stub claims dict so the global FastAPI
+    auth dependency is satisfied without any real token-issuing machinery. Tests
+    that exercise the real auth dependency should use `real_auth_client`.
+
+    The mock db is reachable as `client._db`.
+    """
+    app.dependency_overrides[get_db] = lambda: db
+    app.dependency_overrides[verify_token] = lambda: {"sub": "test-user", "azp": "SmartEM_User"}
+    try:
+        with TestClient(app) as tc:
+            tc._db = db
+            yield tc
+    finally:
+        app.dependency_overrides.pop(get_db, None)
+        app.dependency_overrides.pop(verify_token, None)
+
+
+@pytest.fixture
+def real_auth_client(db):
+    """TestClient with `get_db` overridden but the real `verify_token` dependency
+    is left in place. Used in `test_auth.py` to exercise the actual auth path.
+    """
     app.dependency_overrides[get_db] = lambda: db
     try:
         with TestClient(app) as tc:

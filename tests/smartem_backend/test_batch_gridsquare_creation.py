@@ -16,6 +16,7 @@ from sqlalchemy.exc import IntegrityError
 
 from smartem_backend import api_server
 from smartem_backend.api_server import app, get_db
+from smartem_backend.auth import verify_token
 
 from ._async_db_stub import make_async_db, make_execute_result
 
@@ -45,12 +46,14 @@ def client(publish_calls, monkeypatch):
     db = make_async_db()
 
     app.dependency_overrides[get_db] = lambda: db
+    app.dependency_overrides[verify_token] = lambda: {"sub": "test-user", "azp": "SmartEM_User"}
     try:
         with TestClient(app) as tc:
             tc._db = db
             yield tc
     finally:
         app.dependency_overrides.pop(get_db, None)
+        app.dependency_overrides.pop(verify_token, None)
 
 
 ENDPOINT = "/grids/grid-abc/gridsquares/batch"
