@@ -1,7 +1,8 @@
-[[IgnoredVulns]]
-id = "CVE-2022-42969"
-reason = "py is a transitive dev dependency from pytest. The vulnerability requires parsing Subversion repository data, which SmartEM does not interact with. Attack vector not applicable."
+# OSV Scanner configuration
+# https://google.github.io/osv-scanner/configuration/
 
-[[IgnoredVulns]]
-id = "PYSEC-2025-183"
-reason = "CVE-2025-45768 reports weak encryption in pyjwt's encryption capability due to insufficient key-length enforcement. SmartEM only uses pyjwt for JWT verification against an externally-provided JWKS (Keycloak signs with RS256); it never signs or encrypts tokens itself, so the calling-application key-length concern does not apply. The advisory itself notes maintainers dispute the finding because key length is chosen by the calling application. No fixed version exists across affected releases."
+# No exemptions configured yet
+# Add vulnerability exemptions here as needed:
+# [[IgnoredVulns]]
+# id = "GHSA-xxxx-xxxx-xxxx"
+# reason = "Not exploitable in our usage"
