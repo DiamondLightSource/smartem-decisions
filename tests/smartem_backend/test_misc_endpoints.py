@@ -20,6 +20,15 @@ class TestGetStatus:
         assert body["endpoints"]["health"] == "/health"
 
 
+class TestGetVersion:
+    def test_returns_service_and_version(self, client):
+        resp = client.get("/version")
+        assert resp.status_code == 200
+        body = resp.json()
+        assert body["service"] == "smartem-decisions"
+        assert isinstance(body["version"], str) and body["version"]
+
+
 class TestGetHealth:
     @pytest.fixture
     def patch_health_checks(self, monkeypatch):
