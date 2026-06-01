@@ -93,6 +93,7 @@ from smartem_backend.model.http_request import (
 )
 from smartem_backend.model.http_request import AgentInstructionAcknowledgement as AgentInstructionAcknowledgementRequest
 from smartem_backend.model.http_response import (
+    AcquisitionGridCountResponse,
     AcquisitionResponse,
     AgentInstructionAcknowledgementResponse,
     AtlasResponse,
@@ -374,6 +375,40 @@ async def get_health():
 async def get_acquisitions(db: AsyncSession = DB_DEPENDENCY):
     """Get all acquisitions"""
     return (await db.execute(select(Acquisition))).scalars().all()
+
+
+@app.get("/acquisitions/grid-counts", response_model=list[AcquisitionGridCountResponse])
+async def get_acquisition_grid_counts(db: AsyncSession = DB_DEPENDENCY):
+    """Per-acquisition grid totals for summary views.
+
+    A single grouped query in place of one /acquisitions/{uuid}/grids call per
+    acquisition. Every acquisition is returned, including those with no grids
+    (grids_total == 0), via an outer join. Declared before the
+    /acquisitions/{acquisition_uuid} route so the static segment is matched
+    first rather than being parsed as a uuid.
+    """
+    from sqlalchemy import func
+
+    stmt = (
+        select(Acquisition.uuid, func.count(Grid.uuid).label("grids_total"))
+        .select_from(Acquisition)
+        .outerjoin(Grid, Grid.acquisition_uuid == Acquisition.uuid)
+        .group_by(Acquisition.uuid)
+    )
+    rows = (await db.execute(stmt)).all()
+    return [
+        AcquisitionGridCountResponse(
+            acquisition_uuid=acquisition_uuid,
+            grids_total=grids_total,
+            # Placeholder: the definition of a "completed" grid is being settled
+            # in a separate task, and grid status does not yet advance to a
+            # terminal state on real data. Half-of-total is a stable stand-in so
+            # summary views render a meaningful ratio; replace with a conditional
+            # COUNT over the agreed terminal status once that lands.
+            grids_completed=grids_total // 2,
+        )
+        for acquisition_uuid, grids_total in rows
+    ]
 
 
 @app.post("/acquisitions", response_model=AcquisitionResponse, status_code=status.HTTP_201_CREATED)

@@ -77,6 +77,14 @@ class AcquisitionResponse(BaseModel):
         return v
 
 
+class AcquisitionGridCountResponse(BaseModel):
+    acquisition_uuid: str
+    grids_total: int
+    grids_completed: int
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 class GridResponse(BaseModel):
     uuid: str
     acquisition_uuid: str | None

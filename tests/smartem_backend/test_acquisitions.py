@@ -1,5 +1,6 @@
 """TestClient coverage for the /acquisitions endpoints (issue #258)."""
 
+from ._async_db_stub import make_execute_result
 from .conftest import set_db_row
 
 
@@ -20,6 +21,24 @@ class TestListAcquisitions:
         resp = client.get("/acquisitions")
         assert resp.status_code == 200
         assert resp.json() == []
+
+
+class TestAcquisitionGridCounts:
+    def test_returns_empty_list_when_no_acquisitions(self, client):
+        client._db.execute.return_value = make_execute_result([])
+        resp = client.get("/acquisitions/grid-counts")
+        assert resp.status_code == 200
+        assert resp.json() == []
+
+    def test_maps_grouped_rows_to_counts(self, client):
+        # The grouped query yields (acquisition_uuid, grids_total) tuples.
+        client._db.execute.return_value = make_execute_result([("acq-1", 12), ("acq-2", 0)])
+        resp = client.get("/acquisitions/grid-counts")
+        assert resp.status_code == 200
+        assert resp.json() == [
+            {"acquisition_uuid": "acq-1", "grids_total": 12, "grids_completed": 6},
+            {"acquisition_uuid": "acq-2", "grids_total": 0, "grids_completed": 0},
+        ]
 
 
 class TestCreateAcquisition:
