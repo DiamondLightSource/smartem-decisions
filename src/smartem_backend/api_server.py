@@ -337,6 +337,18 @@ async def get_status():
     }
 
 
+@app.get("/version")
+async def get_version():
+    """Machine-readable API version for client compatibility checks.
+
+    The frontend's boot-time check (ADR 0020) reads `version` here and compares
+    it semantically against the backend API version its client was generated
+    against. Kept deliberately small and stable; `/status` carries the richer
+    diagnostic payload.
+    """
+    return {"service": "smartem-decisions", "version": __version__}
+
+
 @app.get("/health")
 async def get_health():
     """Health check endpoint with actual connectivity checks"""
