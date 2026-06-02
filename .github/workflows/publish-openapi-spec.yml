@@ -60,5 +60,10 @@ jobs:
             echo "::warning::DEVTOOLS_DISPATCH_TOKEN not set - spec committed but smartem-devtools not notified."
             exit 0
           fi
-          gh api repos/DiamondLightSource/smartem-devtools/dispatches \
-            -f event_type=openapi-spec-updated
+          # Best-effort nudge: the spec commit above is the critical output, and
+          # smartem-devtools also syncs on a schedule and on manual dispatch, so a
+          # failed notification (e.g. a token pending org approval) must not fail
+          # this workflow.
+          if ! gh api repos/DiamondLightSource/smartem-devtools/dispatches -f event_type=openapi-spec-updated; then
+            echo "::warning::Could not notify smartem-devtools (token pending approval or transient error). Spec is committed; devtools will pick it up via its scheduled or manual sync."
+          fi
