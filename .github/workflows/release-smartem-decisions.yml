@@ -212,6 +212,24 @@ jobs:
           path: dist/*
           retention-days: 7
 
+      # Attach the canonical OpenAPI spec to the release (ADR 0020) so consumers can
+      # pin to a specific API version. Generated here where the env exists and the
+      # tag gives a clean version; kept out of dist/ so it never reaches PyPI.
+      - name: Generate OpenAPI spec
+        env:
+          SKIP_DB_INIT: 'true'
+        run: |
+          mkdir -p spec
+          uv run --extra all python -c "import json; from smartem_backend.api_server import app; open('spec/openapi-${{ needs.version.outputs.version }}.json', 'w').write(json.dumps(app.openapi(), indent=2, sort_keys=True))"
+          ls -lh spec/
+
+      - name: Upload OpenAPI spec artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: openapi-spec
+          path: spec/*.json
+          retention-days: 7
+
   build-windows:
     name: Build Windows executable
     runs-on: windows-latest
@@ -328,8 +346,14 @@ jobs:
           name: windows-exe
           path: dist/
 
+      - name: Download OpenAPI spec
+        uses: actions/download-artifact@v8
+        with:
+          name: openapi-spec
+          path: spec/
+
       - name: List all artifacts
-        run: ls -la dist/
+        run: ls -la dist/ spec/
 
       - name: Generate release notes
         id: release_notes
@@ -426,7 +450,9 @@ jobs:
           name: SmartEM Decisions v${{ needs.version.outputs.version }}
           body: ${{ steps.release_notes.outputs.notes }}
           prerelease: ${{ needs.version.outputs.is_rc == 'true' }}
-          files: dist/*
+          files: |
+            dist/*
+            spec/*.json
           generate_release_notes: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
