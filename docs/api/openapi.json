@@ -4746,6 +4746,13 @@
       },
       "ValidationError": {
         "properties": {
+          "ctx": {
+            "title": "Context",
+            "type": "object"
+          },
+          "input": {
+            "title": "Input"
+          },
           "loc": {
             "items": {
               "anyOf": [
@@ -4782,7 +4789,7 @@
   "info": {
     "description": "API for accessing and managing electron microscopy data",
     "title": "SmartEM Decisions Backend API",
-    "version": "0.1.1rc48.dev3+gcd5206327"
+    "version": "0.1.1rc48.dev5+g8fa353eea"
   },
   "openapi": "3.1.0",
   "paths": {
