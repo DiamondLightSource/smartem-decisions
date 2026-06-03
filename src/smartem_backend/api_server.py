@@ -2618,7 +2618,7 @@ async def get_suggested_square_collections(
 async def get_suggested_hole_collections(
     gridsquare_uuid: str, prediction_model_name: str, latent_rep_model_name: str, db: AsyncSession = DB_DEPENDENCY
 ):
-    gridsquare = await db.execute(select(GridSquare).where(GridSquare.uuid == gridsquare_uuid)).one()
+    gridsquare = (await db.execute(select(GridSquare).where(GridSquare.uuid == gridsquare_uuid))).one()
     grid_uuid = gridsquare.grid_uuid
     scores = (
         await db.execute(
