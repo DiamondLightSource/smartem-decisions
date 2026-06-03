@@ -2519,6 +2519,47 @@ async def get_suggested_square_collections(
 
 
 @app.get(
+    "/gridsquares/{gridsquare_uuid}/prediction_model/{prediction_model_name}/latent_rep/{latent_rep_model_name}/suggested_holes",
+    response_model=list[FoilHole],
+)
+async def get_suggested_hole_collections(
+    gridsquare_uuid: str, prediction_model_name: str, latent_rep_model_name: str, db: AsyncSession = DB_DEPENDENCY
+):
+    gridsquare = await db.execute(select(GridSquare).where(GridSquare.uuid == gridsquare_uuid)).one()
+    grid_uuid = gridsquare.grid_uuid
+    scores = (
+        await db.execute(
+            select(FoilHole, CurrentQualityPrediction)
+            .where(CurrentQualityPrediction.foilhole_uuid == FoilHole.uuid)
+            .where(FoilHole.gridsquare_uuid == gridsquare_uuid)
+            .where(CurrentQualityPrediction.prediction_model_name == prediction_model_name)
+        )
+    ).all()
+    cluster_indices = {
+        p.key: p.value
+        for p in (
+            await db.execute(
+                select(QualityPredictionModelParameter)
+                .where(QualityPredictionModelParameter.grid_uuid == grid_uuid)
+                .where(QualityPredictionModelParameter.prediction_model_name == latent_rep_model_name)
+                .where(QualityPredictionModelParameter.group == "cluster_indices")
+            )
+        )
+        .scalars()
+        .all()
+    }
+    scores.sort(reverse=True)
+    cluster_counts = dict.fromkeys(set(cluster_indices.values()), 0)
+    suggested = []
+    for i in range(len(scores) // 2):
+        hole = scores[i]
+        if cluster_counts[cluster_indices[hole.uuid]] < 4:
+            suggested.append(hole)
+            cluster_counts[cluster_indices[hole.uuid]] += 1
+    return suggested
+
+
+@app.get(
     "/prediction_model/{prediction_model_name}/grid/{grid_uuid}/latent_representation",
     response_model=list[LatentRepresentationResponse],
 )
