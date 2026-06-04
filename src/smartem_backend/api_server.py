@@ -2525,7 +2525,7 @@ async def get_suggested_square_collections(
 async def get_suggested_hole_collections(
     gridsquare_uuid: str, prediction_model_name: str, latent_rep_model_name: str, db: AsyncSession = DB_DEPENDENCY
 ):
-    gridsquare = (await db.execute(select(GridSquare).where(GridSquare.uuid == gridsquare_uuid))).one()
+    gridsquare = (await db.execute(select(GridSquare).where(GridSquare.uuid == gridsquare_uuid))).scalar_one()
     grid_uuid = gridsquare.grid_uuid
     scores = (
         await db.execute(
@@ -2548,7 +2548,7 @@ async def get_suggested_hole_collections(
         .scalars()
         .all()
     }
-    scores.sort(reverse=True)
+    scores = [s[0] for s in sorted(scores, key=lambda x: x[1].value, reverse=True)]
     cluster_counts = dict.fromkeys(set(cluster_indices.values()), 0)
     suggested = []
     for i in range(len(scores) // 2):
