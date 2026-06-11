@@ -14,12 +14,30 @@ def _qp_payload(**overrides) -> dict:
     return base
 
 
+def _gridsquare_then(rows):
+    from smartem_backend.model.database import GridSquare
+
+    results = iter(
+        [
+            make_execute_result(GridSquare(uuid="gs-1", grid_uuid="grid-1", gridsquare_id="gs-id-1")),
+            make_execute_result(rows),
+        ]
+    )
+    return lambda *a, **kw: next(results)
+
+
 class TestGetGridSquareQualityPredictions:
     def test_404_when_gridsquare_missing(self, client):
         set_db_row(client, None)
         resp = client.get("/gridsquares/missing/quality_predictions")
         assert resp.status_code == 404
         assert "not found" in resp.json()["detail"].lower()
+
+    def test_returns_dict_shaped_time_series(self, client):
+        client._db.execute.side_effect = _gridsquare_then([])
+        resp = client.get("/gridsquares/gs-1/quality_predictions")
+        assert resp.status_code == 200
+        assert resp.json() == {}
 
 
 class TestGetGridSquareFoilHoleQualityPredictions:
@@ -28,6 +46,12 @@ class TestGetGridSquareFoilHoleQualityPredictions:
         resp = client.get("/gridsquares/missing/foilhole_quality_predictions")
         assert resp.status_code == 404
         assert "not found" in resp.json()["detail"].lower()
+
+    def test_returns_dict_shaped_time_series(self, client):
+        client._db.execute.side_effect = _gridsquare_then([])
+        resp = client.get("/gridsquares/gs-1/foilhole_quality_predictions")
+        assert resp.status_code == 200
+        assert resp.json() == {}
 
 
 class TestCreateQualityPrediction:

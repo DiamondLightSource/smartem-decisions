@@ -4472,50 +4472,6 @@
         "title": "QualityPredictionModelCreateRequest",
         "type": "object"
       },
-      "QualityPredictionModelParameterResponse": {
-        "properties": {
-          "grid_uuid": {
-            "title": "Grid Uuid",
-            "type": "string"
-          },
-          "group": {
-            "title": "Group",
-            "type": "string"
-          },
-          "id": {
-            "title": "Id",
-            "type": "integer"
-          },
-          "key": {
-            "title": "Key",
-            "type": "string"
-          },
-          "prediction_model_name": {
-            "title": "Prediction Model Name",
-            "type": "string"
-          },
-          "timestamp": {
-            "format": "date-time",
-            "title": "Timestamp",
-            "type": "string"
-          },
-          "value": {
-            "title": "Value",
-            "type": "number"
-          }
-        },
-        "required": [
-          "id",
-          "grid_uuid",
-          "timestamp",
-          "prediction_model_name",
-          "key",
-          "value",
-          "group"
-        ],
-        "title": "QualityPredictionModelParameterResponse",
-        "type": "object"
-      },
       "QualityPredictionModelResponse": {
         "properties": {
           "can_infer": {
@@ -4746,13 +4702,6 @@
       },
       "ValidationError": {
         "properties": {
-          "ctx": {
-            "title": "Context",
-            "type": "object"
-          },
-          "input": {
-            "title": "Input"
-          },
           "loc": {
             "items": {
               "anyOf": [
@@ -4789,7 +4738,7 @@
   "info": {
     "description": "API for accessing and managing electron microscopy data",
     "title": "SmartEM Decisions Backend API",
-    "version": "0.1.1rc48.dev5+g8fa353eea"
+    "version": "0.1.1rc48.dev3+gcd5206327"
   },
   "openapi": "3.1.0",
   "paths": {
