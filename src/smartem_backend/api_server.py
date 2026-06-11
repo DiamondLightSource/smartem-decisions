@@ -1,9 +1,11 @@
 import asyncio
+import hashlib
 import io
 import itertools
 import json
 import logging
 import os
+import tempfile
 import uuid
 from contextlib import asynccontextmanager
 from datetime import datetime, timedelta
@@ -13,8 +15,9 @@ import asyncpg
 import mrcfile
 import tifffile
 from fastapi import Depends, FastAPI, HTTPException, Request, status
+from fastapi.concurrency import run_in_threadpool
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import Response
+from fastapi.responses import FileResponse
 from PIL import Image
 from pydantic import BaseModel
 from sqlalchemy import and_, desc, or_, select, text
@@ -2711,6 +2714,39 @@ async def get_square_latent_rep(prediction_model_name: str, gridsquare_uuid: str
     return [LatentRepresentationResponse(foilhole_uuid=k, x=v.x, y=v.y, index=v.index) for k, v in rep.items() if v]
 
 
+IMAGE_CACHE_DIR = Path(os.getenv("SMARTEM_IMAGE_CACHE_DIR", str(Path(tempfile.gettempdir()) / "smartem_image_cache")))
+
+
+def _render_image_png(source_path: Path, crop: tuple[int, int, int, int] | None) -> bytes:
+    if source_path.suffix == ".mrc":
+        data = mrcfile.read(source_path)
+    else:
+        data = tifffile.imread(source_path)
+    data = data - data.min()
+    data = data * (255 / data.max())
+    data = data.astype("uint8")
+    if crop is not None:
+        x, y, w, h = crop
+        data = data[y - h // 2 : y + h // 2, x - w // 2 : x + w // 2]
+    image = Image.fromarray(data)
+    with io.BytesIO() as buf:
+        image.save(buf, format="PNG")
+        return buf.getvalue()
+
+
+async def _cached_image_response(source_path: Path, crop: tuple[int, int, int, int] | None) -> FileResponse:
+    stat = source_path.stat()
+    cache_key = hashlib.sha256(f"{source_path}:{stat.st_mtime_ns}:{stat.st_size}:{crop}".encode()).hexdigest()
+    cache_path = IMAGE_CACHE_DIR / f"{cache_key}.png"
+    if not cache_path.exists():
+        png_bytes = await run_in_threadpool(_render_image_png, source_path, crop)
+        IMAGE_CACHE_DIR.mkdir(parents=True, exist_ok=True)
+        tmp_path = cache_path.with_name(f"{cache_key}.{os.getpid()}.tmp")
+        tmp_path.write_bytes(png_bytes)
+        os.replace(tmp_path, cache_path)
+    return FileResponse(cache_path, media_type="image/png", headers={"Cache-Control": "private, max-age=3600"})
+
+
 @app.get("/grids/{grid_uuid}/atlas_image", responses={200: {"content": {"image/png": {}}}})
 async def get_grid_atlas_image(
     grid_uuid: str,
@@ -2730,17 +2766,8 @@ async def get_grid_atlas_image(
         atlas_img_path = atlas_img_path_candidates[0]
     else:
         atlas_img_path = Path(grid.atlas_dir)
-    mrc = mrcfile.read(atlas_img_path)
-    mrc = mrc - mrc.min()
-    mrc = mrc * (255 / mrc.max())
-    mrc = mrc.astype("uint8")
-    if None not in (x, y, w, h):
-        mrc = mrc[y - h // 2 : y + h // 2, x - w // 2 : x + w // 2]
-    im = Image.fromarray(mrc)
-    with io.BytesIO() as buf:
-        im.save(buf, format="PNG")
-        im_bytes = buf.getvalue()
-    return Response(im_bytes, media_type="image/png")
+    crop = (x, y, w, h) if x is not None and y is not None and w is not None and h is not None else None
+    return await _cached_image_response(atlas_img_path, crop)
 
 
 @app.get("/gridsquares/{gridsquare_uuid}/gridsquare_image", responses={200: {"content": {"image/png": {}}}})
@@ -2755,19 +2782,7 @@ async def get_gridsquare_image(
         raise HTTPException(status_code=404, detail="Grid square not found")
     if not gridsquare.image_path:
         raise HTTPException(status_code=404, detail="Grid square image unknown")
-    square_img_path = Path(gridsquare.image_path)
-    if square_img_path.suffix == ".mrc":
-        imdata = mrcfile.read(square_img_path)
-    else:
-        imdata = tifffile.imread(square_img_path)
-    imdata = imdata - imdata.min()
-    imdata = imdata * (255 / imdata.max())
-    imdata = imdata.astype("uint8")
-    im = Image.fromarray(imdata)
-    with io.BytesIO() as buf:
-        im.save(buf, format="PNG")
-        im_bytes = buf.getvalue()
-    return Response(im_bytes, media_type="image/png")
+    return await _cached_image_response(Path(gridsquare.image_path), None)
 
 
 _frontend_sse_connections = 0
