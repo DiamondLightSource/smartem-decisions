@@ -1259,6 +1259,176 @@
         "title": "CtfEstimationRegisteredRequest",
         "type": "object"
       },
+      "FoilHole": {
+        "properties": {
+          "center_x": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Center X"
+          },
+          "center_y": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Center Y"
+          },
+          "diameter": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Diameter"
+          },
+          "foilhole_id": {
+            "default": "",
+            "title": "Foilhole Id",
+            "type": "string"
+          },
+          "gridsquare_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gridsquare Id"
+          },
+          "gridsquare_uuid": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gridsquare Uuid"
+          },
+          "is_near_grid_bar": {
+            "default": false,
+            "title": "Is Near Grid Bar",
+            "type": "boolean"
+          },
+          "quality": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Quality"
+          },
+          "rotation": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rotation"
+          },
+          "size_height": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Size Height"
+          },
+          "size_width": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Size Width"
+          },
+          "status": {
+            "$ref": "#/components/schemas/FoilHoleStatus",
+            "default": "none"
+          },
+          "uuid": {
+            "title": "Uuid",
+            "type": "string"
+          },
+          "x_location": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "X Location"
+          },
+          "x_stage_position": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "X Stage Position"
+          },
+          "y_location": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Y Location"
+          },
+          "y_stage_position": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Y Stage Position"
+          }
+        },
+        "required": [
+          "uuid"
+        ],
+        "title": "FoilHole",
+        "type": "object"
+      },
       "FoilHoleCreateRequest": {
         "properties": {
           "center_x": {
@@ -4745,7 +4915,7 @@
   "info": {
     "description": "API for accessing and managing electron microscopy data",
     "title": "SmartEM Decisions Backend API",
-    "version": "0.1.1rc51.dev1+g82cdf57b1"
+    "version": "0.1.1rc51.dev5+gd3d8680e8"
   },
   "openapi": "3.1.0",
   "paths": {
@@ -7327,6 +7497,67 @@
           }
         },
         "summary": "Get Gridsquare Image"
+      }
+    },
+    "/gridsquares/{gridsquare_uuid}/prediction_model/{prediction_model_name}/latent_rep/{latent_rep_model_name}/suggested_holes": {
+      "get": {
+        "operationId": "get_suggested_hole_collections_gridsquares__gridsquare_uuid__prediction_model__prediction_model_name__latent_rep__latent_rep_model_name__suggested_holes_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "gridsquare_uuid",
+            "required": true,
+            "schema": {
+              "title": "Gridsquare Uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "prediction_model_name",
+            "required": true,
+            "schema": {
+              "title": "Prediction Model Name",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "latent_rep_model_name",
+            "required": true,
+            "schema": {
+              "title": "Latent Rep Model Name",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/FoilHole"
+                  },
+                  "title": "Response Get Suggested Hole Collections Gridsquares  Gridsquare Uuid  Prediction Model  Prediction Model Name  Latent Rep  Latent Rep Model Name  Suggested Holes Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Suggested Hole Collections"
       }
     },
     "/gridsquares/{gridsquare_uuid}/quality_predictions": {
