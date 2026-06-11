@@ -107,7 +107,6 @@ from smartem_backend.model.http_response import (
     MicrographResponse,
     ProcessingFeedbackPublishResponse,
     QualityMetricsResponse,
-    QualityPredictionModelParameterResponse,
     QualityPredictionModelResponse,
     QualityPredictionResponse,
 )
@@ -1559,33 +1558,6 @@ async def delete_prediction_model(name: str, db: AsyncSession = DB_DEPENDENCY):
 # ============ Quality Prediction Endpoints ============
 
 
-@app.get("/gridsquares/{gridsquare_uuid}/quality_predictions", response_model=list[QualityPredictionResponse])
-async def get_gridsquare_quality_predictions(gridsquare_uuid: str, db: AsyncSession = DB_DEPENDENCY):
-    gridsquare = (await db.execute(select(GridSquare).where(GridSquare.uuid == gridsquare_uuid))).scalars().first()
-    if not gridsquare:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"GridSquare {gridsquare_uuid} not found")
-    predictions = (
-        (await db.execute(select(QualityPrediction).where(QualityPrediction.gridsquare_uuid == gridsquare_uuid)))
-        .scalars()
-        .all()
-    )
-    return [QualityPredictionResponse.model_validate(pred) for pred in predictions]
-
-
-@app.get("/gridsquares/{gridsquare_uuid}/foilhole_quality_predictions", response_model=list[QualityPredictionResponse])
-async def get_gridsquare_foilhole_quality_predictions(gridsquare_uuid: str, db: AsyncSession = DB_DEPENDENCY):
-    gridsquare = (await db.execute(select(GridSquare).where(GridSquare.uuid == gridsquare_uuid))).scalars().first()
-    if not gridsquare:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"GridSquare {gridsquare_uuid} not found")
-    foilhole_uuids = [fh.uuid for fh in gridsquare.foilholes]
-    predictions = (
-        (await db.execute(select(QualityPrediction).where(QualityPrediction.foilhole_uuid.in_(foilhole_uuids))))
-        .scalars()
-        .all()
-    )
-    return [QualityPredictionResponse.model_validate(pred) for pred in predictions]
-
-
 @app.post("/quality_predictions", response_model=QualityPredictionResponse, status_code=status.HTTP_201_CREATED)
 async def create_quality_prediction(request: QualityPredictionCreateRequest, db: AsyncSession = DB_DEPENDENCY):
     if request.foilhole_uuid:
@@ -1639,77 +1611,6 @@ async def get_quality_metrics(db: AsyncSession = DB_DEPENDENCY):
         max_quality=float(max_quality) if max_quality is not None else None,
         models_count=models_count,
     )
-
-
-@app.get(
-    "/prediction_model/{prediction_model_name}/grid/{grid_uuid}/prediction",
-    response_model=list[QualityPredictionResponse],
-)
-async def get_grid_predictions(prediction_model_name: str, grid_uuid: str, db: AsyncSession = DB_DEPENDENCY):
-    grid = (await db.execute(select(Grid).where(Grid.uuid == grid_uuid))).scalars().first()
-    if not grid:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Grid {grid_uuid} not found")
-    model = (
-        (await db.execute(select(QualityPredictionModel).where(QualityPredictionModel.name == prediction_model_name)))
-        .scalars()
-        .first()
-    )
-    if not model:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Prediction model {prediction_model_name} not found",
-        )
-    gridsquare_uuids = [gs.uuid for gs in grid.gridsquares]
-    predictions = (
-        (
-            await db.execute(
-                select(QualityPrediction).where(
-                    and_(
-                        QualityPrediction.prediction_model_name == prediction_model_name,
-                        QualityPrediction.gridsquare_uuid.in_(gridsquare_uuids),
-                    )
-                )
-            )
-        )
-        .scalars()
-        .all()
-    )
-    return [QualityPredictionResponse.model_validate(pred) for pred in predictions]
-
-
-@app.get(
-    "/prediction_model/{prediction_model_name}/grid/{grid_uuid}/latent_representation",
-    response_model=list[QualityPredictionModelParameterResponse],
-)
-async def get_grid_latent_representation(prediction_model_name: str, grid_uuid: str, db: AsyncSession = DB_DEPENDENCY):
-    grid = (await db.execute(select(Grid).where(Grid.uuid == grid_uuid))).scalars().first()
-    if not grid:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Grid {grid_uuid} not found")
-    model = (
-        (await db.execute(select(QualityPredictionModel).where(QualityPredictionModel.name == prediction_model_name)))
-        .scalars()
-        .first()
-    )
-    if not model:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Prediction model {prediction_model_name} not found",
-        )
-    parameters = (
-        (
-            await db.execute(
-                select(QualityPredictionModelParameter).where(
-                    and_(
-                        QualityPredictionModelParameter.grid_uuid == grid_uuid,
-                        QualityPredictionModelParameter.prediction_model_name == prediction_model_name,
-                    )
-                )
-            )
-        )
-        .scalars()
-        .all()
-    )
-    return [QualityPredictionModelParameterResponse.model_validate(param) for param in parameters]
 
 
 # ============ Agent Communication Endpoints ============
@@ -2410,6 +2311,9 @@ async def get_model_weights_for_grid(grid_uuid: str, db: AsyncSession = DB_DEPEN
 async def get_gridsquare_quality_prediction_time_series(gridsquare_uuid: str, db: AsyncSession = DB_DEPENDENCY):
     """Get time ordered predictions for all models that provide them for this square"""
 
+    gridsquare = (await db.execute(select(GridSquare).where(GridSquare.uuid == gridsquare_uuid))).scalars().first()
+    if not gridsquare:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"GridSquare {gridsquare_uuid} not found")
     predictions = (
         (
             await db.execute(
@@ -2433,6 +2337,9 @@ async def get_foilhole_quality_prediction_time_series_for_gridsquare(
 ):
     """Get time ordered predictions for all models that provide them for this square"""
 
+    gridsquare = (await db.execute(select(GridSquare).where(GridSquare.uuid == gridsquare_uuid))).scalars().first()
+    if not gridsquare:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"GridSquare {gridsquare_uuid} not found")
     predictions = (
         await db.execute(
             select(QualityPrediction, FoilHole)
