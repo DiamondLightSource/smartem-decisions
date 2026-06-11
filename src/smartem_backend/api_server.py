@@ -2556,9 +2556,10 @@ async def get_suggested_hole_collections(
     suggested = []
     for i in range(len(scores) // 2):
         hole = scores[i]
-        if cluster_counts[cluster_indices[hole.uuid]] < 4:
+        cluster = cluster_indices.get(hole.uuid)
+        if cluster is not None and cluster_counts[cluster] < 4:
             suggested.append(hole)
-            cluster_counts[cluster_indices[hole.uuid]] += 1
+            cluster_counts[cluster] += 1
     return suggested
 
 
