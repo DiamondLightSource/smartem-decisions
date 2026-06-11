@@ -1,5 +1,6 @@
 """TestClient coverage for the /foilholes and /gridsquares/{uuid}/foilholes endpoints (issue #258)."""
 
+from ._async_db_stub import make_execute_result
 from .conftest import set_db_row
 
 
@@ -126,3 +127,36 @@ class TestCreateGridSquareFoilHoles:
         resp = client.post("/gridsquares/gs-1/foilholes", json=[{"uuid": "fh-1"}])
         assert resp.status_code == 422
         assert calls == []
+
+
+class TestSuggestedHoleCollections:
+    def test_skips_holes_missing_from_cluster_indices(self, client):
+        from smartem_backend.model.database import (
+            CurrentQualityPrediction,
+            FoilHole,
+            GridSquare,
+            QualityPredictionModelParameter,
+        )
+
+        gridsquare = GridSquare(uuid="gs-1", grid_uuid="grid-1", gridsquare_id="gs-id-1")
+        holes = [FoilHole(uuid=f"fh-{i}") for i in (1, 2, 3, 4)]
+        preds = [
+            CurrentQualityPrediction(grid_uuid="grid-1", prediction_model_name="m", value=v)
+            for v in (0.9, 0.8, 0.7, 0.6)
+        ]
+        score_rows = list(zip(holes, preds, strict=True))
+        params = [
+            QualityPredictionModelParameter(
+                grid_uuid="grid-1", prediction_model_name="lat", key=key, value=val, group="cluster_indices"
+            )
+            for key, val in (("fh-1", 0.0), ("fh-3", 1.0), ("fh-4", 0.0))
+        ]
+
+        gridsquare_result = make_execute_result(gridsquare)
+        gridsquare_result.scalar_one.return_value = gridsquare
+        results = iter([gridsquare_result, make_execute_result(score_rows), make_execute_result(params)])
+        client._db.execute.side_effect = lambda *a, **kw: next(results)
+
+        resp = client.get("/gridsquares/gs-1/prediction_model/m/latent_rep/lat/suggested_holes")
+        assert resp.status_code == 200
+        assert [hole["uuid"] for hole in resp.json()] == ["fh-1"]
