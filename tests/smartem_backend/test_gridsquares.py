@@ -178,3 +178,30 @@ class TestGetGridSquareImage:
         resp = client.get("/gridsquares/gs-1/gridsquare_image")
         assert resp.status_code == 404
         assert resp.json()["detail"] == "Grid square image unknown"
+
+    def test_renders_png_and_caches(self, client, tmp_path, monkeypatch):
+        import numpy as np
+        import tifffile
+
+        from smartem_backend import api_server
+        from smartem_backend.model.database import GridSquare
+
+        cache_dir = tmp_path / "cache"
+        monkeypatch.setattr(api_server, "IMAGE_CACHE_DIR", cache_dir)
+        source = tmp_path / "square.tiff"
+        tifffile.imwrite(source, np.arange(16, dtype=np.uint16).reshape(4, 4))
+
+        set_db_row(
+            client,
+            GridSquare(uuid="gs-1", grid_uuid="grid-1", gridsquare_id="gs-id-1", image_path=str(source)),
+        )
+        resp = client.get("/gridsquares/gs-1/gridsquare_image")
+        assert resp.status_code == 200
+        assert resp.headers["content-type"] == "image/png"
+        assert resp.content[:8] == b"\x89PNG\r\n\x1a\n"
+        cached = list(cache_dir.glob("*.png"))
+        assert len(cached) == 1
+
+        resp2 = client.get("/gridsquares/gs-1/gridsquare_image")
+        assert resp2.status_code == 200
+        assert list(cache_dir.glob("*.png")) == cached
