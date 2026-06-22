@@ -15,7 +15,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
+      # Run against this repo only, using the auto-provided GITHUB_TOKEN (no PAT to manage).
+      # GITHUB_TOKEN can't autodiscover, so the target repo is set explicitly. Trade-off: PRs that
+      # Renovate opens with GITHUB_TOKEN do not trigger this repo's other workflows, so dependency
+      # PRs arrive without CI until manually re-run. Swap to a GitHub App token if that becomes a pain.
       - uses: renovatebot/github-action@v46.1.14
+        env:
+          RENOVATE_REPOSITORIES: ${{ github.repository }}
         with:
-          token: ${{ secrets.RENOVATE_TOKEN }}
+          token: ${{ secrets.GITHUB_TOKEN }}
           configurationFile: renovate.json
