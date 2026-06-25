@@ -33,8 +33,8 @@ def load_rmq_connection_url() -> str:
     return f"amqp://{user}:{password}@{host}:{port}/{vhost}"
 
 
-def load_rmq_topology() -> tuple[str, str]:
-    """Return (exchange, queue/routing_key) from appconfig plus env override."""
+def load_rmq_topology() -> tuple[str, str, str]:
+    """Return (exchange, exchange_type, queue/routing_key) from appconfig plus env override."""
     from smartem_backend.utils import load_conf
 
     config = load_conf()
@@ -43,4 +43,5 @@ def load_rmq_topology() -> tuple[str, str]:
     else:
         queue_name = "smartem_backend"
     exchange = os.getenv("RABBITMQ_EXCHANGE") or ""
-    return exchange, queue_name
+    exchange_type = os.getenv("RABBITMQ_EXCHANGE_TYPE") or "direct"
+    return exchange, exchange_type, queue_name

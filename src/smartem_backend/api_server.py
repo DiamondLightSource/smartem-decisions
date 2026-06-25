@@ -186,11 +186,12 @@ async def lifespan(app: FastAPI):
     publisher: AioPikaPublisher | None = None
     if os.getenv("SKIP_DB_INIT", "false").lower() != "true":
         try:
-            exchange_name, routing_key = load_rmq_topology()
+            exchange_name, exchange_type, routing_key = load_rmq_topology()
             publisher = AioPikaPublisher(
                 url=load_rmq_connection_url(),
                 exchange_name=exchange_name,
                 routing_key=routing_key,
+                exchange_type=exchange_type,
             )
             await publisher.connect()
             mq_publisher_module.set_publisher(publisher)

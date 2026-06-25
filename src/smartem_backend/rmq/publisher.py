@@ -30,9 +30,12 @@ class AioPikaPublisher:
     Thread-safe because a single event loop owns the connection.
     """
 
-    def __init__(self, url: str, exchange_name: str, routing_key: str, heartbeat: int = 60) -> None:
+    def __init__(
+        self, url: str, exchange_name: str, routing_key: str, exchange_type: str = "direct", heartbeat: int = 60
+    ) -> None:
         self._url = url
         self._exchange_name = exchange_name
+        self._exchange_type = aio_pika.ExchangeType(exchange_type)
         self._routing_key = routing_key
         self._heartbeat = heartbeat
         self._connection: AbstractRobustConnection | None = None
@@ -47,7 +50,9 @@ class AioPikaPublisher:
         self._channel = channel
         await channel.declare_queue(self._routing_key, durable=True)
         if self._exchange_name:
-            self._exchange = await channel.declare_exchange(self._exchange_name, durable=True)
+            self._exchange = await channel.declare_exchange(
+                self._exchange_name, type=self._exchange_type, durable=True
+            )
         else:
             self._exchange = channel.default_exchange
         logger.info("Connected aio-pika publisher, routing_key='%s'", self._routing_key)

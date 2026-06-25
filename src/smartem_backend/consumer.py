@@ -1207,15 +1207,19 @@ async def amain(verbosity: int) -> None:
     logger = setup_logger(level=log_level, conf=conf)
 
     url = load_rmq_connection_url()
-    exchange_name, queue_name = load_rmq_topology()
+    exchange_name, exchange_type, queue_name = load_rmq_topology()
 
     # The consumer process invokes publish_* from mq_publisher too (reply events).
     # Those functions require a bound publisher on the same event loop.
-    publisher = AioPikaPublisher(url=url, exchange_name=exchange_name, routing_key=queue_name)
+    publisher = AioPikaPublisher(
+        url=url, exchange_name=exchange_name, routing_key=queue_name, exchange_type=exchange_type
+    )
     await publisher.connect()
     mq_publisher_module.set_publisher(publisher)
 
-    consumer = AioPikaConsumer(url=url, queue_name=queue_name, exchange_name=exchange_name, prefetch_count=1)
+    consumer = AioPikaConsumer(
+        url=url, queue_name=queue_name, exchange_name=exchange_name, exchange_type=exchange_type, prefetch_count=1
+    )
     await consumer.connect()
 
     stop_event = asyncio.Event()

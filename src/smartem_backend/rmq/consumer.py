@@ -25,12 +25,14 @@ class AioPikaConsumer:
         url: str,
         queue_name: str,
         exchange_name: str = "",
+        exchange_type: str = "direct",
         prefetch_count: int = 1,
         heartbeat: int = 60,
     ) -> None:
         self._url = url
         self._queue_name = queue_name
         self._exchange_name = exchange_name
+        self._exchange_type = aio_pika.ExchangeType(exchange_type)
         self._prefetch_count = prefetch_count
         self._heartbeat = heartbeat
         self._connection: AbstractRobustConnection | None = None
@@ -47,7 +49,9 @@ class AioPikaConsumer:
         self._channel = channel
         self._queue = await channel.declare_queue(self._queue_name, durable=True)
         if self._exchange_name:
-            exchange = await channel.declare_exchange(self._exchange_name, durable=True)
+            exchange = await channel.declare_exchange(
+                self._exchange_name, type=self._exchange_type, durable=True
+            )
             await self._queue.bind(exchange, routing_key=self._queue_name)
         logger.info("Connected aio-pika consumer, queue='%s'", self._queue_name)
 
