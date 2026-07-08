@@ -300,6 +300,8 @@ class MicrographUpdateRequest(MicrographBaseFields):
 class MotionCorrectionCompletedRequest(BaseModel):
     total_motion: float
     average_motion: float
+    motion_corrected_image_path: str | None = None
+    motion_corrected_snapshot_path: str | None = None
 
 
 class MotionCorrectionRegisteredRequest(BaseModel):

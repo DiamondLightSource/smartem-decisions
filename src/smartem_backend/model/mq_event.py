@@ -331,6 +331,8 @@ class MotionCorrectionCompleteBody(GenericEventMessageBody):
     micrograph_uuid: str
     total_motion: float
     average_motion: float
+    motion_corrected_image_path: str | None = None
+    motion_corrected_snapshot_path: str | None = None
 
     @model_validator(mode="after")
     def check_model(self):
