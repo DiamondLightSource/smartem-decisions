@@ -2834,6 +2834,41 @@ async def get_gridsquare_image(
     return await _cached_image_response(Path(gridsquare.image_path), None)
 
 
+@app.get(
+    "/micrographs/{micrograph_uuid}/micrograph_image",
+    responses={200: {"content": {"image/jpeg": {}, "image/png": {}}}},
+)
+async def get_micrograph_image(
+    micrograph_uuid: str,
+    x: int | None = None,
+    y: int | None = None,
+    w: int | None = None,
+    h: int | None = None,
+    db: AsyncSession = DB_DEPENDENCY,
+):
+    """Serve the motion-corrected micrograph preview image (ADR 0021).
+
+    Prefers the pre-downscaled JPEG snapshot (served as-is, no render), falls back
+    to rendering the motion-corrected MRC to PNG with an optional x,y,w,h crop, and
+    otherwise 404s. Never serves high_res_path, which is the raw movie stack.
+    """
+    micrograph = (await db.execute(select(Micrograph).where(Micrograph.uuid == micrograph_uuid))).scalars().first()
+    if not micrograph:
+        raise HTTPException(status_code=404, detail="Micrograph not found")
+    snapshot_path = micrograph.motion_corrected_snapshot_path
+    if snapshot_path and Path(snapshot_path).exists():
+        return FileResponse(
+            snapshot_path,
+            media_type="image/jpeg",
+            headers={"Cache-Control": "private, max-age=3600"},
+        )
+    image_path = micrograph.motion_corrected_image_path
+    if image_path and Path(image_path).exists():
+        crop = (x, y, w, h) if x is not None and y is not None and w is not None and h is not None else None
+        return await _cached_image_response(Path(image_path), crop)
+    raise HTTPException(status_code=404, detail="Micrograph image unavailable")
+
+
 _frontend_sse_connections = 0
 _frontend_sse_max_connections = int(os.getenv("FRONTEND_SSE_MAX_CONNECTIONS", "50"))
 
