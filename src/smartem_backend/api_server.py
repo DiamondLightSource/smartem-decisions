@@ -1390,6 +1390,8 @@ async def publish_micrograph_motion_correction_completed(
         micrograph_uuid=micrograph_uuid,
         total_motion=payload.total_motion,
         average_motion=payload.average_motion,
+        motion_corrected_image_path=payload.motion_corrected_image_path,
+        motion_corrected_snapshot_path=payload.motion_corrected_snapshot_path,
     )
     return _publish_or_502(success, "motion_correction_completed", micrograph_uuid)
 

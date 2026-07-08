@@ -71,7 +71,23 @@ class TestMotionCorrectionCompleted:
             "micrograph_uuid": "abc-123",
             "total_motion": 1.5,
             "average_motion": 0.1,
+            "motion_corrected_image_path": None,
+            "motion_corrected_snapshot_path": None,
         }
+
+    def test_image_paths_are_forwarded(self, client, captured):
+        resp = client.post(
+            self.endpoint,
+            json={
+                "total_motion": 1.5,
+                "average_motion": 0.1,
+                "motion_corrected_image_path": "/dls/mc/mic.mrc",
+                "motion_corrected_snapshot_path": "/dls/mc/mic.mrc.jpeg",
+            },
+        )
+        assert resp.status_code == 202
+        assert captured[0].kwargs["motion_corrected_image_path"] == "/dls/mc/mic.mrc"
+        assert captured[0].kwargs["motion_corrected_snapshot_path"] == "/dls/mc/mic.mrc.jpeg"
 
     def test_missing_micrograph_returns_404(self, client, captured):
         client._db.execute.return_value = make_execute_result(None)

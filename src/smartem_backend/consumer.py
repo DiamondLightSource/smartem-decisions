@@ -455,6 +455,10 @@ async def handle_motion_correction_complete(event_data: dict[str, Any]) -> None:
                 .first()
             )
             if micrograph:
+                if event.motion_corrected_image_path is not None:
+                    micrograph.motion_corrected_image_path = event.motion_corrected_image_path
+                if event.motion_corrected_snapshot_path is not None:
+                    micrograph.motion_corrected_snapshot_path = event.motion_corrected_snapshot_path
                 micrograph.updated_at = datetime.now()
                 await session.commit()
         await publish_motion_correction_registered(

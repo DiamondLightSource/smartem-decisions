@@ -367,12 +367,20 @@ async def publish_model_parameter_update(
     return await _publish(MessageQueueEventType.MODEL_PARAMETER_UPDATE, event)
 
 
-async def publish_motion_correction_completed(micrograph_uuid: str, total_motion: float, average_motion: float) -> bool:
+async def publish_motion_correction_completed(
+    micrograph_uuid: str,
+    total_motion: float,
+    average_motion: float,
+    motion_corrected_image_path: str | None = None,
+    motion_corrected_snapshot_path: str | None = None,
+) -> bool:
     event = MotionCorrectionCompleteBody(
         event_type=MessageQueueEventType.MOTION_CORRECTION_COMPLETE,
         micrograph_uuid=micrograph_uuid,
         total_motion=total_motion,
         average_motion=average_motion,
+        motion_corrected_image_path=motion_corrected_image_path,
+        motion_corrected_snapshot_path=motion_corrected_snapshot_path,
     )
     return await _publish(MessageQueueEventType.MOTION_CORRECTION_COMPLETE, event)
 

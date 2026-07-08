@@ -179,6 +179,37 @@ class TestMotionCorrectionComplete:
         assert db.add.call_count == 1
         assert db.commit.await_count == 1
 
+    def test_persists_motion_corrected_image_paths(self, db, monkeypatch, stub_publisher):
+        grid_row = MagicMock()
+        grid_row.grid_uuid = "grid-1"
+        micrograph = MagicMock()
+        db.execute.return_value.one.return_value = (grid_row,)
+        db.execute.return_value.scalars.return_value.all.return_value = []
+        db.execute.return_value.scalars.return_value.first.return_value = micrograph
+
+        async def _stub_check(*args, **kwargs):
+            return 0.7
+
+        async def _stub_prior(*args, **kwargs):
+            return None
+
+        async def _stub_publish(*args, **kwargs):
+            return True
+
+        monkeypatch.setattr(consumer, "_check_against_statistics", _stub_check)
+        monkeypatch.setattr(consumer, "prior_update", _stub_prior)
+        monkeypatch.setattr(consumer, "publish_motion_correction_registered", _stub_publish)
+
+        import asyncio
+
+        event = dict(self.base_event)
+        event["motion_corrected_image_path"] = "/dls/mc/mic.mrc"
+        event["motion_corrected_snapshot_path"] = "/dls/mc/mic.mrc.jpeg"
+        asyncio.run(consumer.handle_motion_correction_complete(event))
+
+        assert micrograph.motion_corrected_image_path == "/dls/mc/mic.mrc"
+        assert micrograph.motion_corrected_snapshot_path == "/dls/mc/mic.mrc.jpeg"
+
 
 class TestRefreshPredictions:
     base_event = {

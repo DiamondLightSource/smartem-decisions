@@ -223,6 +223,8 @@ class Micrograph(SQLModel, table=True, table_name="micrograph"):
     binning_y: int | None = Field(default=None)
     total_motion: float | None = Field(default=None)
     average_motion: float | None = Field(default=None)
+    motion_corrected_image_path: str | None = Field(default=None)
+    motion_corrected_snapshot_path: str | None = Field(default=None)
     ctf_max_resolution_estimate: float | None = Field(default=None)
     number_of_particles_selected: int | None = Field(default=None)
     number_of_particles_rejected: int | None = Field(default=None)
