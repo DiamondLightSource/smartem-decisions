@@ -230,6 +230,16 @@ class QualityPredictionResponse(BaseModel):
         return v
 
 
+class CurrentQualityPredictionResponse(BaseModel):
+    id: int
+    prediction_model_name: str
+    value: float
+    gridsquare_uuid: str | None = None
+    foilhole_uuid: str | None = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 class QualityPredictionModelParameterResponse(BaseModel):
     id: int
     grid_uuid: str
