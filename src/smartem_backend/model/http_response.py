@@ -8,6 +8,7 @@ from smartem_common.entity_status import (
     GridSquareStatus,
     GridStatus,
     MicrographStatus,
+    ModelLevel,
 )
 
 
@@ -204,6 +205,7 @@ class MicrographResponse(BaseModel):
 class QualityPredictionModelResponse(BaseModel):
     name: str
     description: str
+    level: ModelLevel
     can_train: bool
     can_infer: bool
     can_update: bool
