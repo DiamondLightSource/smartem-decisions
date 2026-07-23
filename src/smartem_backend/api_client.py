@@ -28,6 +28,7 @@ from smartem_backend.model.http_response import (
     AtlasResponse,
     AtlasTileGridSquarePositionResponse,
     AtlasTileResponse,
+    CurrentQualityPredictionResponse,
     FoilHoleResponse,
     GridResponse,
     GridSquareResponse,
@@ -663,6 +664,17 @@ class SmartEMAPIClient:
         """Get quality predictions for all squares on grid"""
         response = self._request(
             "get", f"prediction_model/{model_name}/grid/{grid_uuid}/prediction", response_cls=QualityPredictionResponse
+        )
+        return response
+
+    def get_grid_current_quality_predictions(
+        self, model_name: str, grid_uuid: str
+    ) -> list[CurrentQualityPredictionResponse]:
+        """Get current quality predictions for all squares on grid"""
+        response = self._request(
+            "get",
+            f"prediction_model/{model_name}/grid/{grid_uuid}/current_prediction",
+            response_cls=CurrentQualityPredictionResponse,
         )
         return response
 

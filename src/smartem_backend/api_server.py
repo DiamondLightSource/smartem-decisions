@@ -102,6 +102,7 @@ from smartem_backend.model.http_response import (
     AtlasResponse,
     AtlasTileGridSquarePositionResponse,
     AtlasTileResponse,
+    CurrentQualityPredictionResponse,
     FoilHoleResponse,
     GridResponse,
     GridSquareBatchCreateResponse,
@@ -2422,6 +2423,50 @@ async def get_prediction_for_grid(prediction_model_name: str, grid_uuid: str, db
                     .where(QualityPrediction.foilhole_uuid == fh[1].uuid)
                     .where(QualityPrediction.prediction_model_name == prediction_model_name)
                     .order_by(QualityPrediction.timestamp.desc())
+                )
+            )
+            .scalars()
+            .first()
+            for fh in holes
+        ]
+        for i in range(len(predictions)):
+            predictions[i].gridsquare_uuid = holes[i][0].uuid
+    return predictions
+
+
+@app.get(
+    "/prediction_model/{prediction_model_name}/grid/{grid_uuid}/current_prediction",
+    response_model=list[CurrentQualityPredictionResponse],
+)
+async def get_current_prediction_for_grid(prediction_model_name: str, grid_uuid: str, db: AsyncSession = DB_DEPENDENCY):
+    squares = (await db.execute(select(GridSquare).where(GridSquare.grid_uuid == grid_uuid))).scalars().all()
+    predictions = [
+        (
+            await db.execute(
+                select(CurrentQualityPrediction)
+                .where(CurrentQualityPrediction.gridsquare_uuid == gs.uuid)
+                .where(CurrentQualityPrediction.prediction_model_name == prediction_model_name)
+            )
+        )
+        .scalars()
+        .all()
+        for gs in squares
+    ]
+    predictions = [p[0] for p in predictions if p]
+    if not predictions:
+        holes = (
+            await db.execute(
+                select(GridSquare, FoilHole)
+                .where(GridSquare.grid_uuid == grid_uuid)
+                .where(FoilHole.gridsquare_uuid == GridSquare.uuid)
+            )
+        ).all()
+        predictions = [
+            (
+                await db.execute(
+                    select(CurrentQualityPrediction)
+                    .where(CurrentQualityPrediction.foilhole_uuid == fh[1].uuid)
+                    .where(CurrentQualityPrediction.prediction_model_name == prediction_model_name)
                 )
             )
             .scalars()
