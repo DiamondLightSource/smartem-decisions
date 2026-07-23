@@ -32,6 +32,7 @@ from smartem_backend.model.http_response import (
     GridResponse,
     GridSquareResponse,
     MicrographResponse,
+    QualityPredictionModelResponse,
 )
 from smartem_common.entity_status import AcquisitionStatus, GridSquareStatus, GridStatus
 from smartem_common.schemas import (
@@ -643,6 +644,13 @@ class SmartEMAPIClient:
         response = self._request(
             "post", f"foilholes/{micrograph.foilhole_uuid}/micrographs", micrograph, MicrographResponse
         )
+        return response
+
+    # ============ Quality Prediction Model Methods ============
+
+    def get_quality_prediction_models(self) -> list[QualityPredictionModelResponse]:
+        """Get all registered quality prediction models"""
+        response = self._request("get", "prediction_models", response_cls=QualityPredictionModelResponse)
         return response
 
     # ============ Agent Communication Methods ============
