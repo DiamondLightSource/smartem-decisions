@@ -657,7 +657,7 @@ class SmartEMAPIClient:
 
     def get_quality_prediction_model(self, name: str) -> QualityPredictionModelResponse:
         """Get registered quality prediction model by name"""
-        response = self._request("get", f"prediction_model/{name}", response_cls=QualityPredictionModelResponse)
+        response = self._request("get", f"prediction_models/{name}", response_cls=QualityPredictionModelResponse)
         return response
 
     def get_grid_quality_predictions(self, model_name: str, grid_uuid: str) -> list[QualityPredictionResponse]:
