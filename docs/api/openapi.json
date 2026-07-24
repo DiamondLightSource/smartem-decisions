@@ -1259,6 +1259,51 @@
         "title": "CtfEstimationRegisteredRequest",
         "type": "object"
       },
+      "CurrentQualityPredictionResponse": {
+        "properties": {
+          "foilhole_uuid": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Foilhole Uuid"
+          },
+          "gridsquare_uuid": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gridsquare Uuid"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "prediction_model_name": {
+            "title": "Prediction Model Name",
+            "type": "string"
+          },
+          "value": {
+            "title": "Value",
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "prediction_model_name",
+          "value"
+        ],
+        "title": "CurrentQualityPredictionResponse",
+        "type": "object"
+      },
       "FoilHole": {
         "properties": {
           "center_x": {
@@ -4348,6 +4393,15 @@
         "title": "MicrographUpdateRequest",
         "type": "object"
       },
+      "ModelLevel": {
+        "enum": [
+          "gridsquare",
+          "foilhole",
+          "foilholegroup"
+        ],
+        "title": "ModelLevel",
+        "type": "string"
+      },
       "MotionCorrectionCompletedRequest": {
         "properties": {
           "average_motion": {
@@ -4660,6 +4714,9 @@
             "title": "Description",
             "type": "string"
           },
+          "level": {
+            "$ref": "#/components/schemas/ModelLevel"
+          },
           "name": {
             "title": "Name",
             "type": "string"
@@ -4668,6 +4725,7 @@
         "required": [
           "name",
           "description",
+          "level",
           "can_train",
           "can_infer",
           "can_update"
@@ -4915,7 +4973,7 @@
   "info": {
     "description": "API for accessing and managing electron microscopy data",
     "title": "SmartEM Decisions Backend API",
-    "version": "0.1.1rc51.dev5+gd3d8680e8"
+    "version": "0.1.2.dev5+g66603b045"
   },
   "openapi": "3.1.0",
   "paths": {
@@ -8021,6 +8079,58 @@
           }
         },
         "summary": "Publish Micrograph Motion Correction Registered"
+      }
+    },
+    "/prediction_model/{prediction_model_name}/grid/{grid_uuid}/current_prediction": {
+      "get": {
+        "operationId": "get_current_prediction_for_grid_prediction_model__prediction_model_name__grid__grid_uuid__current_prediction_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "prediction_model_name",
+            "required": true,
+            "schema": {
+              "title": "Prediction Model Name",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "grid_uuid",
+            "required": true,
+            "schema": {
+              "title": "Grid Uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/CurrentQualityPredictionResponse"
+                  },
+                  "title": "Response Get Current Prediction For Grid Prediction Model  Prediction Model Name  Grid  Grid Uuid  Current Prediction Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Current Prediction For Grid"
       }
     },
     "/prediction_model/{prediction_model_name}/grid/{grid_uuid}/latent_representation": {
