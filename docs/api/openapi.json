@@ -4995,7 +4995,7 @@
   "info": {
     "description": "API for accessing and managing electron microscopy data",
     "title": "SmartEM Decisions Backend API",
-    "version": "0.1.2rc56.dev1+gc6b541cdc"
+    "version": "0.1.2rc56.dev3+gad7540acb"
   },
   "openapi": "3.1.0",
   "paths": {
@@ -8001,6 +8001,110 @@
           }
         },
         "summary": "Publish Micrograph Ctf Estimation Registered"
+      }
+    },
+    "/micrographs/{micrograph_uuid}/micrograph_image": {
+      "get": {
+        "description": "Serve the motion-corrected micrograph preview image (ADR 0021).\n\nPrefers the pre-downscaled JPEG snapshot (served as-is, no render), falls back\nto rendering the motion-corrected MRC to PNG with an optional x,y,w,h crop, and\notherwise 404s. Never serves high_res_path, which is the raw movie stack.",
+        "operationId": "get_micrograph_image_micrographs__micrograph_uuid__micrograph_image_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "micrograph_uuid",
+            "required": true,
+            "schema": {
+              "title": "Micrograph Uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "x",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X"
+            }
+          },
+          {
+            "in": "query",
+            "name": "y",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Y"
+            }
+          },
+          {
+            "in": "query",
+            "name": "w",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "W"
+            }
+          },
+          {
+            "in": "query",
+            "name": "h",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "H"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              },
+              "image/jpeg": {},
+              "image/png": {}
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Micrograph Image"
       }
     },
     "/micrographs/{micrograph_uuid}/motion_correction/completed": {
