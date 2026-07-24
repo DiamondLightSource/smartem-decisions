@@ -4408,6 +4408,28 @@
             "title": "Average Motion",
             "type": "number"
           },
+          "motion_corrected_image_path": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Motion Corrected Image Path"
+          },
+          "motion_corrected_snapshot_path": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Motion Corrected Snapshot Path"
+          },
           "total_motion": {
             "title": "Total Motion",
             "type": "number"
@@ -4973,7 +4995,7 @@
   "info": {
     "description": "API for accessing and managing electron microscopy data",
     "title": "SmartEM Decisions Backend API",
-    "version": "0.1.2.dev5+g66603b045"
+    "version": "0.1.2rc56.dev1+gc6b541cdc"
   },
   "openapi": "3.1.0",
   "paths": {
