@@ -1,5 +1,5 @@
 from datetime import datetime
-from enum import Enum
+from enum import StrEnum
 
 from pydantic import BaseModel, computed_field, field_serializer, model_validator
 
@@ -8,7 +8,7 @@ def non_negative_float(v: float):
     return v >= 0
 
 
-class MessageQueueEventType(str, Enum):
+class MessageQueueEventType(StrEnum):
     """Enum listing various system events that are mapped to messages in RabbitMQ"""
 
     ACQUISITION_CREATED = "acquisition.created"

@@ -1,7 +1,7 @@
-from enum import Enum
+from enum import StrEnum
 
 
-class AcquisitionStatus(str, Enum):
+class AcquisitionStatus(StrEnum):
     PLANNED = "planned"
     STARTED = "started"
     COMPLETED = "completed"
@@ -9,7 +9,7 @@ class AcquisitionStatus(str, Enum):
     ABANDONED = "abandoned"
 
 
-class GridStatus(str, Enum):
+class GridStatus(StrEnum):
     NONE = "none"
     SCAN_STARTED = "scan started"
     SCAN_COMPLETED = "scan completed"
@@ -17,19 +17,19 @@ class GridStatus(str, Enum):
     GRID_SQUARES_DECISION_COMPLETED = "grid squares decision completed"
 
 
-class GridSquareStatus(str, Enum):
+class GridSquareStatus(StrEnum):
     NONE = "none"
     REGISTERED = "all foil holes registered"
     FOIL_HOLES_DECISION_STARTED = "foil holes decision started"
     FOIL_HOLES_DECISION_COMPLETED = "foil holes decision completed"
 
 
-class FoilHoleStatus(str, Enum):
+class FoilHoleStatus(StrEnum):
     NONE = "none"
     MICROGRAPHS_DETECTED = "micrographs detected"
 
 
-class MicrographStatus(str, Enum):
+class MicrographStatus(StrEnum):
     NONE = "none"
     MOTION_CORRECTION_STARTED = "motion correction started"
     MOTION_CORRECTION_COMPLETED = "motion correction completed"
@@ -41,7 +41,7 @@ class MicrographStatus(str, Enum):
     PARTICLE_SELECTION_COMPLETED = "particle selection completed"
 
 
-class ModelLevel(str, Enum):
+class ModelLevel(StrEnum):
     GRIDSQUARE = "gridsquare"
     FOILHOLE = "foilhole"
     FOILHOLEGROUP = "foilholegroup"

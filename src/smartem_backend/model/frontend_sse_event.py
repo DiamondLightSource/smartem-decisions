@@ -1,10 +1,10 @@
 from datetime import datetime
-from enum import Enum
+from enum import StrEnum
 
 from pydantic import BaseModel
 
 
-class FrontendEventType(str, Enum):
+class FrontendEventType(StrEnum):
     AGENT_STATUS = "agent.status"
     ACQUISITION_PROGRESS = "acquisition.progress"
     INSTRUCTION_LIFECYCLE = "instruction.lifecycle"
