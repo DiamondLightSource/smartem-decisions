@@ -69,7 +69,7 @@ class FoilHoleData(BaseModel):
 
 
 class GridSquareManifest(BaseModel):
-    acquisition_datetime: datetime
+    acquisition_datetime: datetime | None = None
     defocus: float | None
     magnification: float | None
     pixel_size: float | None

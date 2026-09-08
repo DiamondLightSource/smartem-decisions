@@ -760,7 +760,7 @@ class EpuParser:
                             ".//ms:microscopeData/ms:optics/ms:TemMagnification/ms:NominalMagnification"
                         ),
                         pixel_size=get_float(".//ms:SpatialScale/ms:pixelSize/ms:x/ms:numericValue"),
-                        detector_name=get_custom_value("DetectorCommercialName"),
+                        detector_name=get_custom_value("DetectorCommercialName") or "Unknown",
                         applied_defocus=get_custom_float("AppliedDefocus"),
                         data_dir=Path(manifest_path).parent,
                     )
@@ -949,8 +949,8 @@ class EpuParser:
                         phase_plate=get_custom_value("PhasePlateUsed") == "true",
                         image_size_x=get_int(".//draw:width", el=readout_area_list[0]) if readout_area_list else None,
                         image_size_y=get_int(".//draw:height", el=readout_area_list[0]) if readout_area_list else None,
-                        binning_x=get_int(".//draw:x", el=binning_list[0], default=1) if binning_list else 1,
-                        binning_y=get_int(".//draw:y", el=binning_list[0], default=1) if binning_list else 1,
+                        binning_x=(get_int(".//draw:x", el=binning_list[0], default=1) or 1) if binning_list else 1,
+                        binning_y=(get_int(".//draw:y", el=binning_list[0], default=1) or 1) if binning_list else 1,
                     )
 
             return None
@@ -1027,21 +1027,22 @@ class EpuParser:
         datastore.create_grid(grid, path_mapper=path_mapper)
 
         if grid.atlas_data is not None:
-            datastore.create_atlas(grid.atlas_data)
+            atlas_data = grid.atlas_data
+            datastore.create_atlas(atlas_data)
             gs_uuid_map = {}
-            for gsid, gsp in grid.atlas_data.gridsquare_positions.items():
+            for gsid, gsp in (atlas_data.gridsquare_positions or {}).items():
                 gridsquare = GridSquareData(
                     gridsquare_id=str(gsid),
                     metadata=None,
                     grid_uuid=grid.uuid,
-                    center_x=gsp.center[0],
-                    center_y=gsp.center[1],
-                    size_width=gsp.size[0],
-                    size_height=gsp.size[1],
+                    center_x=gsp.center[0] if gsp.center else None,
+                    center_y=gsp.center[1] if gsp.center else None,
+                    size_width=gsp.size[0] if gsp.size else None,
+                    size_height=gsp.size[1] if gsp.size else None,
                 )
                 gs_uuid_map[str(gsid)] = gridsquare.uuid
                 datastore.create_gridsquare(gridsquare, lowmag=True)
-            for atlastile in grid.atlas_data.tiles:
+            for atlastile in atlas_data.tiles:
                 pos_data_for_tile = []
                 for gsid, gs_tile_pos in atlastile.gridsquare_positions.items():
                     for pos in gs_tile_pos:
@@ -1064,22 +1065,15 @@ class EpuParser:
 
             # Create GridSquareData with ID and metadata
             if grid.atlas_data is not None:
+                gs_pos = (grid.atlas_data.gridsquare_positions or {}).get(int(gridsquare_id))
                 gridsquare = GridSquareData(
                     gridsquare_id=gridsquare_id,
                     metadata=gridsquare_metadata,
                     grid_uuid=grid.uuid,  # Set reference to parent grid
-                    center_x=grid.atlas_data.gridsquare_positions[int(gridsquare_id)].center[0]
-                    if grid.atlas_data.gridsquare_positions.get(int(gridsquare_id)) is not None
-                    else None,
-                    center_y=grid.atlas_data.gridsquare_positions[int(gridsquare_id)].center[1]
-                    if grid.atlas_data.gridsquare_positions.get(int(gridsquare_id)) is not None
-                    else None,
-                    size_width=grid.atlas_data.gridsquare_positions[int(gridsquare_id)].size[0]
-                    if grid.atlas_data.gridsquare_positions.get(int(gridsquare_id)) is not None
-                    else None,
-                    size_height=grid.atlas_data.gridsquare_positions[int(gridsquare_id)].size[1]
-                    if grid.atlas_data.gridsquare_positions.get(int(gridsquare_id)) is not None
-                    else None,
+                    center_x=gs_pos.center[0] if gs_pos and gs_pos.center else None,
+                    center_y=gs_pos.center[1] if gs_pos and gs_pos.center else None,
+                    size_width=gs_pos.size[0] if gs_pos and gs_pos.size else None,
+                    size_height=gs_pos.size[1] if gs_pos and gs_pos.size else None,
                 )
             else:
                 gridsquare = GridSquareData(
