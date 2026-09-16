@@ -15,6 +15,7 @@ from smartem_backend.model.mq_event import (
     AtlasTileUpdatedEvent,
     AtlasUpdatedEvent,
     CreateFoilHoleGroupEvent,
+    CreateGridSquareGroupEvent,
     CtfCompleteBody,
     CtfRegisteredBody,
     FoilHoleCreatedEvent,
@@ -27,6 +28,7 @@ from smartem_backend.model.mq_event import (
     GridRegisteredEvent,
     GridSquareCreatedEvent,
     GridSquareDeletedEvent,
+    GridSquareGroupModelPredictionEvent,
     GridSquareModelPredictionEvent,
     GridSquareRegisteredEvent,
     GridSquareUpdatedEvent,
@@ -350,6 +352,32 @@ async def publish_foilhole_group_model_prediction(
         metric=metric,
     )
     return await _publish(MessageQueueEventType.FOILHOLE_GROUP_MODEL_PREDICTION, event)
+
+
+async def publish_create_gridsquare_group(
+    grid_uuid: str, gridsquare_uuids: list[str], group_uuid: str, name: str | None = None
+) -> bool:
+    event = CreateGridSquareGroupEvent(
+        event_type=MessageQueueEventType.CREATE_GRIDSQUARE_GROUP,
+        grid_uuid=grid_uuid,
+        gridsquare_uuids=gridsquare_uuids,
+        group_uuid=group_uuid,
+        name=name,
+    )
+    return await _publish(MessageQueueEventType.CREATE_GRIDSQUARE_GROUP, event)
+
+
+async def publish_gridsquare_group_model_prediction(
+    group_uuid: str, model_name: str, prediction_value: float, metric: str | None = None
+) -> bool:
+    event = GridSquareGroupModelPredictionEvent(
+        event_type=MessageQueueEventType.GRIDSQUARE_GROUP_MODEL_PREDICTION,
+        group_uuid=group_uuid,
+        prediction_model_name=model_name,
+        prediction_value=prediction_value,
+        metric=metric,
+    )
+    return await _publish(MessageQueueEventType.GRIDSQUARE_GROUP_MODEL_PREDICTION, event)
 
 
 async def publish_model_parameter_update(

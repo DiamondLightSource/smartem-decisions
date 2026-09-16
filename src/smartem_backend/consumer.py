@@ -31,13 +31,17 @@ from smartem_backend.log_manager import LogConfig, LogManager
 from smartem_backend.model.database import (
     AgentInstruction,
     AgentSession,
+    CurrentQualityGridSquareGroupPrediction,
     CurrentQualityGroupPrediction,
     CurrentQualityPrediction,
     FoilHole,
     FoilHoleGroup,
     FoilHoleGroupMembership,
     GridSquare,
+    GridSquareGroup,
+    GridSquareGroupMembership,
     Micrograph,
+    QualityGridSquareGroupPrediction,
     QualityGroupPrediction,
     QualityMetricStatistics,
     QualityPrediction,
@@ -54,6 +58,7 @@ from smartem_backend.model.mq_event import (
     AtlasDeletedEvent,
     AtlasUpdatedEvent,
     CreateFoilHoleGroupEvent,
+    CreateGridSquareGroupEvent,
     CtfCompleteBody,
     FoilHoleCreatedEvent,
     FoilHoleDeletedEvent,
@@ -65,6 +70,7 @@ from smartem_backend.model.mq_event import (
     GridRegisteredEvent,
     GridSquareCreatedEvent,
     GridSquareDeletedEvent,
+    GridSquareGroupModelPredictionEvent,
     GridSquareModelPredictionEvent,
     GridSquareRegisteredEvent,
     GridSquareUpdatedEvent,
@@ -839,6 +845,105 @@ async def handle_foilhole_group_model_prediction(event_data: dict[str, Any]) -> 
         logger.error(f"Error processing foil hole group model prediction event: {e}")
 
 
+async def handle_create_gridsquare_group(event_data: dict[str, Any]) -> None:
+    try:
+        event = CreateGridSquareGroupEvent(**event_data)
+        async with SessionLocal() as session:
+            group = (
+                (await session.execute(select(GridSquareGroup).where(GridSquareGroup.uuid == event.group_uuid)))
+                .scalars()
+                .first()
+            )
+            if group is None:
+                group = GridSquareGroup(
+                    uuid=event.group_uuid,
+                    grid_uuid=event.grid_uuid,
+                    name=event.name,
+                )
+                session.add(group)
+                memberships = [
+                    GridSquareGroupMembership(group_uuid=event.group_uuid, gridsquare_uuid=gsuuid)
+                    for gsuuid in event.gridsquare_uuids
+                ]
+                session.add_all(memberships)
+            else:
+                group.name = event.name
+                existing_memberships = (
+                    (
+                        await session.execute(
+                            select(GridSquareGroupMembership).where(
+                                GridSquareGroupMembership.group_uuid == event.group_uuid
+                            )
+                        )
+                    )
+                    .scalars()
+                    .all()
+                )
+                existing_uuids = {m.gridsquare_uuid for m in existing_memberships}
+                new_memberships = [
+                    GridSquareGroupMembership(group_uuid=event.group_uuid, gridsquare_uuid=gsuuid)
+                    for gsuuid in event.gridsquare_uuids
+                    if gsuuid not in existing_uuids
+                ]
+                session.add_all(new_memberships)
+            await session.commit()
+    except ValidationError as e:
+        logger.error(f"Validation error processing create grid square group event: {e}")
+    except Exception as e:
+        logger.error(f"Error processing create grid square group event: {e}")
+
+
+async def handle_gridsquare_group_model_prediction(event_data: dict[str, Any]) -> None:
+    try:
+        event = GridSquareGroupModelPredictionEvent(**event_data)
+        async with SessionLocal() as session:
+            group = (
+                (await session.execute(select(GridSquareGroup).where(GridSquareGroup.uuid == event.group_uuid)))
+                .scalars()
+                .one()
+            )
+            session.add(
+                QualityGridSquareGroupPrediction(
+                    group_uuid=event.group_uuid,
+                    grid_uuid=group.grid_uuid,
+                    value=event.prediction_value,
+                    prediction_model_name=event.prediction_model_name,
+                    metric_name=event.metric,
+                )
+            )
+            existing = (
+                (
+                    await session.execute(
+                        select(CurrentQualityGridSquareGroupPrediction)
+                        .where(CurrentQualityGridSquareGroupPrediction.group_uuid == event.group_uuid)
+                        .where(
+                            CurrentQualityGridSquareGroupPrediction.prediction_model_name == event.prediction_model_name
+                        )
+                        .where(CurrentQualityGridSquareGroupPrediction.metric_name == event.metric)
+                    )
+                )
+                .scalars()
+                .first()
+            )
+            if existing is None:
+                session.add(
+                    CurrentQualityGridSquareGroupPrediction(
+                        group_uuid=event.group_uuid,
+                        grid_uuid=group.grid_uuid,
+                        value=event.prediction_value,
+                        prediction_model_name=event.prediction_model_name,
+                        metric_name=event.metric,
+                    )
+                )
+            else:
+                existing.value = event.prediction_value
+            await session.commit()
+    except ValidationError as e:
+        logger.error(f"Validation error processing grid square group model prediction event: {e}")
+    except Exception as e:
+        logger.error(f"Error processing grid square group model prediction event: {e}")
+
+
 async def handle_refresh_predictions(event_data: dict[str, Any]) -> None:
     try:
         event = RefreshPredictionsEvent(**event_data)
@@ -1118,6 +1223,8 @@ def get_event_handlers() -> dict[str, EventHandler]:
         MessageQueueEventType.MULTI_FOILHOLE_MODEL_PREDICTION.value: handle_multi_foilhole_model_prediction,
         MessageQueueEventType.CREATE_FOILHOLE_GROUP.value: handle_create_foilhole_group,
         MessageQueueEventType.FOILHOLE_GROUP_MODEL_PREDICTION.value: handle_foilhole_group_model_prediction,
+        MessageQueueEventType.CREATE_GRIDSQUARE_GROUP.value: handle_create_gridsquare_group,
+        MessageQueueEventType.GRIDSQUARE_GROUP_MODEL_PREDICTION.value: handle_gridsquare_group_model_prediction,
         MessageQueueEventType.MODEL_PARAMETER_UPDATE.value: handle_model_parameter_update,
         MessageQueueEventType.REFRESH_PREDICTIONS.value: handle_refresh_predictions,
     }

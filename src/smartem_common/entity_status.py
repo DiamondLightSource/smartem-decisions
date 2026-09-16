@@ -45,3 +45,4 @@ class ModelLevel(StrEnum):
     GRIDSQUARE = "gridsquare"
     FOILHOLE = "foilhole"
     FOILHOLEGROUP = "foilholegroup"
+    GRIDSQUAREGROUP = "gridsquaregroup"

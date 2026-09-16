@@ -98,6 +98,10 @@ class Grid(SQLModel, table=True, table_name="grid"):
     current_quality_group_predictions: list["CurrentQualityGroupPrediction"] = Relationship(
         back_populates="grid", cascade_delete=True
     )
+    gridsquare_groups: list["GridSquareGroup"] = Relationship(back_populates="grid", cascade_delete=True)
+    current_quality_gridsquare_group_predictions: list["CurrentQualityGridSquareGroupPrediction"] = Relationship(
+        back_populates="grid", cascade_delete=True
+    )
 
 
 class AtlasTile(SQLModel, table=True, table_name="atlastile"):
@@ -169,6 +173,9 @@ class GridSquare(SQLModel, table=True, table_name="gridsquare"):
         back_populates="gridsquare", cascade_delete=True
     )
     overall_prediction: list["OverallQualityPrediction"] = Relationship(
+        back_populates="gridsquare", cascade_delete=True
+    )
+    group_memberships: list["GridSquareGroupMembership"] = Relationship(
         back_populates="gridsquare", cascade_delete=True
     )
 
@@ -423,6 +430,66 @@ class CurrentQualityGroupPrediction(SQLModel, table=True, table_name="currentqua
     metric_name: str | None = Field(foreign_key="qualitymetric.name", default=None)
     group: FoilHoleGroup | None = Relationship(back_populates="current_predictions")
     grid: Grid | None = Relationship(back_populates="current_quality_group_predictions")
+    model: QualityPredictionModel | None = Relationship()
+    metric: QualityMetric | None = Relationship()
+
+
+class GridSquareGroup(SQLModel, table=True, table_name="gridsquaregroup"):
+    """A named group of grid squares that can receive a single shared prediction."""
+
+    __table_args__ = {"extend_existing": True}
+    uuid: str = Field(primary_key=True)
+    grid_uuid: str = Field(foreign_key="grid.uuid")
+    name: str | None = Field(default=None)
+    grid: Grid | None = Relationship(back_populates="gridsquare_groups")
+    memberships: list["GridSquareGroupMembership"] = Relationship(back_populates="group", cascade_delete=True)
+    predictions: list["QualityGridSquareGroupPrediction"] = Relationship(back_populates="group", cascade_delete=True)
+    current_predictions: list["CurrentQualityGridSquareGroupPrediction"] = Relationship(
+        back_populates="group", cascade_delete=True
+    )
+
+
+class GridSquareGroupMembership(SQLModel, table=True, table_name="gridsquaregroupmembership"):
+    """Association between a GridSquareGroup and individual GridSquares."""
+
+    __table_args__ = {"extend_existing": True}
+    group_uuid: str = Field(foreign_key="gridsquaregroup.uuid", primary_key=True)
+    gridsquare_uuid: str = Field(foreign_key="gridsquare.uuid", primary_key=True)
+    group: GridSquareGroup | None = Relationship(back_populates="memberships")
+    gridsquare: GridSquare | None = Relationship(back_populates="group_memberships")
+
+
+class QualityGridSquareGroupPrediction(SQLModel, table=True, table_name="qualitygridsquaregroupprediction"):
+    """Timestamped history of every prediction issued for a GridSquareGroup."""
+
+    __table_args__ = {"extend_existing": True}
+    id: int | None = Field(default=None, primary_key=True)
+    timestamp: datetime = Field(default_factory=datetime.now)
+    group_uuid: str = Field(foreign_key="gridsquaregroup.uuid")
+    grid_uuid: str = Field(foreign_key="grid.uuid")
+    value: float
+    prediction_model_name: str = Field(foreign_key="qualitypredictionmodel.name")
+    metric_name: str | None = Field(foreign_key="qualitymetric.name", default=None)
+    group: GridSquareGroup | None = Relationship(back_populates="predictions")
+    grid: Grid | None = Relationship()
+    model: QualityPredictionModel | None = Relationship()
+    metric: QualityMetric | None = Relationship()
+
+
+class CurrentQualityGridSquareGroupPrediction(
+    SQLModel, table=True, table_name="currentqualitygridsquaregroupprediction"
+):
+    """A single prediction record that applies to all grid squares in a GridSquareGroup."""
+
+    __table_args__ = {"extend_existing": True}
+    id: int | None = Field(default=None, primary_key=True)
+    group_uuid: str = Field(foreign_key="gridsquaregroup.uuid")
+    grid_uuid: str = Field(foreign_key="grid.uuid")
+    value: float
+    prediction_model_name: str = Field(foreign_key="qualitypredictionmodel.name")
+    metric_name: str | None = Field(foreign_key="qualitymetric.name", default=None)
+    group: GridSquareGroup | None = Relationship(back_populates="current_predictions")
+    grid: Grid | None = Relationship(back_populates="current_quality_gridsquare_group_predictions")
     model: QualityPredictionModel | None = Relationship()
     metric: QualityMetric | None = Relationship()
 

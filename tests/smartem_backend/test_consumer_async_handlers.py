@@ -133,6 +133,40 @@ class TestCreateFoilHoleGroup:
         assert db.commit.await_count == 1
 
 
+class TestCreateGridSquareGroup:
+    base_event = {
+        "event_type": "gridsquare.group_create",
+        "group_uuid": "grp-1",
+        "grid_uuid": "grid-1",
+        "name": "groupie",
+        "gridsquare_uuids": ["gs-1", "gs-2"],
+    }
+
+    def test_creates_when_group_missing(self, db):
+        db.execute.return_value = make_execute_result(None)
+
+        import asyncio
+
+        asyncio.run(consumer.handle_create_gridsquare_group(dict(self.base_event)))
+
+        assert db.add.call_count == 1
+        assert db.add_all.call_count == 1
+        assert db.commit.await_count == 1
+
+    def test_extends_when_group_exists(self, db):
+        existing_group = MagicMock()
+        existing_group.uuid = "grp-1"
+        existing_group.name = "old-name"
+        db.execute.return_value = make_execute_result(existing_group)
+
+        import asyncio
+
+        asyncio.run(consumer.handle_create_gridsquare_group(dict(self.base_event)))
+
+        assert db.add_all.call_count == 1
+        assert db.commit.await_count == 1
+
+
 class TestActiveAgentSessionsHelper:
     def test_returns_scalars_list(self, db):
         sentinel = MagicMock()

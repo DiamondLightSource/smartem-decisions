@@ -7,6 +7,7 @@ from sqlalchemy.orm import aliased
 from sqlmodel import and_, or_, select
 
 from smartem_backend.model.database import (
+    CurrentQualityGridSquareGroupPrediction,
     CurrentQualityGroupPrediction,
     CurrentQualityPrediction,
     CurrentQualityPredictionModelWeight,
@@ -14,6 +15,7 @@ from smartem_backend.model.database import (
     FoilHoleGroupMembership,
     Grid,
     GridSquare,
+    GridSquareGroupMembership,
     Micrograph,
     OverallQualityPrediction,
     QualityMetric,
@@ -77,6 +79,28 @@ async def prior_update(
                             or_(
                                 CurrentQualityGroupPrediction.metric_name == metric,
                                 CurrentQualityGroupPrediction.metric_name == None,  # noqa: E711
+                            )
+                        )
+                    )
+                )
+                .scalars()
+                .first()
+            )
+        elif model_level == ModelLevel.GRIDSQUAREGROUP:
+            # predictions are stored once per group; look up via group membership
+            pred_value = (
+                (
+                    await session.execute(
+                        select(CurrentQualityGridSquareGroupPrediction.value)
+                        .where(
+                            CurrentQualityGridSquareGroupPrediction.group_uuid == GridSquareGroupMembership.group_uuid
+                        )
+                        .where(GridSquareGroupMembership.gridsquare_uuid == square_uuid)
+                        .where(CurrentQualityGridSquareGroupPrediction.prediction_model_name == m)
+                        .where(
+                            or_(
+                                CurrentQualityGridSquareGroupPrediction.metric_name == metric,
+                                CurrentQualityGridSquareGroupPrediction.metric_name == None,  # noqa: E711
                             )
                         )
                     )
@@ -326,6 +350,31 @@ async def overall_predictions_update(grid_uuid: str, session: AsyncSession) -> N
                     [
                         weights[(metric, model)] * group_value_by_fh.get(fh_uuid, 0.5)
                         for _, fh_uuid in ordered_foilhole_ids
+                    ]
+                )
+            elif model_level == ModelLevel.GRIDSQUAREGROUP:
+                # Build a gridsquare_uuid -> value map from group predictions for this model/metric
+                group_preds = (
+                    await session.execute(
+                        select(GridSquareGroupMembership.gridsquare_uuid, CurrentQualityGridSquareGroupPrediction.value)
+                        .where(CurrentQualityGridSquareGroupPrediction.grid_uuid == grid_uuid)
+                        .where(CurrentQualityGridSquareGroupPrediction.prediction_model_name == model)
+                        .where(
+                            or_(
+                                CurrentQualityGridSquareGroupPrediction.metric_name == metric,
+                                CurrentQualityGridSquareGroupPrediction.metric_name == None,  # noqa: E711
+                            )
+                        )
+                        .where(
+                            GridSquareGroupMembership.group_uuid == CurrentQualityGridSquareGroupPrediction.group_uuid
+                        )
+                    )
+                ).all()
+                group_value_by_square = dict(group_preds)
+                value_matrix[imet, imod] = np.array(
+                    [
+                        weights[(metric, model)] * group_value_by_square.get(sq_uuid, 0.5)
+                        for sq_uuid, _ in ordered_foilhole_ids
                     ]
                 )
 
