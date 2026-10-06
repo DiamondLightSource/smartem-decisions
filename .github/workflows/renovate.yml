@@ -19,7 +19,7 @@ jobs:
       # GITHUB_TOKEN can't autodiscover, so the target repo is set explicitly. Trade-off: PRs that
       # Renovate opens with GITHUB_TOKEN do not trigger this repo's other workflows, so dependency
       # PRs arrive without CI until manually re-run. Swap to a GitHub App token if that becomes a pain.
-      - uses: renovatebot/github-action@v46.1.14
+      - uses: renovatebot/github-action@v46.3.7
         env:
           RENOVATE_REPOSITORIES: ${{ github.repository }}
         with:
