@@ -14,7 +14,7 @@ jobs:
   renovate:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       # Run against this repo only, using the auto-provided GITHUB_TOKEN (no PAT to manage).
       # GITHUB_TOKEN can't autodiscover, so the target repo is set explicitly. Trade-off: PRs that
       # Renovate opens with GITHUB_TOKEN do not trigger this repo's other workflows, so dependency
