@@ -65,7 +65,7 @@ cli = [
 # Backend system component dependencies (database, messaging, API server/client)
 backend = [
     "smartem-decisions[common,client,cli]",
-    "aio-pika>=9.4.0,<10.0.0",
+    "aio-pika>=10.2.1,<10.3.0",
     "fastapi>=0.116.1,<1.0.0",
     "uvicorn[standard]>=0.30.0,<1.0.0",
     "sqlalchemy>=2.0.0,<3.0.0",
@@ -88,7 +88,7 @@ images = [
 agent = [
     "smartem-decisions[common,client,cli]",
     "lxml>=5.0.0,<7.0.0",
-    "watchdog>=4.0.0,<7.0.0",
+    "watchdog>=7.0.0,<7.1.0",
 ]
 
 # Combined dependencies (for convenience)
